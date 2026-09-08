@@ -15,8 +15,8 @@ Implementation started on 2026-09-09. The user authorized development directly o
 | Stage | Scope | State |
 | --- | --- | --- |
 | Research baseline | Local API reference, compatibility research, Windows architecture | Complete; initial commit |
-| Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; visual interaction review remains pending desktop unlock |
-| Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | In progress |
+| Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; initial native window visually inspected after desktop unlock |
+| Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 40 HTTP contract tests passed |
 | Usable client | Protected accounts, native navigation, home/library/search/details, playback surface, tracks, reporting and cleanup | Pending |
 | Playback refinements | Queue, episode continuation, quality/source selection, failure recovery, media keys, engine comparison | Pending |
 | Release hardening | Accessibility, cache policy, automated checks, packaging, distribution evidence, accurate compatibility documentation | Pending |
@@ -30,7 +30,10 @@ Implementation started on 2026-09-09. The user authorized development directly o
 - `dotnet publish src/EmbyClient.App/EmbyClient.App.csproj -c Release -r win-x64 -p:Platform=x64 -o artifacts/aot --nologo`: succeeded and generated native code.
 - Native output contains an 8,412,160-byte `EmbyClient.App.exe` for the initial shell. Process launch with the publish directory as its working directory produced a responsive window and the expected welcome-page accessibility tree.
 - The initial build reports an upstream generated-XAML `CS0618` warning for WinUIEx's obsolete `Icon` type. Application code uses `AppWindow.SetIcon`; the warning is not suppressed.
-- Interactive screenshot/layout validation is pending because the desktop was locked. A process and accessibility tree are startup evidence, not a full visual or playback acceptance result.
+- After the user unlocked the desktop, the initial welcome window was visually inspected: native title bar, Mica surface, welcome text, and layout were displayed. This does not establish playback acceptance.
+- `dotnet build src/EmbyClient.Api/EmbyClient.Api.csproj -c Release`: succeeded, 0 warnings/errors.
+- `dotnet test --project tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj --configuration Release --no-restore`: 40 passed, 0 failed, 0 skipped. Tests use simulated HTTP; they do not certify an actual Emby server version.
+- Protocol regressions fixed during tests: preserving proxy paths in returned `/emby/...` media URLs, rejecting unknown query-result shapes, and preserving numeric genre/studio IDs. The .NET 10 test runner is Microsoft.Testing.Platform.
 - A real Emby server compatibility matrix, hardware playback claims, signing identity, and repository license remain unresolved. No credentials or private server information belong in this file.
 
 Stage completion records will describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.

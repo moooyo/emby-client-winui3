@@ -1,5 +1,9 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/EmbyClient.Api/EmbyClient.Api.csproj" />
     <Project Path="src/EmbyClient.App/EmbyClient.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj" />
   </Folder>
 </Solution>
