@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EmbyClient.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "EmbyClient.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

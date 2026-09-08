@@ -1,0 +1,16 @@
+<wex:WindowEx
+    x:Class="EmbyClient.App.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:wex="using:WinUIEx"
+    Title="Emby for Windows">
+    <wex:WindowEx.SystemBackdrop><MicaBackdrop /></wex:WindowEx.SystemBackdrop>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TitleBar x:Name="AppTitleBar" Title="Emby for Windows" />
+        <Frame x:Name="RootFrame" Grid.Row="1" />
+    </Grid>
+</wex:WindowEx>
