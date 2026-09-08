@@ -176,7 +176,7 @@ public sealed class PlaybackPausedRestartTests
         Assert.Equal(600_000_001, reports[1].JsonBody.GetProperty("PositionTicks").GetInt64());
     }
 
-    private static void AssertPausedReplacement(PlaybackTestContext context, string sessionId, long positionTicks)
+    internal static void AssertPausedReplacement(PlaybackTestContext context, string sessionId, long positionTicks)
     {
         Assert.Equal(PlaybackEngineState.Paused, context.Engine.Snapshot?.State);
         Assert.Equal(PlaybackStatus.Paused, context.Coordinator.Status);

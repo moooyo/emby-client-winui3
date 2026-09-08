@@ -75,7 +75,11 @@ public sealed record PlaybackSelection
     public bool ForceTranscoding { get; init; }
 }
 
-/// <summary>Null values preserve the current selection. SubtitleStreamIndex = -1 explicitly disables subtitles.</summary>
+/// <summary>
+/// Changes playback without changing its current position or pause state. Null normally preserves the current selection.
+/// When MediaSourceId changes, omitted audio/subtitle indexes instead request the new source's defaults;
+/// explicitly supplied indexes must belong to that new source. SubtitleStreamIndex = -1 explicitly disables subtitles.
+/// </summary>
 public sealed record PlaybackSelectionChange
 {
     public string? MediaSourceId { get; init; }

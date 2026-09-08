@@ -82,17 +82,19 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         var observed = Volatile.Read(ref _current) ?? throw new InvalidOperationException("There is no active playback to change.");
         CaptureEngineSnapshot(observed);
         var restorePaused = ShouldPauseAfterRestart(observed);
+        var currentSourceId = observed.Source?.Id ?? observed.Selection.MediaSourceId;
+        var changesSource = change.MediaSourceId is not null
+            && !string.Equals(change.MediaSourceId, currentSourceId, StringComparison.Ordinal);
         var selection = observed.Selection with
         {
-            MediaSourceId = change.MediaSourceId ?? observed.Selection.MediaSourceId,
+            MediaSourceId = change.MediaSourceId ?? currentSourceId,
             StartPositionTicks = AbsolutePosition(observed),
-            AudioStreamIndex = change.AudioStreamIndex ?? observed.Selection.AudioStreamIndex,
-            SubtitleStreamIndex = change.SubtitleStreamIndex ?? observed.Selection.SubtitleStreamIndex,
+            // Stream indexes belong to one source. Null asks Emby to select the new source's defaults.
+            AudioStreamIndex = change.AudioStreamIndex ?? (changesSource ? null : observed.Selection.AudioStreamIndex),
+            SubtitleStreamIndex = change.SubtitleStreamIndex ?? (changesSource ? null : observed.Selection.SubtitleStreamIndex),
             MaxStreamingBitrate = change.MaxStreamingBitrate ?? observed.Selection.MaxStreamingBitrate,
             ForceTranscoding = change.ForceTranscoding ?? observed.Selection.ForceTranscoding
         };
-        if (change.MediaSourceId is not null && change.MediaSourceId != observed.Selection.MediaSourceId)
-            selection = selection with { AudioStreamIndex = change.AudioStreamIndex, SubtitleStreamIndex = change.SubtitleStreamIndex };
         ValidateSelection(selection);
         var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : observed.OwnerCancellationToken;
         var intent = BeginIntent();
