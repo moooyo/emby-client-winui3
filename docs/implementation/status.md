@@ -17,8 +17,8 @@ Implementation started on 2026-09-09. The user authorized development directly o
 | Research baseline | Local API reference, compatibility research, Windows architecture | Complete; initial commit |
 | Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; initial native window visually inspected after desktop unlock |
 | Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 47 HTTP contract tests and 40 official-server API checks passed |
-| Windows account storage | User-protected tokens, atomic account settings, stable device identity | Complete; 30 Windows platform tests passed |
-| Playback orchestration | Engine abstraction, negotiation, state transitions, reporting, fallback, source cleanup | Complete; 59 coordinator tests passed using simulated transport/engine |
+| Windows account storage | User-protected tokens, atomic account settings, stable device identity | Complete; 33 Windows platform tests passed, including connection/logout races |
+| Playback orchestration | Engine abstraction, negotiation, state transitions, reporting, fallback, source cleanup | Complete; 61 coordinator tests passed using simulated transport/engine |
 | Usable client | Protected accounts, native navigation, home/library/search/details, playback surface, tracks, reporting and cleanup | Pending |
 | Playback refinements | Queue, episode continuation, quality/source selection, failure recovery, media keys, engine comparison | Pending |
 | Release hardening | Accessibility, cache policy, automated checks, packaging, distribution evidence, accurate compatibility documentation | Pending |
@@ -56,7 +56,9 @@ The real server rejected chunked JSON request bodies with HTTP 400. The transpor
 
 Changing subtitle or quality selection, restarting a transcoded stream to seek, and recovering from a decoder failure now preserve a paused session. The coordinator reports an actual start for the new session, asks the engine to pause, waits for its actual paused state, and only then sends the pause report. Explicit play and replay retain their normal playing behavior.
 
-The Release coordinator suite passes 59 tests. New cases cover selection changes, seek restarts, initial and runtime fallback, explicit replay, asynchronous pause acknowledgement, and bounded cleanup if pause is never confirmed. Authentication expiration is also distinguished from parental or permission restrictions. Version changes preserve position and pause state while clearing omitted audio/subtitle indexes so the new source supplies its own defaults; explicit indexes for the new source are retained.
+The Release coordinator suite passes 61 tests. New cases cover selection changes, seek restarts, initial and runtime fallback, explicit replay, asynchronous pause acknowledgement, and bounded cleanup if pause is never confirmed. Authentication expiration is also distinguished from parental or permission restrictions. Version changes preserve position and pause state while clearing omitted audio/subtitle indexes so the new source supplies its own defaults; explicit indexes for the new source are retained.
+
+Actual multi-track playback revealed that the native player's temporary paused state before its first start could incorrectly make fallback pause a newly opened stream. Pause restoration now requires actual prior playback, unless it was explicitly requested by a paused source transition. Two additional regressions cover new playback and nonzero resume positions; both retain normal playing behavior after fallback.
 
 Native UI verification against the isolated official Emby 4.9.5.0 instance has displayed original video, HLS transcoding, and visible burned-in SRT subtitles. Fullscreen entry and Escape exit have been inspected. This does not yet establish the paused-restart behavior of the final application build.
 

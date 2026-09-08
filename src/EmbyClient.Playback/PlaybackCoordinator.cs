@@ -631,8 +631,10 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             Volatile.Write(ref session.LastPlaybackWasPaused, snapshot.State == PlaybackEngineState.Paused);
     }
 
+    // AutoPlay=false can produce a Paused snapshot during initialization. It is not a user's pause intent.
+    // A requested paused restart remains authoritative even before its replacement source starts playing.
     private static bool ShouldPauseAfterRestart(Session session) => Volatile.Read(ref session.RestorePaused)
-        || Volatile.Read(ref session.LastPlaybackWasPaused);
+        || Volatile.Read(ref session.ActuallyStarted) && Volatile.Read(ref session.LastPlaybackWasPaused);
 
     private static long AbsolutePosition(Session session, PlaybackEngineSnapshot? snapshot = null)
     {

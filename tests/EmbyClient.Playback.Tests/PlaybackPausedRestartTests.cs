@@ -176,6 +176,40 @@ public sealed class PlaybackPausedRestartTests
         Assert.Equal(600_000_001, reports[1].JsonBody.GetProperty("PositionTicks").GetInt64());
     }
 
+    [Theory(Timeout = 15000)]
+    [InlineData(0L)]
+    [InlineData(600_000_001L)]
+    public async Task A_native_initial_paused_event_does_not_turn_fresh_playback_fallback_into_a_paused_restart(long resumeTicks)
+    {
+        await using var context = new PlaybackTestContext();
+        context.Engine.OnOpenAsync = (_, _) =>
+        {
+            if (context.Engine.Opened.Length == 1)
+            {
+                context.Engine.Emit(PlaybackEngineEventKind.StateChanged,
+                    context.Engine.Snapshot! with { State = PlaybackEngineState.Paused, PositionTicks = 0 });
+                throw new PlaybackException("UnsupportedTrack");
+            }
+            return Task.CompletedTask;
+        };
+
+        await context.Coordinator.PlayAsync(PlaybackTestContext.Selection(resumeTicks), TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, context.Engine.Opened.Length);
+        var fallback = context.Engine.Opened[1];
+        Assert.Equal(PlaybackDeliveryMethod.Transcode, fallback.DeliveryMethod);
+        Assert.Equal(0, fallback.InitialPositionTicks);
+        Assert.Equal(resumeTicks, fallback.TimelineOffsetTicks);
+        Assert.Empty(context.Engine.Paused);
+        Assert.Equal(PlaybackEngineState.Playing, context.Engine.Snapshot?.State);
+        Assert.Equal(PlaybackStatus.Playing, context.Coordinator.Status);
+        var start = Assert.Single(context.Handler.At("Sessions/Playing")).JsonBody;
+        Assert.Equal("session-2", start.GetProperty("PlaySessionId").GetString());
+        Assert.False(start.GetProperty("IsPaused").GetBoolean());
+        Assert.Equal(resumeTicks, start.GetProperty("PositionTicks").GetInt64());
+        Assert.Empty(context.Handler.At("Sessions/Playing/Progress"));
+    }
+
     internal static void AssertPausedReplacement(PlaybackTestContext context, string sessionId, long positionTicks)
     {
         Assert.Equal(PlaybackEngineState.Paused, context.Engine.Snapshot?.State);
