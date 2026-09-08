@@ -1,6 +1,6 @@
 # Playback, Streams, and Sessions
 
-Research date: 2026-09-09. Scope: an independent Windows client for Emby Server, with a native WinUI 3 interface. This document describes the server contract and a proposed client workflow; it does not assert that a player implementation or target server has been tested.
+Research date: 2026-09-09. Scope: an independent Windows client for Emby Server, with a native WinUI 3 interface. The original research describes the server contract and a proposed client workflow. Later implementation findings are explicitly identified below; they do not certify every server version or playback engine.
 
 ## Contract and terminology
 
@@ -201,7 +201,41 @@ Supply authentication using the media engine's supported mechanism. Do not add `
 
 For conversion, prefer `TranscodingUrl`, which can refer to HLS. The documented manual endpoint is `/Videos/{Id}/master.m3u8`; the conceptual guide requires `Id`, `MediaSourceId`, and `DeviceId`, and the video guide requires `PlaySessionId`. The generated schema's parameter inventory is incomplete relative to these guides and returned URLs. Preserve the server URL rather than generating a minimal request from one list. Relevant conversion parameters include `AudioCodec`, `AudioBitRate`, `MaxAudioChannels`, `VideoCodec`, `VideoBitRate`, `MaxWidth`, `MaxHeight`, `AudioStreamIndex`, `SubtitleStreamIndex`, `SubtitleMethod`, and `StartTimeTicks`.
 
-The documented progressive-transcode seek strategy is to stop the old stream and open a new stream at `StartTimeTicks`. HLS seeking depends on the manifest and player; use native seek when the desired position is available and supported, otherwise renegotiate/restart at the absolute target. Do not assume all HLS streams provide arbitrary VOD seeking. [Video Streaming](https://dev.emby.media/doc/restapi/Video-Streaming.html), [HTTP Live Streaming](https://dev.emby.media/doc/restapi/Http-Live-Streaming.html)
+The documented progressive-transcode seek strategy is to stop the old stream and open a new stream at `StartTimeTicks`. **Do not apply that segment-relative model to Emby VOD HLS.** A VOD playlist can retain the complete source timeline while using `StartTimeTicks` as a preferred initial-position hint. Seek the media engine on that full timeline; use a server restart when the current engine cannot seek, then still perform the required initial seek on the replacement VOD presentation. [Video Streaming](https://dev.emby.media/doc/restapi/Video-Streaming.html), [HTTP Live Streaming](https://dev.emby.media/doc/restapi/Http-Live-Streaming.html)
+
+### Verified HLS timeline correction: Emby Server 4.9.5.0
+
+Local validation against the official Emby Server 4.9.5.0 exposed a defect in the first client implementation: it set a transcoded HLS request's reporting offset to the requested resume position while starting the engine at zero. The UI and server reports advanced to the desired time, but the image still showed the beginning of the source. A `Transcode` delivery label does not establish the origin of the engine's timeline.
+
+The independent 17-second validation established these facts:
+
+- Playback negotiation returned `IsInfiniteStream=false`, `RunTimeTicks=600340000`, `Protocol=File`, `TranscodingSubProtocol=hls`, and `TranscodingContainer=ts`.
+- The returned master URL and its HTTP media-playlist URL both retained `StartTimeTicks=170000000`. The selected media-source ID and audio stream index also reached the server correctly.
+- The **HTTP** media playlist contained `EXT-X-PLAYLIST-TYPE:VOD`, `EXT-X-MEDIA-SEQUENCE:0`, `EXT-X-START:TIME-OFFSET=17`, and `EXT-X-ENDLIST`. Its 21 segments covered the full presentation: twenty 3-second segments followed by a 0.1-second tail. The slight difference from the source-reported duration is not a resume offset.
+- The ffmpeg disk playlist did not contain the VOD/START tags; Emby added those to the HTTP response. Looking only at the disk playlist would miss the server's startup hint.
+- ffmpeg was started without `-ss`, with segment numbering beginning at zero. The first decoded segment matched the source's blue opening frame, while the source at 17 seconds was red. Segment index 5 covers 15 through 18 seconds.
+- The MPEG-TS timestamp baseline and ffmpeg's `-copyts -start_at_zero` flags did not represent a content trim. Do not derive item time from raw TS PTS or `ContainerStartTimeTicks` without an established mapping.
+
+The corrected native request is therefore `TimelineKind=FullSource`, `TimelineOffsetTicks=0`, and `InitialPositionTicks=170000000`. The adapter must actually seek to that position before completing `OpenAsync`; reporting an added offset is not a substitute. An engine that honors `EXT-X-START` can already be near that position, but an explicit absolute seek must remain idempotent rather than adding 17 seconds again.
+
+The client preserves a valid returned HLS `StartTimeTicks` parameter. It neither resets that parameter to zero nor manufactures a missing one, and it does not reject a different valid startup hint as a mismatched trim origin. The actual requested initial position remains an independent engine instruction.
+
+These are results for the tested finite VOD conversion path. This round did not verify progressive-transcode content trimming, arbitrary third-party HLS, live/infinite HLS, every remux combination, or every Emby version. A sanitized playlist-based request regression lives in `PlaybackTimelineTests`; the original local evidence is `artifacts/emby-validation/hls-timeline-evidence.json` and is not a required repository artifact.
+
+### Client timeline contracts
+
+| Delivery and established timeline | Engine initial position | Reporting offset | Seek behavior |
+| --- | --- | --- | --- |
+| Original-file direct HTTP stream | Requested absolute source ticks | `0` | Seek the full source locally when supported. |
+| Same-server finite Emby VOD HLS, canonical `Videos/{VideoRouteId}/master.m3u8` or `main.m3u8` | Requested absolute source ticks | `0` | Use local absolute seek when the engine can seek. A replacement stream still needs a real initial seek. |
+| Documented Emby progressive segment at `Videos/{VideoRouteId}/stream[.{Container}]`, with matching `StartTimeTicks` and non-preserved timestamps | `0` | Requested trim-start ticks | Restart conversion at the new absolute target, then report segment-relative time plus its trim origin. |
+| Unestablished third-party origin, unfamiliar conversion route/protocol, infinite stream, or missing finite duration | None | None | Reject with `UnknownTranscodeTimeline` instead of guessing. |
+
+`PlaybackTimelineKind.FullSource` and `ProgressiveSegment` make the distinction explicit in the playback contract; `PlaybackDeliveryMethod.Transcode` alone is insufficient. For every accepted timeline, reports use exactly `TimelineOffsetTicks + engine.PositionTicks`.
+
+The factory applies the established same-server VOD contract to recognized finite Emby endpoints; it does not fetch and inspect every playlist. It refuses ambiguous or malformed timing parameters, unsupported preserved-timestamp requests, and unrecognized conversion semantics. A progressive URL with a conflicting `StartTimeTicks` remains an error, because that parameter describes the documented trim origin for that delivery path. Its end-to-end behavior still requires separate real-server validation.
+
+`VideoRouteId` is a single safe path segment below the configured API root, not necessarily the selected library item's ID. The real alternate-version case selected item `8` and media source `8`, while Emby returned `/videos/7/master.m3u8` and `/videos/7/main.m3u8`. The server used the `MediaSourceId` parameter to select the correct file. The client accepts that same-server canonical alias and continues reporting the selected item/media-source IDs; it does not rewrite the returned video route. Cross-origin URLs, paths outside the configured API root, and extra or encoded path separators remain rejected.
 
 ### Subtitles
 
@@ -229,8 +263,8 @@ Sources: [Subtitles guide](https://dev.emby.media/doc/restapi/Subtitles.html), [
 
 1. Read the user's resume position from item user data and combine it with the selected source duration. An edition change may invalidate that position; clamp or offer a restart rather than seeking beyond the selected source.
 2. Negotiate using the intended absolute `StartTimeTicks` and selected Emby track indices.
-3. For original-file playback, seek locally once the player reports readiness. For an offset conversion, determine whether the player timeline starts at zero or preserves source timestamps.
-4. Store the timeline mapping in the current playback context. Report absolute source position as `PositionTicks`, with the conversion offset applied exactly once.
+3. For original-file playback and finite Emby VOD HLS, actually seek the engine to the absolute source position once it is ready. For a progressive trimmed response, use engine zero and its established trim origin. A startup hint in an HLS URL or playlist is not a reporting offset.
+4. Store the explicit timeline kind and mapping in the current playback context. Report observed engine time plus only the applicable progressive-segment offset; full-source HLS has an offset of zero.
 5. If an audio/subtitle change can be applied locally with a confirmed index mapping, do so and report the matching progress event. If it changes conversion or subtitle burn-in, capture position, retire the old transport, renegotiate, and restore position.
 6. A quality change follows the same restart path with a new bitrate/profile constraint. Use `CurrentPlaySessionId` only according to verified server behavior, and always adopt the returned `PlaySessionId`.
 

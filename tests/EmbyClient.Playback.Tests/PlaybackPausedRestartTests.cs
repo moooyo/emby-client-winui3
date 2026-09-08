@@ -28,9 +28,10 @@ public sealed class PlaybackPausedRestartTests
     }
 
     [Fact(Timeout = 15000)]
-    public async Task Seeking_a_paused_transcode_restores_pause_after_restarting_at_the_requested_absolute_ticks()
+    public async Task Seeking_a_paused_progressive_segment_restores_pause_after_restarting_at_the_requested_absolute_ticks()
     {
         await using var context = new PlaybackTestContext();
+        context.Sources = (_, _) => [PlaybackTestContext.ProgressiveSource()];
         await context.Coordinator.PlayAsync(PlaybackTestContext.Selection(600_000_001, transcode: true), TestContext.Current.CancellationToken);
         var originalId = context.Coordinator.ActiveContext!.PlaybackId;
         context.Engine.SetPosition(200_000_007);
@@ -64,7 +65,8 @@ public sealed class PlaybackPausedRestartTests
         Assert.Equal(3, context.Engine.Opened.Length);
         var fallback = context.Engine.Opened[2];
         Assert.Equal(PlaybackDeliveryMethod.Transcode, fallback.DeliveryMethod);
-        Assert.Equal(800_000_009, fallback.TimelineOffsetTicks);
+        Assert.Equal(0, fallback.TimelineOffsetTicks);
+        Assert.Equal(800_000_009, fallback.InitialPositionTicks);
         Assert.Equal(new[] { originalId, fallback.PlaybackId }, context.Engine.Paused);
         Assert.DoesNotContain(context.Handler.At("Sessions/Playing"), report => report.JsonBody.GetProperty("PlaySessionId").GetString() == "session-2");
         AssertPausedReplacement(context, "session-3", 800_000_009);
@@ -198,8 +200,8 @@ public sealed class PlaybackPausedRestartTests
         Assert.Equal(2, context.Engine.Opened.Length);
         var fallback = context.Engine.Opened[1];
         Assert.Equal(PlaybackDeliveryMethod.Transcode, fallback.DeliveryMethod);
-        Assert.Equal(0, fallback.InitialPositionTicks);
-        Assert.Equal(resumeTicks, fallback.TimelineOffsetTicks);
+        Assert.Equal(resumeTicks, fallback.InitialPositionTicks);
+        Assert.Equal(0, fallback.TimelineOffsetTicks);
         Assert.Empty(context.Engine.Paused);
         Assert.Equal(PlaybackEngineState.Playing, context.Engine.Snapshot?.State);
         Assert.Equal(PlaybackStatus.Playing, context.Coordinator.Status);

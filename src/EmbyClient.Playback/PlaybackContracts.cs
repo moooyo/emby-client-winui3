@@ -3,17 +3,23 @@ using EmbyClient.Api;
 namespace EmbyClient.Playback;
 
 public enum PlaybackDeliveryMethod { DirectStream, Transcode }
+public enum PlaybackTimelineKind { FullSource, ProgressiveSegment }
 public enum PlaybackEngineState { Idle, Opening, Playing, Paused, Buffering, Seeking, Stopped, Ended, Failed }
 public enum PlaybackEngineEventKind { StateChanged, PositionChanged, Ended, Failed }
 public enum PlaybackStatus { Idle, Negotiating, Opening, Playing, Paused, Buffering, Seeking, Stopping, Ended, Failed }
 
-/// <summary>Coordinates are relative to this URL. Absolute item time is TimelineOffsetTicks plus engine time.</summary>
+/// <summary>
+/// FullSource timelines require an actual initial seek to InitialPositionTicks and have no reporting offset.
+/// ProgressiveSegment timelines start at engine zero and add the confirmed server-side trim offset when reporting.
+/// Absolute item time is always TimelineOffsetTicks plus engine time.
+/// </summary>
 public sealed record PlaybackEngineRequest
 {
     public required Guid PlaybackId { get; init; }
     public required Uri MediaUri { get; init; }
     public required IReadOnlyDictionary<string, string> Headers { get; init; }
     public required PlaybackDeliveryMethod DeliveryMethod { get; init; }
+    public PlaybackTimelineKind TimelineKind { get; init; } = PlaybackTimelineKind.FullSource;
     public required MediaSourceInfo Source { get; init; }
     public long InitialPositionTicks { get; init; }
     public long TimelineOffsetTicks { get; init; }
@@ -49,7 +55,9 @@ public sealed class PlaybackEngineEventArgs(PlaybackEngineEventKind kind, Playba
 /// Implementations own dispatcher marshalling and must ignore operations for retired playback IDs.
 /// OpenAsync completes only after actual playback starts, including the requested initial seek.
 /// Cancellation must interrupt opening. StopAsync must quiesce callbacks and network requests before returning.
-/// A transcoded URL must expose a zero-based timeline; normalize transport timestamps inside the adapter.
+/// Emby VOD HLS exposes the full source timeline; apply InitialPositionTicks as a real seek before completing OpenAsync.
+/// Only a confirmed ProgressiveSegment uses a segment-relative engine timeline and a nonzero reporting offset.
+/// Do not infer the timeline from a Transcode delivery label or from a StartTimeTicks URL parameter alone.
 /// Headers are scoped to their original origin and must not leak through cross-origin redirects.
 /// </summary>
 public interface IPlaybackEngine : IAsyncDisposable
@@ -96,6 +104,7 @@ public sealed record PlaybackContext
     public required MediaSourceInfo Source { get; init; }
     public required string PlaySessionId { get; init; }
     public required PlaybackDeliveryMethod DeliveryMethod { get; init; }
+    public PlaybackTimelineKind TimelineKind { get; init; } = PlaybackTimelineKind.FullSource;
     public long TimelineOffsetTicks { get; init; }
     public long PositionTicks { get; init; }
     public bool CanSeek { get; init; }

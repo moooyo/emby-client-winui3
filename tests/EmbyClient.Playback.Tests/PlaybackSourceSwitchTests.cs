@@ -95,7 +95,7 @@ public sealed class PlaybackSourceSwitchTests
             SubtitleStreamIndex = 23
         }, cancellationToken);
         Assert.Equal(PlaybackDeliveryMethod.Transcode, Assert.Single(context.Engine.Opened).DeliveryMethod);
-        context.Engine.SetPosition(200_000_007);
+        context.Engine.SetPosition(OriginalPositionTicks);
         await context.Coordinator.PauseAsync(cancellationToken);
     }
 

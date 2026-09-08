@@ -42,9 +42,10 @@ public sealed class PlaybackNegotiationTests
     }
 
     [Fact(Timeout = 15000)]
-    public async Task Transcode_position_reports_add_the_original_item_offset_and_seeking_renegotiates_original_ticks()
+    public async Task Progressive_segment_reports_add_the_confirmed_trim_offset_and_seeking_renegotiates_original_ticks()
     {
         await using var context = new PlaybackTestContext();
+        context.Sources = (_, _) => [PlaybackTestContext.ProgressiveSource()];
         const long initialPosition = 600_000_001;
         const long enginePosition = 120_000_007;
         const long targetPosition = 4_200_000_009;
@@ -52,6 +53,7 @@ public sealed class PlaybackNegotiationTests
         var first = Assert.Single(context.Engine.Opened);
         Assert.Equal(0, first.InitialPositionTicks);
         Assert.Equal(initialPosition, first.TimelineOffsetTicks);
+        Assert.Equal(PlaybackTimelineKind.ProgressiveSegment, first.TimelineKind);
         Assert.Equal(initialPosition.ToString(), new RecordedRequest(HttpMethod.Get, first.MediaUri, null).Query["StartTimeTicks"]);
         context.Engine.SetPosition(enginePosition);
         await context.Coordinator.PauseAsync(TestContext.Current.CancellationToken);
@@ -103,7 +105,8 @@ public sealed class PlaybackNegotiationTests
         Assert.Equal(2, request.GetProperty("AudioStreamIndex").GetInt32());
         Assert.Equal(4_000_000, request.GetProperty("MaxStreamingBitrate").GetInt64());
         Assert.Equal(PlaybackDeliveryMethod.Transcode, context.Engine.Opened[1].DeliveryMethod);
-        Assert.Equal(720_000_007, context.Engine.Opened[1].TimelineOffsetTicks);
+        Assert.Equal(0, context.Engine.Opened[1].TimelineOffsetTicks);
+        Assert.Equal(720_000_007, context.Engine.Opened[1].InitialPositionTicks);
         Assert.Equal(2, context.Engine.Opened[1].AudioStreamIndex);
         Assert.NotEqual(context.Engine.Opened[0].PlaybackId, context.Engine.Opened[1].PlaybackId);
         var report = Assert.Single(context.Handler.At("Sessions/Playing/Progress")).JsonBody;
@@ -204,7 +207,8 @@ public sealed class PlaybackNegotiationTests
         Assert.Equal(2, context.Engine.Opened.Length);
         Assert.Equal(PlaybackDeliveryMethod.DirectStream, context.Engine.Opened[0].DeliveryMethod);
         Assert.Equal(PlaybackDeliveryMethod.Transcode, context.Engine.Opened[1].DeliveryMethod);
-        Assert.Equal(600_000_001, context.Engine.Opened[1].TimelineOffsetTicks);
+        Assert.Equal(0, context.Engine.Opened[1].TimelineOffsetTicks);
+        Assert.Equal(600_000_001, context.Engine.Opened[1].InitialPositionTicks);
         Assert.NotEqual(context.Engine.Opened[0].PlaybackId, context.Engine.Opened[1].PlaybackId);
         Assert.Equal(context.Engine.Opened[0].PlaybackId, Assert.Single(context.Engine.Stopped));
         Assert.Equal("session-2", Assert.Single(context.Handler.At("Sessions/Playing")).JsonBody.GetProperty("PlaySessionId").GetString());
@@ -246,17 +250,18 @@ public sealed class PlaybackNegotiationTests
         await replacementStarted.Task.WaitAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(2, context.Engine.Opened.Length);
-        Assert.Equal(755_000_013, context.Engine.Opened[1].TimelineOffsetTicks);
+        Assert.Equal(0, context.Engine.Opened[1].TimelineOffsetTicks);
+        Assert.Equal(755_000_013, context.Engine.Opened[1].InitialPositionTicks);
         Assert.True(Assert.Single(context.Handler.At("Sessions/Playing/Stopped")).JsonBody.GetProperty("Failed").GetBoolean());
         Assert.Equal("session-2", context.Coordinator.ActiveContext?.PlaySessionId);
         Assert.Equal(PlaybackDeliveryMethod.Transcode, context.Coordinator.ActiveContext?.DeliveryMethod);
     }
 
     [Fact(Timeout = 15000)]
-    public async Task A_transcode_url_with_a_different_resume_offset_is_rejected_before_engine_open()
+    public async Task A_progressive_url_with_a_different_trim_offset_is_rejected_before_engine_open()
     {
         await using var context = new PlaybackTestContext();
-        context.Sources = (_, _) => [PlaybackTestContext.Source() with { TranscodingUrl = "/emby/Videos/movie-a/master.m3u8?StartTimeTicks=0" }];
+        context.Sources = (_, _) => [PlaybackTestContext.ProgressiveSource() with { TranscodingUrl = "/emby/Videos/movie-a/stream.mp4?StartTimeTicks=0" }];
 
         var error = await Assert.ThrowsAsync<PlaybackException>(() => context.Coordinator.PlayAsync(
             PlaybackTestContext.Selection(600_000_001, transcode: true), TestContext.Current.CancellationToken));
@@ -339,7 +344,8 @@ public sealed class PlaybackNegotiationTests
 
         var engine = Assert.Single(context.Engine.Opened);
         Assert.Equal(PlaybackDeliveryMethod.Transcode, engine.DeliveryMethod);
-        Assert.Equal(600_000_001, engine.TimelineOffsetTicks);
+        Assert.Equal(0, engine.TimelineOffsetTicks);
+        Assert.Equal(600_000_001, engine.InitialPositionTicks);
         Assert.Equal("/emby/Videos/movie-a/master.m3u8", engine.MediaUri.AbsolutePath);
         var negotiations = context.Handler.At("Items/movie-a/PlaybackInfo");
         Assert.Equal(2, negotiations.Length);

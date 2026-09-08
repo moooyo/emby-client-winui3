@@ -141,7 +141,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             var session = RequirePlayingSession();
             CaptureEngineSnapshot(session);
             var target = ClampPosition(absolutePositionTicks, session.Source?.RunTimeTicks);
-            if (session.Request!.DeliveryMethod == PlaybackDeliveryMethod.DirectStream && session.LatestSnapshot?.CanSeek == true)
+            if (session.Request!.TimelineKind == PlaybackTimelineKind.FullSource && session.LatestSnapshot?.CanSeek == true)
             {
                 PublishStatus(PlaybackStatus.Seeking, session);
                 using var operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, session.Lifetime.Token);
@@ -661,6 +661,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             Source = session.Source,
             PlaySessionId = session.PlaySessionId,
             DeliveryMethod = request.DeliveryMethod,
+            TimelineKind = request.TimelineKind,
             TimelineOffsetTicks = request.TimelineOffsetTicks,
             PositionTicks = AbsolutePosition(session),
             CanSeek = session.LatestSnapshot?.CanSeek == true || session.Source.IsInfiniteStream != true

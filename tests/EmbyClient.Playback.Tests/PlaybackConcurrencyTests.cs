@@ -137,7 +137,7 @@ public sealed class PlaybackConcurrencyTests
             return Task.FromResult(context.Respond(request));
         };
         await context.Coordinator.PlayAsync(PlaybackTestContext.Selection(600_000_001, transcode: true), TestContext.Current.CancellationToken);
-        context.Engine.SetPosition(200_000_007);
+        context.Engine.SetPosition(800_000_008);
 
         time.Advance(TimeSpan.FromSeconds(10));
         await progress.Task.WaitAsync(TestContext.Current.CancellationToken);

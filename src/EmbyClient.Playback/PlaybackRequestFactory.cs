@@ -44,8 +44,10 @@ internal static class PlaybackRequestFactory
             : null;
         var useDirect = CanUseDirectStream(source, selection);
         PlaybackDeliveryMethod method;
+        var timelineKind = PlaybackTimelineKind.FullSource;
         Uri uri;
         long offset;
+        var initialPosition = selection.StartPositionTicks;
         if (useDirect)
         {
             method = PlaybackDeliveryMethod.DirectStream;
@@ -66,20 +68,56 @@ internal static class PlaybackRequestFactory
                 throw new PlaybackException("NoCompatibleTranscode");
             method = PlaybackDeliveryMethod.Transcode;
             uri = api.ResolveMediaUri(source.TranscodingUrl);
-            var copyTimestamps = GetQueryParameter(uri, "CopyTimestamps");
+            if (!SameOrigin(uri, api.ApiRoot) || source.IsInfiniteStream == true || source.RunTimeTicks is not > 0)
+                throw new PlaybackException("UnknownTranscodeTimeline");
+            var copyTimestamps = GetQueryParameter(uri, "CopyTimestamps", rejectDuplicates: true);
             if (string.Equals(copyTimestamps, "true", StringComparison.OrdinalIgnoreCase) || copyTimestamps == "1")
                 throw new PlaybackException("UnsupportedFormat");
-            offset = selection.StartPositionTicks;
-            var returnedStart = GetQueryParameter(uri, "StartTimeTicks");
+            if (copyTimestamps is not null && !string.Equals(copyTimestamps, "false", StringComparison.OrdinalIgnoreCase) && copyTimestamps != "0")
+                throw new PlaybackException("UnexpectedTranscodeTimeline");
+            var returnedStart = GetQueryParameter(uri, "StartTimeTicks", rejectDuplicates: true);
+            long? returnedStartTicks = null;
             if (returnedStart is not null)
             {
-                if (!long.TryParse(returnedStart, NumberStyles.None, CultureInfo.InvariantCulture, out var ticks)
-                    || ticks != offset) throw new PlaybackException("UnexpectedTranscodeTimeline");
+                if (!long.TryParse(returnedStart, NumberStyles.None, CultureInfo.InvariantCulture, out var ticks))
+                    throw new PlaybackException("UnexpectedTranscodeTimeline");
+                returnedStartTicks = ticks;
             }
-            else if (offset > 0)
+
+            // Alternate versions can share their parent's video route while MediaSourceId selects the actual file.
+            // Route identity must stay inside the configured API root, but need not equal the selected library item ID.
+            if (!TryGetVideoResource(api.ApiRoot, uri, out var videoResource))
+                throw new PlaybackException("UnknownTranscodeTimeline");
+            var staticBytes = GetQueryParameter(uri, "Static", rejectDuplicates: true);
+            if (staticBytes is not null && !string.Equals(staticBytes, "false", StringComparison.OrdinalIgnoreCase) && staticBytes != "0")
+                throw new PlaybackException("UnknownTranscodeTimeline");
+            var isHls = uri.AbsolutePath.EndsWith(".m3u8", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(source.TranscodingSubProtocol, "hls", StringComparison.OrdinalIgnoreCase);
+            if (isHls)
             {
-                if (!SameOrigin(uri, api.ApiRoot)) throw new PlaybackException("UnknownTranscodeTimeline");
-                uri = AddQuery(uri, "StartTimeTicks", offset.ToString(CultureInfo.InvariantCulture));
+                var canonicalPlaylist = videoResource.Equals("master.m3u8", StringComparison.OrdinalIgnoreCase)
+                    || videoResource.Equals("main.m3u8", StringComparison.OrdinalIgnoreCase);
+                if (!canonicalPlaylist || !IsProtocol(source.TranscodingSubProtocol, "hls"))
+                    throw new PlaybackException("UnknownTranscodeTimeline");
+                // Emby 4.9.5 VOD playlists retain sequence zero and the complete source duration even
+                // when StartTimeTicks is nonzero. Keep the negotiated URL intact and seek the engine.
+                offset = 0;
+            }
+            else
+            {
+                var canonicalProgressive = videoResource.Equals("stream", StringComparison.OrdinalIgnoreCase)
+                    || videoResource.StartsWith("stream.", StringComparison.OrdinalIgnoreCase)
+                        && videoResource[7..] is { Length: > 0 and <= 16 } extension
+                        && extension.All(char.IsAsciiLetterOrDigit);
+                if (!canonicalProgressive || !IsProtocol(source.TranscodingSubProtocol, "http"))
+                    throw new PlaybackException("UnknownTranscodeTimeline");
+                timelineKind = PlaybackTimelineKind.ProgressiveSegment;
+                offset = selection.StartPositionTicks;
+                initialPosition = 0;
+                if (returnedStartTicks.HasValue && returnedStartTicks != offset)
+                    throw new PlaybackException("UnexpectedTranscodeTimeline");
+                if (!returnedStartTicks.HasValue && offset > 0)
+                    uri = AddQuery(uri, "StartTimeTicks", offset.ToString(CultureInfo.InvariantCulture));
             }
         }
 
@@ -88,7 +126,7 @@ internal static class PlaybackRequestFactory
         if (subtitleStream is not null && string.Equals(subtitleStream.DeliveryMethod, "External", StringComparison.OrdinalIgnoreCase))
         {
             // Arbitrary third-party subtitle URLs have no established offset contract.
-            // A resumed conversion uses burn-in fallback rather than silently misaligning captions.
+            // A trimmed progressive conversion uses burn-in fallback rather than silently misaligning captions.
             if (method == PlaybackDeliveryMethod.Transcode && offset > 0)
                 throw new PlaybackException("UnsupportedSubtitle");
             if (!string.IsNullOrWhiteSpace(subtitleStream.DeliveryUrl))
@@ -110,7 +148,8 @@ internal static class PlaybackRequestFactory
             MediaUri = uri,
             Headers = BuildHeaders(api, uri, source.RequiredHttpHeaders),
             DeliveryMethod = method,
-            InitialPositionTicks = method == PlaybackDeliveryMethod.DirectStream ? selection.StartPositionTicks : 0,
+            TimelineKind = timelineKind,
+            InitialPositionTicks = initialPosition,
             TimelineOffsetTicks = offset,
             ItemRunTimeTicks = source.IsInfiniteStream == true ? null : source.RunTimeTicks,
             AudioStreamIndex = audio,
@@ -137,6 +176,23 @@ internal static class PlaybackRequestFactory
 
     private static bool IsType(MediaStream stream, string type) => string.Equals(stream.Type, type, StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsProtocol(string? actual, string expected) => string.IsNullOrWhiteSpace(actual)
+        || string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);
+
+    private static bool TryGetVideoResource(Uri apiRoot, Uri uri, out string resource)
+    {
+        resource = string.Empty;
+        var videoPrefix = new Uri(apiRoot, "Videos/").AbsolutePath;
+        if (!uri.AbsolutePath.StartsWith(videoPrefix, StringComparison.OrdinalIgnoreCase)) return false;
+        var segments = uri.AbsolutePath[videoPrefix.Length..].Split('/');
+        if (segments.Length != 2 || segments[0].Length == 0 || segments[1].Length == 0) return false;
+        var routeId = Uri.UnescapeDataString(segments[0]);
+        if (routeId is "." or ".." || routeId.Any(character => char.IsControl(character) || char.IsWhiteSpace(character)
+            || character is '/' or '\\' or '?' or '#' or '%')) return false;
+        resource = segments[1];
+        return true;
+    }
+
     private static IReadOnlyDictionary<string, string> BuildHeaders(EmbyApiClient api, Uri uri, Dictionary<string, string>? required)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -158,16 +214,21 @@ internal static class PlaybackRequestFactory
 
     private static bool HasQueryParameter(Uri uri, string key) => GetQueryParameter(uri, key) is not null;
 
-    private static string? GetQueryParameter(Uri uri, string key)
+    private static string? GetQueryParameter(Uri uri, string key, bool rejectDuplicates = false)
     {
+        string? value = null;
         foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
             var split = part.IndexOf('=');
             var name = Uri.UnescapeDataString(split < 0 ? part : part[..split]);
             if (name.Equals(key, StringComparison.OrdinalIgnoreCase))
-                return split < 0 ? string.Empty : Uri.UnescapeDataString(part[(split + 1)..]);
+            {
+                if (rejectDuplicates && value is not null) throw new PlaybackException("UnexpectedTranscodeTimeline");
+                value = split < 0 ? string.Empty : Uri.UnescapeDataString(part[(split + 1)..]);
+                if (!rejectDuplicates) return value;
+            }
         }
-        return null;
+        return value;
     }
 
     private static Uri AddQuery(Uri uri, string key, string value) => new(uri.AbsoluteUri

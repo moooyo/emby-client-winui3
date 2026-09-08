@@ -49,6 +49,9 @@ internal sealed class PlaybackTestContext : IAsyncDisposable
         SupportsTranscoding = true,
         DirectStreamUrl = "/emby/Videos/movie-a/stream?Static=true&MediaSourceId=" + id,
         TranscodingUrl = "/emby/Videos/movie-a/master.m3u8?MediaSourceId=" + id,
+        TranscodingSubProtocol = "hls",
+        TranscodingContainer = "ts",
+        IsInfiniteStream = false,
         RunTimeTicks = TimeSpan.FromHours(2).Ticks,
         DefaultAudioStreamIndex = 1,
         DefaultSubtitleStreamIndex = -1,
@@ -60,6 +63,13 @@ internal sealed class PlaybackTestContext : IAsyncDisposable
             new() { Index = 3, Type = "Subtitle", Codec = "srt", DeliveryMethod = "Encode", IsTextSubtitleStream = true },
             new() { Index = 4, Type = "Subtitle", Codec = "vtt", DeliveryMethod = "External", IsTextSubtitleStream = true }
         ]
+    };
+
+    public static MediaSourceInfo ProgressiveSource(string id = "source-a") => Source(id) with
+    {
+        TranscodingUrl = "/emby/Videos/movie-a/stream.mp4?MediaSourceId=" + id,
+        TranscodingSubProtocol = "http",
+        TranscodingContainer = "mp4"
     };
 
     public static PlaybackSelection Selection(long position = 0, bool transcode = false) => new()
