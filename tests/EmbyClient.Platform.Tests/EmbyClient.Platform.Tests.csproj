@@ -15,5 +15,7 @@
   <ItemGroup>
     <Compile Include="../../src/EmbyClient.App/Services/AccountStore.cs" Link="Product/AccountStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/SettingsJsonContext.cs" Link="Product/SettingsJsonContext.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.cs" Link="Product/ConnectionService.cs" />
+    <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
   </ItemGroup>
 </Project>

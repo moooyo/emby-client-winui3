@@ -162,6 +162,9 @@
           "xunit.v3.extensibility.core": "[4.0.0]",
           "xunit.v3.runner.common": "[4.0.0]"
         }
+      },
+      "embyclient.api": {
+        "type": "Project"
       }
     }
   }
