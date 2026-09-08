@@ -2,9 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/EmbyClient.Api/EmbyClient.Api.csproj" />
     <Project Path="src/EmbyClient.App/EmbyClient.App.csproj" />
+    <Project Path="src/EmbyClient.Playback/EmbyClient.Playback.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj" />
     <Project Path="tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj" />
+    <Project Path="tests/EmbyClient.Playback.Tests/EmbyClient.Playback.Tests.csproj" />
   </Folder>
 </Solution>

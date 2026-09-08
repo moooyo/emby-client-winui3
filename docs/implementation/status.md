@@ -18,6 +18,7 @@ Implementation started on 2026-09-09. The user authorized development directly o
 | Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; initial native window visually inspected after desktop unlock |
 | Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 40 HTTP contract tests passed |
 | Windows account storage | User-protected tokens, atomic account settings, stable device identity | Complete; 30 Windows platform tests passed |
+| Playback orchestration | Engine abstraction, negotiation, state transitions, reporting, fallback, source cleanup | Complete; 39 coordinator tests passed using simulated transport/engine |
 | Usable client | Protected accounts, native navigation, home/library/search/details, playback surface, tracks, reporting and cleanup | Pending |
 | Playback refinements | Queue, episode continuation, quality/source selection, failure recovery, media keys, engine comparison | Pending |
 | Release hardening | Accessibility, cache policy, automated checks, packaging, distribution evidence, accurate compatibility documentation | Pending |
@@ -37,6 +38,8 @@ Implementation started on 2026-09-09. The user authorized development directly o
 - Protocol regressions fixed during tests: preserving proxy paths in returned `/emby/...` media URLs, rejecting unknown query-result shapes, and preserving numeric genre/studio IDs. The .NET 10 test runner is Microsoft.Testing.Platform.
 - `dotnet test --project tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj --configuration Release`: 30 passed, 0 failed, 0 skipped. These tests exercised actual Windows user-scoped data protection in isolated temporary directories, not production account settings.
 - Initial settings creation now uses a non-overwriting atomic move. Competing instances read the winning persisted device identity instead of overwriting it or returning different identities.
+- `dotnet test --project tests/EmbyClient.Playback.Tests/EmbyClient.Playback.Tests.csproj --configuration Release`: 39 passed with no build warnings. The suite verifies real coordinator behavior with a simulated engine/HTTP transport, including ordering barriers, cancellation races, fallback limits, known HDR rejection from the direct baseline, absolute timestamps, and cleanup after failures.
+- The native player integration and full client compiled and published with Native AOT. Native rendering, streaming, and subtitle behavior are a separate acceptance gate and are not proved by coordinator unit tests.
 - A real Emby server compatibility matrix, hardware playback claims, signing identity, and repository license remain unresolved. No credentials or private server information belong in this file.
 
 Stage completion records will describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.
