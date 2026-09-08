@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
@@ -315,10 +314,20 @@ public sealed class EmbyApiClient
     private Task<TResponse> PostAsync<TRequest, TResponse>(string path, Query? query, TRequest payload,
         JsonTypeInfo<TRequest> requestType, JsonTypeInfo<TResponse> responseType,
         CancellationToken ct, bool authenticated = true) =>
-        SendJsonAsync(HttpMethod.Post, path, query, JsonContent.Create(payload, requestType), responseType, ct, authenticated);
+        SendJsonAsync(HttpMethod.Post, path, query, CreateJsonContent(payload, requestType), responseType, ct, authenticated);
 
     private Task PostEmptyAsync<T>(string path, Query? query, T payload, JsonTypeInfo<T> requestType, CancellationToken ct) =>
-        SendEmptyAsync(HttpMethod.Post, path, query, JsonContent.Create(payload, requestType), ct);
+        SendEmptyAsync(HttpMethod.Post, path, query, CreateJsonContent(payload, requestType), ct);
+
+    private static ByteArrayContent CreateJsonContent<T>(T payload, JsonTypeInfo<T> typeInfo)
+    {
+        // Emby 4.9.5 rejects chunked JSON requests, so advertise the UTF-8 byte count before sending.
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(payload, typeInfo);
+        var content = new ByteArrayContent(bytes);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
+        content.Headers.ContentLength = bytes.LongLength;
+        return content;
+    }
 
     private async Task<T> SendJsonAsync<T>(HttpMethod method, string path, Query? query, HttpContent? content,
         JsonTypeInfo<T> resultType, CancellationToken ct, bool authenticated = true)

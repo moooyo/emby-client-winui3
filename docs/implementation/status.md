@@ -40,6 +40,16 @@ Implementation started on 2026-09-09. The user authorized development directly o
 - Initial settings creation now uses a non-overwriting atomic move. Competing instances read the winning persisted device identity instead of overwriting it or returning different identities.
 - `dotnet test --project tests/EmbyClient.Playback.Tests/EmbyClient.Playback.Tests.csproj --configuration Release`: 39 passed with no build warnings. The suite verifies real coordinator behavior with a simulated engine/HTTP transport, including ordering barriers, cancellation races, fallback limits, known HDR rejection from the direct baseline, absolute timestamps, and cleanup after failures.
 - The native player integration and full client compiled and published with Native AOT. Native rendering, streaming, and subtitle behavior are a separate acceptance gate and are not proved by coordinator unit tests.
+
+## Official server compatibility correction
+
+An isolated official Emby Server 4.9.5.0 instance was started inside a WSL user/network namespace with loopback-only forwarding. It uses only generated test media and dedicated test accounts. No existing Emby instance, system network configuration, or production credentials were used.
+
+The real server rejected chunked JSON request bodies with HTTP 400. The transport now serializes requests through the existing generated `JsonTypeInfo` into UTF-8 bytes and sends a known `Content-Length`. This preserves Native AOT compatibility. Seven regressions check the length before a handler reads/buffers the body; all seven failed against the old implementation.
+
+- API test suite after correction: 47 passed, 0 failed, 0 skipped.
+- Native AOT API probe against official Emby 4.9.5.0: 40 passed, 0 failed, 0 blocked. Coverage includes actual sign-in, library/user-state operations, original HTTP ranges, HLS manifests and a segment, WebVTT delivery, session reports, encoding cleanup, and logout invalidation.
+- This API probe is not native video rendering evidence. Native UI and sustained player resource checks remain in progress.
 - A real Emby server compatibility matrix, hardware playback claims, signing identity, and repository license remain unresolved. No credentials or private server information belong in this file.
 
 Stage completion records will describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.
