@@ -6,6 +6,7 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
 {
     private readonly ConcurrentQueue<PlaybackEngineRequest> opened = new();
     private readonly ConcurrentQueue<Guid> stopped = new();
+    private readonly ConcurrentQueue<Guid> paused = new();
     private readonly ConcurrentQueue<(Guid PlaybackId, long PositionTicks)> sought = new();
     private PlaybackEngineSnapshot? snapshot;
 
@@ -13,8 +14,10 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
 
     public Func<PlaybackEngineRequest, CancellationToken, Task>? OnOpenAsync { get; set; }
     public Func<Guid, CancellationToken, Task>? OnStopAsync { get; set; }
+    public Func<Guid, CancellationToken, Task>? OnPauseAsync { get; set; }
     public PlaybackEngineRequest[] Opened => opened.ToArray();
     public Guid[] Stopped => stopped.ToArray();
+    public Guid[] Paused => paused.ToArray();
     public (Guid PlaybackId, long PositionTicks)[] Sought => sought.ToArray();
     public PlaybackEngineSnapshot? Snapshot => Volatile.Read(ref snapshot);
     public bool IsDisposed { get; private set; }
@@ -40,10 +43,15 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
         });
     }
 
-    public Task PauseAsync(Guid playbackId, CancellationToken cancellationToken = default)
+    public async Task PauseAsync(Guid playbackId, CancellationToken cancellationToken = default)
     {
+        paused.Enqueue(playbackId);
+        if (OnPauseAsync is not null)
+        {
+            await OnPauseAsync(playbackId, cancellationToken);
+            return;
+        }
         ChangeState(playbackId, PlaybackEngineState.Paused);
-        return Task.CompletedTask;
     }
 
     public Task ResumeAsync(Guid playbackId, CancellationToken cancellationToken = default)

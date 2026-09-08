@@ -123,5 +123,6 @@ public sealed record PlaybackCoordinatorOptions
     public TimeSpan ProgressInterval { get; init; } = TimeSpan.FromSeconds(10);
     public TimeSpan CleanupTimeout { get; init; } = TimeSpan.FromSeconds(10);
     public TimeSpan ReportTimeout { get; init; } = TimeSpan.FromSeconds(10);
+    public TimeSpan StateChangeTimeout { get; init; } = TimeSpan.FromSeconds(10);
     public bool EnableExternalWebVtt { get; init; }
 }

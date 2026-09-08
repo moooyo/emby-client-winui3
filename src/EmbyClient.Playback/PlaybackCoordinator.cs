@@ -44,6 +44,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         ValidateInterval(_options.ProgressInterval, nameof(_options.ProgressInterval));
         ValidateInterval(_options.CleanupTimeout, nameof(_options.CleanupTimeout));
         ValidateInterval(_options.ReportTimeout, nameof(_options.ReportTimeout));
+        ValidateInterval(_options.StateChangeTimeout, nameof(_options.StateChangeTimeout));
         _timeProvider = timeProvider ?? TimeProvider.System;
         _deviceProfile = deviceProfile;
         _engine.EventReceived += OnEngineEvent;
@@ -80,6 +81,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         // Capture before cancellation: the worker may retire the old session before this call gets the gate.
         var observed = Volatile.Read(ref _current) ?? throw new InvalidOperationException("There is no active playback to change.");
         CaptureEngineSnapshot(observed);
+        var restorePaused = ShouldPauseAfterRestart(observed);
         var selection = observed.Selection with
         {
             MediaSourceId = change.MediaSourceId ?? observed.Selection.MediaSourceId,
@@ -102,7 +104,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                 : change.SubtitleStreamIndex.HasValue ? "SubtitleTrackChange" : "QualityChange";
             await RetireCurrentAsync(false).ConfigureAwait(false);
             EnsureIntent(intent, cancellationToken);
-            await StartCoreAsync(selection, intent, ownerToken, reportEvent).ConfigureAwait(false);
+            await StartCoreAsync(selection, intent, ownerToken, reportEvent, restorePaused).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
     }
@@ -158,12 +160,13 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             {
                 if (session.Source?.IsInfiniteStream == true) throw new PlaybackException("UnsupportedSeek");
                 // A restart is valid for both progressive conversion and HLS with an incomplete seek window.
+                var restorePaused = ShouldPauseAfterRestart(session);
                 var intent = BeginIntent();
                 var selection = session.Selection with { StartPositionTicks = target, ForceTranscoding = true };
                 await RetireAsync(session, false).ConfigureAwait(false);
                 EnsureIntent(intent, cancellationToken);
                 var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : session.OwnerCancellationToken;
-                await StartCoreAsync(selection, intent, ownerToken, "TimeUpdate").ConfigureAwait(false);
+                await StartCoreAsync(selection, intent, ownerToken, "TimeUpdate", restorePaused).ConfigureAwait(false);
             }
         }
         finally { _gate.Release(); }
@@ -187,12 +190,13 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     }
 
     private async Task StartCoreAsync(PlaybackSelection selection, long intent, CancellationToken cancellationToken,
-        string? reportEvent = null)
+        string? reportEvent = null, bool restorePaused = false)
     {
         EnsureIntent(intent, cancellationToken);
         await RetryPendingEngineStopsAsync().ConfigureAwait(false);
         EnsureIntent(intent, cancellationToken);
         var session = new Session(selection, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdown.Token), cancellationToken);
+        session.RestorePaused = restorePaused;
         Volatile.Write(ref _current, session);
         Volatile.Write(ref _lastSelection, selection);
         session.CancellationRegistration = session.Lifetime.Token.Register(() => _events.Writer.TryWrite(new(session.Id, null, false)));
@@ -280,6 +284,11 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             session.StartReported = true;
             session.LastReportedSnapshot = startSnapshot;
             session.Lifetime.Token.ThrowIfCancellationRequested();
+            if (restorePaused)
+            {
+                await RestorePauseAsync(session).ConfigureAwait(false);
+                Volatile.Write(ref session.RestorePaused, false);
+            }
             PublishEngineStatus(session);
             if (reportEvent is not null) await ReportProgressAsync(session, reportEvent).ConfigureAwait(false);
         }
@@ -290,17 +299,50 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                 && !session.Lifetime.IsCancellationRequested && intent == Volatile.Read(ref _intent);
             CaptureEngineSnapshot(session);
             var fallback = session.Selection with { StartPositionTicks = AbsolutePosition(session), ForceTranscoding = true };
+            var fallbackPaused = restorePaused || ShouldPauseAfterRestart(session);
             await RetireAsync(session, exception is not OperationCanceledException).ConfigureAwait(false);
             if (retry)
             {
                 EmitDiagnostic(session.Id, "Fallback", code);
-                await StartCoreAsync(fallback, intent, cancellationToken, reportEvent).ConfigureAwait(false);
+                await StartCoreAsync(fallback, intent, cancellationToken, reportEvent, fallbackPaused).ConfigureAwait(false);
                 return;
             }
             PublishStatus(exception is OperationCanceledException ? PlaybackStatus.Idle : PlaybackStatus.Failed, session, code);
             if (exception is OperationCanceledException) throw;
             throw new PlaybackException(code);
         }
+    }
+
+    private async Task RestorePauseAsync(Session session)
+    {
+        CaptureEngineSnapshot(session);
+        if (session.LatestSnapshot is { State: PlaybackEngineState.Paused } alreadyPaused)
+        {
+            if (session.LastReportedSnapshot?.State != PlaybackEngineState.Paused)
+                await ReportProgressAsync(session, "Pause", alreadyPaused).ConfigureAwait(false);
+            return;
+        }
+
+        var completion = new TaskCompletionSource<PlaybackEngineSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Volatile.Write(ref session.PauseCompletion, completion);
+        using var timeout = new CancellationTokenSource(_options.StateChangeTimeout, _timeProvider);
+        using var operation = CancellationTokenSource.CreateLinkedTokenSource(session.Lifetime.Token, timeout.Token);
+        try
+        {
+            // Call the adapter directly: public PauseAsync would try to acquire the transition gate again.
+            await _engine.PauseAsync(session.Id, operation.Token).WaitAsync(operation.Token).ConfigureAwait(false);
+            CaptureEngineSnapshot(session);
+            if (session.LatestSnapshot is { State: PlaybackEngineState.Paused } snapshot) completion.TrySetResult(snapshot);
+            // The adapter can acknowledge a command before the native playback state has changed.
+            // OnEngineEvent completes this signal directly, without waiting for the serialized worker.
+            var pausedSnapshot = await completion.Task.WaitAsync(operation.Token).ConfigureAwait(false);
+            await ReportProgressAsync(session, "Pause", pausedSnapshot).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested && !session.Lifetime.IsCancellationRequested)
+        {
+            throw new PlaybackException("PauseNotConfirmed");
+        }
+        finally { Interlocked.CompareExchange(ref session.PauseCompletion, null, completion); }
     }
 
     private DeviceProfile BuildProfile(PlaybackSelection selection)
@@ -371,8 +413,16 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         if (session is null || session.Id != args.Snapshot.PlaybackId || Volatile.Read(ref _disposed) != 0) return;
         AcceptSnapshot(session, args.Snapshot);
         if (args.Snapshot.State == PlaybackEngineState.Playing) Volatile.Write(ref session.ActuallyStarted, true);
+        var pauseCompletion = Volatile.Read(ref session.PauseCompletion);
+        if (args.Snapshot.State == PlaybackEngineState.Paused) pauseCompletion?.TrySetResult(args.Snapshot);
+        else if (args.Kind == PlaybackEngineEventKind.Failed)
+            pauseCompletion?.TrySetException(new PlaybackException(SafeCode(args.ErrorCode ?? "EngineFailed")));
+        else if (args.Kind == PlaybackEngineEventKind.Ended)
+            pauseCompletion?.TrySetException(new PlaybackException("PlaybackEndedBeforePause"));
         // Opening/initial-seek transitions precede the Start report and must not be replayed as later progress.
-        if (args.Kind == PlaybackEngineEventKind.StateChanged && !Volatile.Read(ref session.OpenCompleted)) return;
+        // A paused restart reports its actual Start and Pause explicitly; do not replay intermediate Playing events afterward.
+        if (args.Kind == PlaybackEngineEventKind.StateChanged
+            && (!Volatile.Read(ref session.OpenCompleted) || Volatile.Read(ref session.RestorePaused))) return;
         // Frame-rate position updates are sampled by the timer instead of accumulating in a channel.
         if (args.Kind != PlaybackEngineEventKind.PositionChanged)
             _events.Writer.TryWrite(new(session.Id, args, false));
@@ -423,12 +473,13 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                         var code = SafeCode(item.EngineEvent.ErrorCode ?? "EngineFailed");
                         var intent = Volatile.Read(ref _intent);
                         var fallback = session.Selection with { StartPositionTicks = AbsolutePosition(session), ForceTranscoding = true };
+                        var restorePaused = ShouldPauseAfterRestart(session);
                         var retry = !session.Selection.ForceTranscoding && IsFallbackCode(code);
                         await RetireAsync(session, true).ConfigureAwait(false);
                         if (retry && intent == Volatile.Read(ref _intent))
                         {
                             EmitDiagnostic(session.Id, "Fallback", code);
-                            await StartCoreAsync(fallback, intent, session.OwnerCancellationToken).ConfigureAwait(false);
+                            await StartCoreAsync(fallback, intent, session.OwnerCancellationToken, restorePaused: restorePaused).ConfigureAwait(false);
                         }
                         else PublishStatus(PlaybackStatus.Failed, session, code);
                     }
@@ -574,7 +625,12 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             && snapshot.PositionTicks == 0 && previous is not null)
             snapshot = snapshot with { PositionTicks = previous.PositionTicks };
         Volatile.Write(ref session.LatestSnapshot, snapshot);
+        if (snapshot.State is PlaybackEngineState.Playing or PlaybackEngineState.Paused)
+            Volatile.Write(ref session.LastPlaybackWasPaused, snapshot.State == PlaybackEngineState.Paused);
     }
+
+    private static bool ShouldPauseAfterRestart(Session session) => Volatile.Read(ref session.RestorePaused)
+        || Volatile.Read(ref session.LastPlaybackWasPaused);
 
     private static long AbsolutePosition(Session session, PlaybackEngineSnapshot? snapshot = null)
     {
@@ -704,6 +760,9 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         PlaybackException playback => SafeCode(playback.ErrorCode),
         OperationCanceledException => "Cancelled",
         TimeoutException => "Timeout",
+        EmbyApiException { StatusCode: System.Net.HttpStatusCode.Forbidden } => "AccessRestricted",
+        EmbyApiException { StatusCode: System.Net.HttpStatusCode.Unauthorized, ApplicationErrorCode: "ParentalControl" } => "AccessRestricted",
+        EmbyApiException { StatusCode: System.Net.HttpStatusCode.Unauthorized } => "AuthenticationExpired",
         EmbyApiException => "ServerRejected",
         EmbyProtocolException => "InvalidServerResponse",
         EmbyTransportException => "ServerUnavailable",
@@ -746,12 +805,15 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         internal PlaybackEngineRequest? Request;
         internal PlaybackEngineSnapshot? LatestSnapshot;
         internal PlaybackEngineSnapshot? LastReportedSnapshot;
+        internal TaskCompletionSource<PlaybackEngineSnapshot>? PauseCompletion;
         internal HashSet<string> LiveStreamIds { get; } = new(StringComparer.Ordinal);
         internal bool EngineOpenAttempted;
         internal bool OpenCompleted;
         internal bool ActuallyStarted;
         internal bool StartReportAttempted;
         internal bool StartReported;
+        internal bool RestorePaused;
+        internal bool LastPlaybackWasPaused;
         internal bool Retired;
         internal long FinalPositionTicks;
     }

@@ -16,9 +16,9 @@ Implementation started on 2026-09-09. The user authorized development directly o
 | --- | --- | --- |
 | Research baseline | Local API reference, compatibility research, Windows architecture | Complete; initial commit |
 | Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; initial native window visually inspected after desktop unlock |
-| Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 40 HTTP contract tests passed |
+| Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 47 HTTP contract tests and 40 official-server API checks passed |
 | Windows account storage | User-protected tokens, atomic account settings, stable device identity | Complete; 30 Windows platform tests passed |
-| Playback orchestration | Engine abstraction, negotiation, state transitions, reporting, fallback, source cleanup | Complete; 39 coordinator tests passed using simulated transport/engine |
+| Playback orchestration | Engine abstraction, negotiation, state transitions, reporting, fallback, source cleanup | Complete; 55 coordinator tests passed using simulated transport/engine |
 | Usable client | Protected accounts, native navigation, home/library/search/details, playback surface, tracks, reporting and cleanup | Pending |
 | Playback refinements | Queue, episode continuation, quality/source selection, failure recovery, media keys, engine comparison | Pending |
 | Release hardening | Accessibility, cache policy, automated checks, packaging, distribution evidence, accurate compatibility documentation | Pending |
@@ -52,4 +52,14 @@ The real server rejected chunked JSON request bodies with HTTP 400. The transpor
 - This API probe is not native video rendering evidence. Native UI and sustained player resource checks remain in progress.
 - A real Emby server compatibility matrix, hardware playback claims, signing identity, and repository license remain unresolved. No credentials or private server information belong in this file.
 
-Stage completion records will describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.
+## Playback restart state correction
+
+Changing subtitle or quality selection, restarting a transcoded stream to seek, and recovering from a decoder failure now preserve a paused session. The coordinator reports an actual start for the new session, asks the engine to pause, waits for its actual paused state, and only then sends the pause report. Explicit play and replay retain their normal playing behavior.
+
+The Release coordinator suite passes 55 tests. New cases cover selection changes, seek restarts, initial and runtime fallback, explicit replay, asynchronous pause acknowledgement, and bounded cleanup if pause is never confirmed. Authentication expiration is also distinguished from parental or permission restrictions.
+
+Native UI verification against the isolated official Emby 4.9.5.0 instance has displayed original video, HLS transcoding, and visible burned-in SRT subtitles. Fullscreen entry and Escape exit have been inspected. This does not yet establish the paused-restart behavior of the final application build.
+
+The sustained native playback probe passes all 20 functional cycles but currently fails its unchanged resource-growth threshold. Isolated controls reproduce the growth with managed-to-WinRT stream adapters, while native file/random-access streams remain within the threshold. A lifecycle correction is being investigated; the usable-player stage remains pending until it is verified.
+
+Stage completion records describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.
