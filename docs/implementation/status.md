@@ -17,6 +17,7 @@ Implementation started on 2026-09-09. The user authorized development directly o
 | Research baseline | Local API reference, compatibility research, Windows architecture | Complete; initial commit |
 | Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; initial native window visually inspected after desktop unlock |
 | Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 40 HTTP contract tests passed |
+| Windows account storage | User-protected tokens, atomic account settings, stable device identity | Complete; 30 Windows platform tests passed |
 | Usable client | Protected accounts, native navigation, home/library/search/details, playback surface, tracks, reporting and cleanup | Pending |
 | Playback refinements | Queue, episode continuation, quality/source selection, failure recovery, media keys, engine comparison | Pending |
 | Release hardening | Accessibility, cache policy, automated checks, packaging, distribution evidence, accurate compatibility documentation | Pending |
@@ -34,6 +35,8 @@ Implementation started on 2026-09-09. The user authorized development directly o
 - `dotnet build src/EmbyClient.Api/EmbyClient.Api.csproj -c Release`: succeeded, 0 warnings/errors.
 - `dotnet test --project tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj --configuration Release --no-restore`: 40 passed, 0 failed, 0 skipped. Tests use simulated HTTP; they do not certify an actual Emby server version.
 - Protocol regressions fixed during tests: preserving proxy paths in returned `/emby/...` media URLs, rejecting unknown query-result shapes, and preserving numeric genre/studio IDs. The .NET 10 test runner is Microsoft.Testing.Platform.
+- `dotnet test --project tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj --configuration Release`: 30 passed, 0 failed, 0 skipped. These tests exercised actual Windows user-scoped data protection in isolated temporary directories, not production account settings.
+- Initial settings creation now uses a non-overwriting atomic move. Competing instances read the winning persisted device identity instead of overwriting it or returning different identities.
 - A real Emby server compatibility matrix, hardware playback claims, signing identity, and repository license remain unresolved. No credentials or private server information belong in this file.
 
 Stage completion records will describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.

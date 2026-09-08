@@ -4,7 +4,10 @@ $ErrorActionPreference = 'Stop'
 $workspace = Split-Path -Parent $PSScriptRoot
 Push-Location $workspace
 try {
-    dotnet test --project tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj --configuration $Configuration --no-restore
-    if ($LASTEXITCODE -ne 0) { throw 'API contract tests failed.' }
+    $projects = Get-ChildItem -LiteralPath tests -Recurse -Filter '*.Tests.csproj' | Sort-Object FullName
+    foreach ($project in $projects) {
+        dotnet test --project $project.FullName --configuration $Configuration
+        if ($LASTEXITCODE -ne 0) { throw "Tests failed: $($project.Name)" }
+    }
 }
 finally { Pop-Location }

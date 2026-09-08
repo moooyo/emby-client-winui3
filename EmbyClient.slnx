@@ -5,5 +5,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj" />
+    <Project Path="tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj" />
   </Folder>
 </Solution>
