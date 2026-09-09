@@ -1,0 +1,395 @@
+{
+  "Synthetic": true,
+  "Description": "Local development fixture; not an Emby compatibility result.",
+  "LoginCount": 1,
+  "AuthenticationFailures": 0,
+  "PlaybackInfoCount": 1,
+  "MediaRequests": 11,
+  "RangeRequests": 11,
+  "PartialResponses": 11,
+  "CapabilityUpdates": 1,
+  "EncodingCleanups": 0,
+  "StartCount": 1,
+  "ProgressCount": 30,
+  "StopCount": 1,
+  "MediaLength": 1080935,
+  "Events": [
+    {
+      "Kind": "Start",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 30100000,
+      "Timestamp": "2026-09-10T03:01:19.1703513+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 45281643,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:01:20.8230457+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 114799960,
+      "EventName": "StateChange",
+      "Timestamp": "2026-09-10T03:01:27.6500249+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 114799960,
+      "EventName": "StateChange",
+      "Timestamp": "2026-09-10T03:01:27.6506083+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 145914287,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:01:30.8205474+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 244760775,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:01:40.8291452+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 345668301,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:01:50.8305684+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 420907651,
+      "EventName": "Pause",
+      "Timestamp": "2026-09-10T03:01:58.4685225+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "Pause",
+      "Timestamp": "2026-09-10T03:01:58.4689059+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:00.8400516+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:10.8533407+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:20.8651194+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "VolumeChange",
+      "Timestamp": "2026-09-10T03:02:24.1774063+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:30.8792831+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 422699731,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:40.8941563+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:43.0967193+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:02:50.8984102+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:03:00.909344+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:03:10.925624+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:03:20.9296946+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:03:30.9294546+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:03:40.937533+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:03:50.9445839+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:04:00.9544257+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:04:10.9587745+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:04:20.9602319+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:04:30.9629859+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:04:40.9745958+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:04:50.9890508+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:05:00.9925454+08:00"
+    },
+    {
+      "Kind": "Progress",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "EventName": "TimeUpdate",
+      "Timestamp": "2026-09-10T03:05:11.0045555+08:00"
+    },
+    {
+      "Kind": "Stop",
+      "ItemId": "1002",
+      "PlaySessionId": "synthetic-play-21083e8096914c4db7557bb47139fb39",
+      "PositionTicks": 170000000,
+      "Failed": false,
+      "Timestamp": "2026-09-10T03:05:12.511361+08:00"
+    }
+  ],
+  "LargeLibraryItems": 5000,
+  "CatalogItems": 5009,
+  "QueryCount": 10,
+  "Queries": [
+    {
+      "Sequence": 1,
+      "Operation": "Resume",
+      "StartIndex": 0,
+      "Limit": 48,
+      "ReturnedItems": 1,
+      "TotalRecordCount": 1,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T02:58:50.7806394+08:00"
+    },
+    {
+      "Sequence": 2,
+      "Operation": "Items",
+      "ParentId": "shows",
+      "StartIndex": 0,
+      "Limit": 48,
+      "ReturnedItems": 1,
+      "TotalRecordCount": 1,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T03:06:25.6598053+08:00"
+    },
+    {
+      "Sequence": 3,
+      "Operation": "Seasons",
+      "ParentId": "2000",
+      "StartIndex": 0,
+      "Limit": 50,
+      "ReturnedItems": 1,
+      "TotalRecordCount": 1,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T03:06:43.6102503+08:00"
+    },
+    {
+      "Sequence": 4,
+      "Operation": "Resume",
+      "StartIndex": 0,
+      "Limit": 48,
+      "ReturnedItems": 1,
+      "TotalRecordCount": 1,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:08:56.0562211+08:00"
+    },
+    {
+      "Sequence": 5,
+      "Operation": "Items",
+      "ParentId": "large-movies",
+      "StartIndex": 0,
+      "Limit": 48,
+      "ReturnedItems": 48,
+      "TotalRecordCount": 5000,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:12:33.8129459+08:00"
+    },
+    {
+      "Sequence": 6,
+      "Operation": "Items",
+      "ParentId": "large-movies",
+      "StartIndex": 48,
+      "Limit": 48,
+      "ReturnedItems": 48,
+      "TotalRecordCount": 5000,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:13:39.6460266+08:00"
+    },
+    {
+      "Sequence": 7,
+      "Operation": "Items",
+      "ParentId": "large-movies",
+      "StartIndex": 96,
+      "Limit": 48,
+      "ReturnedItems": 48,
+      "TotalRecordCount": 5000,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:14:04.2763481+08:00"
+    },
+    {
+      "Sequence": 8,
+      "Operation": "Items",
+      "ParentId": "large-movies",
+      "StartIndex": 144,
+      "Limit": 48,
+      "ReturnedItems": 48,
+      "TotalRecordCount": 5000,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:14:19.6888376+08:00"
+    },
+    {
+      "Sequence": 9,
+      "Operation": "Items",
+      "ParentId": "large-movies",
+      "StartIndex": 192,
+      "Limit": 48,
+      "ReturnedItems": 48,
+      "TotalRecordCount": 5000,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:14:29.4175053+08:00"
+    },
+    {
+      "Sequence": 10,
+      "Operation": "Items",
+      "ParentId": "large-movies",
+      "StartIndex": 240,
+      "Limit": 48,
+      "ReturnedItems": 48,
+      "TotalRecordCount": 5000,
+      "HasSearch": false,
+      "Timestamp": "2026-09-10T04:14:45.8236384+08:00"
+    }
+  ],
+  "ImageDelayMilliseconds": 100,
+  "ImageRequests": 252,
+  "ActiveImages": 0,
+  "PeakActiveImages": 5,
+  "CompletedImages": 238,
+  "CanceledImages": 14,
+  "ImageBytesServed": 2114002,
+  "FailFirstPlaybackInfoEnabled": false,
+  "InjectedPlaybackInfoFailures": 0
+}

@@ -1,0 +1,2961 @@
+{
+  "SchemaVersion": 1,
+  "LocalOnly": true,
+  "StorageIssue": "None",
+  "DiscardedRecordCount": 0,
+  "Versions": {
+    "Application": "0.1.0.0",
+    "Runtime": "10.0.9",
+    "OperatingSystem": "10.0.28000.0",
+    "OperatingSystemKind": "Windows",
+    "Engine": "WindowsMediaPlayer",
+    "EngineVersion": "10.0.28000.0",
+    "EngineVersionKind": "WindowsOperatingSystemBaseline"
+  },
+  "Events": [
+    {
+      "Sequence": 17,
+      "TimestampUtc": "2026-09-09T02:22:34.3251752+00:00",
+      "LocalPlaybackId": "e1ccbd0b-8877-49af-b73f-fb9044d51f8e",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 18,
+      "TimestampUtc": "2026-09-09T02:22:44.5935065+00:00",
+      "LocalPlaybackId": "88142f10-5c1e-4850-9e9b-a680876a87d5",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 19,
+      "TimestampUtc": "2026-09-09T02:22:44.594448+00:00",
+      "LocalPlaybackId": "88142f10-5c1e-4850-9e9b-a680876a87d5",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 20,
+      "TimestampUtc": "2026-09-09T02:22:44.6023713+00:00",
+      "LocalPlaybackId": "88142f10-5c1e-4850-9e9b-a680876a87d5",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 21,
+      "TimestampUtc": "2026-09-09T02:22:45.575299+00:00",
+      "LocalPlaybackId": "88142f10-5c1e-4850-9e9b-a680876a87d5",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 22,
+      "TimestampUtc": "2026-09-09T02:22:45.5762517+00:00",
+      "LocalPlaybackId": "88142f10-5c1e-4850-9e9b-a680876a87d5",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 23,
+      "TimestampUtc": "2026-09-09T02:23:28.9476672+00:00",
+      "LocalPlaybackId": "88142f10-5c1e-4850-9e9b-a680876a87d5",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 24,
+      "TimestampUtc": "2026-09-09T02:23:28.9485577+00:00",
+      "LocalPlaybackId": "221f3206-6425-40c0-803e-865ba4b8a9cd",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 25,
+      "TimestampUtc": "2026-09-09T02:23:28.9535676+00:00",
+      "LocalPlaybackId": "221f3206-6425-40c0-803e-865ba4b8a9cd",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 26,
+      "TimestampUtc": "2026-09-09T02:23:28.9611933+00:00",
+      "LocalPlaybackId": "221f3206-6425-40c0-803e-865ba4b8a9cd",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 27,
+      "TimestampUtc": "2026-09-09T02:23:29.9352175+00:00",
+      "LocalPlaybackId": "221f3206-6425-40c0-803e-865ba4b8a9cd",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 28,
+      "TimestampUtc": "2026-09-09T02:23:29.9361208+00:00",
+      "LocalPlaybackId": "221f3206-6425-40c0-803e-865ba4b8a9cd",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 29,
+      "TimestampUtc": "2026-09-09T02:23:53.5532352+00:00",
+      "LocalPlaybackId": "221f3206-6425-40c0-803e-865ba4b8a9cd",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 30,
+      "TimestampUtc": "2026-09-09T02:23:53.5545056+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 31,
+      "TimestampUtc": "2026-09-09T02:23:53.5601869+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 32,
+      "TimestampUtc": "2026-09-09T02:23:53.5679735+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 33,
+      "TimestampUtc": "2026-09-09T02:23:54.2806347+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 34,
+      "TimestampUtc": "2026-09-09T02:23:54.2813981+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 35,
+      "TimestampUtc": "2026-09-09T02:25:22.2115227+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "Resumed",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 36,
+      "TimestampUtc": "2026-09-09T02:25:30.4704191+00:00",
+      "LocalPlaybackId": "dd5d10b0-b926-4d3d-b3c8-43fcf0e7ec21",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 37,
+      "TimestampUtc": "2026-09-09T02:31:14.9699281+00:00",
+      "LocalPlaybackId": "52ad3a46-eb42-4b51-aec0-3ec9ec415dfe",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 38,
+      "TimestampUtc": "2026-09-09T02:36:47.4475556+00:00",
+      "LocalPlaybackId": "1a1f9e6d-f995-4a74-8c29-295eb9d90bd1",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 39,
+      "TimestampUtc": "2026-09-09T02:36:47.4494488+00:00",
+      "LocalPlaybackId": "1a1f9e6d-f995-4a74-8c29-295eb9d90bd1",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 40,
+      "TimestampUtc": "2026-09-09T02:36:47.4597172+00:00",
+      "LocalPlaybackId": "1a1f9e6d-f995-4a74-8c29-295eb9d90bd1",
+      "Event": "Failed",
+      "Error": "Unknown",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 41,
+      "TimestampUtc": "2026-09-09T02:36:57.4839021+00:00",
+      "LocalPlaybackId": "e7a2b977-a69c-41c6-8d3a-e4f8a7c46806",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 42,
+      "TimestampUtc": "2026-09-09T02:36:57.485736+00:00",
+      "LocalPlaybackId": "e7a2b977-a69c-41c6-8d3a-e4f8a7c46806",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 43,
+      "TimestampUtc": "2026-09-09T02:36:57.4925032+00:00",
+      "LocalPlaybackId": "e7a2b977-a69c-41c6-8d3a-e4f8a7c46806",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 44,
+      "TimestampUtc": "2026-09-09T02:36:57.7944422+00:00",
+      "LocalPlaybackId": "e7a2b977-a69c-41c6-8d3a-e4f8a7c46806",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 45,
+      "TimestampUtc": "2026-09-09T02:37:13.6031784+00:00",
+      "LocalPlaybackId": "e7a2b977-a69c-41c6-8d3a-e4f8a7c46806",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 46,
+      "TimestampUtc": "2026-09-09T02:37:13.6041133+00:00",
+      "LocalPlaybackId": "28c9fc9d-f98b-4bd6-95a7-9a17b2c0019e",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 47,
+      "TimestampUtc": "2026-09-09T02:37:13.609798+00:00",
+      "LocalPlaybackId": "28c9fc9d-f98b-4bd6-95a7-9a17b2c0019e",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 48,
+      "TimestampUtc": "2026-09-09T02:37:51.9943386+00:00",
+      "LocalPlaybackId": "28c9fc9d-f98b-4bd6-95a7-9a17b2c0019e",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 49,
+      "TimestampUtc": "2026-09-09T02:53:00.0763332+00:00",
+      "LocalPlaybackId": "a3abf25b-bddc-47ae-bac6-193ec10ad7ab",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 50,
+      "TimestampUtc": "2026-09-09T03:03:34.988219+00:00",
+      "LocalPlaybackId": "a3abf25b-bddc-47ae-bac6-193ec10ad7ab",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 51,
+      "TimestampUtc": "2026-09-09T03:31:34.3970815+00:00",
+      "LocalPlaybackId": "ceb9b7f2-6902-4c8e-88ba-757f88ed265d",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 52,
+      "TimestampUtc": "2026-09-09T03:43:08.4398133+00:00",
+      "LocalPlaybackId": "ceb9b7f2-6902-4c8e-88ba-757f88ed265d",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 53,
+      "TimestampUtc": "2026-09-09T03:48:30.0047202+00:00",
+      "LocalPlaybackId": "126bae55-b580-4470-967b-3c968341e5d2",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 54,
+      "TimestampUtc": "2026-09-09T03:55:43.4116027+00:00",
+      "LocalPlaybackId": "126bae55-b580-4470-967b-3c968341e5d2",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 55,
+      "TimestampUtc": "2026-09-09T03:58:25.9435072+00:00",
+      "LocalPlaybackId": "0542421d-bf5b-4963-8ac1-16cf4a087258",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 56,
+      "TimestampUtc": "2026-09-09T03:58:54.3691468+00:00",
+      "LocalPlaybackId": "80f46430-25dd-4a5a-9b27-6d513f8b37c1",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 57,
+      "TimestampUtc": "2026-09-09T03:58:54.3732781+00:00",
+      "LocalPlaybackId": "80f46430-25dd-4a5a-9b27-6d513f8b37c1",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 58,
+      "TimestampUtc": "2026-09-09T03:58:54.3804678+00:00",
+      "LocalPlaybackId": "80f46430-25dd-4a5a-9b27-6d513f8b37c1",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 59,
+      "TimestampUtc": "2026-09-09T03:58:55.2650781+00:00",
+      "LocalPlaybackId": "80f46430-25dd-4a5a-9b27-6d513f8b37c1",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 60,
+      "TimestampUtc": "2026-09-09T03:59:09.5008258+00:00",
+      "LocalPlaybackId": "80f46430-25dd-4a5a-9b27-6d513f8b37c1",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 61,
+      "TimestampUtc": "2026-09-09T03:59:20.5534437+00:00",
+      "LocalPlaybackId": "2df809f1-3152-47bc-bc7d-d2705b2cd7ae",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 62,
+      "TimestampUtc": "2026-09-09T03:59:20.5542246+00:00",
+      "LocalPlaybackId": "2df809f1-3152-47bc-bc7d-d2705b2cd7ae",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 63,
+      "TimestampUtc": "2026-09-09T03:59:20.5641184+00:00",
+      "LocalPlaybackId": "2df809f1-3152-47bc-bc7d-d2705b2cd7ae",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 64,
+      "TimestampUtc": "2026-09-09T03:59:21.8700716+00:00",
+      "LocalPlaybackId": "2df809f1-3152-47bc-bc7d-d2705b2cd7ae",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 65,
+      "TimestampUtc": "2026-09-09T03:59:21.8708982+00:00",
+      "LocalPlaybackId": "2df809f1-3152-47bc-bc7d-d2705b2cd7ae",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 66,
+      "TimestampUtc": "2026-09-09T03:59:36.5821185+00:00",
+      "LocalPlaybackId": "2df809f1-3152-47bc-bc7d-d2705b2cd7ae",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "Srt"
+      }
+    },
+    {
+      "Sequence": 67,
+      "TimestampUtc": "2026-09-09T03:59:36.5835184+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 68,
+      "TimestampUtc": "2026-09-09T03:59:36.5889782+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 69,
+      "TimestampUtc": "2026-09-09T03:59:36.5973215+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 70,
+      "TimestampUtc": "2026-09-09T03:59:38.4735308+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 71,
+      "TimestampUtc": "2026-09-09T03:59:38.474904+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 72,
+      "TimestampUtc": "2026-09-09T04:00:12.8412722+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Resumed",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 73,
+      "TimestampUtc": "2026-09-09T04:00:21.8661685+00:00",
+      "LocalPlaybackId": "894c3b38-b5b1-4e7c-9b17-44ad15b9fcdf",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Transcode",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 74,
+      "TimestampUtc": "2026-09-09T04:00:21.8669728+00:00",
+      "LocalPlaybackId": "320c8c2a-6eee-4bc7-b148-56dc59893843",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 75,
+      "TimestampUtc": "2026-09-09T04:00:21.8722094+00:00",
+      "LocalPlaybackId": "320c8c2a-6eee-4bc7-b148-56dc59893843",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 76,
+      "TimestampUtc": "2026-09-09T04:00:36.9337844+00:00",
+      "LocalPlaybackId": "320c8c2a-6eee-4bc7-b148-56dc59893843",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 77,
+      "TimestampUtc": "2026-09-09T04:02:00.9669224+00:00",
+      "LocalPlaybackId": "cc4b2bd1-99b2-4556-8f19-4896158d00bd",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 78,
+      "TimestampUtc": "2026-09-09T04:02:46.5501421+00:00",
+      "LocalPlaybackId": "cc4b2bd1-99b2-4556-8f19-4896158d00bd",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 79,
+      "TimestampUtc": "2026-09-09T04:13:26.0769646+00:00",
+      "LocalPlaybackId": "96b48d76-5ef9-4e1e-93c1-7ef09e1458ca",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 80,
+      "TimestampUtc": "2026-09-09T04:23:56.6811106+00:00",
+      "LocalPlaybackId": "96b48d76-5ef9-4e1e-93c1-7ef09e1458ca",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 81,
+      "TimestampUtc": "2026-09-09T04:27:40.0719116+00:00",
+      "LocalPlaybackId": "a6125c9a-009b-4edd-a9b1-935f12bcc0c1",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 82,
+      "TimestampUtc": "2026-09-09T04:30:04.5750254+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 83,
+      "TimestampUtc": "2026-09-09T04:30:04.5767314+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 84,
+      "TimestampUtc": "2026-09-09T04:30:04.5867977+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 85,
+      "TimestampUtc": "2026-09-09T04:30:04.8630285+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 86,
+      "TimestampUtc": "2026-09-09T04:30:18.6521905+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 87,
+      "TimestampUtc": "2026-09-09T04:30:58.2298553+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 88,
+      "TimestampUtc": "2026-09-09T04:30:58.2420331+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 89,
+      "TimestampUtc": "2026-09-09T04:31:10.4256015+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 90,
+      "TimestampUtc": "2026-09-09T04:31:10.4269598+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 91,
+      "TimestampUtc": "2026-09-09T04:31:26.0538798+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 92,
+      "TimestampUtc": "2026-09-09T04:31:26.05977+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 93,
+      "TimestampUtc": "2026-09-09T04:32:00.6115545+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 94,
+      "TimestampUtc": "2026-09-09T04:32:00.6131086+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 95,
+      "TimestampUtc": "2026-09-09T04:32:19.006356+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 96,
+      "TimestampUtc": "2026-09-09T04:32:19.011929+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 97,
+      "TimestampUtc": "2026-09-09T04:32:55.8485838+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Resumed",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 98,
+      "TimestampUtc": "2026-09-09T04:33:39.1035875+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 99,
+      "TimestampUtc": "2026-09-09T04:35:21.6065254+00:00",
+      "LocalPlaybackId": "44c7127e-5cd8-46fe-ad9f-e2bfcb5cc5ea",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 100,
+      "TimestampUtc": "2026-09-09T04:35:21.6073757+00:00",
+      "LocalPlaybackId": "40b79b3a-980c-428c-af03-b2ae7b6d0438",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 101,
+      "TimestampUtc": "2026-09-09T04:35:21.6131464+00:00",
+      "LocalPlaybackId": "40b79b3a-980c-428c-af03-b2ae7b6d0438",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 102,
+      "TimestampUtc": "2026-09-09T04:35:44.9960719+00:00",
+      "LocalPlaybackId": "40b79b3a-980c-428c-af03-b2ae7b6d0438",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 103,
+      "TimestampUtc": "2026-09-09T04:40:41.4163914+00:00",
+      "LocalPlaybackId": "cb39c3ed-ad02-48eb-83c3-79d99458a0b2",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 104,
+      "TimestampUtc": "2026-09-09T04:43:46.617415+00:00",
+      "LocalPlaybackId": "6fba5967-fa36-4e02-9331-ef158e7ca8c0",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 105,
+      "TimestampUtc": "2026-09-09T04:43:46.6192124+00:00",
+      "LocalPlaybackId": "6fba5967-fa36-4e02-9331-ef158e7ca8c0",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 106,
+      "TimestampUtc": "2026-09-09T04:43:46.6247093+00:00",
+      "LocalPlaybackId": "6fba5967-fa36-4e02-9331-ef158e7ca8c0",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 107,
+      "TimestampUtc": "2026-09-09T04:43:47.0479477+00:00",
+      "LocalPlaybackId": "6fba5967-fa36-4e02-9331-ef158e7ca8c0",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 108,
+      "TimestampUtc": "2026-09-09T04:44:05.5229887+00:00",
+      "LocalPlaybackId": "6fba5967-fa36-4e02-9331-ef158e7ca8c0",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 109,
+      "TimestampUtc": "2026-09-09T04:47:01.6711724+00:00",
+      "LocalPlaybackId": "6fba5967-fa36-4e02-9331-ef158e7ca8c0",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 110,
+      "TimestampUtc": "2026-09-09T04:47:01.6720406+00:00",
+      "LocalPlaybackId": "892adb85-ee60-401c-aa2e-b1979462eed7",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 111,
+      "TimestampUtc": "2026-09-09T04:47:01.6783312+00:00",
+      "LocalPlaybackId": "892adb85-ee60-401c-aa2e-b1979462eed7",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 112,
+      "TimestampUtc": "2026-09-09T04:47:15.0845784+00:00",
+      "LocalPlaybackId": "892adb85-ee60-401c-aa2e-b1979462eed7",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 113,
+      "TimestampUtc": "2026-09-09T18:58:50.7293784+00:00",
+      "LocalPlaybackId": "9f6b7657-0c0a-495b-880f-18acfe820f15",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 114,
+      "TimestampUtc": "2026-09-09T19:01:18.733572+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 115,
+      "TimestampUtc": "2026-09-09T19:01:18.7363158+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 116,
+      "TimestampUtc": "2026-09-09T19:01:18.7519881+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 117,
+      "TimestampUtc": "2026-09-09T19:01:19.1705293+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 118,
+      "TimestampUtc": "2026-09-09T19:01:27.6506742+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Resumed",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 119,
+      "TimestampUtc": "2026-09-09T19:01:58.4689539+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 120,
+      "TimestampUtc": "2026-09-09T19:02:43.0876982+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 121,
+      "TimestampUtc": "2026-09-09T19:02:43.0968135+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 122,
+      "TimestampUtc": "2026-09-09T19:05:12.511449+00:00",
+      "LocalPlaybackId": "f3475249-9d10-4b36-9fef-5f2b3add58eb",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 123,
+      "TimestampUtc": "2026-09-09T19:05:12.5121686+00:00",
+      "LocalPlaybackId": "28876f53-d7ef-4bb5-8e0b-3c80149a911b",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 124,
+      "TimestampUtc": "2026-09-09T19:05:12.5168896+00:00",
+      "LocalPlaybackId": "28876f53-d7ef-4bb5-8e0b-3c80149a911b",
+      "Event": "Stopped",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 125,
+      "TimestampUtc": "2026-09-09T19:24:47.1159436+00:00",
+      "LocalPlaybackId": "28876f53-d7ef-4bb5-8e0b-3c80149a911b",
+      "Event": "ResourceReleased",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 126,
+      "TimestampUtc": "2026-09-09T20:08:56.052191+00:00",
+      "LocalPlaybackId": "7c9e5f3b-78f6-47a7-ba3e-293346b7b552",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 127,
+      "TimestampUtc": "2026-09-09T20:30:29.7243784+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 128,
+      "TimestampUtc": "2026-09-09T20:30:29.7259327+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 129,
+      "TimestampUtc": "2026-09-09T20:30:29.7310272+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 130,
+      "TimestampUtc": "2026-09-09T20:30:30.2787395+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 131,
+      "TimestampUtc": "2026-09-09T20:30:51.3852899+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 132,
+      "TimestampUtc": "2026-09-09T20:30:57.3605007+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 133,
+      "TimestampUtc": "2026-09-09T20:30:57.3727734+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 134,
+      "TimestampUtc": "2026-09-09T20:31:05.4435114+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 135,
+      "TimestampUtc": "2026-09-09T20:31:05.448443+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 136,
+      "TimestampUtc": "2026-09-09T20:31:44.4980499+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Seeking",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 137,
+      "TimestampUtc": "2026-09-09T20:31:44.5055758+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 138,
+      "TimestampUtc": "2026-09-09T20:31:52.9198371+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Resumed",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 139,
+      "TimestampUtc": "2026-09-09T20:31:55.9476888+00:00",
+      "LocalPlaybackId": "eb004140-3c8e-41f5-9c4c-ce5cb5ea2155",
+      "Event": "Ended",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 140,
+      "TimestampUtc": "2026-09-09T20:31:55.9755946+00:00",
+      "LocalPlaybackId": "4187606d-2d21-4226-ab53-c7475fa04bf1",
+      "Event": "Created",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 141,
+      "TimestampUtc": "2026-09-09T20:31:55.978074+00:00",
+      "LocalPlaybackId": "4187606d-2d21-4226-ab53-c7475fa04bf1",
+      "Event": "Negotiating",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "Unknown",
+        "Container": "Unknown",
+        "Video": "Unknown",
+        "Audio": "Unknown",
+        "Subtitle": "Unknown"
+      }
+    },
+    {
+      "Sequence": 142,
+      "TimestampUtc": "2026-09-09T20:31:55.9817931+00:00",
+      "LocalPlaybackId": "4187606d-2d21-4226-ab53-c7475fa04bf1",
+      "Event": "Opening",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 143,
+      "TimestampUtc": "2026-09-09T20:31:56.2094434+00:00",
+      "LocalPlaybackId": "4187606d-2d21-4226-ab53-c7475fa04bf1",
+      "Event": "Started",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    },
+    {
+      "Sequence": 144,
+      "TimestampUtc": "2026-09-09T20:32:08.1952149+00:00",
+      "LocalPlaybackId": "4187606d-2d21-4226-ab53-c7475fa04bf1",
+      "Event": "Paused",
+      "Error": "None",
+      "Versions": {
+        "Application": "0.1.0.0",
+        "Runtime": "10.0.9",
+        "OperatingSystem": "10.0.28000.0",
+        "OperatingSystemKind": "Windows",
+        "Engine": "WindowsMediaPlayer",
+        "EngineVersion": "10.0.28000.0",
+        "EngineVersionKind": "WindowsOperatingSystemBaseline"
+      },
+      "Media": {
+        "Delivery": "DirectStream",
+        "Container": "Mp4",
+        "Video": "H264",
+        "Audio": "Aac",
+        "Subtitle": "None"
+      }
+    }
+  ]
+}

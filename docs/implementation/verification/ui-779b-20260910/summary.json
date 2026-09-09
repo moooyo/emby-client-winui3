@@ -1,0 +1,327 @@
+{
+  "SchemaVersion": 1,
+  "DateLocal": "2026-09-10",
+  "TimeZone": "Asia/Shanghai",
+  "SourceRevision": "532f683a3df68a6b5d0da62e34f277a2b1807a15",
+  "ExecutableSha256": "779B23ED8D28B845860AB72ABE1764D60FCDA7D9B2F6A089EFCFEA912BCBA93C",
+  "ExecutableBytes": 17910272,
+  "Result": "Partial acceptance; large-library private-memory growth remains unresolved",
+  "DesktopBatchEnded": true,
+  "CodeChangedDuringBatch": false,
+  "FixtureScope": "Dedicated synthetic fixture on port 18962; no new official Emby compatibility result",
+  "OriginalJpegCount": 26,
+  "OriginalJpegBytes": 1918103,
+  "ObservationTimestampMeaning": "ArchivedAtUtc is the save time, not an exact capture or action timestamp",
+  "PassedScopedObservations": [
+    "User-completed saved sign-in and connected library",
+    "Six large-library API pages of 48 records and five visual poster revisits",
+    "Actual DirectStream video and paused mouse seeks to 41, 17, and 57 seconds",
+    "F11/Escape and one paused minimize/restore",
+    "Natural Episode One completion followed by Episode Two playback with an empty queue",
+    "Player diagnostic dialog and local snapshot save",
+    "Adding one item and opening the library queue dialog",
+    "Ordinary sign-out after playback stopped clears the saved synthetic token and preserves other accounts",
+    "Ordinary signed-out window close leaves no process"
+  ],
+  "MemoryWindows": [
+    {
+      "File": "library-memory/memory-20260910-041123-fdfb1c4d.csv",
+      "Samples": 60,
+      "FirstUtc": "2026-09-09T20:11:23.3655986+00:00",
+      "LastUtc": "2026-09-09T20:16:19.2588669+00:00",
+      "SampledSpanSeconds": 295.893268,
+      "ProcessId": 19652,
+      "TailWindowDefinition": "Actual samples in the last 60 seconds; no interpolation",
+      "TailSamples": 12,
+      "TailFirstUtc": "2026-09-09T20:15:24.1081017+00:00",
+      "TailSampledSpanSeconds": 55.15076499999998,
+      "Metrics": {
+        "PrivateMiB": {
+          "First": 128.38,
+          "Last": 243.71,
+          "Minimum": 128.38,
+          "Maximum": 243.71,
+          "Delta": 115.33,
+          "TailDelta": 29.56,
+          "TailOlsPerMinute": 27.78
+        },
+        "WorkingSetMiB": {
+          "First": 150.98,
+          "Last": 262.84,
+          "Minimum": 150.98,
+          "Maximum": 262.84,
+          "Delta": 111.86,
+          "TailDelta": 27.98,
+          "TailOlsPerMinute": 25.87
+        },
+        "HandleCount": {
+          "First": 1118.0,
+          "Last": 1233.0,
+          "Minimum": 1114.0,
+          "Maximum": 1233.0,
+          "Delta": 115.0,
+          "TailDelta": 56.0,
+          "TailOlsPerMinute": 43.77
+        }
+      },
+      "QueryCount": {
+        "First": 4,
+        "Last": 10,
+        "Minimum": 4,
+        "Maximum": 10
+      },
+      "ImageRequests": {
+        "First": 4,
+        "Last": 84,
+        "Minimum": 4,
+        "Maximum": 84
+      },
+      "CompletedImages": {
+        "First": 4,
+        "Last": 84,
+        "Minimum": 4,
+        "Maximum": 84
+      },
+      "CanceledImages": {
+        "First": 0,
+        "Last": 0,
+        "Minimum": 0,
+        "Maximum": 0
+      },
+      "ActiveImages": {
+        "First": 0,
+        "Last": 0,
+        "Minimum": 0,
+        "Maximum": 0
+      }
+    },
+    {
+      "File": "revisit-memory/memory-20260910-041744-078fc810.csv",
+      "Samples": 60,
+      "FirstUtc": "2026-09-09T20:17:44.6835000+00:00",
+      "LastUtc": "2026-09-09T20:22:40.5642511+00:00",
+      "SampledSpanSeconds": 295.880751,
+      "ProcessId": 19652,
+      "TailWindowDefinition": "Actual samples in the last 60 seconds; no interpolation",
+      "TailSamples": 12,
+      "TailFirstUtc": "2026-09-09T20:21:45.4371429+00:00",
+      "TailSampledSpanSeconds": 55.12710899999996,
+      "Metrics": {
+        "PrivateMiB": {
+          "First": 269.69,
+          "Last": 380.15,
+          "Minimum": 269.69,
+          "Maximum": 380.15,
+          "Delta": 110.46,
+          "TailDelta": 18.31,
+          "TailOlsPerMinute": 19.04
+        },
+        "WorkingSetMiB": {
+          "First": 288.02,
+          "Last": 396.72,
+          "Minimum": 288.02,
+          "Maximum": 396.72,
+          "Delta": 108.7,
+          "TailDelta": 18.14,
+          "TailOlsPerMinute": 19.0
+        },
+        "HandleCount": {
+          "First": 1241.0,
+          "Last": 1264.0,
+          "Minimum": 1241.0,
+          "Maximum": 1324.0,
+          "Delta": 23.0,
+          "TailDelta": -15.0,
+          "TailOlsPerMinute": -19.63
+        }
+      },
+      "QueryCount": {
+        "First": 10,
+        "Last": 10,
+        "Minimum": 10,
+        "Maximum": 10
+      },
+      "ImageRequests": {
+        "First": 139,
+        "Last": 252,
+        "Minimum": 139,
+        "Maximum": 252
+      },
+      "CompletedImages": {
+        "First": 133,
+        "Last": 238,
+        "Minimum": 133,
+        "Maximum": 238
+      },
+      "CanceledImages": {
+        "First": 6,
+        "Last": 14,
+        "Minimum": 6,
+        "Maximum": 14
+      },
+      "ActiveImages": {
+        "First": 0,
+        "Last": 0,
+        "Minimum": 0,
+        "Maximum": 4
+      }
+    },
+    {
+      "File": "home-idle/memory-20260910-042609-5a095554.csv",
+      "Samples": 36,
+      "FirstUtc": "2026-09-09T20:26:09.1042115+00:00",
+      "LastUtc": "2026-09-09T20:29:04.6585347+00:00",
+      "SampledSpanSeconds": 175.554323,
+      "ProcessId": 19652,
+      "TailWindowDefinition": "Actual samples in the last 60 seconds; no interpolation",
+      "TailSamples": 12,
+      "TailFirstUtc": "2026-09-09T20:28:09.4964371+00:00",
+      "TailSampledSpanSeconds": 55.16209700000002,
+      "Metrics": {
+        "PrivateMiB": {
+          "First": 402.12,
+          "Last": 416.07,
+          "Minimum": 402.12,
+          "Maximum": 416.07,
+          "Delta": 13.95,
+          "TailDelta": 4.2,
+          "TailOlsPerMinute": 4.89
+        },
+        "WorkingSetMiB": {
+          "First": 418.77,
+          "Last": 432.25,
+          "Minimum": 418.77,
+          "Maximum": 432.27,
+          "Delta": 13.48,
+          "TailDelta": 4.11,
+          "TailOlsPerMinute": 4.8
+        },
+        "HandleCount": {
+          "First": 1294.0,
+          "Last": 1270.0,
+          "Minimum": 1264.0,
+          "Maximum": 1301.0,
+          "Delta": -24.0,
+          "TailDelta": 0.0,
+          "TailOlsPerMinute": -0.5
+        }
+      },
+      "QueryCount": {
+        "First": 13,
+        "Last": 13,
+        "Minimum": 13,
+        "Maximum": 13
+      },
+      "ImageRequests": {
+        "First": 253,
+        "Last": 253,
+        "Minimum": 253,
+        "Maximum": 253
+      },
+      "CompletedImages": {
+        "First": 239,
+        "Last": 239,
+        "Minimum": 239,
+        "Maximum": 239
+      },
+      "CanceledImages": {
+        "First": 14,
+        "Last": 14,
+        "Minimum": 14,
+        "Maximum": 14
+      },
+      "ActiveImages": {
+        "First": 0,
+        "Last": 0,
+        "Minimum": 0,
+        "Maximum": 0
+      }
+    }
+  ],
+  "MemoryConclusion": "No plateau established. Home private memory increased 13.95 MiB across 175.55 sampled seconds while image/query counts stayed fixed and ActiveImages stayed zero.",
+  "MemoryLimits": [
+    "Independent windows with unsampled gaps; never concatenate ElapsedSeconds",
+    "Second CSV ends before the final fifth-revisit checkpoint",
+    "Different workload and baseline from B1CB; not a controlled A/B comparison",
+    "No video, build, other native probe, forced GC, or UIA traversal during these samplers",
+    "No CPU, allocation-stack, XAML-object-count, or timer-frequency measurement"
+  ],
+  "EpisodeSessions": [
+    {
+      "ItemId": "2101",
+      "PlaySessionId": "synthetic-play-a8ffb0c5bc524b71a66eed23fe7e513e",
+      "Start": {
+        "Kind": "Start",
+        "ItemId": "2101",
+        "PlaySessionId": "synthetic-play-a8ffb0c5bc524b71a66eed23fe7e513e",
+        "PositionTicks": 1291456,
+        "Timestamp": "2026-09-10T04:30:30.278632+08:00"
+      },
+      "Stop": {
+        "Kind": "Stop",
+        "ItemId": "2101",
+        "PlaySessionId": "synthetic-play-a8ffb0c5bc524b71a66eed23fe7e513e",
+        "PositionTicks": 600106458,
+        "Failed": false,
+        "Timestamp": "2026-09-10T04:31:55.9774256+08:00"
+      },
+      "ProgressReports": 17
+    },
+    {
+      "ItemId": "2102",
+      "PlaySessionId": "synthetic-play-8b5be91b6e8046b086905d658e705962",
+      "Start": {
+        "Kind": "Start",
+        "ItemId": "2102",
+        "PlaySessionId": "synthetic-play-8b5be91b6e8046b086905d658e705962",
+        "PositionTicks": 1527706,
+        "Timestamp": "2026-09-10T04:31:56.2093102+08:00"
+      },
+      "Stop": {
+        "Kind": "Stop",
+        "ItemId": "2102",
+        "PlaySessionId": "synthetic-play-8b5be91b6e8046b086905d658e705962",
+        "PositionTicks": 121499994,
+        "Failed": false,
+        "Timestamp": "2026-09-10T04:33:26.5147456+08:00"
+      },
+      "ProgressReports": 11
+    }
+  ],
+  "PlaybackCounterDeltas": {
+    "PlaybackInfoCount": 2,
+    "StartCount": 2,
+    "StopCount": 2,
+    "ProgressCount": 28,
+    "MediaRequests": 19,
+    "RangeRequests": 19,
+    "PartialResponses": 19,
+    "EncodingCleanups": 0,
+    "AuthenticationFailures": 0
+  },
+  "PlaybackCounterLimits": "Counters include older fixture history; new episode session IDs establish this batch. Events are retained in a bounded 200-event collection. Post-stop counter stability is not packet-level silence or proof that every socket was closed.",
+  "DiagnosticSnapshot": {
+    "RetainedEvents": 128,
+    "CurrentBatchEvents": 18,
+    "CurrentBatchErrors": 0,
+    "CurrentBatchEndedEvents": 1,
+    "Scope": "Saved during Episode Two pause, before its Stop and final account/window cleanup. Older retained events are not results of this candidate."
+  },
+  "NotEstablished": [
+    "Late pointer release after capture loss or playback replacement",
+    "Failed detail loading and Retry loading item",
+    "Queue-head editing while details load",
+    "Whole-app close during an established Opening interval",
+    "Slow playback cleanup overlapping sign-out and window close",
+    "Native progressive committed-failure timing and concurrent disposal fault paths",
+    "New audio/version, HLS, ASS/font, PGS, or external-subtitle results",
+    "Physical media keys, Narrator, sustained physical key holds, multi-monitor/DPI, device changes",
+    "Signed installation, clean-machine runtime, and license/signing owner decisions"
+  ],
+  "ToolRecoveryNotes": [
+    "One unknown screenshotId after fullscreen exit was recovered by fresh observation before retry",
+    "The minimized-state request with both capture flags false was rejected; the current returned window was reselected and restored",
+    "Immediate restore animation included background pixels and was not archived; stable target-only capture was retained"
+  ],
+  "RestrictionsPreserved": "No previously rejected NativeProbe launch or official-server public-info request was retried or routed through another tool."
+}

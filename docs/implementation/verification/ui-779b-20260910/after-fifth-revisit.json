@@ -1,0 +1,11 @@
+{
+  "TimestampUtc": "2026-09-09T20:23:29.3329350+00:00",
+  "Stage": "AfterFifthRevisitBeforeHome",
+  "ProcessId": 19652,
+  "PrivateBytes": 412667904,
+  "WorkingSetBytes": 429412352,
+  "Handles": 1264,
+  "ImageRequests": 252,
+  "ActiveImages": 0,
+  "QueryCount": 10
+}

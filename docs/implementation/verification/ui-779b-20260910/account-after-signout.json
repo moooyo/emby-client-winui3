@@ -1,0 +1,9 @@
+{
+  "TimestampUtc": "2026-09-09T20:35:01.1018411+00:00",
+  "AccountCount": 4,
+  "SyntheticAccountCount": 1,
+  "SyntheticHasProtectedToken": false,
+  "OtherAccountsSha256": "876EF75584035B6B706076D894108D8E384139661AF1E90317B59AA28C401F85",
+  "OtherAccountsUnchanged": true,
+  "LastAccountCleared": true
+}

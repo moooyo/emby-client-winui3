@@ -1,0 +1,12 @@
+{
+  "StartedUtc": "2026-09-09T20:09:16.3016833+00:00",
+  "ProcessId": 19652,
+  "ExecutablePath": "D:\\code\\emby-client-winui3\\artifacts\\verification\\20260910-code-batch-2\\publish\\embyclient.app.exe",
+  "ExecutableSha256": "779B23ED8D28B845860AB72ABE1764D60FCDA7D9B2F6A089EFCFEA912BCBA93C",
+  "SourceRevision": "532f683a3df68a6b5d0da62e34f277a2b1807a15",
+  "FixturePort": 18962,
+  "FixtureSynthetic": true,
+  "LargeLibraryItems": 5000,
+  "InitialFixtureQueries": 4,
+  "DesktopScope": "Consolidated native UI checks on the normal candidate; no code changes during the batch."
+}
