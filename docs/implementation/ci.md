@@ -1,6 +1,6 @@
 # Windows continuous integration
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, and uploads its complete unsigned development folder. It runs for pushes to `main`, pull requests, and explicit manual dispatches. [Hosted run 34296241270](https://github.com/moooyo/emby-client-winui3/actions/runs/34296241270) passed every step for commit `b0de51940416e0bb07fe41cb19e37478f80998d7`: locked restore, Release build, 253 tests, Native AOT publication, SBOM generation, and both artifact uploads.
+The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The original build/publish lane passed for `b0de519` in [run 34296241270](https://github.com/moooyo/emby-client-winui3/actions/runs/34296241270), and the later `ae3a360` revision passed all 288 tests and AOT publication in [run 34297888912](https://github.com/moooyo/emby-client-winui3/actions/runs/34297888912). The newly added packaging step needs its own hosted result.
 
 The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`, where runner environment variables are available.
 
@@ -18,6 +18,7 @@ The job then invokes the repository's existing entry points:
 ./scripts/Build.ps1 -Configuration Release
 ./scripts/Test.ps1 -Configuration Release
 ./scripts/Publish-Aot.ps1 -OutputDirectory artifacts/aot
+./scripts/Package.ps1 -PublishDirectory artifacts/aot -OutputDirectory artifacts/packages
 ```
 
 No CI-specific replacement of those scripts is introduced. `Test.ps1` discovers `*.Tests.csproj` recursively. At the time of configuration, this includes:
@@ -55,6 +56,8 @@ Official release tags were resolved through the GitHub API and the corresponding
 These pinned action definitions use Node 24. The official action documentation requires a sufficiently recent runner; checkout/setup-dotnet document `2.327.1` or later for this runtime. The current official [runner release observed was v2.337.0](https://github.com/actions/runner/releases/tag/v2.337.0). GitHub manages hosted-runner agent updates; the workflow does not install or launch its own runner.
 
 ## Artifacts and practical limits
+
+The packaging step consumes the just-published folder, preserves its complete PRI and payload, and runs the same structural/hash checks as the local packager. Its separate `emby-client-windows-x64-msix-unsigned-<commit>` artifact contains the unsigned MSIX, checksum, and review JSON. No certificate, installation, trust modification, or release publishing is involved. A successful packaging job still does not prove installed runtime behavior. See the [update and servicing policy](update-policy.md).
 
 On success, `emby-client-windows-x64-aot-unsigned-<commit>` contains the entire `artifacts/aot` directory, including the native executable, Windows App SDK runtime dependencies, resources, and an artifact README. Extract the entire folder before launching `EmbyClient.App.exe`; copying the executable alone does not preserve the deployment. This is an unsigned development build, not a signed package or release. Build/test/publish text logs are uploaded separately when available, including after a failed step. Both artifact types expire after seven days. The pinned [upload-artifact inputs](https://github.com/actions/upload-artifact/blob/043fb46d1a93c77aae656e7c1c64a875d1fc6a0a/action.yml) support explicit archive mode, retention, and failure when expected files are missing.
 

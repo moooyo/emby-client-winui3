@@ -125,6 +125,22 @@ jobs:
               'CI does not establish native UI, graphics, audio device, codec, HDR, or real Emby server compatibility.'
           ) | Set-Content -LiteralPath artifacts/aot/ARTIFACT-README.txt
 
+      - name: Package and verify the unsigned MSIX candidate
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/Package.ps1 -PublishDirectory (Join-Path $env:GITHUB_WORKSPACE 'artifacts/aot') -OutputDirectory (Join-Path $env:GITHUB_WORKSPACE 'artifacts/packages') 2>&1 | Tee-Object -FilePath artifacts/logs/package.txt
+
+      - name: Upload the structurally verified unsigned MSIX candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: emby-client-windows-x64-msix-unsigned-${{ github.sha }}
+          path: artifacts/packages/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+          include-hidden-files: false
+          archive: true
+
       - name: Upload the complete runnable development folder
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

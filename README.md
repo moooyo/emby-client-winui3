@@ -16,6 +16,7 @@ The repository contains local API documentation, an AOT-safe Emby client, playba
 | [Playback engine decision](docs/architecture/playback-engine-decision.md) | Measured native and LibVLC integration evidence |
 | [Windows CI](docs/implementation/ci.md) | Locked restore, tests, Native AOT publishing, and artifact limits |
 | [MSIX packaging](docs/implementation/packaging.md) | Unsigned package creation, resource preservation, and release gates |
+| [Update policy](docs/implementation/update-policy.md) | Development replacement, installed-release plans, data compatibility, and servicing |
 | [Capability matrix](docs/implementation/capabilities.md) | Measured behavior and explicit unsupported or unverified areas |
 | [Dependency inventory](docs/implementation/dependency-inventory.md) | Exact dependencies, upstream license metadata, and preserved notices |
 | [CycloneDX SBOM](docs/implementation/sbom.md) | Reproducible package inventory and schema validation |
