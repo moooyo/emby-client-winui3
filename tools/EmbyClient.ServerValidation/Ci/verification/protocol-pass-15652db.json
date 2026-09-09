@@ -1,0 +1,250 @@
+{
+  "SchemaVersion": 1,
+  "Scope": "Official Emby API and authenticated HTTP media transfer only",
+  "Outcome": "Passed",
+  "NativeUi": "NotRun",
+  "NativeDecoderAndFirstFrame": "NotRun",
+  "SyntheticPlaybackReports": true,
+  "ServerVersion": "4.9.5.0",
+  "OfficialImage": "emby/embyserver@sha256:734a6f03c7c783a9e566b08d09a2b6376f41229ff29f032a7e00302e0be98f8a",
+  "WorkflowRunId": "34321674576",
+  "WorkflowRunAttempt": "1",
+  "CleanupCompleted": true,
+  "LastStage": "ProtocolProbe",
+  "SourceCommit": "15652db20a78b527014c633a08c97d9c5368c7aa",
+  "DotNetSdk": "10.0.301",
+  "DockerEngineVersion": "28.0.4",
+  "ResolvedImageId": "sha256:fa0dadda51e7ef3834d49a80a5708992fe4cdd5561c3ed2e2a4e87c01a447e6b",
+  "Fixture": {
+    "Synthetic": true,
+    "Video": "H264",
+    "Audio": "AacStereo",
+    "Subtitle": "GeneratedSrt",
+    "Width": 640,
+    "Height": 360,
+    "DurationSeconds": 60,
+    "MovieSha256": "f888d0754d367c9e4df045453cb99f08e495864f2ec8090ed10d8ee8a4b68e9c",
+    "SubtitleSha256": "fc599fbaabdb00b905b99cf13be5883af7760e7050e7bf0bdf9fbcda665c1643",
+    "FfmpegVersion": "6.1.1-3ubuntu5"
+  },
+  "Isolation": {
+    "InternalBridge": true,
+    "DockerPortPublicationRequested": false,
+    "DockerActualPublishedPortPresent": false,
+    "OnlyOwnedConfigAndReadOnlySyntheticMediaMounted": true,
+    "Privileged": false,
+    "HostNetwork": false,
+    "HostRelayLoopbackOnly": true,
+    "RelayTargetMatchesOwnedEndpoint": true
+  },
+  "ServerReadiness": {
+    "Attempts": 2,
+    "PublicInfoReceived": true,
+    "ContainerInspectionSucceeded": true,
+    "Container": {
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "OOMKilled": false,
+      "Dead": false,
+      "Status": "running",
+      "ExitCode": 0,
+      "StateErrorPresent": false,
+      "RestartCount": 0,
+      "ActualPortsMetadataPresent": true,
+      "ActualPublishedPortPresent": false,
+      "ActualLoopbackPublication": false
+    },
+    "LastRequestFailure": {
+      "Category": "ConnectionReset",
+      "Errno": 104
+    },
+    "RequestFailureCounts": {
+      "ConnectionReset": 1
+    }
+  },
+  "ServerIdentitySha256": "a966ad64ae61c183df8794855ad199d1de1ec643e043f157aa678e6c6c9b3c74",
+  "ServerNameMatchesOwnedConfiguration": true,
+  "TemporaryPlaybackUserIsAdministrator": false,
+  "ScannedFixtureHasVideoAudioAndTextSubtitle": true,
+  "ProbeAssemblySha256": "6284356baaf2c0e14ba7e31d46ebdc7e86faab85ad54546f6f4e4df2ce23ee99",
+  "ProbeMode": "FrameworkDependentPortableCli",
+  "SourceSha256": {
+    "global.json": "4a5e1b57e81b372b49a3ee4f0b35483d541b45280cf931276828c0920d3f6855",
+    "tools/EmbyClient.ServerValidation/ApiProbe/ApiContractProbe.cs": "40f3fd501a72747590e68b7cb724a569c243955ac333b672e34d8b535ae9b26a",
+    "tools/EmbyClient.ServerValidation/ApiProbe/MediaTransfer.cs": "c9fd9c2f4f504d6f86d370fea4ec0aefb53f83422732b25d60e308238a482258",
+    "tools/EmbyClient.ServerValidation/ApiProbe/ProbeModels.cs": "b0189b0084d4aec9e2846cb35dfdcf22f5883ce060e978e3c964017609fe19dc",
+    "tools/EmbyClient.ServerValidation/ApiProbe/Program.cs": "970cfa5c08a6b748a542c4b632ed6d0445998ade2d51fa2a88192dce85f86d36",
+    "tools/EmbyClient.ServerValidation/Ci/ApiProbe.Ci.csproj": "c8df4d39dac8fb48cec2b9e4a4c73ad7113fede5c3b4658b2b4f612a118d3605",
+    "tools/EmbyClient.ServerValidation/Ci/loopback_relay.py": "ca4fb07531c6b89bf87ac9ace0c9d73faaa21406fcf66ba4e5a4e3b1f939120c",
+    "tools/EmbyClient.ServerValidation/Ci/packages.lock.json": "fa0e3ddd7c72c18b5d7ca3d08063df79bf10b7de75784e47ee6dcc9b37d5a596",
+    "tools/EmbyClient.ServerValidation/Ci/protocol_ci.py": "1f9a7fae09971ae0c2e0477c977dace271c545fd5626ce0a01c8d72dd9ba0a6b"
+  },
+  "Checks": [
+    {
+      "Name": "Authentication.LoggedOutTokenRejected",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Authentication.ValidCredentials",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Authentication.WrongPassword",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Cleanup.FavoriteRestore",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Cleanup.HlsEncoding",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Cleanup.OriginalEncoding",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Cleanup.PlayedRestore",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Cleanup.SubtitleEncoding",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Cleanup.UserDataBooleans",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.Details",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.EmptySearch",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.Latest",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.List",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.NextUp",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.Paging",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.Resume",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Items.Search",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Library.Views",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Media.HlsManifest",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Media.HlsSegment",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Media.OriginalRange",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Media.WebVttSubtitle",
+      "Status": "Passed"
+    },
+    {
+      "Name": "PlaybackInfo.ForcedHls",
+      "Status": "Passed"
+    },
+    {
+      "Name": "PlaybackInfo.Original",
+      "Status": "Passed"
+    },
+    {
+      "Name": "PlaybackReport.Progress",
+      "Status": "Passed"
+    },
+    {
+      "Name": "PlaybackReport.Start",
+      "Status": "Passed"
+    },
+    {
+      "Name": "PlaybackReport.Stop",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Server.AuthenticatedInfo",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Server.PublicInfo",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Session.Capabilities",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Session.Logout",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Session.ProgressReadback",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Session.StartReadback",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Session.StopReadback",
+      "Status": "Passed"
+    },
+    {
+      "Name": "Subtitles.ExternalNegotiation",
+      "Status": "Passed"
+    },
+    {
+      "Name": "User.Current",
+      "Status": "Passed"
+    },
+    {
+      "Name": "UserData.FavoriteRestore",
+      "Status": "Passed"
+    },
+    {
+      "Name": "UserData.FavoriteToggle",
+      "Status": "Passed"
+    },
+    {
+      "Name": "UserData.PlayedRestore",
+      "Status": "Passed"
+    },
+    {
+      "Name": "UserData.PlayedToggle",
+      "Status": "Passed"
+    }
+  ],
+  "PassedChecks": 40,
+  "ExpectedChecks": 40,
+  "ProbeExitCode": 0,
+  "UnknownOrDuplicateStepCount": 0,
+  "RelayCleanupCompleted": true
+}

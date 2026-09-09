@@ -1,10 +1,12 @@
-# Windows continuous integration
+# Continuous integration: Windows builds and Emby protocols
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The latest audited [run 34318519636](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636), exact source `19b434d8ffb58ed9d8f75557beacb64ae9fa29c3`, passed all 392 tests and every job step, completing at 2026-09-09 06:21:38 UTC. Earlier successful and failed checkpoints remain recorded below. Hosted success establishes build/test/package results; the [keyboard and dialog-focus observations](ui-validation.md#keyboard-timeline-and-dialog-focus-checkpoints-dbc6c326-and-77a90d2d) are separate desktop evidence tied to their own executable hashes. The idle presentation-clock change has no new desktop or memory-impact result.
+The repository now has two successful independent CI lanes at exact source `15652db20a78b527014c633a08c97d9c5368c7aa`. [Windows run 34321661741](https://github.com/moooyo/emby-client-winui3/actions/runs/34321661741) passed 392 tests and all 16 build/publish/package steps, completing at 2026-09-09 07:03:11 UTC. [Manual Emby protocol run 34321674576](https://github.com/moooyo/emby-client-winui3/actions/runs/34321674576) completed its first successful real-server check at 07:01:43 UTC: 18 Linux orchestration unit tests and a separate exact 40/40 official-server protocol result. These are distinct test populations, not one combined native acceptance suite.
+
+The [Windows build workflow](../../.github/workflows/ci.yml) runs on pushes to `main`, pull requests, and manual dispatches. The [official Emby protocol workflow](../../.github/workflows/emby-protocol.yml) is a separate manual-only `main` lane. The section 8 independent real-server CI implementation and first hosted success are complete. Native rendering, desktop behavior, and installed-release acceptance remain separate. Earlier failures remain recorded below, and the idle presentation-clock change still has no new desktop or memory-impact result.
 
 The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`, where runner environment variables are available.
 
-## Execution and dependency policy
+## Windows build execution and dependency policy
 
 The job uses `windows-2025`, PowerShell, a 45-minute timeout, and `contents: read`. Checkout does not persist credentials. The workflow does not request signing credentials, real Emby passwords or tokens, release permissions, deployment access, or an interactive user session.
 
@@ -104,7 +106,7 @@ The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-06011
 
 All three archives were unexpired at inspection. Their names end with the full source SHA above. No package or application archive was downloaded or installed for this audit; the contained package hash is builder-reported. The separate local [NativeProbe compile-only receipt](../../tools/EmbyClient.NativeProbe/verification/progressive-http-control-build.json) is not a hosted or runtime result. Native progressive rendering, complex subtitles, and installed playback remain unverified.
 
-### Latest receipt: idle presentation clock revision 19b434d
+### Idle presentation clock revision 19b434d
 
 The recorded read-only GitHub job/log/artifact inspection confirmed [run 34318519636 / job 102359801545](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636/job/102359801545) for exact source `19b434d8ffb58ed9d8f75557beacb64ae9fa29c3`. All reported job steps succeeded, completing at **2026-09-09 06:21:38 UTC**.
 
@@ -120,7 +122,42 @@ The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-06211
 
 All three archives were unexpired at the recorded inspection. Archive digests identify the uploaded archives, not their contained executable or package. No artifact download, installation, build, or runtime verification was performed for this documentation update; the contained package hash remains builder-reported.
 
-This revision includes `DisplayNeedsReleaseRetry` and terminal live-state reconciliation. The added platform tests cover display-release policy; compilation of the UI reconciliation path is not a runtime observation. This receipt does not show an actual dispatcher timer stopping, display sleep/release behavior on a live window, fewer wakeups, or reduced private memory. Earlier large-library growth and complex-subtitle failures remain unchanged. The separate manual Emby protocol lane is not included in this result and has no completed receipt in this snapshot.
+This revision includes `PlaybackDisplayRequest.NeedsReleaseRetry` and terminal live-state reconciliation. The added platform tests cover display-release policy; compilation of the UI reconciliation path is not a runtime observation. This receipt does not show an actual dispatcher timer stopping, display sleep/release behavior on a live window, fewer wakeups, or reduced private memory. Earlier large-library growth and complex-subtitle failures remain unchanged. This earlier Windows run did not include the separate manual Emby protocol lane; its later first success is recorded below.
+
+### Latest Windows receipt: protocol automation revision 15652db
+
+The recorded job/log audit confirms [run 34321661741 / job 102369456878](https://github.com/moooyo/emby-client-winui3/actions/runs/34321661741/job/102369456878) at `15652db20a78b527014c633a08c97d9c5368c7aa`. All **16 steps succeeded**, completing at **2026-09-09 07:03:11 UTC**. The unified test run passed **392 cases: API 47, media transport 120, Windows platform 93, playback 132**, with every total equal to succeeded. The Release build retained one existing generated `CS0618` warning and zero errors. Native AOT, the 18-component SBOM, unsigned MSIX structural verification, and uploads all succeeded.
+
+The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-070246964-6d18eecf.msix`, with builder-reported file SHA-256 **`F0D814EB5EE80EA6B79860A4E17941B7E6AF32ADBD2B610A19C661A78BEB8CA7`**. The separate uploaded archive identities are:
+
+| Artifact | Archive bytes | GitHub archive SHA-256 digest |
+| --- | ---: | --- |
+| [Unsigned MSIX archive 10092172663](https://github.com/moooyo/emby-client-winui3/actions/runs/34321661741/artifacts/10092172663) | 54,316,329 | `a061cae4dd99687f6bd8cac1633058bcb3da0706398eb9a7253483ac9c8f361c` |
+| [AOT development-folder archive 10092174914](https://github.com/moooyo/emby-client-winui3/actions/runs/34321661741/artifacts/10092174914) | 75,970,914 | `e7d1d389bf58eea88711e0f2604149ee22784a44bb465395f89f2c52ee9ada8a` |
+| [CI logs archive 10092175313](https://github.com/moooyo/emby-client-winui3/actions/runs/34321661741/artifacts/10092175313) | 3,483 | `8575dca2a60f3c1a4cbfd13acc9393e56ca1d71f198077c9d95acd5c34c02cba` |
+
+These archive digests are not the contained package or executable hash. The recorded local product AOT remains `5C3C472A714316F177C3A4F62C9BE19DF9421CA1FA0B1097F6B33737C687C0D0`; this CI receipt does not supply a new desktop, timer, memory, or installed-package observation.
+
+## Independent official Emby protocol CI: first pass 15652db
+
+The [manual protocol workflow](../../.github/workflows/emby-protocol.yml) runs only through `workflow_dispatch` on `main`, on `ubuntu-24.04`, with `contents: read`. It builds a **framework-dependent portable CLI** from the existing API-probe sources. This Linux job is a protocol harness, not a Linux player or a Native AOT rendering test. [Collector documentation](../../tools/EmbyClient.ServerValidation/Ci/README.md) describes its owned server and report-filtering design.
+
+[Run 34321674576 / job 102369510518](https://github.com/moooyo/emby-client-winui3/actions/runs/34321674576/job/102369510518), at the same `15652db20a78b527014c633a08c97d9c5368c7aa` head, completed successfully at **2026-09-09 07:01:43 UTC**. Its Linux `unittest` stage passed **18** orchestration/relay cases. The separate [retained protocol summary](../../tools/EmbyClient.ServerValidation/Ci/verification/protocol-pass-15652db.json) reports:
+
+- Exactly 40 expected checks and 40 `Passed` results, zero unknown/duplicate steps, and probe exit code 0.
+- Official Emby `4.9.5.0`, Docker `28.0.4`, and pinned image `emby/embyserver@sha256:734a6f03c7c783a9e566b08d09a2b6376f41229ff29f032a7e00302e0be98f8a`.
+- A generated 60-second 640 x 360 H.264/AAC/SRT fixture and a temporary playback user whose administrator flag is false.
+- An internal Docker bridge with no requested or actual published Docker port, only the owned configuration and read-only synthetic media mounted, and an owned IPv4 loopback relay whose target matches the owned endpoint. Host networking and privileged mode are false.
+- Public server information received on readiness attempt 2 after one recorded `ConnectionReset` with errno 104. This transient failure remains visible in the successful receipt.
+- `CleanupCompleted=true` and `RelayCleanupCompleted=true`.
+
+The checks exercise authentication, browsing/user data, PlaybackInfo, authenticated original ranges, HLS manifest/segment and WebVTT transfer, synthetic Start/Progress/Stop reports with server readback, and cleanup. `ProbeMode=FrameworkDependentPortableCli`, `NativeUi=NotRun`, and `NativeDecoderAndFirstFrame=NotRun` explicitly limit the result. The 18 Linux unit tests, 40 real-server checks, and 392 Windows tests retain their separate meanings.
+
+The downloaded protocol-summary [archive 10092132358](https://github.com/moooyo/emby-client-winui3/actions/runs/34321674576/artifacts/10092132358) is **2,307 bytes**, with ZIP SHA-256 **`bb3756b5241e584151c5515180282aa12ecfa00b653d92e77271d3d11e2e524f`**. Its individual JSON, retained as `protocol-pass-15652db.json`, has file SHA-256 **`D92EE5C73A30F853004E14252D773A4EBD79DD9AB60C0941F0B001E1A3033A83`**, confirmed from the local retained file. These identify different objects and must not be substituted for one another.
+
+The initial [run 34319687217](https://github.com/moooyo/emby-client-winui3/actions/runs/34319687217) at `0a0809f949949c098067dda8e378cafd82c3c8d1` remains a [retained startup failure](../../tools/EmbyClient.ServerValidation/Ci/verification/startup-failure-0a0809f.json): `ServerStartupDeadline` at `ServerReadiness`, with owned cleanup completed. It did not reach a passed protocol result and is not rewritten by the later success.
+
+Independent real-server CI is now implemented and has its first scoped pass. It does not complete native playback, actual subtitle pixels, installed activation, signing, clean-machine playback, broad server/version coverage, or resource acceptance.
 
 ## Pinned official actions
 
@@ -140,6 +177,6 @@ The packaging step consumes the just-published folder, preserves its complete PR
 
 On success, `emby-client-windows-x64-aot-unsigned-<commit>` contains the entire `artifacts/aot` directory, including the native executable, Windows App SDK runtime dependencies, resources, and an artifact README. Extract the entire folder before launching `EmbyClient.App.exe`; copying the executable alone does not preserve the deployment. This is an unsigned development build, not a signed package or release. Build/test/publish/package text logs are uploaded separately when available, including after a failed step. MSIX, AOT, and log artifacts expire after seven days. The pinned [upload-artifact inputs](https://github.com/actions/upload-artifact/blob/043fb46d1a93c77aae656e7c1c64a875d1fc6a0a/action.yml) support explicit archive mode, retention, and failure when expected files are missing.
 
-Hosted checks establish compilation, the named automated tests, Native AOT publication, and unsigned MSIX structural/hash checks for that runner revision. They do not establish native UI rendering, focus/fullscreen behavior, graphics-driver compatibility, audio-device behavior, actual codec rendering, HDR, signing readiness, installed package activation, or compatibility with a real Emby installation. Interactive playback trials, installation checks, and authorized real-server contract tests remain separate evidence. The workflow deliberately neither generates media nor opens the app in a headless job to claim those results.
+The Windows build lane establishes compilation, its named automated tests, Native AOT publication, and unsigned MSIX structural/hash checks for that revision. The independent protocol lane adds the recorded 40 API/HTTP checks against one pinned real Emby version. Neither establishes native UI rendering, focus/fullscreen behavior, graphics-driver compatibility, audio-device behavior, actual codec rendering, HDR, signing readiness, or installed package activation. Interactive playback and installation trials remain separate evidence. The Windows build workflow neither generates media nor opens the app in a headless job; the protocol workflow generates synthetic media for HTTP checks and explicitly leaves native UI/decoding unrun.
 
 Updates to action pins should repeat the official-release and commit verification. Updates to `global.json`, central packages, or Windows targets should refresh the affected lock files and review the hosted image inventory before the next run.

@@ -16,6 +16,7 @@ The repository contains local API documentation, an AOT-safe Emby client, playba
 | [Playback engine decision](docs/architecture/playback-engine-decision.md) | Measured native and LibVLC integration evidence |
 | [Progressive HTTP transport](docs/implementation/progressive-streaming.md) | Bounded streaming, framing and lifetime rules, and the unverified native profile control |
 | [Windows CI](docs/implementation/ci.md) | Locked restore, tests, Native AOT publishing, and artifact limits |
+| [Official-server protocol CI](tools/EmbyClient.ServerValidation/Ci/README.md) | Manual disposable-server checks, isolated loopback access, safe summaries, and cleanup |
 | [MSIX packaging](docs/implementation/packaging.md) | Unsigned package creation, resource preservation, and release gates |
 | [Update policy](docs/implementation/update-policy.md) | Development replacement, installed-release plans, data compatibility, and servicing |
 | [Capability matrix](docs/implementation/capabilities.md) | Measured behavior and explicit unsupported or unverified areas |
