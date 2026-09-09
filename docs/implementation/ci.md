@@ -1,6 +1,6 @@
 # Windows continuous integration
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The latest audited [run 34313098711](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711), exact source `c6f967ee9be005378abbcc58f9d46cb084e08615`, passed all 340 tests and every job step, completing at 2026-09-09 05:03:05 UTC. Earlier successful and failed checkpoints remain recorded below. Hosted success establishes build/test/package results; the [keyboard and dialog-focus observations](ui-validation.md#keyboard-timeline-and-dialog-focus-checkpoints-dbc6c326-and-77a90d2d) are separate desktop evidence tied to their own executable hashes.
+The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The latest audited [run 34317011874](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874), exact source `71e9ffb7c5bb53857895a79aabb1edb3ead3266d`, passed all 387 tests and every job step, completing at 2026-09-09 06:01:43 UTC. Earlier successful and failed checkpoints remain recorded below. Hosted success establishes build/test/package results; the [keyboard and dialog-focus observations](ui-validation.md#keyboard-timeline-and-dialog-focus-checkpoints-dbc6c326-and-77a90d2d) are separate desktop evidence tied to their own executable hashes.
 
 The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`, where runner environment variables are available.
 
@@ -28,7 +28,7 @@ No CI-specific replacement of those scripts is introduced. `Test.ps1` discovers 
 | `EmbyClient.Api.Tests` | Request contracts, source-generated JSON, identity isolation, cancellation/errors, and playback API behavior |
 | `EmbyClient.Platform.Tests` | Real Windows user-level token protection, settings persistence, corruption handling, and initial-creation races |
 | `EmbyClient.Playback.Tests` | Playback coordination, source/track decisions, reporting, and cleanup through test adapters |
-| `EmbyClient.MediaTransport.Tests` | HTTP authentication boundaries and byte-range transport using loopback fixtures |
+| `EmbyClient.MediaTransport.Tests` | HTTP authentication boundaries, byte-range transport, and bounded progressive streaming/framing using loopback fixtures |
 
 ## Hosted Windows toolchain
 
@@ -41,7 +41,7 @@ The official [Windows 2025 image inventory at commit a0faebe84ce88a79331aebb1874
 
 Microsoft's [Native AOT prerequisites](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) require Visual Studio 2022 or later with the C++ desktop workload for Windows. The workflow checks that the x64 linker and the target Windows SDK library exist, records their paths, and logs the actual SDK and image version. The hosted image label is rolling; pinning action commits does not make the entire hosted machine immutable. A later image change can require an explicit repository update or a dedicated runner.
 
-The first two audited packaging runs used image `win25-vs2026 20260824.214.3`, with Visual Studio 2026 Enterprise, .NET SDK `10.0.301`, and Windows SDK `10.0.26100.0`. This is the executed toolchain, distinct from the earlier published inventory snapshot above. Their logs confirm test totals of 47, 65, 68, and 126 and an 18-component SBOM. The Release build summary reports one upstream generated WinUIEx `Icon` warning (`CS0618`) and zero errors; native code generation and publication then complete successfully. The latest `c6f967e` run again records image `win25-vs2026 20260824.214.3` and SDK `10.0.301`; its updated test totals are documented below.
+The first two audited packaging runs used image `win25-vs2026 20260824.214.3`, with Visual Studio 2026 Enterprise, .NET SDK `10.0.301`, and Windows SDK `10.0.26100.0`. This is the executed toolchain, distinct from the earlier published inventory snapshot above. Their logs confirm test totals of 47, 65, 68, and 126 and an 18-component SBOM. The Release build summary reports one upstream generated WinUIEx `Icon` warning (`CS0618`) and zero errors; native code generation and publication then complete successfully. The subsequent `c6f967e` run again records image `win25-vs2026 20260824.214.3` and SDK `10.0.301`; its updated test totals are documented below.
 
 ## Hosted packaging receipts
 
@@ -72,7 +72,7 @@ The subsequent [run 34309591888](https://github.com/moooyo/emby-client-winui3/ac
 
 The AOT archive [10087940397](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888/artifacts/10087940397) is 75,822,354 bytes with archive digest `sha256:82c7f72e81d8b3733ec088a418ebe1af4240dbfeb6c685e3169bc12337aa5c99`. The MSIX archive [10087938664](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888/artifacts/10087938664) is 54,284,090 bytes with archive digest `sha256:542287d9f6a87ef7d11e8db7559efaf9ed8cd25b39effe2a78bf16138616fc7c`. The contained `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-040826837-a8c55b3e.msix` has builder-reported file SHA-256 `15ABC58F07A04168C7AFBE25416DECAA6E5F2AFE9DF923DAC9144EAC5B03C851`. The logs archive is [10087940712](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888/artifacts/10087940712), 3,491 bytes. These are scoped hosted build results, not installed runtime, desktop rendering, or a long-duration memory pass.
 
-### Latest receipt: keyboard and focus revision c6f967e
+### Keyboard and focus revision c6f967e
 
 Read-only GitHub API/job-log inspection confirmed [run 34313098711 / job 102343633461](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711/job/102343633461) for exact head `c6f967ee9be005378abbcc58f9d46cb084e08615`. All 16 reported steps, including setup and post-job steps, concluded `success`. The job completed at **2026-09-09 05:03:05 UTC**; the run metadata was updated one second later.
 
@@ -87,6 +87,22 @@ The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-05024
 | [windows-ci-logs-c6f967ee9be005378abbcc58f9d46cb084e08615](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711/artifacts/10089146307) | 3,483 | `0a66d86c0b773b6324ccb72f7ba5e2cb2181d89a5906dbc41e19f51d8595fa67` |
 
 All three archives were unexpired at inspection, with expiry dates on 2026-09-16. No application/package artifact was downloaded or installed during this audit, so the contained-package hash remains builder-reported. The package log explicitly leaves installation and packaged runtime behavior unverified. The separately observed timeline keys and four Queue/Diagnostics focus-return paths do not expand hosted CI into native UI, Narrator, physical-key, complex-subtitle, or installed-release acceptance.
+
+### Latest receipt: progressive transport revision 71e9ffb
+
+Read-only job, log, and artifact inspection confirmed [run 34317011874 / job 102355241584](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874/job/102355241584) for exact source `71e9ffb7c5bb53857895a79aabb1edb3ead3266d`. All 16 steps succeeded, completing at **2026-09-09 06:01:43 UTC**. The runner reports image `win25-vs2026 20260824.214.3` and the pinned SDK `10.0.301`.
+
+The unified Release run passed **387 tests**: API 47, media transport 120, Windows platform 88, and playback 132, with zero failures or skipped cases. The Release solution build retained one generated WinUIEx `Icon` `CS0618` warning and zero errors. Native AOT publication, the 18-component SBOM with JSON readback, unsigned MSIX structural verification, and all uploads succeeded. The 47 new progressive transport cases cover framing, streaming, and lifetime boundaries; CI did not run NativeProbe or a player window.
+
+The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-060117616-32986c8b.msix`; the builder reports file SHA-256 **`C03BF0C0AA903B3A2ED164F8C3239C32FFDD1BFBAD8E7313C799C251ABC419B9`**. The Actions API separately reports:
+
+| Artifact | Archive bytes | GitHub archive SHA-256 digest |
+| --- | ---: | --- |
+| [Unsigned MSIX archive 10090502408](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874/artifacts/10090502408) | 54,317,035 | `c3369ed8701d100ea6704554a84d948630c39f702460ed49588f5106b3f89d4a` |
+| [AOT development-folder archive 10090504347](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874/artifacts/10090504347) | 75,967,308 | `7f2b27609cc3102920b8053568c8590385d0bdf7d5284771ba489448baad7edc` |
+| [CI logs archive 10090504729](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874/artifacts/10090504729) | 3,490 | `a0af9f8c61d23e175b17d227a713d906cb1aafaf3badc679307ae4cfb65dffeb` |
+
+All three archives were unexpired at inspection. Their names end with the full source SHA above. No package or application archive was downloaded or installed for this audit; the contained package hash is builder-reported. The separate local [NativeProbe compile-only receipt](../../tools/EmbyClient.NativeProbe/verification/progressive-http-control-build.json) is not a hosted or runtime result. Native progressive rendering, complex subtitles, and installed playback remain unverified.
 
 ## Pinned official actions
 

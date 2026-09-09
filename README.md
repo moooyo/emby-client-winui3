@@ -2,7 +2,7 @@
 
 A Windows-only media client for Emby Server, using native WinUI 3 controls, WinUIEx, and CommunityToolkit.Mvvm. The project is intended for open-source distribution; the repository license is still awaiting an owner decision.
 
-The repository contains local API documentation, an AOT-safe Emby client, playback coordination, a native library/player UI, and reproducible verification tools. Development is in progress; see the [current stage and verification evidence](docs/implementation/status.md). Final integrated UI, network-recovery acceptance, and formal distribution gates remain open.
+The repository contains local API documentation, an AOT-safe Emby client, playback coordination, a native library/player UI, and reproducible verification tools. Development is in progress; see the [current stage and verification evidence](docs/implementation/status.md). Wider media, hardware, accessibility, long-duration performance, and installed-distribution gates remain open.
 
 ## Documentation
 
@@ -14,6 +14,7 @@ The repository contains local API documentation, an AOT-safe Emby client, playba
 | [Remote verification plan](docs/research/verification-plan.md) | The evidence required before claiming server, player, or Windows compatibility |
 | [User guide](docs/implementation/user-guide.md) | Account management, browsing, playback controls, queue, and current limits |
 | [Playback engine decision](docs/architecture/playback-engine-decision.md) | Measured native and LibVLC integration evidence |
+| [Progressive HTTP transport](docs/implementation/progressive-streaming.md) | Bounded streaming, framing and lifetime rules, and the unverified native profile control |
 | [Windows CI](docs/implementation/ci.md) | Locked restore, tests, Native AOT publishing, and artifact limits |
 | [MSIX packaging](docs/implementation/packaging.md) | Unsigned package creation, resource preservation, and release gates |
 | [Update policy](docs/implementation/update-policy.md) | Development replacement, installed-release plans, data compatibility, and servicing |
@@ -48,4 +49,6 @@ Official Emby documentation, official SDK definitions, and upstream Windows/pack
 
 The user has explicitly authorized local builds and tests for the implementation task. Debug builds, actual Native AOT publication, and native rendering have succeeded. An isolated official Emby 4.9.5.0 server passed 40 API checks; actual original video, HLS transcoding, and visible burned-in SRT subtitles have also been inspected in the application. These are separate forms of evidence and do not establish a broad server or hardware support matrix.
 
-The latest unified checkpoint passed 288 focused tests; newer recovery, queue, and diagnostics suites are being integrated. The product now reuses one native player per engine/window while retiring every media session independently. Default direct playback and real-server HLS each pass 20 functional cycles and the unchanged resource gate, with handle-median changes of +17 and -6 respectively. Real cancellation, decoder-failure recovery, old-callback isolation, and concurrent disposal also pass. Final integrated pixels and physical media commands remain separate acceptance work. The earlier [research verification plan](docs/research/verification-plan.md) is historical; the [implementation record](docs/implementation/status.md) tracks current authorization and results.
+The API, transport, Windows platform, and playback suites pass their recorded Release checks; the [implementation record](docs/implementation/status.md) owns current counts and build identities. The product reuses one native player per engine/window while retiring every media session independently. Default direct playback and real-server HLS each pass 20 functional cycles and the unchanged resource gate, with handle-median changes of +7 and -6 respectively. Real cancellation, decoder-failure recovery, old-callback isolation, concurrent disposal, and one cold-range manual recovery have scoped evidence. Integrated queue/diagnostics and finite keyboard/focus observations remain tied to their recorded artifacts. Physical media commands and broader UI/device coverage remain separate acceptance work.
+
+The progressive HTTP receive path and its separate subtitle profile-control harness compile as Native AOT. Automated transport tests cover unknown-length responses and framing failures; this does not establish native progressive rendering or resolve the retained ASS/PGS HLS failures. Desktop/player verification is currently paused. The earlier [research verification plan](docs/research/verification-plan.md) is historical; current authorization and result boundaries are recorded with each implementation checkpoint.
