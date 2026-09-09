@@ -14,13 +14,22 @@ public sealed partial class App
         var report = new RealHlsReport
         {
             RequiredLoops = _realHlsDiagnostic ? 2 : 20,
-            ExecutionMode = _realHlsDiagnostic ? "TwoLoopDiagnosticNotResourceAcceptance" : "NormalRealHlsLifecycle"
+            ExecutionMode = _realHlsDiagnostic ? "TwoLoopDiagnosticNotResourceAcceptance"
+                : _sharedNativeHlsPlayerControl ? "SharedPlayerNativeHttpHlsControlNotProductAcceptance"
+                : _nativeHlsHttpControl ? "NativeHttpHlsControlNotProductAcceptance" : "NormalRealHlsLifecycle",
+            Scope = _sharedNativeHlsPlayerControl
+                ? "Isolated shared-player native HTTP HLS control on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Same twenty complete cycles and forty source/session graphs; one MediaPlayer is reused, with per-session source/event/SMTC/HTTP retirement. Not product acceptance or concurrent cancellation/fallback isolation proof."
+                : _nativeHlsHttpControl
+                ? "Isolated native HTTP HLS control on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Same coordinator, forty native graphs, SMTC, and twenty complete cycles; only adaptive HTTP construction differs. Not product acceptance."
+                : "Owned official Emby 4.9.5.0 loopback validation server, fixed item 5, forced HLS, Windows native engine and real PlaybackCoordinator. Separate from synthetic direct-stream evidence."
         };
+        var nativeHttpControl = _nativeHlsHttpControl ? new NativeHlsHttpControlObservation() : null;
         using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(20));
         using var observation = new HlsApiObservationHandler();
         using var http = new HttpClient(observation) { Timeout = Timeout.InfiniteTimeSpan };
         EmbyApiClient? authenticated = null;
         PlaybackCoordinator? coordinator = null;
+        NativePlaybackEngine? engine = null;
         try
         {
             SaveRealHls(report);
@@ -49,7 +58,11 @@ public sealed partial class App
             Require(item.Id == report.ItemId && item.RunTimeTicks is >= 590_000_000 and <= 610_000_000,
                 "OwnedValidationMediaMismatch");
             report.ItemDurationTicks = item.RunTimeTicks;
-            var engine = new NativePlaybackEngine(_window!.DispatcherQueue, _element!, initialMuted: true);
+            engine = new NativePlaybackEngine(_window!.DispatcherQueue, _element!, initialMuted: true)
+            {
+                NativeHttpControlObservation = nativeHttpControl,
+                ReuseNativeHttpControlPlayer = _sharedNativeHlsPlayerControl
+            };
             engine.Diagnostic += (_, value) => { lock (report.Diagnostics) report.Diagnostics.Add("Native:" + value.Operation + ":" + value.ErrorCode); };
             coordinator = new PlaybackCoordinator(authenticated, engine, new PlaybackCoordinatorOptions
             {
@@ -65,7 +78,7 @@ public sealed partial class App
                 var firstApiEvent = observation.Events.Length;
                 try
                 {
-                    await RunRealHlsLoopAsync(loop, coordinator, engine, observation, authenticated, http, deadline.Token);
+                    await RunRealHlsLoopAsync(loop, coordinator, engine, observation, authenticated, http, nativeHttpControl, deadline.Token);
                     loop.Resources = await CaptureResourcesAsync(deadline.Token);
                     loop.Status = "Passed";
                     report.CompletedLoops++;
@@ -79,13 +92,25 @@ public sealed partial class App
                 {
                     loop.ApiEvents = observation.Events.Skip(firstApiEvent).ToList();
                     report.Negotiations = observation.Negotiations.ToList();
+                    report.NativeHttpControl = nativeHttpControl?.Capture();
+                    report.SharedPlayerControl = _sharedNativeHlsPlayerControl ? engine.CaptureSharedNativePlayerControl() : null;
                     SaveRealHls(report);
                 }
             }
             if (_realHlsDiagnostic) { report.Status = "DiagnosticCyclesCompleted"; return; }
             await coordinator.DisposeAsync(); coordinator = null;
+            engine.DisposeSharedNativePlayerControl();
+            if (_sharedNativeHlsPlayerControl)
+            {
+                report.SharedPlayerControl = engine.CaptureSharedNativePlayerControl();
+                Require(report.SharedPlayerControl.PlayersCreated == 1 && report.SharedPlayerControl.PlayersDisposed == 1
+                    && report.SharedPlayerControl.SessionAssignments == report.RequiredLoops * 2
+                    && report.SharedPlayerControl.DistinctPlaybackIds == report.RequiredLoops * 2
+                    && report.SharedPlayerControl.SourceClearChecks == report.RequiredLoops * 2, "SharedPlayerControlLifecycleInvalid");
+            }
             await authenticated.LogoutAsync(deadline.Token); authenticated = null;
             var idleRequests = observation.CompletedRequests;
+            var idleNativeRequests = nativeHttpControl?.Capture().RequestsAccepted;
             foreach (var seconds in new[] { 2, 8, 20 })
             {
                 await Task.Delay(TimeSpan.FromSeconds(seconds), deadline.Token);
@@ -93,6 +118,14 @@ public sealed partial class App
                 SaveRealHls(report);
             }
             Require(idleRequests == observation.CompletedRequests, "ApiRequestsContinuedDuringFinalIdle");
+            if (nativeHttpControl is not null)
+            {
+                report.NativeHttpControl = nativeHttpControl.Capture();
+                Require(report.NativeHttpControl.FiltersCreated == report.RequiredLoops * 2
+                    && report.NativeHttpControl.FiltersDisposed == report.NativeHttpControl.FiltersCreated
+                    && report.NativeHttpControl.RequestsRejected == 0
+                    && report.NativeHttpControl.RequestsAccepted == idleNativeRequests, "NativeHttpControlLifecycleInvalid");
+            }
             var samples = report.Loops.Select(loop => loop.Resources!).ToArray();
             report.PostWarmupPrivateBytesGrowth = Median(samples.TakeLast(5).Select(value => value.PrivateBytes))
                 - Median(samples.Skip(4).Take(5).Select(value => value.PrivateBytes));
@@ -103,26 +136,30 @@ public sealed partial class App
             Require(report.PostWarmupPrivateBytesGrowth <= 64L * 1024 * 1024 && report.PostWarmupHandleGrowth <= 32
                 && !sustainedHandles && !sustainedPrivate, "ResourceGrowthDetected");
             Require(report.Diagnostics.Count == 0, "UnexpectedPlaybackDiagnostic");
-            report.Status = "Passed";
+            report.Status = _nativeHlsHttpControl ? "ControlPassed" : "Passed";
         }
         catch (Exception exception) { report.Status = "Failed"; report.ErrorCode = ErrorCode(exception); report.ErrorHResult = exception.HResult; }
         finally
         {
             try
             {
-                if (coordinator is not null) await coordinator.DisposeAsync();
+                try { if (coordinator is not null) await coordinator.DisposeAsync(); }
+                finally { engine?.DisposeSharedNativePlayerControl(); }
                 if (authenticated is not null) await authenticated.LogoutAsync();
             }
             catch (Exception exception) { report.Status = "Failed"; report.ErrorCode ??= "FinalCleanup_" + ErrorCode(exception); }
             report.FinishedAt = DateTimeOffset.UtcNow;
+            report.NativeHttpControl = nativeHttpControl?.Capture();
+            report.SharedPlayerControl = _sharedNativeHlsPlayerControl ? engine?.CaptureSharedNativePlayerControl() : null;
             SaveRealHls(report);
-            Environment.ExitCode = report.Status is "Passed" or "DiagnosticCyclesCompleted" ? 0 : 1;
+            Environment.ExitCode = report.Status is "Passed" or "ControlPassed" or "DiagnosticCyclesCompleted" ? 0 : 1;
             _window!.Close(); Exit();
         }
     }
 
     private async Task RunRealHlsLoopAsync(RealHlsLoop loop, PlaybackCoordinator coordinator,
-        NativePlaybackEngine engine, HlsApiObservationHandler observation, EmbyApiClient api, HttpClient http, CancellationToken ct)
+        NativePlaybackEngine engine, HlsApiObservationHandler observation, EmbyApiClient api, HttpClient http,
+        NativeHlsHttpControlObservation? nativeHttpControl, CancellationToken ct)
     {
         var firstEvent = observation.Events.Length;
         await coordinator.PlayAsync(new PlaybackSelection
@@ -139,6 +176,12 @@ public sealed partial class App
         loop.OpenedNativePositionTicks = player!.PlaybackSession.Position.Ticks;
         loop.OpenedSnapshotPositionTicks = engine.Snapshot?.PositionTicks ?? -1;
         loop.OpenedNativeDurationTicks = player.PlaybackSession.NaturalDuration.Ticks;
+        loop.AdaptiveCreationResponsePresentAfterOpen = engine.HasAdaptiveCreationResponseForProbe;
+        if (_sharedNativeHlsPlayerControl)
+        {
+            loop.SharedPlayerSourceBoundAfterOpen = engine.SharedNativeControlSourceBoundForProbe;
+            Require(loop.SharedPlayerSourceBoundAfterOpen == true, "SharedPlayerSourceMissingAfterOpen");
+        }
         loop.SourceDurationTicks = context.Source.RunTimeTicks ?? 0;
         var diagnosticPlaylistUri = _realHlsDiagnostic ? api.ResolveMediaUri(context.Source.TranscodingUrl!) : null;
         if (diagnosticPlaylistUri is not null) await CapturePlaylistSummaryAsync(diagnosticPlaylistUri, api, http, loop, "AfterOpen", ct);
@@ -187,6 +230,12 @@ public sealed partial class App
         player = _element.MediaPlayer;
         Require(player is not null && player.IsMuted && coordinator.ActiveContext?.TimelineOffsetTicks == 0, "HlsSeekContextLost");
         loop.PlaybackReplacedBySeek = coordinator.ActiveContext!.PlaybackId != beforeSeekPlaybackId;
+        loop.AdaptiveCreationResponsePresentAfterSeek = engine.HasAdaptiveCreationResponseForProbe;
+        if (_sharedNativeHlsPlayerControl)
+        {
+            loop.SharedPlayerSourceBoundAfterSeek = engine.SharedNativeControlSourceBoundForProbe;
+            Require(loop.PlaybackReplacedBySeek && loop.SharedPlayerSourceBoundAfterSeek == true, "SharedPlayerSourceNotReplacedBySeek");
+        }
         await WaitAsync(() => player!.PlaybackSession.PlaybackState == MediaPlaybackState.Paused, "HlsSeekDidNotPreservePause", ct);
         loop.PausePreservedAfterSeek = true;
         loop.SeekObservedNativeTicks = player!.PlaybackSession.Position.Ticks;
@@ -202,11 +251,26 @@ public sealed partial class App
         await coordinator.StopAsync(ct);
         loop.PlayerDetached = _element.MediaPlayer is null && coordinator.ActiveContext is null && coordinator.Status == PlaybackStatus.Idle;
         Require(loop.PlayerDetached, "NativeHlsStopDidNotDetach");
+        if (_sharedNativeHlsPlayerControl)
+        {
+            loop.SharedPlayerSourceClearedAfterStop = engine.SharedNativeControlSourceClearedForProbe;
+            Require(loop.SharedPlayerSourceClearedAfterStop == true, "SharedPlayerSourceNotClearedAfterStop");
+        }
         player = null;
         var stoppedRequests = observation.CompletedRequests;
+        var stoppedNativeRequests = nativeHttpControl?.Capture().RequestsAccepted;
         await Task.Delay(1300, ct);
         loop.NoApiRequestsAfterStop = stoppedRequests == observation.CompletedRequests;
         Require(loop.NoApiRequestsAfterStop, "HlsApiRequestsContinuedAfterStop");
+        if (nativeHttpControl is not null)
+        {
+            loop.NativeHttpControl = nativeHttpControl.Capture();
+            loop.NoNativeGuardRequestsAfterStop = stoppedNativeRequests == loop.NativeHttpControl.RequestsAccepted;
+            Require(loop.NoNativeGuardRequestsAfterStop == true
+                && loop.NativeHttpControl.FiltersCreated == loop.Number * 2
+                && loop.NativeHttpControl.FiltersDisposed == loop.NativeHttpControl.FiltersCreated
+                && loop.NativeHttpControl.RequestsRejected == 0, "NativeHttpControlStopInvalid");
+        }
         loop.ApiEvents = observation.Events.Skip(firstEvent).ToList();
         var groups = loop.ApiEvents.Where(value => value.SessionHash is not null).GroupBy(value => value.SessionHash).ToArray();
         loop.ValidReportOrder = groups.Length > 0 && groups.All(group =>

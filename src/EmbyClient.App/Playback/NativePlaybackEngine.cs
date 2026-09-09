@@ -12,6 +12,7 @@ using Windows.Media.Playback;
 using Windows.Media.Streaming.Adaptive;
 using Windows.Storage.Streams;
 using NativeHttpClient = Windows.Web.Http.HttpClient;
+using NativeHttpResponse = Windows.Web.Http.HttpResponseMessage;
 
 namespace EmbyClient.App.Playback;
 
@@ -170,24 +171,38 @@ public sealed partial class NativePlaybackEngine(
                 var creationTask = await OnDispatcherAsync(() =>
                 {
                     EnsureActive(session);
-                    session.AdaptiveFilter = new ScopedAdaptiveHttpFilter(session.Transport,
-                        code => Queue(() => Fail(session, code)));
-                    session.AdaptiveHttp = new NativeHttpClient(session.AdaptiveFilter);
+                    NativeHttpClient? adaptiveHttp = null;
+                    IDisposable? filterOwner = null;
+                    CreateAdaptiveHttpClient(session.Request, ref adaptiveHttp, ref filterOwner);
+                    session.AdaptiveFilterOwner = filterOwner;
+                    if (adaptiveHttp is null)
+                    {
+                        session.AdaptiveFilter = new ScopedAdaptiveHttpFilter(session.Transport,
+                            code => Queue(() => Fail(session, code)));
+                        adaptiveHttp = new NativeHttpClient(session.AdaptiveFilter);
+                    }
+                    session.AdaptiveHttp = adaptiveHttp;
                     return AdaptiveMediaSource.CreateFromUriAsync(session.Request.MediaUri, session.AdaptiveHttp)
                         .AsTask(session.Lifetime.Token);
                 }).ConfigureAwait(false);
                 var result = await creationTask.ConfigureAwait(false);
                 await OnDispatcherAsync(() =>
                 {
+                    var adaptive = result.MediaSource;
+                    var creationResponse = result.HttpResponseMessage;
                     if (!IsActive(session))
                     {
-                        result.MediaSource?.Dispose();
+                        Release(session, "CloseLateAdaptiveSource", () => adaptive?.Dispose());
+                        Release(session, "CloseLateAdaptiveResponse", () => creationResponse?.Dispose());
                         throw new OperationCanceledException(session.Lifetime.Token);
                     }
-                    if (result.Status != AdaptiveMediaSourceCreationStatus.Success || result.MediaSource is null)
+                    // The creation result is not closable, but its source and HTTP response both are.
+                    // Keep the response alive until its adaptive consumer retires, then close it explicitly.
+                    session.AdaptiveSource = adaptive;
+                    session.AdaptiveCreationResponse = creationResponse;
+                    if (result.Status != AdaptiveMediaSourceCreationStatus.Success || adaptive is null)
                         throw new PlaybackException("UnsupportedFormat");
-                    session.AdaptiveSource = result.MediaSource;
-                    session.MediaSource = MediaSource.CreateFromAdaptiveMediaSource(result.MediaSource);
+                    session.MediaSource = MediaSource.CreateFromAdaptiveMediaSource(adaptive);
                 }).ConfigureAwait(false);
             }
             else
@@ -256,12 +271,14 @@ public sealed partial class NativePlaybackEngine(
             ApplySubtitles(session);
         });
         session.Item.TimedMetadataTracksChanged += session.TracksChanged;
-        session.Player = new MediaPlayer
-        {
-            AutoPlay = false,
-            Volume = _volumeLevel / 100d,
-            IsMuted = _isMuted
-        };
+        MediaPlayer? player = null;
+        var ownsPlayer = true;
+        CreateSessionPlayer(session.Request, ref player, ref ownsPlayer);
+        session.OwnsPlayer = player is null || ownsPlayer;
+        session.Player = player ?? new MediaPlayer();
+        session.Player.AutoPlay = false;
+        session.Player.Volume = _volumeLevel / 100d;
+        session.Player.IsMuted = _isMuted;
         session.NativeSession = session.Player.PlaybackSession;
         session.Player.CommandManager.IsEnabled = false;
         InitializeMediaControls(session);
@@ -513,21 +530,25 @@ public sealed partial class NativePlaybackEngine(
             }
             Release(session, "PausePlayer", player.Pause);
             Release(session, "ClearPlayerSource", () => player.Source = null);
-            Release(session, "ClosePlayer", player.Dispose);
+            if (session.OwnsPlayer) Release(session, "ClosePlayer", player.Dispose);
             session.Player = null;
         }
         if (session.Item is not null) Release(session, "UnsubscribeMetadataTracks", () => session.Item.TimedMetadataTracksChanged -= session.TracksChanged);
         if (session.TimedText is not null) Release(session, "UnsubscribeTimedText", () => session.TimedText.Resolved -= session.TimedTextResolved);
         Release(session, "CloseMediaSource", () => session.MediaSource?.Dispose());
         Release(session, "CloseAdaptiveSource", () => session.AdaptiveSource?.Dispose());
+        Release(session, "CloseAdaptiveResponse", () => session.AdaptiveCreationResponse?.Dispose());
         Release(session, "CloseAdaptiveHttp", () => session.AdaptiveHttp?.Dispose());
+        Release(session, "CloseAdaptiveFilterOwner", () => session.AdaptiveFilterOwner?.Dispose());
         session.AdaptiveFilter?.Dispose();
         Release(session, "CloseSubtitleStream", () => session.SubtitleStream?.Dispose());
         session.NativeSession = null;
         session.Item = null;
         session.MediaSource = null;
         session.AdaptiveSource = null;
+        session.AdaptiveCreationResponse = null;
         session.AdaptiveHttp = null;
+        session.AdaptiveFilterOwner = null;
         session.SubtitleStream = null;
         session.TimedText = null;
         session.ExternalTracks = [];
@@ -649,6 +670,11 @@ public sealed partial class NativePlaybackEngine(
     };
 
     private static bool IsHttp(Uri uri) => uri.IsAbsoluteUri && uri.Scheme is "http" or "https" && uri.UserInfo.Length == 0;
+
+    partial void CreateAdaptiveHttpClient(PlaybackEngineRequest request, ref NativeHttpClient? client,
+        ref IDisposable? filterOwner);
+
+    partial void CreateSessionPlayer(PlaybackEngineRequest request, ref MediaPlayer? player, ref bool ownsPlayer);
     private static bool HasPreservedTimestamps(Uri uri)
     {
         var value = QueryValue(uri, "CopyTimestamps");
@@ -691,11 +717,14 @@ public sealed partial class NativePlaybackEngine(
         public bool ExternalTextReady { get; set; }
         public TimedMetadataTrack[] ExternalTracks { get; set; } = [];
         public MediaPlayer? Player { get; set; }
+        public bool OwnsPlayer { get; set; } = true;
         public MediaPlaybackSession? NativeSession { get; set; }
         public MediaSource? MediaSource { get; set; }
         public MediaPlaybackItem? Item { get; set; }
         public AdaptiveMediaSource? AdaptiveSource { get; set; }
+        public NativeHttpResponse? AdaptiveCreationResponse { get; set; }
         public NativeHttpClient? AdaptiveHttp { get; set; }
+        public IDisposable? AdaptiveFilterOwner { get; set; }
         public ScopedAdaptiveHttpFilter? AdaptiveFilter { get; set; }
         public SessionHttpRelay? DirectRelay { get; set; }
         public IRandomAccessStream? SubtitleStream { get; set; }

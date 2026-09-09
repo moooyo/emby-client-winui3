@@ -35,6 +35,8 @@ internal sealed class RealHlsReport
     public List<ResourceSample> FinalIdleSamples { get; init; } = [];
     public List<string> Diagnostics { get; init; } = [];
     public List<HlsNegotiationDiagnostic> Negotiations { get; set; } = [];
+    public NativeHlsHttpControlSample? NativeHttpControl { get; set; }
+    public SharedNativePlayerControlSample? SharedPlayerControl { get; set; }
 }
 
 internal sealed class RealHlsLoop
@@ -49,6 +51,11 @@ internal sealed class RealHlsLoop
     public long OpenedSnapshotPositionTicks { get; set; }
     public long TimelineOffsetTicks { get; set; }
     public long OpenedNativeDurationTicks { get; set; }
+    public bool AdaptiveCreationResponsePresentAfterOpen { get; set; }
+    public bool AdaptiveCreationResponsePresentAfterSeek { get; set; }
+    public bool? SharedPlayerSourceBoundAfterOpen { get; set; }
+    public bool? SharedPlayerSourceBoundAfterSeek { get; set; }
+    public bool? SharedPlayerSourceClearedAfterStop { get; set; }
     public long SourceDurationTicks { get; set; }
     public uint VideoWidth { get; set; }
     public uint VideoHeight { get; set; }
@@ -80,6 +87,8 @@ internal sealed class RealHlsLoop
     public long ResumeNativePositionTicks { get; set; }
     public bool PlayerDetached { get; set; }
     public bool NoApiRequestsAfterStop { get; set; }
+    public bool? NoNativeGuardRequestsAfterStop { get; set; }
+    public NativeHlsHttpControlSample? NativeHttpControl { get; set; }
     public bool ValidReportOrder { get; set; }
     public int SuccessfulEncodingCleanups { get; set; }
     public ResourceSample? Resources { get; set; }

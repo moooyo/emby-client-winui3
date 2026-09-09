@@ -23,6 +23,8 @@ public sealed partial class App : Application
     private string? _controlMediaDirectory;
     private string? _realHlsCredentialsPath;
     private bool _realHlsDiagnostic;
+    private bool _nativeHlsHttpControl;
+    private bool _sharedNativeHlsPlayerControl;
     private bool _noInFlightGc;
     private bool _noGcRegionActive;
     private const long NoGcRegionBudget = 64L * 1024 * 1024;
@@ -51,6 +53,19 @@ public sealed partial class App : Application
             directory = diagnosticDirectory;
             _realHlsCredentialsPath = Path.GetFullPath(diagnosticCredentialPath);
             _realHlsDiagnostic = true;
+        }
+        else if (commandLine is ["--output-dir", var nativeHlsDirectory, "--real-hls", "--credentials-file", var nativeHlsCredentialPath, "--native-http-control"])
+        {
+            directory = nativeHlsDirectory;
+            _realHlsCredentialsPath = Path.GetFullPath(nativeHlsCredentialPath);
+            _nativeHlsHttpControl = true;
+        }
+        else if (commandLine is ["--output-dir", var sharedHlsDirectory, "--real-hls", "--credentials-file", var sharedHlsCredentialPath, "--native-http-shared-player-control"])
+        {
+            directory = sharedHlsDirectory;
+            _realHlsCredentialsPath = Path.GetFullPath(sharedHlsCredentialPath);
+            _nativeHlsHttpControl = true;
+            _sharedNativeHlsPlayerControl = true;
         }
         else if (commandLine is ["--output-dir", var experimentDirectory, "--no-inflight-gc"])
         {
