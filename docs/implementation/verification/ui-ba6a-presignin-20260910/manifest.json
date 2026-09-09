@@ -1,5 +1,5 @@
 {
-  "Scope": "Frozen pre-sign-in prefix, not a completed library or application session",
+  "Scope": "Two frozen pre-sign-in prefixes from one instrumented process; no completed library or application session",
   "Files": [
     {
       "File": ".gitattributes",
@@ -25,6 +25,16 @@
       "File": "pre-sign-in-analysis.json",
       "Bytes": 4481,
       "Sha256": "5cdff149b44a39a3587cff18a0b34704c668d9e09f41fc69be14214aa0fab83b"
+    },
+    {
+      "File": "pre-sign-in-first-gc-analysis.json",
+      "Bytes": 10900,
+      "Sha256": "73a1492809ddc12ca6f4ae2be55c83dd54524fc085065870b826cf4d9a7b0156"
+    },
+    {
+      "File": "pre-sign-in-first-gc-snapshot.jsonl",
+      "Bytes": 285198,
+      "Sha256": "c654b7309bdd1fa1409988866d0303cdad7abb80a4cf9f45aeba48d99a18f96c"
     },
     {
       "File": "pre-sign-in-snapshot.jsonl",

@@ -1,0 +1,259 @@
+{
+  "SchemaVersion": 1,
+  "EvidenceKind": "FrozenInstrumentedPreSignInFirstGcAnalysis",
+  "GeneratedAtUtc": "2026-09-09T21:39:57.0498377+00:00",
+  "SourceFileName": "pre-sign-in-first-gc-snapshot.jsonl",
+  "SourceSha256": "C654B7309BDD1FA1409988866D0303CDAD7ABB80A4CF9F45AEBA48D99A18F96C",
+  "SourceRows": 206,
+  "PriorSnapshot": {
+    "FileName": "pre-sign-in-snapshot.jsonl",
+    "Sha256": "436456A63CFCECE30459A897858D69EB41E5C0FA9AFA66A69788127F7155B595",
+    "Rows": 87,
+    "ExactLineContentPrefixMatches": true,
+    "ComparisonScope": "Line contents match in order; newline encodings are not part of this comparison. The previous snapshot and analysis were not modified."
+  },
+  "Identity": {
+    "ProcessId": 15620,
+    "ExecutableSha256": "BA6AFB8D18E86E33DB8CB4C9BD1EDF1F5146AB47182C97EC1B0FC8D57752940F",
+    "SourceRevision": "bc3d290839e708beeefb0bd736f6206876ebda5e",
+    "ObservationEnabled": true,
+    "ObservedProcessIds": [
+      15620
+    ]
+  },
+  "Scope": "A frozen numeric snapshot from the instrumented process before manual sign-in. No live log, app runtime, UI, network route, or fixture was accessed by this analysis.",
+  "FirstGcObservation": {
+    "BeforeRowOneBased": 125,
+    "AfterRowOneBased": 126,
+    "BeforeUtc": "2026-09-09T21:30:38.7450000+00:00",
+    "AfterUtc": "2026-09-09T21:30:43.7510000+00:00",
+    "AdjacentSampleSpanSeconds": 5.006,
+    "Before": {
+      "UtcUnixTimeMilliseconds": 1788989438745,
+      "ElapsedMilliseconds": 620945,
+      "ManagedBytes": 15947888,
+      "ManagedAllocatedBytesApproximate": 15887784,
+      "ProcessPrivateBytes": 117882880,
+      "ProcessWorkingSetBytes": 135172096,
+      "ProcessHandleCount": 1041,
+      "ProcessCpuMilliseconds": 21812,
+      "Gen0Collections": 0,
+      "Gen1Collections": 0,
+      "Gen2Collections": 0,
+      "LastGcIndex": 0,
+      "LastGcHeapSizeBytes": 0,
+      "LastGcFragmentedBytes": 0,
+      "LastGcCommittedBytes": 0,
+      "ObserverCompletedSamples": 124,
+      "ObserverCompletedSampleAllocatedBytes": 1600664
+    },
+    "After": {
+      "UtcUnixTimeMilliseconds": 1788989443751,
+      "ElapsedMilliseconds": 625951,
+      "ManagedBytes": 1438816,
+      "ManagedAllocatedBytesApproximate": 15977872,
+      "ProcessPrivateBytes": 119128064,
+      "ProcessWorkingSetBytes": 136654848,
+      "ProcessHandleCount": 1039,
+      "ProcessCpuMilliseconds": 21921,
+      "Gen0Collections": 1,
+      "Gen1Collections": 0,
+      "Gen2Collections": 0,
+      "LastGcIndex": 1,
+      "LastGcHeapSizeBytes": 1370720,
+      "LastGcFragmentedBytes": 14112,
+      "LastGcCommittedBytes": 17256448,
+      "ObserverCompletedSamples": 125,
+      "ObserverCompletedSampleAllocatedBytes": 1613192
+    },
+    "ByteChanges": [
+      {
+        "Field": "ManagedBytes",
+        "DeltaBytes": -14509072,
+        "DeltaMiB": -13.836929321289062
+      },
+      {
+        "Field": "ManagedAllocatedBytesApproximate",
+        "DeltaBytes": 90088,
+        "DeltaMiB": 0.08591461181640625
+      },
+      {
+        "Field": "ProcessPrivateBytes",
+        "DeltaBytes": 1245184,
+        "DeltaMiB": 1.1875
+      },
+      {
+        "Field": "ProcessWorkingSetBytes",
+        "DeltaBytes": 1482752,
+        "DeltaMiB": 1.4140625
+      },
+      {
+        "Field": "ObserverCompletedSampleAllocatedBytes",
+        "DeltaBytes": 12528,
+        "DeltaMiB": 0.0119476318359375
+      }
+    ],
+    "ManagedBytesDropPercent": 90.97801539614524,
+    "CpuMillisecondsDelta": 109,
+    "HandleCountDelta": -2,
+    "ObserverCompletedSamplesDelta": 1,
+    "Interpretation": "The first sampled GC transition is Gen 0 from 0 to 1 and LastGcIndex from 0 to 1; Gen 1 and Gen 2 remain zero. ManagedBytes falls by 14,509,072 bytes while private bytes increase by 1,245,184 bytes. These are adjacent sampled values, not the exact GC event time or a causal decomposition of process memory."
+  },
+  "PostFirstGcSegment": {
+    "IncludesFirstPostGcSample": true,
+    "Rows": 81,
+    "FirstElapsedMilliseconds": 625951,
+    "LastElapsedMilliseconds": 1026613,
+    "SampledSpanSeconds": 400.662,
+    "FirstUtc": "2026-09-09T21:30:43.7510000+00:00",
+    "LastUtc": "2026-09-09T21:37:24.4130000+00:00",
+    "Final": {
+      "UtcUnixTimeMilliseconds": 1788989844413,
+      "ElapsedMilliseconds": 1026613,
+      "ManagedBytes": 8223576,
+      "ManagedAllocatedBytesApproximate": 22742856,
+      "ProcessPrivateBytes": 119894016,
+      "ProcessWorkingSetBytes": 136851456,
+      "ProcessHandleCount": 1031,
+      "ProcessCpuMilliseconds": 34250,
+      "Gen0Collections": 1,
+      "Gen1Collections": 0,
+      "Gen2Collections": 0,
+      "LastGcIndex": 1,
+      "LastGcHeapSizeBytes": 1370720,
+      "LastGcFragmentedBytes": 14112,
+      "LastGcCommittedBytes": 17256448,
+      "ObserverCompletedSamples": 205,
+      "ObserverCompletedSampleAllocatedBytes": 2608312
+    },
+    "ByteChanges": [
+      {
+        "Field": "ManagedBytes",
+        "DeltaBytes": 6784760,
+        "DeltaMiB": 6.470451354980469,
+        "SampledMinimumBytes": 1438816.0,
+        "SampledMaximumBytes": 8223576.0
+      },
+      {
+        "Field": "ManagedAllocatedBytesApproximate",
+        "DeltaBytes": 6764984,
+        "DeltaMiB": 6.451591491699219,
+        "SampledMinimumBytes": 15977872.0,
+        "SampledMaximumBytes": 22742856.0
+      },
+      {
+        "Field": "ProcessPrivateBytes",
+        "DeltaBytes": 765952,
+        "DeltaMiB": 0.73046875,
+        "SampledMinimumBytes": 119037952.0,
+        "SampledMaximumBytes": 119894016.0
+      },
+      {
+        "Field": "ProcessWorkingSetBytes",
+        "DeltaBytes": 196608,
+        "DeltaMiB": 0.1875,
+        "SampledMinimumBytes": 136617984.0,
+        "SampledMaximumBytes": 136941568.0
+      },
+      {
+        "Field": "ObserverCompletedSampleAllocatedBytes",
+        "DeltaBytes": 995120,
+        "DeltaMiB": 0.9490203857421875,
+        "SampledMinimumBytes": 1613192.0,
+        "SampledMaximumBytes": 2608312.0
+      }
+    ],
+    "CpuSecondsDelta": 12.329,
+    "AverageCpuPercentOfOneLogicalCore": 3.0771573046607865,
+    "HandleCountDelta": -8,
+    "SampledHandleCountMinimum": 1031.0,
+    "SampledHandleCountMaximum": 1039.0,
+    "ObserverCompletedSamplesDelta": 80,
+    "Gen0Values": [
+      1
+    ],
+    "Gen1Values": [
+      0
+    ],
+    "Gen2Values": [
+      0
+    ],
+    "LastGcIndexValues": [
+      1
+    ],
+    "LastGcHeapSizeBytesValues": [
+      1370720
+    ],
+    "LastGcFragmentedBytesValues": [
+      14112
+    ],
+    "LastGcCommittedBytesValues": [
+      17256448
+    ]
+  },
+  "FiniteConstantPrivateBytesTail": {
+    "FirstRowOneBased": 147,
+    "Rows": 60,
+    "FirstElapsedMilliseconds": 731123,
+    "LastElapsedMilliseconds": 1026613,
+    "SampledSpanSeconds": 295.49,
+    "PrivateBytesAtEverySample": 119894016,
+    "PrivateMiBAtEverySample": 114.33984375,
+    "Interpretation": "All 60 recorded points have the same private-byte value over 295.490 seconds. This is a finite sampled interval, not proof of continuous constancy, a long-term plateau, or library acceptance."
+  },
+  "ZeroActivityChecks": {
+    "RowsChecked": 206,
+    "FieldsChecked": 34,
+    "Fields": [
+      "ItemsCount",
+      "LibraryIsHome",
+      "LibraryHasDetails",
+      "LibraryIsBusy",
+      "PosterSubscriptionsCount",
+      "PosterRequestsCount",
+      "BoundPosterSourcesCount",
+      "LoadedPosterControlsCount",
+      "AttachedPosterControlsCount",
+      "RealizedPosterControlsCount",
+      "DetailPosterBound",
+      "LoadedTotal",
+      "UnloadedTotal",
+      "TagChangedTotal",
+      "AssignedTotal",
+      "ClearedTotal",
+      "PosterLoadRequestedTotal",
+      "PosterLoadRejectedTotal",
+      "PosterLoadDeduplicatedTotal",
+      "DecodeStartedTotal",
+      "DecodeCompletedTotal",
+      "DecodeCanceledTotal",
+      "DecodeFailedTotal",
+      "DecodeActive",
+      "DecodePeak",
+      "PresentationClockEnabled",
+      "PresentationClockTicks",
+      "PositionUpdateCalls",
+      "WeakImageTrackedCount",
+      "WeakImageAliveCount",
+      "WeakImageEvictions",
+      "WeakBitmapTrackedCount",
+      "WeakBitmapAliveCount",
+      "WeakBitmapEvictions"
+    ],
+    "AllZero": true,
+    "NonZeroFields": []
+  },
+  "InterpretationAndLimits": [
+    "The original 87-row growth remains valid for its original no-GC window. The longer snapshot demonstrates that a large amount of accumulated managed memory was collectible at the first observed Gen 0 collection; the earlier upward trend must not be treated as evidence of monotonically growing retained objects.",
+    "GC.GetTotalMemory(false) includes allocations that have become unreachable but have not been collected. The single Gen 0 transition does not identify individual types, allocation sites, roots, or which earlier-window objects were reclaimed.",
+    "LastGcIndex was zero before the first transition, so the earlier zero LastGc heap and committed values were unavailable last-GC information, not measurements of an empty current heap.",
+    "After the transition, LastGcHeapSizeBytes is 1,370,720, LastGcFragmentedBytes is 14,112, and LastGcCommittedBytes is 17,256,448. These remain the last-GC snapshot throughout the tail and must not be presented as live heap or live committed-byte readings.",
+    "Managed memory increases again after the collection while process private bytes change much less and then remain constant at the recorded tail points. This is consistent with reuse of already committed capacity, but does not establish allocation ownership or rule out other managed/native retention.",
+    "All 34 checked item, Home/details/busy, poster, decoder, weak-target, presentation-clock, and position-update fields are zero across all 206 rows. The measured pre-sign-in growth does not require activity in those observed paths; other control, window, runtime, and observer allocations remain unclassified.",
+    "ObserverCompletedSampleAllocatedBytes is an estimate of prior completed synchronous sampling work on the current thread. It excludes other observer callbacks, asynchronous/native work, and other threads; do not subtract it as a complete observer cost estimate.",
+    "CPU is whole-process CPU including observation overhead, expressed relative to one logical core. Samples are not atomic across all runtime, process, and UI counters.",
+    "Only one Gen 0 collection is observed, with no Gen 1 or Gen 2 collection. This does not prove stability over repeated collections, full-library browsing, playback, or the earlier uninstrumented 779B candidate.",
+    "No garbage collection was requested by this read-only frozen-data analysis, and no new runtime verification was performed."
+  ],
+  "SupportedNextStep": "Continue the planned library attribution session when manual sign-in is available, retain the pre-sign-in baseline, and compare post-collection low-water marks and poster lifecycle counts within the same instrumented artifact. Do not change resource ownership or declare a leak fixed from this single collection."
+}

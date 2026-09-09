@@ -66,7 +66,7 @@ Real-server checks used an isolated official Emby `4.9.5.0` Linux amd64 instance
 
 ## Remaining release gates
 
-The subsequent [bc3d290 hosted run](verification/windows-ci-bc3d290.json) now passes all 449 tests, normal AOT, and unsigned MSIX checks, including the startup-initialization repair. The live BA6A observation client is awaiting manual saved sign-in. Its [pre-sign-in prefix](verification/ui-ba6a-presignin-20260910/pre-sign-in-analysis.json) adds allocation evidence without poster or playback-clock work, but does not replace the pending library/Home experiment or close the memory gate.
+The subsequent [bc3d290 hosted run](verification/windows-ci-bc3d290.json) now passes all 449 tests, normal AOT, and unsigned MSIX checks, including the startup-initialization repair. The BA6A client is awaiting manual saved sign-in. Its frozen prefixes show allocation without poster/playback-clock work, then a natural Gen 0 collection that reduces ManagedBytes by 13.8369 MiB and a finite private-byte tail with no sampled change. The [first-GC analysis](verification/ui-ba6a-presignin-20260910/pre-sign-in-first-gc-analysis.json) does not replace the pending library/Home experiment or close the memory gate. Further automated continuation is blocked on the manual authentication handoff; the controlled-fixture launch restriction also remains unresolved.
 
 - Resolve large-library memory behavior and complete the remaining subtitle and integrated acceptance checks.
 - Establish the repaired late-pointer, failed-detail/queue-loading, delayed sign-out/close, and whole-app Opening-close boundaries with observable triggering conditions. The completed 779B ordinary paths do not certify them.
