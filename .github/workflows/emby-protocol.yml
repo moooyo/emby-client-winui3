@@ -1,0 +1,115 @@
+name: Manual official Emby protocol checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  disposable-emby:
+    name: Disposable Emby 4.9.5.0 API and HTTP media contracts
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      RestoreLockedMode: 'true'
+    steps:
+      - name: Check out the requested main revision without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify report filtering and owned-resource cleanup without a server
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python3 -B -m unittest discover -s tools/EmbyClient.ServerValidation/Ci -p test_protocol_ci.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Protocol orchestration unit checks failed.' }
+
+      - name: Read the exact SDK and choose isolated CLI outputs
+        id: sdk
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'A concrete SDK version is required.' }
+          Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value ("version={0}" -f $version)
+          $directories = @{
+              DOTNET_INSTALL_DIR = (Join-Path $env:RUNNER_TEMP 'dotnet-protocol')
+              DOTNET_ROOT = (Join-Path $env:RUNNER_TEMP 'dotnet-protocol')
+              DOTNET_ROOT_X64 = (Join-Path $env:RUNNER_TEMP 'dotnet-protocol')
+              NUGET_PACKAGES = (Join-Path $env:RUNNER_TEMP 'nuget-protocol')
+              EMBY_PROTOCOL_BUILD = (Join-Path $env:RUNNER_TEMP 'emby-protocol-build')
+              EMBY_PROTOCOL_PROBE = (Join-Path $env:RUNNER_TEMP 'emby-protocol-probe')
+          }
+          foreach ($entry in $directories.GetEnumerator()) {
+              Add-Content -LiteralPath $env:GITHUB_ENV -Value ("{0}={1}" -f $entry.Key, $entry.Value)
+          }
+
+      - name: Install the repository SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ steps.sdk.outputs.version }}
+          architecture: x64
+
+      - name: Build the portable CLI from the existing ApiProbe sources
+        timeout-minutes: 8
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expected = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          $actual = (& dotnet --version).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actual -ne $expected) { throw 'The active SDK differs from global.json.' }
+          $project = 'tools/EmbyClient.ServerValidation/Ci/ApiProbe.Ci.csproj'
+          dotnet restore $project --locked-mode -p:Configuration=Release --artifacts-path $env:EMBY_PROTOCOL_BUILD --nologo
+          if ($LASTEXITCODE -ne 0) { throw 'Locked CLI restore failed.' }
+          dotnet publish $project -c Release --no-restore --self-contained false --artifacts-path $env:EMBY_PROTOCOL_BUILD -o $env:EMBY_PROTOCOL_PROBE --nologo
+          if ($LASTEXITCODE -ne 0) { throw 'Portable protocol CLI publication failed.' }
+
+      - name: Install fixture generation tools on the disposable runner
+        timeout-minutes: 5
+        run: |
+          $ErrorActionPreference = 'Stop'
+          sudo apt-get update -qq
+          if ($LASTEXITCODE -ne 0) { throw 'Runner package metadata refresh failed.' }
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          if ($LASTEXITCODE -ne 0) { throw 'Fixture tooling installation failed.' }
+
+      - name: Run owned server initialization and the protocol checks
+        timeout-minutes: 20
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $probe = Join-Path $env:EMBY_PROTOCOL_PROBE 'ApiProbe.Ci.dll'
+          python3 tools/EmbyClient.ServerValidation/Ci/protocol_ci.py run --probe $probe
+          if ($LASTEXITCODE -ne 0) { throw 'The disposable protocol check failed; inspect the safe summary.' }
+
+      - name: Always remove this run's owned server, network, and private files
+        if: always()
+        timeout-minutes: 3
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $script = 'tools/EmbyClient.ServerValidation/Ci/protocol_ci.py'
+          if (Test-Path -LiteralPath $script -PathType Leaf) {
+              python3 $script cleanup
+              if ($LASTEXITCODE -ne 0) { throw 'Owned-resource cleanup did not complete.' }
+          }
+
+      - name: Upload only the reconstructed protocol summary
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: emby-protocol-summary-${{ github.sha }}-${{ github.run_attempt }}
+          path: artifacts/emby-protocol-ci-summary/summary.json
+          if-no-files-found: ignore
+          retention-days: 7
+          include-hidden-files: false
+          archive: true

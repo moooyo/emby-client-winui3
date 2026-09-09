@@ -1,6 +1,6 @@
 # Windows continuous integration
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The latest audited [run 34317011874](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874), exact source `71e9ffb7c5bb53857895a79aabb1edb3ead3266d`, passed all 387 tests and every job step, completing at 2026-09-09 06:01:43 UTC. Earlier successful and failed checkpoints remain recorded below. Hosted success establishes build/test/package results; the [keyboard and dialog-focus observations](ui-validation.md#keyboard-timeline-and-dialog-focus-checkpoints-dbc6c326-and-77a90d2d) are separate desktop evidence tied to their own executable hashes.
+The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The latest audited [run 34318519636](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636), exact source `19b434d8ffb58ed9d8f75557beacb64ae9fa29c3`, passed all 392 tests and every job step, completing at 2026-09-09 06:21:38 UTC. Earlier successful and failed checkpoints remain recorded below. Hosted success establishes build/test/package results; the [keyboard and dialog-focus observations](ui-validation.md#keyboard-timeline-and-dialog-focus-checkpoints-dbc6c326-and-77a90d2d) are separate desktop evidence tied to their own executable hashes. The idle presentation-clock change has no new desktop or memory-impact result.
 
 The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`, where runner environment variables are available.
 
@@ -88,7 +88,7 @@ The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-05024
 
 All three archives were unexpired at inspection, with expiry dates on 2026-09-16. No application/package artifact was downloaded or installed during this audit, so the contained-package hash remains builder-reported. The package log explicitly leaves installation and packaged runtime behavior unverified. The separately observed timeline keys and four Queue/Diagnostics focus-return paths do not expand hosted CI into native UI, Narrator, physical-key, complex-subtitle, or installed-release acceptance.
 
-### Latest receipt: progressive transport revision 71e9ffb
+### Progressive transport revision 71e9ffb
 
 Read-only job, log, and artifact inspection confirmed [run 34317011874 / job 102355241584](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874/job/102355241584) for exact source `71e9ffb7c5bb53857895a79aabb1edb3ead3266d`. All 16 steps succeeded, completing at **2026-09-09 06:01:43 UTC**. The runner reports image `win25-vs2026 20260824.214.3` and the pinned SDK `10.0.301`.
 
@@ -103,6 +103,24 @@ The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-06011
 | [CI logs archive 10090504729](https://github.com/moooyo/emby-client-winui3/actions/runs/34317011874/artifacts/10090504729) | 3,490 | `a0af9f8c61d23e175b17d227a713d906cb1aafaf3badc679307ae4cfb65dffeb` |
 
 All three archives were unexpired at inspection. Their names end with the full source SHA above. No package or application archive was downloaded or installed for this audit; the contained package hash is builder-reported. The separate local [NativeProbe compile-only receipt](../../tools/EmbyClient.NativeProbe/verification/progressive-http-control-build.json) is not a hosted or runtime result. Native progressive rendering, complex subtitles, and installed playback remain unverified.
+
+### Latest receipt: idle presentation clock revision 19b434d
+
+The recorded read-only GitHub job/log/artifact inspection confirmed [run 34318519636 / job 102359801545](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636/job/102359801545) for exact source `19b434d8ffb58ed9d8f75557beacb64ae9fa29c3`. All reported job steps succeeded, completing at **2026-09-09 06:21:38 UTC**.
+
+The unified Release test run passed **392 tests**: API 47, media transport 120, Windows platform 93, and playback 132. Every project's total equaled its succeeded count, with no failed or skipped cases. The five added platform cases cover display-release lifecycle and retry policy. The solution build retained **one existing generated `CS0618` warning and zero errors**. Native AOT publication, the 18-component SBOM, unsigned MSIX structural verification, and all uploads succeeded.
+
+The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-062118947-d4b70ed9.msix`, with builder-reported file SHA-256 **`848284D58E888A7F8A3458D72527FC77EA4C79A36FF1712A4B6FE348E3311803`**. The recorded Actions artifact metadata is:
+
+| Artifact | Archive bytes | GitHub archive SHA-256 digest |
+| --- | ---: | --- |
+| [Unsigned MSIX archive 10091011572](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636/artifacts/10091011572) | 54,317,019 | `dbd15f55da0465ab90f205bb6c0acac22809f2e5b41a8845c82d362cf97d9704` |
+| [AOT development-folder archive 10091013126](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636/artifacts/10091013126) | 75,972,397 | `2f9869817fd7577a57208d45476e1de9ae7574f68585cfbc63cb4f4acf7cbee3` |
+| [CI logs archive 10091013651](https://github.com/moooyo/emby-client-winui3/actions/runs/34318519636/artifacts/10091013651) | 3,488 | `681d8e1c4b1bd2c9185785845aa146b71d145fd64f18ae91450180a452f6b539` |
+
+All three archives were unexpired at the recorded inspection. Archive digests identify the uploaded archives, not their contained executable or package. No artifact download, installation, build, or runtime verification was performed for this documentation update; the contained package hash remains builder-reported.
+
+This revision includes `DisplayNeedsReleaseRetry` and terminal live-state reconciliation. The added platform tests cover display-release policy; compilation of the UI reconciliation path is not a runtime observation. This receipt does not show an actual dispatcher timer stopping, display sleep/release behavior on a live window, fewer wakeups, or reduced private memory. Earlier large-library growth and complex-subtitle failures remain unchanged. The separate manual Emby protocol lane is not included in this result and has no completed receipt in this snapshot.
 
 ## Pinned official actions
 
