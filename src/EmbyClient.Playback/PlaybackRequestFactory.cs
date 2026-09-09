@@ -85,7 +85,7 @@ internal static class PlaybackRequestFactory
             }
 
             // Alternate versions can share their parent's video route while MediaSourceId selects the actual file.
-            // Route identity must stay inside the configured API root, but need not equal the selected library item ID.
+            // Route identity must stay inside the configured server mount, but need not equal the selected library item ID.
             if (!TryGetVideoResource(api.ApiRoot, uri, out var videoResource))
                 throw new PlaybackException("UnknownTranscodeTimeline");
             var staticBytes = GetQueryParameter(uri, "Static", rejectDuplicates: true);
@@ -182,9 +182,20 @@ internal static class PlaybackRequestFactory
     private static bool TryGetVideoResource(Uri apiRoot, Uri uri, out string resource)
     {
         resource = string.Empty;
-        var videoPrefix = new Uri(apiRoot, "Videos/").AbsolutePath;
-        if (!uri.AbsolutePath.StartsWith(videoPrefix, StringComparison.OrdinalIgnoreCase)) return false;
-        var segments = uri.AbsolutePath[videoPrefix.Length..].Split('/');
+        var apiPath = apiRoot.AbsolutePath;
+        if (!apiPath.EndsWith("/emby/", StringComparison.OrdinalIgnoreCase)) return false;
+        // Emby accepts an optional terminal /emby API alias. Removing it must never remove a configured proxy mount.
+        // Preserve the mount's path casing; only Emby's route components are case-insensitive.
+        var serverMount = apiPath[..^5];
+        if (!uri.AbsolutePath.StartsWith(serverMount, StringComparison.Ordinal)) return false;
+        var mountedPath = uri.AbsolutePath[serverMount.Length..];
+        const string canonicalPrefix = "emby/Videos/";
+        const string aliasPrefix = "Videos/";
+        var relativeVideoPath = mountedPath.StartsWith(canonicalPrefix, StringComparison.OrdinalIgnoreCase)
+            ? mountedPath[canonicalPrefix.Length..]
+            : mountedPath.StartsWith(aliasPrefix, StringComparison.OrdinalIgnoreCase) ? mountedPath[aliasPrefix.Length..] : null;
+        if (relativeVideoPath is null) return false;
+        var segments = relativeVideoPath.Split('/');
         if (segments.Length != 2 || segments[0].Length == 0 || segments[1].Length == 0) return false;
         var routeId = Uri.UnescapeDataString(segments[0]);
         if (routeId is "." or ".." || routeId.Any(character => char.IsControl(character) || char.IsWhiteSpace(character)

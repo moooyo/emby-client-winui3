@@ -7,10 +7,10 @@ internal sealed class PlaybackTestContext : IAsyncDisposable
 {
     private int negotiationCount;
 
-    public PlaybackTestContext(TimeProvider? timeProvider = null, TimeSpan? progressInterval = null)
+    public PlaybackTestContext(TimeProvider? timeProvider = null, TimeSpan? progressInterval = null, Uri? apiRoot = null)
     {
         Http = new HttpClient(Handler) { Timeout = Timeout.InfiniteTimeSpan };
-        Api = new EmbyApiClient(Http, new Uri("https://server.example/emby/"),
+        Api = new EmbyApiClient(Http, apiRoot ?? new Uri("https://server.example/emby/"),
             new ClientIdentity("Playback Test", "Test PC", "device-test", "0.1.0"), "test-token", "user-test");
         Handler.RespondAsync = (request, _) => Task.FromResult(Respond(request));
         Coordinator = new PlaybackCoordinator(Api, Engine, new PlaybackCoordinatorOptions
