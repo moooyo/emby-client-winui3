@@ -61,6 +61,8 @@ The [retained build manifest](verification/attribution-20260910/build.json) reco
 
 The observation executable is `b4c41de8bffe5c2d7add38960b9507673b2077781ec55501f96e585586cc8fb9`, 18,012,672 bytes. Both compilation paths retain only the existing generated WinUIEx CS0618 warning. The observation application was not launched, no runtime JSONL existed at archival, and the normal product AOT was not republished by this stage. These results do not resolve the preceding private-memory trend.
 
+The subsequent [startup-safe observation build](verification/startup-attribution-20260910/build.json) is `ba6afb8d18e86e33db8cb4c9bd1edf1f5146ab47182c97ec1b0fc8d57752940f`. It includes the later settings-initialization repair and has its own [compile inputs](verification/startup-attribution-20260910/compile-inputs.json). Its manifest's normal-build flag is false because this invocation published only the observation variant; the [separate normal AOT receipt](../../docs/implementation/verification/startup-initialization-aot-20260910.json) records 0E84F458. Both source audits completed before the newly authorized runtime batch.
+
 ## Build checkpoint, not runtime evidence
 
 On 2026-09-09, `Publish-Observation.ps1 -VerifyNormalBuild` completed the ordinary Release build and the enabled Native AOT publish using .NET SDK 10.0.301. The ordinary build had zero errors and the existing generated WinUIEx `Icon` warning (`CS0618`); the observation publish introduced no additional reported warning. Source hashes remained unchanged during verification.

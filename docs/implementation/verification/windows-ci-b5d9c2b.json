@@ -1,0 +1,160 @@
+{
+  "SourceRevision": "b5d9c2baf5dcc57e7d5c5d9e7f629546e60d7dbd",
+  "RunId": 34404127109,
+  "Url": "https://github.com/moooyo/emby-client-winui3/actions/runs/34404127109",
+  "Status": "completed",
+  "Conclusion": "success",
+  "CompletedAtUtc": "2026-09-09T21:00:29Z",
+  "JobId": 102642877931,
+  "SuccessfulSteps": 16,
+  "Tests": {
+    "Api": 47,
+    "MediaTransport": 125,
+    "Platform": 132,
+    "Playback": 136,
+    "Passed": 440,
+    "Failed": 0,
+    "Skipped": 0
+  },
+  "NativeAot": "Passed",
+  "UnsignedMsixStructure": "Passed",
+  "PackageSha256": "3FC99CEC79BF618966BFC3A1CF745C1C78E99BA296739B1E79F73D6B1B10F296",
+  "SbomComponents": 18,
+  "SbomSchemaValidation": "NotRun",
+  "Warnings": [
+    "Existing generated WinUIEx CS0618"
+  ],
+  "Scope": "Hosted Windows build, tests, Native AOT, and unsigned package; no desktop, decoder, installed runtime, or new memory acceptance",
+  "SeparateLocalFixtureChecks": 40,
+  "LogSha256": "8e31326ffc583c7a638e5ce222923e7eda8d1b3833d5fdba79633f6b043e1252",
+  "Steps": [
+    {
+      "completedAt": "2026-09-09T20:57:34Z",
+      "conclusion": "success",
+      "name": "Set up job",
+      "number": 1,
+      "startedAt": "2026-09-09T20:57:31Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:57:44Z",
+      "conclusion": "success",
+      "name": "Check out the requested revision",
+      "number": 2,
+      "startedAt": "2026-09-09T20:57:34Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:57:45Z",
+      "conclusion": "success",
+      "name": "Read the exact SDK version from global.json",
+      "number": 3,
+      "startedAt": "2026-09-09T20:57:44Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:58:05Z",
+      "conclusion": "success",
+      "name": "Install the repository SDK into an isolated directory",
+      "number": 4,
+      "startedAt": "2026-09-09T20:57:45Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:58:12Z",
+      "conclusion": "success",
+      "name": "Record the SDK and required Windows compiler toolchain",
+      "number": 5,
+      "startedAt": "2026-09-09T20:58:05Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:58:23Z",
+      "conclusion": "success",
+      "name": "Restore the solution and all test projects in locked mode",
+      "number": 6,
+      "startedAt": "2026-09-09T20:58:12Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:58:54Z",
+      "conclusion": "success",
+      "name": "Build the Release solution",
+      "number": 7,
+      "startedAt": "2026-09-09T20:58:23Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T20:59:10Z",
+      "conclusion": "success",
+      "name": "Run API, platform, playback, and media transport tests",
+      "number": 8,
+      "startedAt": "2026-09-09T20:58:54Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:00Z",
+      "conclusion": "success",
+      "name": "Publish the unsigned Native AOT application",
+      "number": 9,
+      "startedAt": "2026-09-09T20:59:10Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:11Z",
+      "conclusion": "success",
+      "name": "Package and verify the unsigned MSIX candidate",
+      "number": 10,
+      "startedAt": "2026-09-09T21:00:00Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:13Z",
+      "conclusion": "success",
+      "name": "Upload the structurally verified unsigned MSIX candidate",
+      "number": 11,
+      "startedAt": "2026-09-09T21:00:11Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:17Z",
+      "conclusion": "success",
+      "name": "Upload the complete runnable development folder",
+      "number": 12,
+      "startedAt": "2026-09-09T21:00:13Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:17Z",
+      "conclusion": "success",
+      "name": "Upload available build and test diagnostics",
+      "number": 13,
+      "startedAt": "2026-09-09T21:00:17Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:26Z",
+      "conclusion": "success",
+      "name": "Post Install the repository SDK into an isolated directory",
+      "number": 25,
+      "startedAt": "2026-09-09T21:00:18Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:28Z",
+      "conclusion": "success",
+      "name": "Post Check out the requested revision",
+      "number": 26,
+      "startedAt": "2026-09-09T21:00:26Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-09-09T21:00:28Z",
+      "conclusion": "success",
+      "name": "Complete job",
+      "number": 27,
+      "startedAt": "2026-09-09T21:00:28Z",
+      "status": "completed"
+    }
+  ]
+}

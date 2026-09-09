@@ -4,6 +4,14 @@ The 2026-09-10 code review identified concrete failure and ownership paths indep
 
 ## Account exit and window shutdown
 
+### Settings initialization before authentication
+
+A later review found that the initial sign-in button was enabled while the first settings read was pending. An early login could create its API client with the temporary device identity and enqueue a save of the temporary account list before the real settings instance became available. This could overwrite previously saved accounts after the storage lock was released.
+
+The startup UI now begins disabled and enables connection actions only after settings, theme, and saved-account selection are ready. Method-entry checks enforce the same readiness condition. The service independently waits for initialization before sign-in, restore, theme changes, or local token removal. One successful load is published once; later initializations cannot replace settings after a write. Failed/canceled loads can be retried, and cancellation of one waiter does not cancel another initializer. Local sign-out remains possible after transport disposal.
+
+The [141-case platform run](verification/startup-initialization-platform-tests-20260910.json) includes nine new deterministic cases using a real temporary AccountStore and a test-only held storage lock. They establish zero early HTTP, preserved device/account data, retry, cancellation, and post-dispose sign-out behavior. [Normal AOT 0E84F458 and observation AOT BA6AFB8D](verification/startup-initialization-20260910.json) compile with unchanged source inputs. The earlier 440-test CI run at b5d9c2b predates these cases; it is not a 449-test run or a desktop timing result.
+
 Local remembered credentials are removed before waiting for playback cleanup. The authenticated in-memory API context remains available for the final playback Stop and encoding cleanup requests; remote logout follows that cleanup. A window closing during an existing account-exit operation waits for that operation instead of taking over its disconnect and disposing the shared HTTP client early.
 
 The public connection-service sign-out operation also persists local removal before remote logout. A delayed older logout never performs another account mutation after its remote wait, preserving a newer sign-in. Cancellation, transport failure, and an already disposed transport cannot skip the earlier local removal.

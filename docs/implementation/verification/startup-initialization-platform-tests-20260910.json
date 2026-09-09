@@ -1,0 +1,61 @@
+{
+  "SchemaVersion": 1,
+  "TaskDateLocal": "2026-09-10",
+  "TimeZone": "Asia/Shanghai",
+  "WorkingDirectory": "D:\\Code\\emby-client-winui3",
+  "Command": "dotnet test --project tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj --configuration Release",
+  "EvidenceOrigin": "Terminal output from the already completed exec_command and write_stdin tool results; not a TRX report.",
+  "TerminalOutputFile": "startup-initialization-platform-tests-20260910.txt",
+  "ToolEvidence": {
+    "SessionId": 49052,
+    "InitialChunkId": "aa2a56",
+    "CompletionChunkId": "300068",
+    "ExitCode": 0
+  },
+  "Result": {
+    "Status": "Passed",
+    "Total": 141,
+    "Succeeded": 141,
+    "Failed": 0,
+    "Skipped": 0,
+    "ReportedDurationSeconds": 4.976,
+    "AssemblyReportedDurationSeconds": 4.668,
+    "ReportedRuntimeAndArchitecture": "net10.0|x64",
+    "NewInitializationRegressionCases": 9
+  },
+  "RerunPerformedForThisReceipt": false,
+  "RetainedTrxOrAutomaticLog": null,
+  "AutomaticLogSearchScope": "No .trx or .log files were found under tests/EmbyClient.Platform.Tests; its TestResults directory was absent.",
+  "SourceHashCaptureUtc": "2026-09-09T21:15:07.6665357+00:00",
+  "SourceHashEvidence": "Hashes were captured after the completed test run. The implementing agent kept the two changed source files unchanged after that run. These are post-run file hashes, not a test-runner input manifest or a complete dependency-tree hash.",
+  "SourceFiles": [
+    {
+      "File": "src/EmbyClient.App/Services/ConnectionService.cs",
+      "Bytes": 9982,
+      "Sha256": "5AD7F19AA607A99E9EA400439967B5444D5B3A6C327D901575A8F3BDDA261EE0"
+    },
+    {
+      "File": "tests/EmbyClient.Platform.Tests/ConnectionInitializationTests.cs",
+      "Bytes": 13759,
+      "Sha256": "35AB0EC20AC56E71E208ED2C503D3E9CC79ECF9C77C69564F9959605A6DD9109"
+    },
+    {
+      "File": "tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj",
+      "Bytes": 2205,
+      "Sha256": "BFDD572FC1BEF5FC83790CE4488AF4C8FD2B5A18C0AB864389CD1E38A261F1EC"
+    }
+  ],
+  "InitializationCoverage": [
+    "A real AccountStore lock holds settings loading pending; early sign-in sends no HTTP and preserves the persisted device identity, theme, and existing account.",
+    "Concurrent initialization shares one settings instance; repeated initialization does not read locked storage or replace settings after a theme write.",
+    "Sign-in, restore, theme changes, and token removal all preserve damaged settings without HTTP or writes, then succeed on the same service after storage is repaired.",
+    "Cancelled initialization performs no HTTP or writes and permits a same-service retry; a cancelled waiter does not cancel another initializer.",
+    "Local sign-out can initialize settings after service and transport disposal, preserving the existing post-dispose sign-out contract."
+  ],
+  "ScopeLimits": [
+    "The run covers only the Windows platform test project, not a rerun of the entire solution test suite.",
+    "HTTP uses in-memory synthetic handlers. No real server or fixture process is contacted.",
+    "This receipt does not establish native UI, startup timing under desktop interaction, AOT publication, installed runtime, or memory behavior.",
+    "No pre-fix failing test run or exact wall-clock test-start timestamp was retained."
+  ]
+}

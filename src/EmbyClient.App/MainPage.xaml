@@ -23,7 +23,7 @@
                     <CheckBox x:Name="RememberAccount" Content="Remember my sign-in on this Windows account" IsChecked="True" />
                     <Grid ColumnSpacing="12">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <Button x:Name="SignInButton" Content="Sign in" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SignInClicked" />
+                        <Button x:Name="SignInButton" Content="Sign in" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" IsEnabled="False" Click="SignInClicked" />
                         <Button x:Name="CancelConnection" Grid.Column="1" Content="Cancel" Visibility="Collapsed" Click="CancelConnectionClicked" />
                     </Grid>
                     <ProgressBar x:Name="ConnectingProgress" IsIndeterminate="True" Visibility="Collapsed" />

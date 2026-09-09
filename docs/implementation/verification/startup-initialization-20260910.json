@@ -1,0 +1,33 @@
+{
+  "SourceBaseRevision": "b5d9c2baf5dcc57e7d5c5d9e7f629546e60d7dbd",
+  "Repair": "Do not authenticate or persist placeholder settings while initialization is pending; publish one successful settings instance",
+  "PlatformTests": {
+    "Status": "Passed",
+    "Total": 141,
+    "Succeeded": 141,
+    "Failed": 0,
+    "Skipped": 0,
+    "ReportedDurationSeconds": 4.976,
+    "AssemblyReportedDurationSeconds": 4.668,
+    "ReportedRuntimeAndArchitecture": "net10.0|x64",
+    "NewInitializationRegressionCases": 9
+  },
+  "NormalNativeAot": {
+    "FileName": "EmbyClient.App.exe",
+    "Bytes": 17912320,
+    "Sha256": "0e84f4581a3d2c3be460dcbd0d936733a3f970b56dd4ce956d04e09932f18034"
+  },
+  "ObservationNativeAot": {
+    "FileName": "EmbyClient.App.exe",
+    "SizeBytes": 18014720,
+    "Sha256": "ba6afb8d18e86e33db8cb4c9bd1edf1f5146ab47182c97ec1b0fc8d57752940f"
+  },
+  "SourceHashesMatchAtArchive": true,
+  "RuntimeAcceptance": "Pending the newly authorized desktop session",
+  "PriorCi": "b5d9c2b passes 440 tests; that run predates the nine new initialization cases",
+  "SeparateEvidence": [
+    "startup-initialization-platform-tests-20260910.json",
+    "startup-initialization-aot-20260910.json"
+  ],
+  "EnvironmentRestriction": "The new controlled fixture launch on port 18964 was rejected before execution with blocked by policy. It was not retried. Existing port 18962 remains available for independent checks."
+}

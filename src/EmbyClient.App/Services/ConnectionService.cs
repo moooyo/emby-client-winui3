@@ -11,6 +11,8 @@ public sealed partial class ConnectionService : IDisposable
     private readonly HttpClient _http;
     private readonly AccountStore _store;
     private readonly bool _ownsHttp;
+    private readonly SemaphoreSlim _initializationGate = new(1, 1);
+    private bool _settingsLoaded;
 
     public ConnectionService(HttpClient? httpClient = null, AccountStore? accountStore = null)
     {
@@ -21,12 +23,28 @@ public sealed partial class ConnectionService : IDisposable
 
     public AppSettings Settings { get; private set; } = new();
 
-    public async Task InitializeAsync(CancellationToken cancellationToken = default) =>
-        Settings = await _store.LoadAsync(cancellationToken);
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (Volatile.Read(ref _settingsLoaded)) return;
+        await _initializationGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_settingsLoaded) return;
+            var settings = await _store.LoadAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            // Publish one successfully loaded instance. Later initialization must never replace
+            // settings that an authenticated session or a local preference change now owns.
+            Settings = settings;
+            Volatile.Write(ref _settingsLoaded, true);
+        }
+        finally { _initializationGate.Release(); }
+    }
 
     public async Task<ConnectedSession> SignInAsync(string address, string username, string password,
         bool remember, CancellationToken cancellationToken)
     {
+        await InitializeAsync(cancellationToken);
         var publicApi = CreatePublicClient(address);
         var server = await publicApi.GetPublicSystemInfoAsync(cancellationToken);
         RequireServerIdentity(server);
@@ -79,6 +97,7 @@ public sealed partial class ConnectionService : IDisposable
 
     public async Task<ConnectedSession> RestoreAsync(SavedAccount account, CancellationToken cancellationToken)
     {
+        await InitializeAsync(cancellationToken);
         var publicApi = CreatePublicClient(account.ApiRoot);
         var server = await publicApi.GetPublicSystemInfoAsync(cancellationToken);
         RequireServerIdentity(server);
@@ -125,12 +144,14 @@ public sealed partial class ConnectionService : IDisposable
 
     public async Task SetThemeAsync(string theme)
     {
+        await InitializeAsync();
         Settings.Theme = theme;
         await _store.SaveAsync(Settings);
     }
 
     public async Task ForgetTokenAsync(string accountKey)
     {
+        await InitializeAsync();
         var account = Settings.Accounts.Find(x => x.Key == accountKey);
         if (account is not null) account.ProtectedToken = "";
         if (Settings.LastAccountKey == accountKey) Settings.LastAccountKey = null;
@@ -161,6 +182,8 @@ public sealed partial class ConnectionService : IDisposable
     public void Dispose()
     {
         if (_ownsHttp) _http.Dispose();
+        // Local sign-out remains available after transport disposal. Do not dispose its
+        // initialization gate while another settings operation may still be awaiting it.
     }
 }
 

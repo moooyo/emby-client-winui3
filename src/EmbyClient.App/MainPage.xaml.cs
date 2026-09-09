@@ -16,6 +16,7 @@ public sealed partial class MainPage : Page
     private ConnectedSession? _session;
     private CancellationTokenSource? _connectionRequest;
     private bool _initialized;
+    private bool _settingsReady;
     private bool _shuttingDown;
     private bool _sessionTransition;
     private TaskCompletionSource? _sessionExitCompletion;
@@ -24,7 +25,7 @@ public sealed partial class MainPage : Page
     {
         InitializeComponent();
         Player.QueueChanged += (_, _) => UpdateQueueButton();
-        UpdateQueueButton();
+        SetConnecting(false);
         Loaded += OnLoaded;
         KeyDown += OnPageKeyDown;
     }
@@ -36,14 +37,17 @@ public sealed partial class MainPage : Page
         try
         {
             await _connections.InitializeAsync();
+            if (_shuttingDown) return;
             ApplyTheme();
             LoadSavedAccounts();
+            _settingsReady = true;
         }
         catch (Exception ex)
         {
-            ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
-            SignInButton.IsEnabled = false;
+            if (!_shuttingDown) ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
+            _settingsReady = false;
         }
+        finally { if (!_shuttingDown) SetConnecting(_connectionRequest is not null); }
     }
 
     private void LoadSavedAccounts()
@@ -71,7 +75,7 @@ public sealed partial class MainPage : Page
         if (RestoreButton is not null) RestoreButton.IsEnabled = CanRestoreSelectedAccount();
     }
 
-    private bool CanRestoreSelectedAccount() => !_sessionTransition && !_shuttingDown && _connectionRequest is null
+    private bool CanRestoreSelectedAccount() => _settingsReady && !_sessionTransition && !_shuttingDown && _connectionRequest is null
         && SavedAccounts?.SelectedItem is ComboBoxItem { Tag: SavedAccount { ProtectedToken.Length: > 0 } account }
         && ServerAddress?.Text.Trim() == account.ApiRoot && UserName?.Text.Trim() == account.UserName;
 
@@ -88,7 +92,7 @@ public sealed partial class MainPage : Page
 
     private async Task ConnectAsync(bool restore)
     {
-        if (_connectionRequest is not null || _sessionTransition || _shuttingDown) return;
+        if (!_settingsReady || _connectionRequest is not null || _sessionTransition || _shuttingDown) return;
         if (!restore && (string.IsNullOrWhiteSpace(ServerAddress.Text) || string.IsNullOrWhiteSpace(UserName.Text)))
         {
             ShowNotice("Enter a server address and username.", InfoBarSeverity.Warning);
@@ -135,7 +139,7 @@ public sealed partial class MainPage : Page
 
     private void SetConnecting(bool connecting)
     {
-        var available = !connecting && !_sessionTransition && !_shuttingDown;
+        var available = _settingsReady && !connecting && !_sessionTransition && !_shuttingDown;
         SignInButton.IsEnabled = available;
         SavedAccounts.IsEnabled = available;
         ServerAddress.IsEnabled = available;
