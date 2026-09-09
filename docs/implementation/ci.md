@@ -64,6 +64,10 @@ For the latest audited head, the API reported the following complete artifact na
 
 These hashes and sizes identify uploaded GitHub archives, not the contained executable or MSIX. The latest contained MSIX's builder-reported SHA-256 is `996D6E72C283B43F15D9485D1E23CAB68FAB1CABDE89FE61FE1AE8F591E0A278`; [packaging evidence](packaging.md#hosted-structural-evidence) records its exact filename and the preceding successful candidate. A newer working tree or artifact needs its own receipt.
 
+The later [run 34304285991](https://github.com/moooyo/emby-client-winui3/actions/runs/34304285991), source `42011fb8fdce53a0771bd903dc7ffb1695bf42d8`, also passed every step. It covers the editable queue, diagnostics, relay classification, and default-track retry correction: 340 tests (47 API, 73 transport, 88 platform, 132 playback), a Release build with one existing `CS0618` warning and zero errors, Native AOT output, an 18-component SBOM, and unsigned package verification.
+
+Its AOT archive [10086142609](https://github.com/moooyo/emby-client-winui3/actions/runs/34304285991/artifacts/10086142609) is 75,810,365 bytes with digest `sha256:c13f5df563b8b46d0283f668897024628240b582e6fd58f76434bd1497c530f1`. The MSIX archive [10086140732](https://github.com/moooyo/emby-client-winui3/actions/runs/34304285991/artifacts/10086140732) is 54,281,513 bytes with digest `sha256:ea933826abf169ea6719e0d59963aa4b235f8c9917c40110faaa5fade0370bdb`. The contained candidate is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-024541020-620ea159.msix`; `Package.ps1` reports its file SHA-256 as `D82D7A1BD62DE44408DFF3A0563BDF66DA319C1CF578B403D870D4F9AD431985`. Archive and package hashes identify different files. This run predates the subsequent poster-lifecycle investigation and does not establish installed runtime behavior.
+
 ## Pinned official actions
 
 Official release tags were resolved through the GitHub API and the corresponding action metadata was read before writing the workflow. All `uses` references point to full immutable commit IDs.

@@ -1,0 +1,404 @@
+{
+  "SchemaVersion": 1,
+  "EvidenceKind": "One native external WebVTT cue: automated properties, root screenshot confirmation, and complete cleanup",
+  "Report": {
+    "Scope": "One native external WebVTT cue on the owned official Emby 4.9.5.0 server, default NativePlaybackEngine, real PlaybackCoordinator, and Fixture item 5. No rendering controls or synthetic engine events are injected.",
+    "RunId": "e5c11ebcfef44b88ba7fddf4ace37a50",
+    "ProcessId": 53596,
+    "NativeAot": true,
+    "StartedUtc": "2026-09-09T10:46:28.7243178+08:00",
+    "UpdatedUtc": "2026-09-09T10:48:40.7447121+08:00",
+    "FinishedUtc": "2026-09-09T10:48:40.7435175+08:00",
+    "Status": "Passed",
+    "ErrorCode": null,
+    "ServerVersion": "4.9.5.0",
+    "ServerIdHash": "2f6773936f5ce892d0fb57c0c437d915f264d99e18395f0c52046db387d25297",
+    "DeviceIdHash": "1d19b03437c2b607336b41c9cf28f92b3ba38208b7fbaf96926053e0cadbaf6e",
+    "ItemId": "5",
+    "RequestedSubtitleStreamIndex": 2,
+    "PauseTargetTicks": 410000000,
+    "ExpectedCue": "Seek and subtitle delivery check.",
+    "DeliveryMethod": "DirectStream",
+    "SubtitleDeliveryMethod": "External",
+    "NativePausedPositionTicks": 410299911,
+    "AutomatedChecksPassed": true,
+    "NativeObservation": {
+      "ActivePlaybackMatches": true,
+      "DeliveryMethod": "DirectStream",
+      "HasDefaultProductPlayerOwner": true,
+      "HasIndependentSubtitleTransport": true,
+      "HasSeparateSubtitleUri": true,
+      "SubtitleOriginIsOwnedLoopback": true,
+      "HasScopedSubtitleAuthentication": true,
+      "DownloadedSubtitleBytes": 175,
+      "WebVttHeaderObserved": true,
+      "DownloadedSubtitleSha256": "44412104e0084c7b43dcf8137417a70238898648a400fe3dad2b1bccdbc9306f",
+      "DownloadEvidence": "Read-only inspection of the product-owned subtitle transport and its independently filled memory stream after resolution. The inspected bytes came from NativePlaybackEngine.LoadAsync; this probe does not perform a second subtitle download. HTTP status/content-type are not captured by this observation.",
+      "TimedTextSourceCreated": true,
+      "AttachedTimedTextSourceCount": 1,
+      "TimedTextResolvedSuccessfully": true,
+      "ResolvedExternalTrackCount": 1,
+      "MatchingMetadataTrackCount": 1,
+      "PlatformPresentedExternalTrackCount": 1,
+      "ExpectedCueFoundInDownloadedText": true,
+      "ExpectedCueStartTicks": 350000000,
+      "ExpectedCueEndTicks": 420000000,
+      "NativePositionTicks": 410299911,
+      "NativeState": "Paused",
+      "NativeVideoWidth": 1280,
+      "NativeVideoHeight": 720
+    },
+    "PresentedCueConfirmed": true,
+    "ConfirmedBy": "RootAgentScreenshotInspection",
+    "ScreenshotFileName": "external-subtitle-cue.png",
+    "ScreenshotSha256": "1cd48a3f8352d32352980af682e63dc197fc45fe5448d8cb5941a8e9070b0ffb",
+    "VisualEvidenceMeaning": "Only a matching RootAgentScreenshotInspection finish file can confirm pixels of this one expected cue. Downloaded WebVTT, resolved tracks, presentation modes, native dimensions, and media-clock properties are not pixel evidence.",
+    "Diagnostics": [],
+    "ApiEvents": [
+      {
+        "Operation": "Start",
+        "StatusCode": 204,
+        "PositionTicks": 100000
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 95742234
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 195738304
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 294885833
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 396888682
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 409948662
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Progress",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      },
+      {
+        "Operation": "Stop",
+        "StatusCode": 204,
+        "PositionTicks": 410299911
+      }
+    ],
+    "StopCompleted": true,
+    "CoordinatorDisposed": true,
+    "NativeDisposed": true,
+    "NativeOwnerCleared": true,
+    "LogoutCompleted": true,
+    "CleanupErrors": []
+  },
+  "BuildManifest": {
+    "FormatVersion": 1,
+    "Configuration": "Release",
+    "RuntimeIdentifier": "win-x64",
+    "TargetFramework": "net10.0-windows10.0.26100.0",
+    "NativeAotRequested": true,
+    "DotNetSdk": "10.0.301",
+    "GeneratedAtUtc": "2026-09-09T10:34:09.8109707+08:00",
+    "SourceInputsUnchangedDuringPublish": true,
+    "Sources": [
+      {
+        "Path": "Directory.Build.props",
+        "Sha256": "152671a2f256b8953c63fa453a8bd17468b996dd5573b20d51773ab33019cab2"
+      },
+      {
+        "Path": "Directory.Packages.props",
+        "Sha256": "0db6e50291b3aca667f14b7d583b048e383fc027068bd8d3ba6c655cf72a6239"
+      },
+      {
+        "Path": "global.json",
+        "Sha256": "4a5e1b57e81b372b49a3ee4f0b35483d541b45280cf931276828c0920d3f6855"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyApiClient.cs",
+        "Sha256": "c3aa28a72f188966e04f9a4c47e37cf1c8982c178b52c0a7fd86854041826db6"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyApiException.cs",
+        "Sha256": "e6596ddf6516251a8e39f2cd3cf3f45b6d87d29f45c43f9389f29a93d5824942"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyClient.Api.csproj",
+        "Sha256": "acd40234aaa516072266f6ebb527924676dc461e10a0f1b304289a9e83b19198"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyJsonContext.cs",
+        "Sha256": "8b9c9c7ffb1d8079d2d8be99c021ab99ba861a5f50919915b5b118ddc43799ec"
+      },
+      {
+        "Path": "src/EmbyClient.Api/Models.cs",
+        "Sha256": "3fc1d9f40b7339671dcf4dda1660bb3a5a1c9812fef4669a6974e6d7c30181a5"
+      },
+      {
+        "Path": "src/EmbyClient.Api/packages.lock.json",
+        "Sha256": "d9a3e5611e8388d55d0eba98ecabaa64efbf8327c7a7e25127763a93e98a4604"
+      },
+      {
+        "Path": "src/EmbyClient.Api/PlaybackModels.cs",
+        "Sha256": "84c7445a80866b0985094c94ebfbf190735ee17728a8da640480622460389ee3"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/HttpRangeStream.cs",
+        "Sha256": "d76a48a650e362c03ee59252b6250a45a84851b1e89d58b434ffec97945f83f9"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs",
+        "Sha256": "5be3b1f39e543702da64f50e995fc38f7605f99934545daabd93da12f3539039"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.cs",
+        "Sha256": "dcfdc61dea2d93a7469ea14014f95f1e0eea0ff47d77f4cf891d33a59236b5b8"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.MediaControls.cs",
+        "Sha256": "afd1605c82fc8cbd39e929f4077e53c4f00f08dee7849257a895d540df951cef"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ScopedAdaptiveHttpFilter.cs",
+        "Sha256": "771274dd22158e364f5e9c6b9f40ca12b69be576e7418b1081fc8148fce7278b"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ScopedMediaTransport.cs",
+        "Sha256": "ed0151e72ef3f824deec4b506194d1327398f1caeee8606310dd511b76c21563"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/SessionHttpRelay.cs",
+        "Sha256": "d8da59bb83591966f24341a26a2bc74a91d2c0127ae48396a43d382d7338d444"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/ConservativeDeviceProfile.cs",
+        "Sha256": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/EmbyClient.Playback.csproj",
+        "Sha256": "8589f3a6b4fd297798c8b68c12486abed0085c8d4735ae0d1f86d82fe9c6edce"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/packages.lock.json",
+        "Sha256": "7228d14911c8772a90eb1caaf40e8fd065c45d897bede78c3248ad420c32f564"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackContracts.cs",
+        "Sha256": "4d4a84494b5880c25501515e3087ca95b1ce55b664e623a818e9a6465dfb7f1b"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackCoordinator.cs",
+        "Sha256": "824b122e2257feef62cfff970a9d8d3b5d18d69a94a167f91e2b467bae9f8c2f"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackRequestFactory.cs",
+        "Sha256": "98f31c78c8f620edda48ed496a3f336427686dea2591a251efa3a310e94c088c"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/app.manifest",
+        "Sha256": "f5b6ec234184577d6f8e1bd3a335ae68590be4b241571cab8d80c6bb51cbe706"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/App.xaml",
+        "Sha256": "97aa49b7a0225167f798c68cb299f02d9d765ad4c0203797bfa57393f8140044"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/App.xaml.cs",
+        "Sha256": "7817eabd7b895f67ab7725273823c37e76d374d8c4347b16578089ffe9800bb8"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ColdRangeProxy.cs",
+        "Sha256": "799fe1e685a498cfbc1eaa1511067bcdabbaa76919b044213247b1e23cad1c27"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/EmbyClient.NativeProbe.csproj",
+        "Sha256": "58807ea909e7f73516798445b96f7322484dfaf2adbbbf6b1f1b4f3f63b7247b"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleLaunch.cs",
+        "Sha256": "e7902b34f6de2b4bb20244901a7a10a963629c382a85df621991bc683bc06295"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleModels.cs",
+        "Sha256": "87bbbc012461ee283819c3be049c3aad5b81aa503bdab295aafd3bfc671133ae"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleProbe.cs",
+        "Sha256": "13991ff5ad6b5e068faeed4ae86ac574498cbf66c13cfa27c63c98efffbd9ddf"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/FilePlaybackControl.cs",
+        "Sha256": "a8ca106e6270df0639b2c38143cf226f7d52bd744a0c902c050b90a1ef0a8653"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/HlsApiObservationHandler.cs",
+        "Sha256": "b3b87d78967fe25f7c54204d971a6b6609afa4acbb74eccffc4dfbf8d05ed56a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/HlsSeekObservation.cs",
+        "Sha256": "6e1a5ab4e40f31188127371dd2260d5d6bacdf9b8978fa47d37ff6bd289bf7e4"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/InvalidMediaFixture.cs",
+        "Sha256": "5654f407caad4d5bb8fd8f45ad76c53afc6497a39015693da7cb8bb3cf3d9843"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationFailureEngine.cs",
+        "Sha256": "7c19476a529212d7aae9ee697fca01341da95acc3513368be013f22365723de8"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationModels.cs",
+        "Sha256": "fa53449e9734d9814c2d71775d27ab6fb9c923d3716bc39285ec0d2f26184cc7"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationProbe.cs",
+        "Sha256": "a9590c4c17eff40b101ef9ec56e8a683906b2a867ab551389ca57c7a7fa98775"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/MediaControlsRetirementObservation.cs",
+        "Sha256": "664cf7ea10e287b7ab826dcc7bdf3179e189efa6eb43f3068e3b8bc4f1a9cd79"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativeHlsHttpControl.cs",
+        "Sha256": "7c47c1cdeeddbe0948cf18b761830be150b058b09ac379ec1ddf385360113ffc"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.IsolationProbe.cs",
+        "Sha256": "5b844b70a8759f00c3c81c5c4abe8618a8a0ed493d785482d55c696c602d8d1f"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.ProbeObservation.cs",
+        "Sha256": "63ad06f8ae97fddd6da8c65ed697383f3f9c9acc07cddfc77acc472c809d036f"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryEngine.cs",
+        "Sha256": "f22cf7a8bcc441c37a3b6e9375d8371544a195f3b20b9a938a409d682e312a87"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryModels.cs",
+        "Sha256": "8aaec80173bc3a6fbd41e6ea50a000f497d76483028d77d161729319d605ab66"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryProbe.cs",
+        "Sha256": "69da69d9dda3226b8f9571399c832faba1762ac6abcd0797b506fdf5e045a0b1"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/packages.lock.json",
+        "Sha256": "62426a1a5b632616a71d5194a03af9ad171f7303e24cb1e2b0c6243194a12a0a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ProbeModels.cs",
+        "Sha256": "78fe764cd8b81fb3c6279dd94d6de8df687d95d59fe9406a4f95307920c7fd81"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Publish-Probe.ps1",
+        "Sha256": "11ef2200045d314cd5f5130a6caf0441ae3653ea8b0025a18514660461ecd4a2"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/RealHlsModels.cs",
+        "Sha256": "994330a663e2347805370f14151435f621eeb92c2157db01cb0a660b6fdf8eba"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/RealHlsProbe.cs",
+        "Sha256": "62cf8d20d6c1cf235a08d05c7de3765b8d0bafaf426d94f139c74e63222474b0"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Start-SyntheticFixture.ps1",
+        "Sha256": "dd486688f63a9013c49bfae7d56b7467c88e0a12630e07e20f1e228e413805f5"
+      }
+    ],
+    "ResolvedDependencies": [
+      "EmbyClient.Api/1.0.0",
+      "EmbyClient.Playback/1.0.0",
+      "Microsoft.DotNet.ILCompiler/10.0.9",
+      "Microsoft.NET.ILLink.Tasks/10.0.9",
+      "Microsoft.Web.WebView2/1.0.3719.77",
+      "Microsoft.Windows.AI.MachineLearning/2.1.74",
+      "Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100",
+      "Microsoft.Windows.SDK.BuildTools/10.0.28000.2705",
+      "Microsoft.WindowsAppSDK.AI/2.4.4",
+      "Microsoft.WindowsAppSDK.Base/2.0.4",
+      "Microsoft.WindowsAppSDK.DWrite/2.1.0",
+      "Microsoft.WindowsAppSDK.Foundation/2.3.9",
+      "Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.6",
+      "Microsoft.WindowsAppSDK.ML/2.1.74",
+      "Microsoft.WindowsAppSDK.Runtime/2.4.0",
+      "Microsoft.WindowsAppSDK.Search/2.4.4",
+      "Microsoft.WindowsAppSDK.Widgets/2.0.5",
+      "Microsoft.WindowsAppSDK.WinUI/2.3.6",
+      "Microsoft.WindowsAppSDK/2.4.0",
+      "runtime.win-x64.Microsoft.DotNet.ILCompiler/10.0.9",
+      "System.Numerics.Tensors/9.0.0"
+    ],
+    "Executable": {
+      "FileName": "EmbyClient.NativeProbe.exe",
+      "SizeBytes": 14572544,
+      "Sha256": "0b20093b9f54d5f3cb94a99ccbbc501a78b88e800b800bd1a260712967a5e5b8"
+    }
+  },
+  "Screenshot": {
+    "ArchivedFile": "external-subtitle-cue.png",
+    "OriginalCapture": "external-subtitle-cue-original.jpg",
+    "Format": "PNG",
+    "Sha256": "1cd48a3f8352d32352980af682e63dc197fc45fe5448d8cb5941a8e9070b0ffb",
+    "OriginalCaptureSha256": "0b716deb8a1a38cb77881593bf10c17bcc5588517131e81b9a90a3dbb3efa510",
+    "ConversionAttribution": "Root used Pillow to decode the captured JPEG into PNG and verified identical decoded RGB bytes before writing the matching finish confirmation."
+  },
+  "Conclusion": "The same audited executable passed a new independent run. It used the default player owner, DirectStream, a separately authenticated 175-byte WebVTT download, one resolved PlatformPresented external track, and a paused native position of 41.0299911 seconds inside the 35-42 second cue. Root actually observed the exact expected text and submitted a matching run-ID confirmation with a valid PNG. Start/stop, coordinator/native disposal, owner clearing, and logout completed without diagnostics or cleanup errors. This validates one plain external WebVTT cue, not subtitle resource loops, ASS styling, PGS/bitmap subtitles, or a broad format matrix."
+}

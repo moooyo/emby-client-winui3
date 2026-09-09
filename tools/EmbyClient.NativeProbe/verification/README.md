@@ -2,6 +2,12 @@
 
 These sanitized records are reviewable from a checkout without access to ignored runtime artifacts. Each result retains its original scope and limits. Build manifests identify the executable and source inputs actually used for that run; later probe instrumentation additions do not retroactively change an earlier executable's hash.
 
+## One native external WebVTT cue
+
+`external-subtitle-nativeaot.json` records a separate default-owner DirectStream run using an independently authenticated 175-byte WebVTT download, one resolved PlatformPresented external track, and native pause at 41.0299911 seconds inside the expected cue. Root actually saw the exact text and supplied a matching confirmation and validated PNG. The program then completed start/stop, coordinator/native disposal, owner clearing, and logout without diagnostics or cleanup errors. The archived `external-subtitle-cue.png` hash is `1cd48a3f8352d32352980af682e63dc197fc45fe5448d8cb5941a8e9070b0ffb`; the original JPEG capture is also retained. This is one plain external cue, not subtitle-loop resource acceptance, ASS styling, PGS/bitmap rendering, or a format matrix.
+
+`external-subtitle-screenshot-format-failure.json` preserves the first independent attempt. Automated subtitle checks and all cleanup completed, but the submitted `.png` contained JPEG bytes, so the validator correctly rejected ScreenshotMustBePng. Its actual JPEG is retained as `external-subtitle-first-cue.jpg`. Neither the original report nor the original working directory was rewritten as a pass. The successful rerun used the same executable and a fresh run ID; Root decoded its new JPEG capture into PNG and checked identical RGB pixels before confirming it.
+
 ## Default product owner isolation
 
 `default-owner-isolation.json` records the actual default owner after the product repair. Three source-bound native Opening cancellations and three real native UnsupportedFormat decoder failures recovered. The fixture has no transcoder, so the failed source's normal fallback ended with NoCompatibleStream before explicit recovery. Six replacement sessions survived 42 deliberately replayed retired callbacks/failure entries and 54 old-ID commands, preserving the paused source, position, muted volume, and report ownership. A separate engine passed all concurrent Opening-time disposal assertions, including the second completion observing the shared drain task complete and the owner cleared. Only the three expected fallback diagnostics occurred. This is bounded isolation evidence, not a resource acceptance run.

@@ -1,6 +1,6 @@
 # Implementation status
 
-Snapshot: 2026-09-09. The repository contains a functional Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. Native AOT publication succeeds. Default direct/HLS playback, native isolation, and a real cold-range network retry pass their scoped checks. Actual queue, diagnostics, paused transitions, and manual recovery have UI evidence. Release acceptance remains incomplete, including large-library memory investigation, external subtitles, wider Windows integration, and installed distribution.
+Snapshot: 2026-09-09. The repository contains a functional Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. Native AOT publication succeeds. Default direct/HLS playback, native isolation, and a real cold-range network retry pass their scoped checks. Actual queue, diagnostics, paused transitions, and manual recovery have UI evidence. Release acceptance remains incomplete, including large-library memory investigation, wider subtitle coverage, Windows integration, and installed distribution.
 
 ## Implemented scope
 
@@ -27,16 +27,17 @@ The latest development AOT executable SHA-256 is `313A94C3C7BE6821B489E49A2A7AC7
 | `scripts/Test.ps1 -Configuration Release` | **340 passed**: API 47, media transport 73, Windows platform 88, playback 132 | Contracts, transport boundaries and upstream failure categories, real Windows account/placement storage, display/notification ownership, cache/queue/diagnostic bounds, and coordinator recovery with test adapters |
 | Release solution build | **0 errors**; a fresh build reports one upstream generated WinUIEx `Icon` warning, `CS0618` | Compilation; the warning remains visible |
 | App Native AOT publish | **Succeeded** | Native code and the complete self-contained Windows App SDK payload are produced |
-| Hosted Windows CI | **All steps passed** for `a2e4e43` in [run 34301423262](https://github.com/moooyo/emby-client-winui3/actions/runs/34301423262) | Independent locked restore, Release build, 306 tests, AOT/SBOM output, unsigned MSIX construction, and artifact uploads; the new UI and network edits require another run |
+| Hosted Windows CI | **All steps passed** for `42011fb` in [run 34304285991](https://github.com/moooyo/emby-client-winui3/actions/runs/34304285991) | Independent locked restore, Release build, 340 tests, AOT/SBOM output, unsigned MSIX construction, and artifact uploads; later image-lifecycle investigation is separate |
 | Unsigned MSIX checkpoint | **Structural verification passed** for the 313A94C3 publish; 332 payload files and 289 preserved resource keys | Byte-for-byte unpack round trip, notices and SBOM inclusion; no installed runtime claim |
 | Official Emby API probe | **40 passed, 0 failed, 0 blocked** against Emby Server `4.9.5.0` | Actual authentication, browsing/user state, media ranges, HLS/WebVTT responses, reports, and cleanup; not native rendering |
-| Direct relay plus system media controls | **20 default-product cycles and resource gate passed**; handle growth **+17** against limit **32**, private-memory growth **2,166,784 bytes** | Bounded synthetic MP4 lifecycle, 177 partial responses, and 20 SMTC retirements; physical media-key input remains separate |
+| Direct relay plus system media controls | **20 default-product cycles and resource gate passed** after the network fix; handle change **+7** against limit **32**, private-memory change **-237,568 bytes** | Bounded synthetic MP4 lifecycle, 178 partial responses, and 20 SMTC retirements; physical media-key input remains separate |
 | Official-server HLS | **20 functional cycles passed**, including starts at 0/17 seconds, new-session seeks to 45 seconds, pause restoration, **40 encoding cleanups**, and no diagnostics | The tested real-server logical-seek lifecycle works; resource acceptance remains separate |
 | HLS resources | **20 default-product cycles and resource gate passed**; handle change **-6**, private-memory growth **720,896 bytes** | The final test uses the product owner and original managed HTTP path, with diagnostic control modes disabled; post-stop silence checks cover API requests, not packet capture |
 | Native isolation | **Passed**: real opening cancellation, decoder rejection/recovery, 42 old-handler/Fail replays, 54 old-ID commands, and concurrent disposal during opening | Fault injection is explicitly identified and separate from normal 20-cycle resource runs |
 | Real cold-range recovery | **NetworkRetryPassed**: actual HTTP 503 classified as NetworkFailure, a new session at 90.01 seconds, preserved pause with zero measured drift, subsequent resume, and clean retirement | The target was a failed seek's native cursor, not a decoded-frame assertion. Default/explicit track intent is retained. |
 | Integrated UI | C6E8E17B verifies shared-owner paused HLS at 17 seconds, audio/version changes, queue editing/automatic consumption, diagnostics, and close during playback. 313A94C3 verifies manual retry after HTTP 503 from a three-second resume target. | Earlier 0251D189 separately verifies burned SRT and window restoration. These scoped observations do not establish every Windows/device/subtitle mode. |
 | Large-library trial | The actual 313A94C3 UI browsed a 5,000-item fixture through bounded pages and repeated an already loaded region; images drained after returning home. | Private memory rose through the short run and did not establish a stable plateau. Further investigation is required; UIA observation can affect this measurement. |
+| Native external WebVTT | **Passed** for one real plain cue: DirectStream, separate authenticated WebVTT, resolved platform presentation, actual screenshot confirmation at 41.03 seconds, and clean Stop/disposal/logout | The app default remains server burning. No ASS/PGS or repeated subtitle-resource claim is made. |
 
 The native resource gate compares the final five-loop median with loops 5-9, permits at most 32 additional handles and 64 MiB of private-memory growth, and checks for sustained growth. Its limits were not relaxed. The direct and HLS results are separate measurements and must not be combined into a general stability claim.
 
@@ -44,7 +45,7 @@ Real-server checks used an isolated official Emby `4.9.5.0` Linux amd64 instance
 
 ## Remaining release gates
 
-- Resolve large-library memory behavior and complete native external-subtitle and remaining integrated acceptance checks.
+- Resolve large-library memory behavior and complete the remaining subtitle and integrated acceptance checks.
 - Complete physical media-key, keyboard-only, Narrator, contrast, focus, DPI/multi-monitor, audio-device, and long-duration/network-failure acceptance.
 - Decide the repository license and complete redistribution review. Finalize a signing identity and verify signed installation, activation, upgrades, uninstall, and playback on clean supported Windows machines. Unsigned MSIX structure checks do not satisfy these requirements.
 - Establish an explicit Windows/server/media compatibility matrix. Broad codec/container coverage, HDR and Dolby formats, audio passthrough, and subtitle fidelity remain unverified.

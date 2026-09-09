@@ -72,6 +72,14 @@ Supporting fixture records show exactly one injected failure and one subsequent 
 
 The failure screen displayed 0:00 while no active stream existed; the recovered session and server Start establish that the retained target was three seconds. This observation does not claim an active-stream interruption or paused recovery; the [real cold-range network probe](../../tools/EmbyClient.NativeProbe/verification/network-retry-nativeaot.json) independently covers those native behaviors. Screenshots and the synthetic supporting receipt remain under ignored `artifacts/ui-validation/2026-09-09/` with the `313a-` prefix.
 
+## Native external WebVTT inspection
+
+The separately published native probe exercised the product engine with `EnableExternalWebVtt=true` against official Emby 4.9.5.0 and the generated Fixture item. The source remained DirectStream, while an independent authenticated request supplied 175 bytes of WebVTT converted from external SRT. The real timed-text source resolved one track in `PlatformPresented` mode.
+
+At a native paused position of 41.0299911 seconds, root computer-use screenshot inspection showed the complete cue "Seek and subtitle delivery check." over the expected orange frame. The [retained PNG](../../tools/EmbyClient.NativeProbe/verification/external-subtitle-cue.png) is encoded from the tool's original JPEG without changing the decoded RGB pixels. Its SHA-256 is `1cd48a3f8352d32352980af682e63dc197fc45fe5448d8cb5941a8e9070b0ffb`. The [complete receipt](../../tools/EmbyClient.NativeProbe/verification/external-subtitle-nativeaot.json) passes actual visual confirmation, one successful Start/Stop pair, native/coordinator disposal, owner clearing, and logout, with no diagnostics or cleanup errors.
+
+The [first attempt](../../tools/EmbyClient.NativeProbe/verification/external-subtitle-screenshot-format-failure.json) remains Failed because a JPEG was incorrectly saved with a PNG filename; it is not rewritten as a pass. Both attempts used the same audited executable. The successful second attempt establishes one plain external cue and cleanup, not ASS/PGS fidelity or a repeated subtitle-resource gate. The normal application profile still prefers server burning by default.
+
 ## Remaining final-build acceptance
 
 An earlier relay/SMTC application checkpoint, executable SHA-256 `2ED8644A666DBDA41178171B802E15D1856F680D23C99EBBA2D19C68501FDA4C`, displayed real original video and closed its playing window without an observed crash dialog. The native probe independently checked SMTC Playing, Paused, and retired state. The automation tool did not support the physical media-key input, so that input path has not been established.
