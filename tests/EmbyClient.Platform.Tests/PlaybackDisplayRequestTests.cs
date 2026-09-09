@@ -11,6 +11,7 @@ public sealed class PlaybackDisplayRequestTests
         var native = new FakeDisplayRequest();
         using var owner = new PlaybackDisplayRequest(() => native);
         var id = Guid.NewGuid();
+        Assert.False(owner.NeedsReleaseRetry);
         owner.ResumeTracking();
 
         for (var index = 0; index < 20; index++) owner.Update(id, id, true);
@@ -57,6 +58,38 @@ public sealed class PlaybackDisplayRequestTests
 
         Assert.Equal(1, native.ReleaseCalls);
         Assert.Equal(0, native.Balance);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Reconciling_live_empty_context_releases_ownership_after_a_queued_retired_notification_was_ignored(bool releaseFails)
+    {
+        var native = new FakeDisplayRequest { ReleaseFailures = releaseFails ? 1 : 0 };
+        using var owner = new PlaybackDisplayRequest(() => native);
+        var retiredId = Guid.NewGuid();
+        owner.ResumeTracking();
+        owner.Update(retiredId, retiredId, true);
+
+        owner.Update(null, retiredId, false);
+        Assert.Equal(0, native.ReleaseCalls);
+        Assert.Equal(1, native.Balance);
+        Assert.False(owner.NeedsReleaseRetry);
+
+        owner.Update(null, null, false);
+        Assert.Equal(1, native.ReleaseCalls);
+        Assert.Equal(releaseFails, owner.NeedsReleaseRetry);
+        if (owner.NeedsReleaseRetry)
+        {
+            Assert.Equal(1, native.Balance);
+            owner.Update(null, null, false);
+        }
+
+        Assert.False(owner.NeedsReleaseRetry);
+        Assert.Equal(releaseFails ? 2 : 1, native.ReleaseCalls);
+        Assert.Equal(0, native.Balance);
+        Assert.Equal(1, native.ActiveCalls);
+        Assert.Equal(new[] { "Active", "Release" }, native.Calls);
     }
 
     [Fact]
@@ -130,6 +163,7 @@ public sealed class PlaybackDisplayRequestTests
         owner.ResumeTracking();
 
         owner.Update(id, id, true);
+        Assert.False(owner.NeedsReleaseRetry);
         owner.Update(id, id, true);
 
         Assert.Equal(2, attempts);
@@ -145,8 +179,10 @@ public sealed class PlaybackDisplayRequestTests
         var id = Guid.NewGuid();
         owner.ResumeTracking();
         owner.Update(id, id, true);
+        Assert.False(owner.NeedsReleaseRetry);
         owner.Update(id, id, false);
         Assert.Equal(0, native.ReleaseCalls);
+        Assert.False(owner.NeedsReleaseRetry);
 
         owner.Update(id, id, true);
 
@@ -168,14 +204,17 @@ public sealed class PlaybackDisplayRequestTests
         owner.Update(first, first, true);
 
         owner.Update(second, second, true);
+        Assert.True(owner.NeedsReleaseRetry);
         owner.Update(second, second, true);
         Assert.Equal(1, native.ActiveCalls);
         Assert.Equal(1, native.Balance);
+        Assert.True(owner.NeedsReleaseRetry);
         owner.Update(second, second, true);
 
         Assert.Equal(3, native.ReleaseCalls);
         Assert.Equal(2, native.ActiveCalls);
         Assert.Equal(1, native.MaximumBalance);
+        Assert.False(owner.NeedsReleaseRetry);
     }
 
     [Fact]
@@ -188,11 +227,13 @@ public sealed class PlaybackDisplayRequestTests
         owner.Update(id, id, true);
 
         owner.Suspend();
+        Assert.True(owner.NeedsReleaseRetry);
         owner.Update(id, id, true);
 
         Assert.Equal(2, native.ReleaseCalls);
         Assert.Equal(1, native.ActiveCalls);
         Assert.Equal(0, native.Balance);
+        Assert.False(owner.NeedsReleaseRetry);
     }
 
     [Fact]
@@ -205,7 +246,9 @@ public sealed class PlaybackDisplayRequestTests
         owner.Update(id, id, true);
 
         owner.Dispose();
+        Assert.True(owner.NeedsReleaseRetry);
         owner.Dispose();
+        Assert.False(owner.NeedsReleaseRetry);
         owner.ResumeTracking();
         owner.Update(id, id, true);
         owner.Dispose();
@@ -213,6 +256,49 @@ public sealed class PlaybackDisplayRequestTests
         Assert.Equal(2, native.ReleaseCalls);
         Assert.Equal(1, native.ActiveCalls);
         Assert.Equal(0, native.Balance);
+    }
+
+    [Theory]
+    [InlineData("Suspend")]
+    [InlineData("Dispose")]
+    [InlineData("MissingContext")]
+    public void Idle_cleanup_ticks_finish_failed_release_after_playback_context_has_disappeared(string retirement)
+    {
+        var native = new FakeDisplayRequest { ReleaseFailures = 2 };
+        using var owner = new PlaybackDisplayRequest(() => native);
+        var id = Guid.NewGuid();
+        owner.ResumeTracking();
+        owner.Update(id, id, true);
+        switch (retirement)
+        {
+            case "Suspend": owner.Suspend(); break;
+            case "Dispose": owner.Dispose(); break;
+            case "MissingContext": owner.Update(null, null, false); break;
+        }
+        Assert.True(owner.NeedsReleaseRetry);
+        Assert.Equal(1, native.ReleaseCalls);
+        Assert.Equal(1, native.Balance);
+
+        var cleanupTicks = 0;
+        void IdleCleanupTick()
+        {
+            if (!owner.NeedsReleaseRetry) return;
+            cleanupTicks++;
+            owner.Update(null, null, false);
+        }
+        IdleCleanupTick();
+        Assert.True(owner.NeedsReleaseRetry);
+        Assert.Equal(2, native.ReleaseCalls);
+        Assert.Equal(1, native.ActiveCalls);
+        IdleCleanupTick();
+        Assert.False(owner.NeedsReleaseRetry);
+        IdleCleanupTick();
+
+        Assert.Equal(2, cleanupTicks);
+        Assert.Equal(3, native.ReleaseCalls);
+        Assert.Equal(1, native.ActiveCalls);
+        Assert.Equal(0, native.Balance);
+        Assert.Equal(new[] { "Active", "Release" }, native.Calls);
     }
 
     [Fact]

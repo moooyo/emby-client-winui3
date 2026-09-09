@@ -57,6 +57,7 @@ public sealed partial class PlayerView : UserControl
             UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
             UpdateRecoveryControls();
             UpdatePosition();
+            UpdatePresentationClock();
         };
         _updating = true;
         foreach (var mbps in new[] { 5, 10, 20, 40, 80 })
@@ -88,8 +89,29 @@ public sealed partial class PlayerView : UserControl
         if (session.User.Policy?.RemoteClientBitrateLimit is long limit && limit > 0)
             _bitrate = Math.Min(_bitrate, limit);
         UpdateQueueControls();
-        _clock.Start();
+        UpdatePresentationClock();
     }
+
+    private void UpdatePresentationClock()
+    {
+        var coordinator = _coordinator;
+        // Keep active playback polling, including pause and system-media updates. A failed
+        // display release also needs retries after playback has already reached a terminal state.
+        if (coordinator is not null && !NeedsPlaybackPolling(coordinator.Status))
+        {
+            // A queued terminal notification may carry a retired ID and be ignored by the
+            // display owner. Reconcile live ownership before removing its final polling path.
+            UpdateDisplayRequest(null, useCurrentPlayback: true);
+        }
+        var shouldRun = coordinator is not null
+            && (_displayRequest.NeedsReleaseRetry || NeedsPlaybackPolling(coordinator.Status));
+        if (shouldRun == _clock.IsEnabled) return;
+        if (shouldRun) _clock.Start();
+        else _clock.Stop();
+    }
+
+    private static bool NeedsPlaybackPolling(PlaybackStatus status) => status is PlaybackStatus.Opening
+        or PlaybackStatus.Playing or PlaybackStatus.Paused or PlaybackStatus.Buffering or PlaybackStatus.Seeking;
 
     internal QueueAddResult Enqueue(BaseItemDto item) => _session is null ? QueueAddResult.InvalidItem : _queue.TryAdd(item);
 
@@ -211,6 +233,7 @@ public sealed partial class PlayerView : UserControl
             PauseButton.IsEnabled = args.Status is PlaybackStatus.Playing or PlaybackStatus.Paused
                 or PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle;
             UpdateRecoveryControls();
+            UpdatePresentationClock();
             if (args.Status == PlaybackStatus.Ended && AutoPlayNext.IsChecked == true)
                 _ = AdvanceAsync(ticket);
         });
@@ -375,11 +398,13 @@ public sealed partial class PlayerView : UserControl
         // Native pause/buffering can precede a coordinator report waiting on the server.
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (ReferenceEquals(sender, _engine)) UpdateDisplayRequest(args.Snapshot.PlaybackId);
+            if (!ReferenceEquals(sender, _engine)) return;
+            UpdateDisplayRequest(args.Snapshot.PlaybackId);
+            UpdatePresentationClock();
         });
     }
 
-    private void UpdateDisplayRequest(Guid? notificationPlaybackId)
+    private void UpdateDisplayRequest(Guid? notificationPlaybackId, bool useCurrentPlayback = false)
     {
         var coordinator = _coordinator;
         var context = coordinator?.ActiveContext;
@@ -387,7 +412,7 @@ public sealed partial class PlayerView : UserControl
         var isPlayingVideo = coordinator?.Status == PlaybackStatus.Playing
             && snapshot?.PlaybackId == context?.PlaybackId && snapshot?.State == PlaybackEngineState.Playing
             && context?.Source.MediaStreams?.Any(stream => string.Equals(stream.Type, "Video", StringComparison.OrdinalIgnoreCase)) == true;
-        _displayRequest.Update(context?.PlaybackId, notificationPlaybackId, isPlayingVideo);
+        _displayRequest.Update(context?.PlaybackId, useCurrentPlayback ? context?.PlaybackId : notificationPlaybackId, isPlayingVideo);
     }
 
     private static string FormatTime(long ticks)
@@ -600,6 +625,7 @@ public sealed partial class PlayerView : UserControl
         { ReportExpiredSession(); }
         catch (OperationCanceledException) { }
         catch (Exception ex) { PlaybackNotice.Message = UiErrors.Describe(ex); PlaybackNotice.IsOpen = true; }
+        finally { UpdatePresentationClock(); }
     }
 
     private void ShowPlaybackError(string? code)

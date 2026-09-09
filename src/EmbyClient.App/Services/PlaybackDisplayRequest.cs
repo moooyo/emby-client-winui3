@@ -19,6 +19,8 @@ internal sealed partial class PlaybackDisplayRequest : IDisposable
     public PlaybackDisplayRequest(Func<IPlaybackDisplayRequest>? createRequest = null) =>
         _createRequest = createRequest ?? (() => new WindowsDisplayRequest());
 
+    internal bool NeedsReleaseRetry => _releasePending;
+
     public void ResumeTracking()
     {
         if (!_disposed) _suspended = false;
