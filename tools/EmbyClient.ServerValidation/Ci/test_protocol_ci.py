@@ -179,6 +179,44 @@ class CleanupOwnershipTests(unittest.TestCase):
             with self.subTest(resource=kind):
                 self.assert_foreign_resource_is_preserved(kind, wrong_label=False)
 
+    def test_failed_relay_cleanup_preserves_private_ownership_even_when_docker_resources_are_absent(self):
+        owner = "a" * 32
+        work = self.private_root / "relay-release-failure"
+        work.mkdir()
+        self.assertEqual(self.private_root.resolve(), work.resolve().parent)
+        state = {
+            "Owner": owner, "WorkflowRunId": "1001", "WorkflowRunAttempt": "1",
+            "ContainerName": "emby-protocol-" + owner, "NetworkName": "emby-protocol-net-" + owner,
+        }
+        state_path = work / "owned-resources.json"
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+        relay = mock.Mock()
+        relay.close.side_effect = RuntimeError("The synthetic relay did not drain.")
+        runner = SimpleNamespace(temporary=self.private_root, work=work, state_path=state_path,
+                                 run_id="1001", attempt="1", summary={}, relay=relay)
+        runner.docker = mock.Mock(return_value=SimpleNamespace(returncode=0, stdout=b""))
+        runner.docker_json = MethodType(protocol_ci.Runner.docker_json, runner)
+        runner.find_resource = MethodType(protocol_ci.Runner.find_resource, runner)
+
+        with mock.patch.object(protocol_ci.subprocess, "Popen", side_effect=AssertionError("No command may run.")) as process, \
+                mock.patch.object(protocol_ci.shutil, "rmtree") as remove_tree:
+            completed = protocol_ci.Runner.cleanup(runner)
+
+            self.assertFalse(completed)
+            self.assertFalse(runner.summary["RelayCleanupCompleted"])
+            self.assertFalse(runner.summary["CleanupCompleted"])
+            self.assertIs(relay, runner.relay)
+            relay.close.assert_called_once_with()
+            remove_tree.assert_not_called()
+            process.assert_not_called()
+        self.assertTrue(work.is_dir())
+        self.assertEqual(state, json.loads(state_path.read_text(encoding="utf-8")))
+        queries = [invocation.args[:2] for invocation in runner.docker.call_args_list]
+        self.assertIn(("container", "ls"), queries)
+        self.assertIn(("network", "ls"), queries)
+        for query in queries:
+            self.assertIn(query, (("container", "ls"), ("network", "ls")))
+
     def assert_foreign_resource_is_preserved(self, kind: str, *, wrong_label: bool):
         owner = "a" * 32
         work = self.private_root / (kind + ("-label" if wrong_label else "-identity"))

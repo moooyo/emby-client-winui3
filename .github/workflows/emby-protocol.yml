@@ -34,7 +34,7 @@ jobs:
       - name: Verify report filtering and owned-resource cleanup without a server
         run: |
           $ErrorActionPreference = 'Stop'
-          python3 -B -m unittest discover -s tools/EmbyClient.ServerValidation/Ci -p test_protocol_ci.py -v
+          python3 -B -m unittest discover -s tools/EmbyClient.ServerValidation/Ci -p test_*.py -v
           if ($LASTEXITCODE -ne 0) { throw 'Protocol orchestration unit checks failed.' }
 
       - name: Read the exact SDK and choose isolated CLI outputs

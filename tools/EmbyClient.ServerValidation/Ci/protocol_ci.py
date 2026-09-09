@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
+import http.client
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -30,6 +33,10 @@ MEDIA_PATH = "/mnt/protocol-media"
 SUMMARY_RELATIVE = Path("artifacts/emby-protocol-ci-summary/summary.json")
 MAX_JSON_BYTES = 2 * 1024 * 1024
 MAX_COMMAND_BYTES = 8 * 1024 * 1024
+MAX_STARTUP_LOG_BYTES = 64 * 1024
+STARTUP_ERROR_CATEGORIES = frozenset(("HttpResponse", "Redirect", "ConnectionRefused", "ConnectionReset",
+    "ConnectionAborted", "HostUnreachable", "NetworkUnreachable", "TimedOut", "AccessDenied",
+    "PeerClosed", "MalformedHttp", "OtherOsError", "OtherRequestFailure", "InvalidJson"))
 EXPECTED_STEPS = frozenset("""
 Server.PublicInfo Authentication.ValidCredentials Authentication.WrongPassword User.Current
 Server.AuthenticatedInfo Session.Capabilities Library.Views Items.List Items.Latest Items.Resume
@@ -46,9 +53,87 @@ Cleanup.PlayedRestore Cleanup.UserDataBooleans Session.Logout Authentication.Log
 class Failure(Exception):
     """Only fixed orchestration codes may reach the console or summary."""
 
-    def __init__(self, code: str):
+    def __init__(self, code: str, *, diagnostic: dict | None = None):
         super().__init__(code)
         self.code = code
+        self.diagnostic = diagnostic
+
+
+def summarize_startup_request_error(error: BaseException) -> dict:
+    """Keep only fixed request categories and numeric HTTP/OS codes, never exception text."""
+    if isinstance(error, urllib.error.HTTPError):
+        result = {"Category": "HttpResponse"}
+        if type(error.code) is int and 100 <= error.code <= 599:
+            result["HttpStatus"] = error.code
+        return result
+    if isinstance(error, urllib.error.URLError):
+        error = error.reason if isinstance(error.reason, BaseException) else error
+    number = getattr(error, "errno", None)
+    result = {}
+    if type(number) is int and 0 <= number <= 65535:
+        result["Errno"] = number
+    category = {
+        errno.ECONNREFUSED: "ConnectionRefused", errno.ECONNRESET: "ConnectionReset",
+        errno.ECONNABORTED: "ConnectionAborted", errno.EHOSTUNREACH: "HostUnreachable",
+        errno.ENETUNREACH: "NetworkUnreachable", errno.ETIMEDOUT: "TimedOut",
+        errno.EACCES: "AccessDenied", errno.EPERM: "AccessDenied",
+    }.get(number)
+    if category is None:
+        if isinstance(error, TimeoutError):
+            category = "TimedOut"
+        elif isinstance(error, http.client.RemoteDisconnected):
+            category = "PeerClosed"
+        elif isinstance(error, http.client.HTTPException):
+            category = "MalformedHttp"
+        else:
+            category = "OtherOsError" if isinstance(error, OSError) else "OtherRequestFailure"
+    result["Category"] = category
+    return result
+
+
+def summarize_startup_container(container: dict) -> dict:
+    """Reconstruct container state and actual port-programming facts without Docker's error text."""
+    state = container.get("State", {})
+    if not isinstance(state, dict):
+        raise Failure("InvalidContainerState")
+    result = {name: state.get(name) if type(state.get(name)) is bool else None
+        for name in ("Running", "Paused", "Restarting", "OOMKilled", "Dead")}
+    status = state.get("Status")
+    result["Status"] = status if status in ("created", "running", "paused", "restarting", "removing", "exited", "dead") else "unknown"
+    result["ExitCode"] = state.get("ExitCode") if type(state.get("ExitCode")) is int and 0 <= state["ExitCode"] <= 255 else None
+    result["StateErrorPresent"] = isinstance(state.get("Error"), str) and bool(state["Error"])
+    restarts = container.get("RestartCount")
+    result["RestartCount"] = restarts if type(restarts) is int and 0 <= restarts <= 10000 else None
+    ports = container.get("NetworkSettings", {}).get("Ports")
+    result["ActualPortsMetadataPresent"] = isinstance(ports, dict)
+    result["ActualPublishedPortPresent"] = isinstance(ports, dict) and any(isinstance(value, list) and bool(value) for value in ports.values())
+    result["ActualLoopbackPublication"] = isinstance(ports, dict) and ports.get("8096/tcp") == [{"HostIp": "127.0.0.1", "HostPort": "19096"}]
+    return result
+
+
+def summarize_startup_logs(data: bytes) -> dict:
+    """Known log signatures are observations, not an attribution of the startup failure."""
+    text = data[:MAX_STARTUP_LOG_BYTES].decode("utf-8", errors="replace")
+    patterns = {
+        "PermissionDenied": r"\bpermission denied\b",
+        "OperationNotPermitted": r"\boperation not permitted\b",
+        "ReadOnlyFileSystem": r"\bread-only file system\b",
+        "AddressAlreadyInUse": r"\baddress already in use\b|\bEADDRINUSE\b",
+        "NoSpaceLeft": r"\bno space left on device\b",
+        "OutOfMemory": r"\bout of memory\b|\bcannot allocate memory\b",
+        "MissingFileOrLibrary": r"\bno such file or directory\b|\berror while loading shared libraries\b",
+        "S6Fatal": r"\bs6[-a-z0-9]*\b[^\r\n]{0,160}\bfatal\b",
+        "UserOrGroupSwitchFailure": r"\b(?:setuid|setgid|setgroups|s6-setuidgid|s6-applyuidgid|su-exec)\b[^\r\n]{0,160}(?:failed|failure|permission|not permitted)",
+        "LoggedHttpListenerPrefix": r"\bAdding HttpListener prefix\b",
+    }
+    exceptions = ("UnauthorizedAccessException", "IOException", "SocketException", "XmlException",
+        "ConfigurationErrorsException", "FileNotFoundException", "DllNotFoundException",
+        "TypeInitializationException", "BadImageFormatException", "OutOfMemoryException", "NotSupportedException")
+    return {
+        "Signals": {name: re.search(pattern, text, re.IGNORECASE) is not None for name, pattern in patterns.items()},
+        "ExceptionTypes": {name: re.search(r"\b" + name + r"\b", text) is not None for name in exceptions},
+        "BytesExamined": min(len(data), MAX_STARTUP_LOG_BYTES),
+    }
 
 
 def summarize_report(report, exit_code: int) -> tuple[dict, bool]:
@@ -90,7 +175,7 @@ def summarize_report(report, exit_code: int) -> tuple[dict, bool]:
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, request, fp, code, message, headers, new_url):
-        raise Failure("UnexpectedServerRedirect")
+        raise Failure("UnexpectedServerRedirect", diagnostic={"Category": "Redirect", "HttpStatus": code})
 
 
 def sha256(path: Path) -> str:
@@ -153,6 +238,8 @@ class Runner:
         self.deadline = time.monotonic() + 18 * 60
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
         self.state = None
+        self.relay = None
+        self.relay_target_ipv4 = None
         self.summary = {
             "SchemaVersion": 1,
             "Scope": "Official Emby API and authenticated HTTP media transfer only",
@@ -180,7 +267,9 @@ class Runner:
         self.save_summary()
 
     def command(self, arguments: list[str], timeout: int, code: str, *, cleanup: bool = False,
-                accept_failure: bool = False) -> subprocess.CompletedProcess:
+                accept_failure: bool = False, maximum_bytes: int = MAX_COMMAND_BYTES) -> subprocess.CompletedProcess:
+        if not 0 < maximum_bytes <= MAX_COMMAND_BYTES:
+            raise Failure("InvalidCommandOutputLimit")
         allowed = timeout if cleanup else min(timeout, self.deadline - time.monotonic())
         if allowed <= 0:
             raise Failure("OrchestrationDeadline")
@@ -201,7 +290,7 @@ class Runner:
                     while process.poll() is None:
                         if time.monotonic() >= expires:
                             raise Failure(code)
-                        if output_path.stat().st_size + error_path.stat().st_size > MAX_COMMAND_BYTES:
+                        if output_path.stat().st_size + error_path.stat().st_size > maximum_bytes:
                             raise Failure("CommandOutputLimit")
                         time.sleep(0.1)
                     return_code = process.returncode
@@ -215,21 +304,23 @@ class Runner:
                             process.wait(timeout=5)
                     raise
                 output.seek(0)
-                data = output.read(MAX_COMMAND_BYTES + 1)
-                if len(data) + error_path.stat().st_size > MAX_COMMAND_BYTES:
+                data = output.read(maximum_bytes + 1)
+                if len(data) + error_path.stat().st_size > maximum_bytes:
                     raise Failure("CommandOutputLimit")
+                error_output.seek(0)
+                error_data = error_output.read(maximum_bytes - len(data))
             except Failure:
                 raise
             except Exception:
                 raise Failure(code) from None
         if return_code != 0 and not accept_failure:
             raise Failure(code)
-        return subprocess.CompletedProcess(arguments, return_code, data)
+        return subprocess.CompletedProcess(arguments, return_code, data, error_data)
 
     def docker(self, *arguments: str, timeout: int = 30, cleanup: bool = False,
-               accept_failure: bool = False) -> subprocess.CompletedProcess:
+               accept_failure: bool = False, maximum_bytes: int = MAX_COMMAND_BYTES) -> subprocess.CompletedProcess:
         return self.command(["docker", "--host", DOCKER_HOST, *arguments], timeout,
-            "DockerOperationFailed", cleanup=cleanup, accept_failure=accept_failure)
+            "DockerOperationFailed", cleanup=cleanup, accept_failure=accept_failure, maximum_bytes=maximum_bytes)
 
     def docker_json(self, *arguments: str, cleanup: bool = False):
         data = self.docker(*arguments, cleanup=cleanup).stdout
@@ -240,6 +331,62 @@ class Runner:
 
     def save_state(self) -> None:
         write_json(self.state_path, self.state)
+
+    def owned_startup_container(self, *, cleanup: bool = False) -> dict:
+        try:
+            result = self.docker("container", "inspect", self.state["ContainerId"], timeout=10, cleanup=cleanup)
+            container = json.loads(result.stdout)[0]
+        except Exception:
+            raise Failure("StartupContainerInspectionFailed") from None
+        if (container.get("Id") != self.state["ContainerId"]
+                or container.get("Name") != "/" + self.state["ContainerName"]
+                or container.get("Image") != self.state["ImageId"]
+                or container.get("Config", {}).get("Labels", {}).get(OWNER_LABEL) != self.state["Owner"]):
+            raise Failure("StartupContainerIdentityMismatch")
+        return container
+
+    def record_startup_request_failure(self, failure: Failure) -> None:
+        readiness = self.summary["ServerReadiness"]
+        diagnostic = failure.diagnostic if isinstance(failure.diagnostic, dict) else {}
+        category = diagnostic.get("Category")
+        category = category if category in STARTUP_ERROR_CATEGORIES else "OtherRequestFailure"
+        safe = {"Category": category}
+        for name, minimum, maximum in (("HttpStatus", 100, 599), ("Errno", 0, 65535)):
+            value = diagnostic.get(name)
+            if type(value) is int and minimum <= value <= maximum:
+                safe[name] = value
+        readiness["LastRequestFailure"] = safe
+        categories = readiness.setdefault("RequestFailureCounts", {})
+        categories[category] = categories.get(category, 0) + 1
+        if "HttpStatus" in safe:
+            counts = readiness.setdefault("HttpStatusCounts", {})
+            key = str(safe["HttpStatus"])
+            counts[key] = counts.get(key, 0) + 1
+
+    def capture_startup_logs(self) -> None:
+        result = {"CaptureSucceeded": False, "Truncated": False}
+        data = b""
+        try:
+            # Verify ownership again before reading any log. No raw Docker metadata/log text is exported.
+            self.owned_startup_container(cleanup=True)
+            response = self.docker("logs", "--tail", "200", self.state["ContainerId"], timeout=10,
+                cleanup=True, accept_failure=True, maximum_bytes=MAX_STARTUP_LOG_BYTES)
+            if response.returncode == 0:
+                data = response.stdout + (response.stderr or b"")
+                result["CaptureSucceeded"] = True
+        except Failure as error:
+            if error.code == "CommandOutputLimit":
+                result["Truncated"] = True
+                try:
+                    for name in ("command-output.bin", "command-error.bin"):
+                        with (self.work / name).open("rb") as source:
+                            data += source.read(MAX_STARTUP_LOG_BYTES - len(data))
+                except OSError:
+                    data = b""
+        except Exception:
+            pass
+        result.update(summarize_startup_logs(data))
+        self.summary["StartupLogs"] = result
 
     def headers(self, role: str, token: str | None = None) -> dict[str, str]:
         headers = {"X-Emby-Authorization": 'MediaBrowser Client="Protocol CI", Device="Disposable CLI", '
@@ -259,19 +406,22 @@ class Runner:
         timeout = min(10, self.deadline - time.monotonic())
         if timeout <= 0:
             raise Failure("OrchestrationDeadline")
+        http_status = None
         try:
             with self.opener.open(request, timeout=timeout) as response:
+                http_status = response.getcode()
                 payload = response.read(MAX_JSON_BYTES + 1)
                 if len(payload) > MAX_JSON_BYTES:
                     raise Failure("ServerJsonLimit")
                 return json.loads(payload) if payload else None
         except urllib.error.HTTPError as error:
+            diagnostic = summarize_startup_request_error(error)
             error.close()
-            raise Failure("ServerHttpRejected") from None
-        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError):
-            raise Failure("ServerUnavailable") from None
+            raise Failure("ServerHttpRejected", diagnostic=diagnostic) from None
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError, http.client.HTTPException) as error:
+            raise Failure("ServerUnavailable", diagnostic=summarize_startup_request_error(error)) from None
         except (ValueError, UnicodeError):
-            raise Failure("InvalidServerJson") from None
+            raise Failure("InvalidServerJson", diagnostic={"Category": "InvalidJson", "HttpStatus": http_status}) from None
 
     def check_server_identity(self, info) -> str:
         if (not isinstance(info, dict) or info.get("Version") != SERVER_VERSION
@@ -388,7 +538,7 @@ class Runner:
         self.save_state()
         container_id = self.docker("create", "--name", self.state["ContainerName"], "--platform", "linux/amd64",
             "--label", OWNER_LABEL + "=" + self.state["Owner"], "--restart", "no",
-            "--network", self.state["NetworkName"], "--publish", "127.0.0.1:19096:8096/tcp",
+            "--network", self.state["NetworkName"],
             "--env", "UID=" + str(os.getuid()), "--env", "GID=" + str(os.getgid()),
             "--env", "GIDLIST=" + str(os.getgid()), "--cpus", "2", "--memory", "2g", "--pids-limit", "512",
             "--security-opt", "no-new-privileges:true", "--log-opt", "max-size=5m", "--log-opt", "max-file=1",
@@ -399,21 +549,67 @@ class Runner:
         self.state["ContainerId"] = container_id
         self.save_state()
         self.inspect_isolation()
-        self.docker("start", container_id)
-        self.inspect_isolation()
         self.stage("ServerReadiness")
+        self.summary["ServerReadiness"] = {"Attempts": 0, "PublicInfoReceived": False,
+            "ContainerInspectionSucceeded": False}
         expires = min(self.deadline, time.monotonic() + 180)
-        while time.monotonic() < expires:
+        try:
+            self.docker("start", container_id)
+            state = summarize_startup_container(self.owned_startup_container())
+            self.summary["ServerReadiness"]["Container"] = state
+            self.summary["ServerReadiness"]["ContainerInspectionSucceeded"] = True
+            if state["Running"] is not True:
+                raise Failure("ServerExitedBeforeReady")
+            target = self.inspect_isolation()
+            if target is None:
+                raise Failure("ContainerEndpointUnavailable")
+            # The Docker network stays internal and has no published ports. This owned host relay
+            # forwards bytes unchanged to the container endpoint validated by both inspect views.
+            from loopback_relay import LoopbackRelay, RelayError
+            self.relay_target_ipv4 = target
+            self.relay = LoopbackRelay(target, 8096, listen_port=19096)
             try:
-                self.check_server_identity(self.api("GET", "System/Info/Public"))
-                return
-            except Failure as error:
-                if error.code not in ("ServerUnavailable", "ServerHttpRejected"):
-                    raise
-                time.sleep(2)
-        raise Failure("ServerStartupDeadline")
+                self.relay.start()
+            except RelayError:
+                raise Failure("LoopbackRelayStartFailed") from None
+            self.summary["Isolation"]["HostRelayLoopbackOnly"] = self.relay.is_running and self.relay.port == 19096
+            if not self.summary["Isolation"]["HostRelayLoopbackOnly"]:
+                raise Failure("LoopbackRelayStartFailed")
+            while time.monotonic() < expires:
+                readiness = self.summary["ServerReadiness"]
+                readiness["ContainerInspectionSucceeded"] = False
+                state = summarize_startup_container(self.owned_startup_container())
+                readiness["Container"] = state
+                readiness["ContainerInspectionSucceeded"] = True
+                if state["Running"] is not True:
+                    raise Failure("ServerExitedBeforeReady")
+                if not self.relay.is_running:
+                    raise Failure("LoopbackRelayStopped")
+                readiness["Attempts"] += 1
+                try:
+                    info = self.api("GET", "System/Info/Public")
+                    readiness["PublicInfoReceived"] = True
+                    self.check_server_identity(info)
+                    self.save_summary()
+                    return
+                except Failure as error:
+                    self.record_startup_request_failure(error)
+                    if error.code not in ("ServerUnavailable", "ServerHttpRejected"):
+                        raise
+                    self.save_summary()
+                    time.sleep(2)
+            raise Failure("ServerStartupDeadline")
+        except Failure:
+            try:
+                self.summary["ServerReadiness"]["Container"] = summarize_startup_container(self.owned_startup_container(cleanup=True))
+                self.summary["ServerReadiness"]["ContainerInspectionSucceeded"] = True
+            except Failure:
+                self.summary["ServerReadiness"]["ContainerInspectionSucceeded"] = False
+            self.capture_startup_logs()
+            self.save_summary()
+            raise
 
-    def inspect_isolation(self) -> None:
+    def inspect_isolation(self) -> str | None:
         network = self.docker_json("network", "inspect", self.state["NetworkId"])[0]
         container = self.docker_json("container", "inspect", self.state["ContainerId"])[0]
         host = container.get("HostConfig", {})
@@ -429,11 +625,36 @@ class Runner:
                 or host.get("NetworkMode") != self.state["NetworkName"] or host.get("Privileged") is not False
                 or host.get("PublishAllPorts") is not False or host.get("PidMode") not in (None, "")
                 or host.get("Devices") or not valid_mounts
-                or host.get("PortBindings") != {"8096/tcp": [{"HostIp": "127.0.0.1", "HostPort": "19096"}]}
+                or host.get("PortBindings") not in (None, {})
                 or set(container.get("NetworkSettings", {}).get("Networks", {})) != {self.state["NetworkName"]}):
             raise Failure("IsolationInspectionFailed")
-        self.summary["Isolation"] = {"InternalBridge": True, "SingleLoopbackPublication": True,
-            "OnlyOwnedConfigAndReadOnlySyntheticMediaMounted": True, "Privileged": False, "HostNetwork": False}
+        actual = summarize_startup_container(container)
+        if actual["ActualPublishedPortPresent"]:
+            raise Failure("UnexpectedDockerPortPublication")
+        self.summary["Isolation"] = {"InternalBridge": True, "DockerPortPublicationRequested": False,
+            "DockerActualPublishedPortPresent": actual["ActualPublishedPortPresent"],
+            "OnlyOwnedConfigAndReadOnlySyntheticMediaMounted": True, "Privileged": False, "HostNetwork": False,
+            "HostRelayLoopbackOnly": self.relay is not None and self.relay.is_running and self.relay.port == 19096}
+        if actual["Running"] is not True:
+            return None
+        try:
+            endpoint = container["NetworkSettings"]["Networks"][self.state["NetworkName"]]
+            entries = network["Containers"]
+            recorded = entries[self.state["ContainerId"]]
+            address = ipaddress.IPv4Address(endpoint["IPAddress"])
+            interface = ipaddress.IPv4Interface(recorded["IPv4Address"])
+            subnets = [ipaddress.IPv4Network(item["Subnet"]) for item in network["IPAM"]["Config"]]
+            valid = (set(entries) == {self.state["ContainerId"]} and recorded["Name"] == self.state["ContainerName"]
+                and endpoint["NetworkID"] == self.state["NetworkId"] and endpoint["EndpointID"] == recorded["EndpointID"]
+                and len(subnets) == 1 and interface.network == subnets[0] and address == interface.ip
+                and address in subnets[0] and address not in (subnets[0].network_address, subnets[0].broadcast_address)
+                and address.is_private and not (address.is_loopback or address.is_link_local or address.is_unspecified or address.is_multicast))
+        except (KeyError, TypeError, ValueError):
+            raise Failure("ContainerEndpointMismatch") from None
+        if not valid or self.relay_target_ipv4 not in (None, str(address)):
+            raise Failure("ContainerEndpointMismatch")
+        self.summary["Isolation"]["RelayTargetMatchesOwnedEndpoint"] = True
+        return str(address)
 
     def initialize_and_wait_for_item(self) -> str:
         self.stage("FreshServerInitialization")
@@ -518,7 +739,8 @@ class Runner:
         self.summary["ProbeMode"] = "FrameworkDependentPortableCli"
         paths = list((self.repository / "tools/EmbyClient.ServerValidation/ApiProbe").glob("*.cs"))
         paths += [Path(__file__).resolve(), self.repository / "tools/EmbyClient.ServerValidation/Ci/ApiProbe.Ci.csproj",
-            self.repository / "tools/EmbyClient.ServerValidation/Ci/packages.lock.json", self.repository / "global.json"]
+            self.repository / "tools/EmbyClient.ServerValidation/Ci/packages.lock.json",
+            self.repository / "tools/EmbyClient.ServerValidation/Ci/loopback_relay.py", self.repository / "global.json"]
         self.summary["SourceSha256"] = {path.relative_to(self.repository).as_posix(): sha256(path) for path in sorted(paths)}
         self.check_server_identity(self.api("GET", "System/Info/Public"))
         self.inspect_isolation()
@@ -550,9 +772,18 @@ class Runner:
         return self.docker_json(kind, "inspect", name, cleanup=True)[0]
 
     def cleanup(self) -> bool:
+        relay_complete = True
+        relay = getattr(self, "relay", None)
+        if relay is not None:
+            try:
+                relay.close()
+                self.relay = None
+            except Exception:
+                relay_complete = False
+        self.summary["RelayCleanupCompleted"] = relay_complete
         if not self.work.exists():
-            self.summary["CleanupCompleted"] = True
-            return True
+            self.summary["CleanupCompleted"] = relay_complete
+            return relay_complete
         if self.work.is_symlink() or self.work.resolve().parent != self.temporary:
             raise Failure("CleanupDirectoryMismatch")
         state = read_json(self.state_path, 8192)
@@ -581,9 +812,9 @@ class Runner:
                     raise Failure("CleanupIncomplete")
             except Exception:
                 complete = False
-        if complete:
+        if complete and relay_complete:
             shutil.rmtree(self.work)
-        self.summary["CleanupCompleted"] = complete and not self.work.exists()
+        self.summary["CleanupCompleted"] = relay_complete and complete and not self.work.exists()
         return self.summary["CleanupCompleted"]
 
 

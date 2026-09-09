@@ -1,0 +1,38 @@
+{
+  "SchemaVersion": 1,
+  "Scope": "Official Emby API and authenticated HTTP media transfer only",
+  "Outcome": "Failed",
+  "NativeUi": "NotRun",
+  "NativeDecoderAndFirstFrame": "NotRun",
+  "SyntheticPlaybackReports": true,
+  "ServerVersion": "4.9.5.0",
+  "OfficialImage": "emby/embyserver@sha256:734a6f03c7c783a9e566b08d09a2b6376f41229ff29f032a7e00302e0be98f8a",
+  "WorkflowRunId": "34319687217",
+  "WorkflowRunAttempt": "1",
+  "CleanupCompleted": true,
+  "LastStage": "ServerReadiness",
+  "SourceCommit": "0a0809f949949c098067dda8e378cafd82c3c8d1",
+  "DotNetSdk": "10.0.301",
+  "DockerEngineVersion": "28.0.4",
+  "ResolvedImageId": "sha256:fa0dadda51e7ef3834d49a80a5708992fe4cdd5561c3ed2e2a4e87c01a447e6b",
+  "Fixture": {
+    "Synthetic": true,
+    "Video": "H264",
+    "Audio": "AacStereo",
+    "Subtitle": "GeneratedSrt",
+    "Width": 640,
+    "Height": 360,
+    "DurationSeconds": 60,
+    "MovieSha256": "f888d0754d367c9e4df045453cb99f08e495864f2ec8090ed10d8ee8a4b68e9c",
+    "SubtitleSha256": "fc599fbaabdb00b905b99cf13be5883af7760e7050e7bf0bdf9fbcda665c1643",
+    "FfmpegVersion": "6.1.1-3ubuntu5"
+  },
+  "Isolation": {
+    "InternalBridge": true,
+    "SingleLoopbackPublication": true,
+    "OnlyOwnedConfigAndReadOnlySyntheticMediaMounted": true,
+    "Privileged": false,
+    "HostNetwork": false
+  },
+  "FailureCode": "ServerStartupDeadline"
+}
