@@ -165,6 +165,15 @@
         "type": "Transitive",
         "resolved": "9.0.0",
         "contentHash": "hyJB4UlpAi19Xr9AXzu2NuagKC4lPfHObNMEAA0HmqFz2rX7wKgzeYzO/jM/eBHDhnUGFFEjk5cOoJaxqg5J4A=="
+      },
+      "embyclient.api": {
+        "type": "Project"
+      },
+      "embyclient.playback": {
+        "type": "Project",
+        "dependencies": {
+          "EmbyClient.Api": "[1.0.0, )"
+        }
       }
     },
     "net10.0-windows10.0.26100/win-x64": {

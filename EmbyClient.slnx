@@ -1,4 +1,7 @@
 <Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
   <Folder Name="/src/">
     <Project Path="src/EmbyClient.Api/EmbyClient.Api.csproj" />
     <Project Path="src/EmbyClient.App/EmbyClient.App.csproj" />
@@ -6,7 +9,12 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj" />
+    <Project Path="tests/EmbyClient.MediaTransport.Tests/EmbyClient.MediaTransport.Tests.csproj" />
     <Project Path="tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj" />
     <Project Path="tests/EmbyClient.Playback.Tests/EmbyClient.Playback.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/EmbyClient.FixtureServer/EmbyClient.FixtureServer.csproj" />
+    <Project Path="tools/EmbyClient.MediaFixtures/EmbyClient.MediaFixtures.csproj" />
   </Folder>
 </Solution>

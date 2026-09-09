@@ -1,0 +1,80 @@
+{
+  "RecordedLocalDate": "2026-09-09",
+  "Sdk": "10.0.301",
+  "OperatingSystem": "Microsoft Windows NT 10.0.28000.0",
+  "Project": "tools/EmbyClient.VlcProbe/EmbyClient.VlcProbe.csproj",
+  "DefaultBuild": {
+    "Log": "  Determining projects to restore...\r\n  Restored <repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj (in 251 ms).\r\n  EmbyClient.VlcProbe -> <repository>\\tools\\EmbyClient.VlcProbe\\bin\\x64\\Release\\net10.0-windows10.0.26100.0\\win-x64\\EmbyClient.VlcProbe.dll\r\n\r\nBuild succeeded.\r\n    0 Warning(s)\r\n    0 Error(s)\r\n\r\nTime Elapsed 00:00:09.53\r\n",
+    "Succeeded": true
+  },
+  "AotPublication": {
+    "Warnings": [
+      "C:\\projects\\sharpdx\\Source\\SharpDX\\CppObject.cs(143): Trim analysis warning IL2087: SharpDX.CppObject.FromPointer<T>(IntPtr): 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicConstructors' in call to 'System.Activator.CreateInstance(Type,Object[])'. The generic parameter 'T' of 'SharpDX.CppObject.FromPointer<T>(IntPtr)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [<repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj]",
+      "C:\\projects\\sharpdx\\Source\\SharpDX\\ShadowContainer.cs(55): Trim analysis warning IL2075: SharpDX.ShadowContainer.Initialize(ICallbackable): 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.Interfaces' in call to 'System.Reflection.TypeInfo.ImplementedInterfaces.get'. The return value of method 'System.Object.GetType()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [<repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj]",
+      "C:\\projects\\sharpdx\\Source\\SharpDX\\ShadowContainer.cs(76): Trim analysis warning IL2075: SharpDX.ShadowContainer.Initialize(ICallbackable): 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.Interfaces' in call to 'System.Reflection.TypeInfo.ImplementedInterfaces.get'. The return value of method 'System.Collections.Generic.IEnumerator`1<Type>.Current.get' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [<repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj]",
+      "C:\\projects\\sharpdx\\Source\\SharpDX\\ShadowContainer.cs(95): Trim analysis warning IL2072: SharpDX.ShadowContainer.Initialize(ICallbackable): 'type' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicParameterlessConstructor' in call to 'System.Activator.CreateInstance(Type)'. The return value of method 'SharpDX.ShadowAttribute.Type.get' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [<repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj]",
+      "C:\\projects\\sharpdx\\Source\\SharpDX\\ShadowContainer.cs(112): Trim analysis warning IL2075: SharpDX.ShadowContainer.Initialize(ICallbackable): 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.Interfaces' in call to 'System.Reflection.TypeInfo.ImplementedInterfaces.get'. The return value of method 'System.Collections.Generic.List`1.Enumerator<Type>.Current.get' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [<repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj]",
+      "C:\\projects\\sharpdx\\Source\\SharpDX\\ResultDescriptor.cs(254): Trim analysis warning IL2070: SharpDX.ResultDescriptor.AddDescriptorsFromType(Type): 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicFields', 'DynamicallyAccessedMemberTypes.NonPublicFields' in call to 'System.Reflection.TypeInfo.DeclaredFields.get'. The parameter 'type' of method 'SharpDX.ResultDescriptor.AddDescriptorsFromType(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to. [<repository>\\tools\\EmbyClient.VlcProbe\\EmbyClient.VlcProbe.csproj]"
+    ],
+    "NativeCodeGenerationObserved": true,
+    "PublishedOutputObserved": true
+  },
+  "AotRuntime": {
+    "Process": {
+      "Mode": "Aot",
+      "ProcessId": 59408,
+      "ProcessExited": true,
+      "ExitCode": 1,
+      "TimedOut": false,
+      "ExecutableSha256": "C5D645269725597D494205E0E70FCBD5BFE69CBDE255B32A25DC34F494909A66",
+      "FixtureSha256": "EB85793360BE7A9223B5B611DC8C6FCAC199C50E6BA569085CA98AB1205536CD",
+      "CompletedUtc": "2026-09-09T06:38:21.5086614+08:00"
+    },
+    "Result": {
+      "Status": "Failed",
+      "DynamicCodeSupported": false,
+      "ProcessId": 59408,
+      "UpdatedUtc": "2026-09-09T06:38:21.3845172+08:00",
+      "Error": "HRESULT 0x802B000A: Microsoft.UI.Xaml.Markup.XamlParseException: XAML parsing failed.\r\n   at WinRT.ExceptionHelpers.<ThrowExceptionForHR>g__Throw|38_0(Int32) + 0x42\r\n   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.LoadComponent(IObjectReference, Object, Uri, ComponentResourceLocation) + 0x133\r\n   at EmbyClient.VlcProbe.App.OnLaunched(LaunchActivatedEventArgs) + 0x420",
+      "MaximumTimeMs": 0,
+      "PlayingEvents": 0,
+      "ErrorEvents": 0,
+      "DecodedVideo": 0,
+      "DisplayedPictures": 0,
+      "VideoOutputs": 0,
+      "Milestones": [
+        "SyntheticFixtureAccepted",
+        "CoreInitialized"
+      ]
+    }
+  },
+  "JitBaselineRuntime": {
+    "Process": {
+      "Mode": "JitBaseline",
+      "ProcessId": 13756,
+      "ProcessExited": true,
+      "ExitCode": 1,
+      "TimedOut": false,
+      "ExecutableSha256": "97AAE72BDACCE5376D907CBBDB70ECBE6D1B10096F87A48C90149DC7E253AE23",
+      "FixtureSha256": "EB85793360BE7A9223B5B611DC8C6FCAC199C50E6BA569085CA98AB1205536CD",
+      "CompletedUtc": "2026-09-09T06:38:43.265092+08:00"
+    },
+    "Result": {
+      "Status": "Failed",
+      "DynamicCodeSupported": true,
+      "ProcessId": 13756,
+      "UpdatedUtc": "2026-09-09T06:38:43.1284764+08:00",
+      "Error": "HRESULT 0x802B000A: Microsoft.UI.Xaml.Markup.XamlParseException: XAML parsing failed.\r\n   at WinRT.ExceptionHelpers.<ThrowExceptionForHR>g__Throw|38_0(Int32 hr)\r\n   at WinRT.ExceptionHelpers.ThrowExceptionForHR(Int32 hr)\r\n   at ABI.Microsoft.UI.Xaml.IApplicationStaticsMethods.LoadComponent(IObjectReference _obj, Object component, Uri resourceLocator, ComponentResourceLocation componentResourceLocation)\r\n   at Microsoft.UI.Xaml.Application.LoadComponent(Object component, Uri resourceLocator, ComponentResourceLocation componentResourceLocation)\r\n   at EmbyClient.VlcProbe.ProbeWindow.InitializeComponent() in <repository>\\tools\\EmbyClient.VlcProbe\\obj\\x64\\JitBaseline\\net10.0-windows10.0.26100.0\\win-x64\\ProbeWindow.g.i.cs:line 39\r\n   at EmbyClient.VlcProbe.ProbeWindow..ctor(TaskCompletionSource`1 ready, Action`1 milestone) in <repository>\\tools\\EmbyClient.VlcProbe\\ProbeWindow.xaml.cs:line 15\r\n   at EmbyClient.VlcProbe.App.OnLaunched(LaunchActivatedEventArgs args) in <repository>\\tools\\EmbyClient.VlcProbe\\App.xaml.cs:line 63",
+      "MaximumTimeMs": 0,
+      "PlayingEvents": 0,
+      "ErrorEvents": 0,
+      "DecodedVideo": 0,
+      "DisplayedPictures": 0,
+      "VideoOutputs": 0,
+      "Milestones": [
+        "SyntheticFixtureAccepted",
+        "CoreInitialized"
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/EmbyClient.Playback/EmbyClient.Playback.csproj" />
+    <Compile Include="../../src/EmbyClient.App/Playback/ScopedMediaTransport.cs" Link="Playback/ScopedMediaTransport.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/HttpRangeStream.cs" Link="Playback/HttpRangeStream.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/SessionHttpRelay.cs" Link="Playback/SessionHttpRelay.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs" Link="Playback/MediaDeliveryClassifier.cs" />
+  </ItemGroup>
+</Project>

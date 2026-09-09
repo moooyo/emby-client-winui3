@@ -1,67 +1,47 @@
 # Implementation status
 
-Implementation started on 2026-09-09. The user authorized development directly on `main`, a commit and push after each completed stage, and local builds/tests for this implementation task. This authorization supersedes the research-stage remote-only restriction for the current task.
+Snapshot: 2026-09-09. The repository contains a functional Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. Native AOT publication succeeds. Release acceptance is incomplete: the real-server HLS resource gate still fails, and final integrated UI validation was interrupted by Escape before completion.
 
-## Required implementation direction
+## Implemented scope
 
-- .NET 10 and the latest stable Windows App SDK, currently 2.4.0.
-- A native Windows UI built with WinUI 3, WinUIEx, and CommunityToolkit.Mvvm.
-- Native AOT as a verified publish target, with explicit JSON source generation and no reflection-dependent application architecture.
-- Implement the researched connection, library, user-state, and playback lifecycle, followed by playback refinements and release hardening.
-- Keep optional scope and unresolved release requirements visible; a scaffold or a passing isolated test is not completion of the product.
-
-## Delivery stages
-
-| Stage | Scope | State |
+| Area | Current implementation | Acceptance boundary |
 | --- | --- | --- |
-| Research baseline | Local API reference, compatibility research, Windows architecture | Complete; initial commit |
-| Foundation | Solution, pinned tooling/packages, native shell, local build and AOT publish | Complete; initial native window visually inspected after desktop unlock |
-| Emby transport | Typed client, source-generated JSON, authentication, browsing, playback/session API, focused contract tests | Complete; 47 HTTP contract tests and 40 official-server API checks passed |
-| Windows account storage | User-protected tokens, atomic account settings, stable device identity | Complete; 33 Windows platform tests passed, including connection/logout races |
-| Playback orchestration | Engine abstraction, negotiation, state transitions, reporting, fallback, source cleanup | Complete; 61 coordinator tests passed using simulated transport/engine |
-| Usable client | Protected accounts, native navigation, home/library/search/details, playback surface, tracks, reporting and cleanup | Pending |
-| Playback refinements | Queue, episode continuation, quality/source selection, failure recovery, media keys, engine comparison | Pending |
-| Release hardening | Accessibility, cache policy, automated checks, packaging, distribution evidence, accurate compatibility documentation | Pending |
-| Optional extensions | Music specialization, playlists, downloads, Live TV, remote control, ARM64 | Deferred as in the research plan; each needs separate complete lifecycle verification |
+| API and accounts | Typed Emby client, generated JSON, authentication, protected saved tokens, stable device identity, account switching, and logout | Automated coverage and one official server version; no Emby Connect |
+| Library | Continue watching, latest items, next episodes, paged libraries/search, favorites, details, seasons/episodes, watched state, and bounded account-scoped image caching | Implemented in the native UI; final complete user-flow verification remains open |
+| Playback | Windows `MediaPlayer`/`MediaPlayerElement`, source negotiation, conservative profile, direct-stream fallback, tracks, subtitles, bitrate selection, pause/resume, seeking, fullscreen, and reporting | Native and real-server evidence below covers a limited SDR H.264/AAC baseline |
+| Lifecycle and controls | Single active context, cancellation and cleanup, source-specific track indexes, paused restarts, stale-event protection, scoped system media commands, transient queue, and episode continuation | System-control state inspection passed; physical media keys and complete queue/continuation UI acceptance remain unverified |
+| Distribution groundwork | Build/test/publish scripts, CI definition, dependency inventory/SBOM tooling, unsigned MSIX packaging and structural checks | No signed release, verified package installation, clean-machine acceptance, or hosted CI result is claimed |
 
-## Verification evidence
+The current playback path uses a private session-scoped HTTP relay for original HTTP representations, with controlled upstream authentication, redirects, ranges, bounded caching, and shutdown drainage. Server-generated HLS uses the native adaptive-media path. LibVLC remains an isolated comparison rather than a product dependency; see the [engine decision](../architecture/playback-engine-decision.md).
 
-- Local SDK: .NET SDK 10.0.301; Visual Studio Community 2026 18.7.3; Windows SDK 10.0.26100.0.
-- Latest stable package metadata inspected: Windows App SDK 2.4.0, WinUIEx 2.9.3, CommunityToolkit.Mvvm 8.4.2.
-- `dotnet build src/EmbyClient.App/EmbyClient.App.csproj -c Debug -p:Platform=x64 --nologo`: succeeded.
-- `dotnet publish src/EmbyClient.App/EmbyClient.App.csproj -c Release -r win-x64 -p:Platform=x64 -o artifacts/aot --nologo`: succeeded and generated native code.
-- Native output contains an 8,412,160-byte `EmbyClient.App.exe` for the initial shell. Process launch with the publish directory as its working directory produced a responsive window and the expected welcome-page accessibility tree.
-- The initial build reports an upstream generated-XAML `CS0618` warning for WinUIEx's obsolete `Icon` type. Application code uses `AppWindow.SetIcon`; the warning is not suppressed.
-- After the user unlocked the desktop, the initial welcome window was visually inspected: native title bar, Mica surface, welcome text, and layout were displayed. This does not establish playback acceptance.
-- `dotnet build src/EmbyClient.Api/EmbyClient.Api.csproj -c Release`: succeeded, 0 warnings/errors.
-- `dotnet test --project tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj --configuration Release --no-restore`: 40 passed, 0 failed, 0 skipped. Tests use simulated HTTP; they do not certify an actual Emby server version.
-- Protocol regressions fixed during tests: preserving proxy paths in returned `/emby/...` media URLs, rejecting unknown query-result shapes, and preserving numeric genre/studio IDs. The .NET 10 test runner is Microsoft.Testing.Platform.
-- `dotnet test --project tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj --configuration Release`: 30 passed, 0 failed, 0 skipped. These tests exercised actual Windows user-scoped data protection in isolated temporary directories, not production account settings.
-- Initial settings creation now uses a non-overwriting atomic move. Competing instances read the winning persisted device identity instead of overwriting it or returning different identities.
-- `dotnet test --project tests/EmbyClient.Playback.Tests/EmbyClient.Playback.Tests.csproj --configuration Release`: 39 passed with no build warnings. The suite verifies real coordinator behavior with a simulated engine/HTTP transport, including ordering barriers, cancellation races, fallback limits, known HDR rejection from the direct baseline, absolute timestamps, and cleanup after failures.
-- The native player integration and full client compiled and published with Native AOT. Native rendering, streaming, and subtitle behavior are a separate acceptance gate and are not proved by coordinator unit tests.
+For the observed finite Emby VOD HLS route, the engine uses the full source timeline and performs an actual initial seek. A returned `StartTimeTicks` hint is not a reporting offset. In-place native HLS seeking is disabled after observed timeouts: a logical seek negotiates a new session, opens at the requested absolute position, and restores pause after actual playback starts. See the [playback API reference](../api/04-playback-and-sessions.md).
 
-## Official server compatibility correction
+## Current verification
 
-An isolated official Emby Server 4.9.5.0 instance was started inside a WSL user/network namespace with loopback-only forwarding. It uses only generated test media and dedicated test accounts. No existing Emby instance, system network configuration, or production credentials were used.
+The local toolchain is .NET SDK `10.0.301`, Windows SDK `10.0.26100.0`, and Visual Studio Community 2026 `18.7.3`. Product dependencies pin Windows App SDK `2.4.0`, WinUIEx `2.9.3`, and CommunityToolkit.Mvvm `8.4.2`.
 
-The real server rejected chunked JSON request bodies with HTTP 400. The transport now serializes requests through the existing generated `JsonTypeInfo` into UTF-8 bytes and sends a known `Content-Length`. This preserves Native AOT compatibility. Seven regressions check the length before a handler reads/buffers the body; all seven failed against the old implementation.
+The final AOT executable SHA-256 for this checkpoint is `803C17E0937E2196A127A72286C1962F563A0C0A323B3D4566DDA9A667FA4EDA`. This identifies the published artifact; it does not mark the interrupted UI check as passed.
 
-- API test suite after correction: 47 passed, 0 failed, 0 skipped.
-- Native AOT API probe against official Emby 4.9.5.0: 40 passed, 0 failed, 0 blocked. Coverage includes actual sign-in, library/user-state operations, original HTTP ranges, HLS manifests and a segment, WebVTT delivery, session reports, encoding cleanup, and logout invalidation.
-- This API probe is not native video rendering evidence. Native UI and sustained player resource checks remain in progress.
-- A real Emby server compatibility matrix, hardware playback claims, signing identity, and repository license remain unresolved. No credentials or private server information belong in this file.
+| Check | Latest result | What it establishes |
+| --- | --- | --- |
+| `scripts/Test.ps1 -Configuration Release` | **253 passed**: API 47, media transport 65, Windows platform 33, playback 108 | Contracts, transport boundaries, actual Windows user-scoped storage, and coordinator behavior with test adapters |
+| Release solution build | **0 errors**; a fresh build reports one upstream generated WinUIEx `Icon` warning, `CS0618` | Compilation; the warning remains visible |
+| App Native AOT publish | **Succeeded** | Native code and the complete self-contained Windows App SDK payload are produced |
+| Official Emby API probe | **40 passed, 0 failed, 0 blocked** against Emby Server `4.9.5.0` | Actual authentication, browsing/user state, media ranges, HLS/WebVTT responses, reports, and cleanup; not native rendering |
+| Direct relay plus system media controls | **20 functional cycles and resource gate passed**; handle growth **+30** against limit **32**, private-memory growth **847,872 bytes** | Bounded synthetic MP4 lifecycle and media-control Playing/Paused/retired state inspection; physical media-key input was not supported by the test tool |
+| Official-server HLS | **20 functional cycles passed**, including starts at 0/17 seconds, new-session seeks to 45 seconds, pause restoration, **40 encoding cleanups**, and no diagnostics | The tested real-server logical-seek lifecycle works; resource acceptance remains separate |
+| HLS resources | **Failed**: handle growth **+52** exceeds limit **32**; private-memory growth approximately **4.51 MB** | The handle-growth issue remains under investigation; functional success does not complete this gate |
+| Integrated UI | Earlier runs displayed original video, HLS conversion, burned-in SRT, and fullscreen entry/exit | The final run was interrupted by Escape and is **incomplete**; earlier observations do not certify the final build |
 
-## Playback restart state correction
+The native resource gate compares the final five-loop median with loops 5-9, permits at most 32 additional handles and 64 MiB of private-memory growth, and checks for sustained growth. Its limits were not relaxed. The direct and HLS results are separate measurements and must not be combined into a general stability claim.
 
-Changing subtitle or quality selection, restarting a transcoded stream to seek, and recovering from a decoder failure now preserve a paused session. The coordinator reports an actual start for the new session, asks the engine to pause, waits for its actual paused state, and only then sends the pause report. Explicit play and replay retain their normal playing behavior.
+Real-server checks used an isolated official Emby `4.9.5.0` Linux amd64 instance over loopback, dedicated test accounts, and generated media. No production credentials or user media were used. Detailed scopes are in the [server results](../../tools/EmbyClient.ServerValidation/RESULTS.md), [native probe](../../tools/EmbyClient.NativeProbe/README.md), and [capability matrix](capabilities.md).
 
-The Release coordinator suite passes 61 tests. New cases cover selection changes, seek restarts, initial and runtime fallback, explicit replay, asynchronous pause acknowledgement, and bounded cleanup if pause is never confirmed. Authentication expiration is also distinguished from parental or permission restrictions. Version changes preserve position and pause state while clearing omitted audio/subtitle indexes so the new source supplies its own defaults; explicit indexes for the new source are retained.
+## Remaining release gates
 
-Actual multi-track playback revealed that the native player's temporary paused state before its first start could incorrectly make fallback pause a newly opened stream. Pause restoration now requires actual prior playback, unless it was explicitly requested by a paused source transition. Two additional regressions cover new playback and nonzero resume positions; both retain normal playing behavior after fallback.
+- Resolve and repeat the real HLS resource gate, then complete final integrated UI verification, including paused source/track changes, queue continuation, and session transitions.
+- Complete physical media-key, keyboard-only, Narrator, contrast, focus, DPI/multi-monitor, audio-device, and long-duration/network-failure acceptance.
+- Decide the repository license and complete redistribution review. Finalize a signing identity and verify signed installation, activation, upgrades, uninstall, and playback on clean supported Windows machines. Unsigned MSIX structure checks do not satisfy these requirements.
+- Establish an explicit Windows/server/media compatibility matrix. Broad codec/container coverage, HDR and Dolby formats, audio passthrough, and subtitle fidelity remain unverified.
 
-Native UI verification against the isolated official Emby 4.9.5.0 instance has displayed original video, HLS transcoding, and visible burned-in SRT subtitles. Fullscreen entry and Escape exit have been inspected. This does not yet establish the paused-restart behavior of the final application build.
-
-The sustained native playback probe passes all 20 functional cycles but currently fails its unchanged resource-growth threshold. Isolated controls reproduce the growth with managed-to-WinRT stream adapters, while native file/random-access streams remain within the threshold. A lifecycle correction is being investigated; the usable-player stage remains pending until it is verified.
-
-Stage completion records describe actual commands and outcomes, including failures and remaining gaps. Research documents remain historical source material; this file and the implemented behavior record current decisions.
+Music specialization, persistent playlists, downloads, Live TV UI, remote control, Emby Connect, ARM64 binaries, and advanced rendering remain deferred. Existing API methods do not make a deferred area a completed user-facing feature.

@@ -1,0 +1,298 @@
+[
+  {
+    "PackageId": "CommunityToolkit.Mvvm",
+    "PackageVersion": "8.4.2",
+    "File": "CommunityToolkit.Mvvm-8.4.2/License.md",
+    "PackageRelativeSource": "License.md",
+    "Source": "https://api.nuget.org/v3-flatcontainer/communitytoolkit.mvvm/8.4.2/communitytoolkit.mvvm.8.4.2.nupkg",
+    "Sha256": "651997EF19DBB9ECB8DD660DBC86444A65AF21F18CFE08DAA69BF201CD5CFDFC",
+    "SourceSha256": "651997EF19DBB9ECB8DD660DBC86444A65AF21F18CFE08DAA69BF201CD5CFDFC",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "CommunityToolkit.Mvvm",
+    "PackageVersion": "8.4.2",
+    "File": "CommunityToolkit.Mvvm-8.4.2/ThirdPartyNotices.txt",
+    "PackageRelativeSource": "ThirdPartyNotices.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/communitytoolkit.mvvm/8.4.2/communitytoolkit.mvvm.8.4.2.nupkg",
+    "Sha256": "7774F8B0AB66BFB47EC154CE24A2D6D574FEBC44A74D940B8A037D1C56756163",
+    "SourceSha256": "7774F8B0AB66BFB47EC154CE24A2D6D574FEBC44A74D940B8A037D1C56756163",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.Web.WebView2",
+    "PackageVersion": "1.0.3719.77",
+    "File": "Microsoft.Web.WebView2-1.0.3719.77/LICENSE.txt",
+    "PackageRelativeSource": "LICENSE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/1.0.3719.77/microsoft.web.webview2.1.0.3719.77.nupkg",
+    "Sha256": "0AF8F1B807512AAE39C2AC1AA4D0CAE65CABECB6FD554B8439A5162A0D6ECA55",
+    "SourceSha256": "0AF8F1B807512AAE39C2AC1AA4D0CAE65CABECB6FD554B8439A5162A0D6ECA55",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.Web.WebView2",
+    "PackageVersion": "1.0.3719.77",
+    "File": "Microsoft.Web.WebView2-1.0.3719.77/NOTICE.txt",
+    "PackageRelativeSource": "NOTICE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.web.webview2/1.0.3719.77/microsoft.web.webview2.1.0.3719.77.nupkg",
+    "Sha256": "106423785C5B7EBA0A8E61D1837F2132E9C828E20AD530F565D981C1DF60DD90",
+    "SourceSha256": "106423785C5B7EBA0A8E61D1837F2132E9C828E20AD530F565D981C1DF60DD90",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.Windows.AI.MachineLearning",
+    "PackageVersion": "2.1.74",
+    "File": "Microsoft.Windows.AI.MachineLearning-2.1.74/ThirdPartyNotices.txt",
+    "PackageRelativeSource": "ThirdPartyNotices.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windows.ai.machinelearning/2.1.74/microsoft.windows.ai.machinelearning.2.1.74.nupkg",
+    "Sha256": "FB0AF774B4D7CFFC5B9D046F2AAEADE2F37DF2F80ABF8033C95DFFFCC77A8866",
+    "SourceSha256": "FB0AF774B4D7CFFC5B9D046F2AAEADE2F37DF2F80ABF8033C95DFFFCC77A8866",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.Windows.AI.MachineLearning",
+    "PackageVersion": "2.1.74",
+    "File": "Microsoft.Windows.AI.MachineLearning-2.1.74/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windows.ai.machinelearning/2.1.74/microsoft.windows.ai.machinelearning.2.1.74.nupkg",
+    "Sha256": "66395F8CB219087FAE2BD025010BD9076B736C14F03B48F20295471C0C376814",
+    "SourceSha256": "66395F8CB219087FAE2BD025010BD9076B736C14F03B48F20295471C0C376814",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.AI",
+    "PackageVersion": "2.4.4",
+    "File": "Microsoft.WindowsAppSDK.AI-2.4.4/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.ai/2.4.4/microsoft.windowsappsdk.ai.2.4.4.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Base",
+    "PackageVersion": "2.0.4",
+    "File": "Microsoft.WindowsAppSDK.Base-2.0.4/NOTICE.txt",
+    "PackageRelativeSource": "NOTICE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.base/2.0.4/microsoft.windowsappsdk.base.2.0.4.nupkg",
+    "Sha256": "572B43D41DEA717DAE7DC5DE69ACB20A74DF025E8F5A3C0AA6F7BCA02615E23C",
+    "SourceSha256": "572B43D41DEA717DAE7DC5DE69ACB20A74DF025E8F5A3C0AA6F7BCA02615E23C",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Base",
+    "PackageVersion": "2.0.4",
+    "File": "Microsoft.WindowsAppSDK.Base-2.0.4/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.base/2.0.4/microsoft.windowsappsdk.base.2.0.4.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.DWrite",
+    "PackageVersion": "2.1.0",
+    "File": "Microsoft.WindowsAppSDK.DWrite-2.1.0/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.dwrite/2.1.0/microsoft.windowsappsdk.dwrite.2.1.0.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Foundation",
+    "PackageVersion": "2.3.9",
+    "File": "Microsoft.WindowsAppSDK.Foundation-2.3.9/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.foundation/2.3.9/microsoft.windowsappsdk.foundation.2.3.9.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.InteractiveExperiences",
+    "PackageVersion": "2.1.6",
+    "File": "Microsoft.WindowsAppSDK.InteractiveExperiences-2.1.6/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.interactiveexperiences/2.1.6/microsoft.windowsappsdk.interactiveexperiences.2.1.6.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.ML",
+    "PackageVersion": "2.1.74",
+    "File": "Microsoft.WindowsAppSDK.ML-2.1.74/ThirdPartyNotices.txt",
+    "PackageRelativeSource": "ThirdPartyNotices.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.ml/2.1.74/microsoft.windowsappsdk.ml.2.1.74.nupkg",
+    "Sha256": "FB0AF774B4D7CFFC5B9D046F2AAEADE2F37DF2F80ABF8033C95DFFFCC77A8866",
+    "SourceSha256": "FB0AF774B4D7CFFC5B9D046F2AAEADE2F37DF2F80ABF8033C95DFFFCC77A8866",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.ML",
+    "PackageVersion": "2.1.74",
+    "File": "Microsoft.WindowsAppSDK.ML-2.1.74/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.ml/2.1.74/microsoft.windowsappsdk.ml.2.1.74.nupkg",
+    "Sha256": "656AAB74C15AA9F9964BCDCC993EB2755CBDB4822D5E0E3BC61D2E281897F758",
+    "SourceSha256": "656AAB74C15AA9F9964BCDCC993EB2755CBDB4822D5E0E3BC61D2E281897F758",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Runtime",
+    "PackageVersion": "2.4.0",
+    "File": "Microsoft.WindowsAppSDK.Runtime-2.4.0/NOTICE.txt",
+    "PackageRelativeSource": "NOTICE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.runtime/2.4.0/microsoft.windowsappsdk.runtime.2.4.0.nupkg",
+    "Sha256": "572B43D41DEA717DAE7DC5DE69ACB20A74DF025E8F5A3C0AA6F7BCA02615E23C",
+    "SourceSha256": "572B43D41DEA717DAE7DC5DE69ACB20A74DF025E8F5A3C0AA6F7BCA02615E23C",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Runtime",
+    "PackageVersion": "2.4.0",
+    "File": "Microsoft.WindowsAppSDK.Runtime-2.4.0/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.runtime/2.4.0/microsoft.windowsappsdk.runtime.2.4.0.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Search",
+    "PackageVersion": "2.4.4",
+    "File": "Microsoft.WindowsAppSDK.Search-2.4.4/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.search/2.4.4/microsoft.windowsappsdk.search.2.4.4.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.Widgets",
+    "PackageVersion": "2.0.5",
+    "File": "Microsoft.WindowsAppSDK.Widgets-2.0.5/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.widgets/2.0.5/microsoft.windowsappsdk.widgets.2.0.5.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.WinUI",
+    "PackageVersion": "2.3.6",
+    "File": "Microsoft.WindowsAppSDK.WinUI-2.3.6/NOTICE.txt",
+    "PackageRelativeSource": "NOTICE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.winui/2.3.6/microsoft.windowsappsdk.winui.2.3.6.nupkg",
+    "Sha256": "E25393C0D340A1821827B093FA4DBBFCCCD8FEB7BF769E7FA773E3955CD5314B",
+    "SourceSha256": "E25393C0D340A1821827B093FA4DBBFCCCD8FEB7BF769E7FA773E3955CD5314B",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK.WinUI",
+    "PackageVersion": "2.3.6",
+    "File": "Microsoft.WindowsAppSDK.WinUI-2.3.6/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk.winui/2.3.6/microsoft.windowsappsdk.winui.2.3.6.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK",
+    "PackageVersion": "2.4.0",
+    "File": "Microsoft.WindowsAppSDK-2.4.0/NOTICE.txt",
+    "PackageRelativeSource": "NOTICE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk/2.4.0/microsoft.windowsappsdk.2.4.0.nupkg",
+    "Sha256": "572B43D41DEA717DAE7DC5DE69ACB20A74DF025E8F5A3C0AA6F7BCA02615E23C",
+    "SourceSha256": "572B43D41DEA717DAE7DC5DE69ACB20A74DF025E8F5A3C0AA6F7BCA02615E23C",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.WindowsAppSDK",
+    "PackageVersion": "2.4.0",
+    "File": "Microsoft.WindowsAppSDK-2.4.0/license.txt",
+    "PackageRelativeSource": "license.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk/2.4.0/microsoft.windowsappsdk.2.4.0.nupkg",
+    "Sha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "SourceSha256": "5B11E6347756E40FE0274BC08C97F89201B94F0D50181A09A00F1F4740840501",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "System.Numerics.Tensors",
+    "PackageVersion": "9.0.0",
+    "File": "System.Numerics.Tensors-9.0.0/LICENSE.TXT",
+    "PackageRelativeSource": "LICENSE.TXT",
+    "Source": "https://api.nuget.org/v3-flatcontainer/system.numerics.tensors/9.0.0/system.numerics.tensors.9.0.0.nupkg",
+    "Sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+    "SourceSha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "System.Numerics.Tensors",
+    "PackageVersion": "9.0.0",
+    "File": "System.Numerics.Tensors-9.0.0/THIRD-PARTY-NOTICES.TXT",
+    "PackageRelativeSource": "THIRD-PARTY-NOTICES.TXT",
+    "Source": "https://api.nuget.org/v3-flatcontainer/system.numerics.tensors/9.0.0/system.numerics.tensors.9.0.0.nupkg",
+    "Sha256": "40686C6447A7D5B5D3693068E4571B5F483D7ED335AEEE773EF662440DE4C5D5",
+    "SourceSha256": "40686C6447A7D5B5D3693068E4571B5F483D7ED335AEEE773EF662440DE4C5D5",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.NETCore.App.Runtime.NativeAOT.win-x64",
+    "PackageVersion": "10.0.9",
+    "File": "Microsoft.NETCore.App.Runtime.NativeAOT.win-x64-10.0.9/LICENSE.TXT",
+    "PackageRelativeSource": "LICENSE.TXT",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.nativeaot.win-x64/10.0.9/microsoft.netcore.app.runtime.nativeaot.win-x64.10.0.9.nupkg",
+    "Sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+    "SourceSha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.NETCore.App.Runtime.NativeAOT.win-x64",
+    "PackageVersion": "10.0.9",
+    "File": "Microsoft.NETCore.App.Runtime.NativeAOT.win-x64-10.0.9/THIRD-PARTY-NOTICES.TXT",
+    "PackageRelativeSource": "THIRD-PARTY-NOTICES.TXT",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.nativeaot.win-x64/10.0.9/microsoft.netcore.app.runtime.nativeaot.win-x64.10.0.9.nupkg",
+    "Sha256": "6D15E10A101C6BFFF2AB4429ED061BF76C456FC4B23AD6B03E0D0F8377148A21",
+    "SourceSha256": "6D15E10A101C6BFFF2AB4429ED061BF76C456FC4B23AD6B03E0D0F8377148A21",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "WinUIEx",
+    "PackageVersion": "2.9.3",
+    "File": "WinUIEx-2.9.3/LICENSE",
+    "Source": "https://raw.githubusercontent.com/dotMorten/WinUIEx/72f2975d2a237c0d7ad1113fe617d5894e66feb6/LICENSE",
+    "ResolvedSource": "https://raw.githubusercontent.com/dotMorten/WinUIEx/72f2975d2a237c0d7ad1113fe617d5894e66feb6/LICENSE",
+    "SourceCommit": "72f2975d2a237c0d7ad1113fe617d5894e66feb6",
+    "Provenance": "Repository commit from the resolved WinUIEx nuspec.",
+    "Sha256": "253EFE88CEA966DC7A9892DA3DAC7B011E9ADA8DF022346E273F89E46D72339D",
+    "CopiedVerbatim": true,
+    "RetrievedUtc": "2026-09-08T23:00:21.9878420+00:00"
+  },
+  {
+    "PackageId": "Microsoft.Windows.SDK.NET.Ref",
+    "PackageVersion": "10.0.26100.57",
+    "File": "Microsoft.Windows.SDK.NET.Ref-10.0.26100.57/sdk_license.rtf",
+    "Source": "https://aka.ms/WinSDKLicenseURL",
+    "ResolvedSource": "https://download.microsoft.com/download/0/F/F/0FF2B061-47DD-4F55-89B6-FD1D8C44F14D/sdk_license.rtf",
+    "SourceCommit": null,
+    "Provenance": "License URL from the resolved targeting-pack nuspec; original RTF response retained.",
+    "Sha256": "DD07EB178E00C6BBA4148457FC00FF77CD4887EB521D504186FE59C9EC8BBE62",
+    "CopiedVerbatim": true,
+    "RetrievedUtc": "2026-09-08T23:00:22.5043645+00:00"
+  },
+  {
+    "PackageId": "CsWinRT",
+    "PackageVersion": "2.2.0.48161",
+    "File": "CsWinRT-2.2.0.48161/LICENSE",
+    "Source": "https://raw.githubusercontent.com/microsoft/CsWinRT/8649ee3eeb2445ca2a36d80d878ef60b96a6c65d/LICENSE",
+    "ResolvedSource": "https://raw.githubusercontent.com/microsoft/CsWinRT/8649ee3eeb2445ca2a36d80d878ef60b96a6c65d/LICENSE",
+    "SourceCommit": "8649ee3eeb2445ca2a36d80d878ef60b96a6c65d",
+    "Provenance": "Bundled WinRT.Runtime.dll ProductVersion in Microsoft.Windows.SDK.NET.Ref 10.0.26100.57.",
+    "Sha256": "9906940F61B1F0B533FA7D99BAF55178B2808FBE113EA51DFBFAD8572CCD5F2B",
+    "CopiedVerbatim": true,
+    "RetrievedUtc": "2026-09-08T23:00:22.6647806+00:00"
+  }
+]

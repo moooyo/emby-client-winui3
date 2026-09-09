@@ -1,13 +1,53 @@
 <Page
     x:Class="EmbyClient.App.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Padding="48">
-        <StackPanel MaxWidth="560" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
-            <FontIcon Glyph="&#xE714;" FontSize="48" HorizontalAlignment="Left" />
-            <TextBlock Text="Your library. On Windows." Style="{ThemeResource TitleTextBlockStyle}" TextWrapping="Wrap" />
-            <TextBlock Text="Connect to your Emby server to browse your movies and shows, and pick up where you left off." TextWrapping="Wrap" Style="{ThemeResource BodyTextBlockStyle}" />
-            <TextBlock Text="Native Windows client · Development build" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        </StackPanel>
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:views="using:EmbyClient.App.Views">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <InfoBar x:Name="Notice" IsOpen="False" Margin="16,0,16,8" IsClosable="True" />
+        <Grid x:Name="ConnectionPane" Grid.Row="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel MaxWidth="440" Padding="24,40" Spacing="16" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE8B2;" FontSize="40" HorizontalAlignment="Left" />
+                    <TextBlock Text="Connect to your library" Style="{ThemeResource TitleTextBlockStyle}" TextWrapping="Wrap" />
+                    <TextBlock Text="Sign in to your Emby server. Your media stays on your server, ready to play on Windows." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ComboBox x:Name="SavedAccounts" Header="Saved accounts" HorizontalAlignment="Stretch" SelectionChanged="SavedAccountChanged" PlaceholderText="Choose an account" />
+                    <Button x:Name="RestoreButton" Content="Use saved sign-in" Click="RestoreClicked" HorizontalAlignment="Stretch" IsEnabled="False" />
+                    <TextBox x:Name="ServerAddress" Header="Server address" PlaceholderText="https://media.example.com" InputScope="Url" TextChanged="CredentialsChanged" />
+                    <TextBox x:Name="UserName" Header="Username" PlaceholderText="Your Emby username" TextChanged="CredentialsChanged" />
+                    <PasswordBox x:Name="Password" Header="Password" KeyDown="PasswordKeyDown" />
+                    <CheckBox x:Name="RememberAccount" Content="Remember my sign-in on this Windows account" IsChecked="True" />
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <Button x:Name="SignInButton" Content="Sign in" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" Click="SignInClicked" />
+                        <Button x:Name="CancelConnection" Grid.Column="1" Content="Cancel" Visibility="Collapsed" Click="CancelConnectionClicked" />
+                    </Grid>
+                    <ProgressBar x:Name="ConnectingProgress" IsIndeterminate="True" Visibility="Collapsed" />
+                    <TextBlock Text="This is an independent client for Emby Server." Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+        <Grid x:Name="ConnectedPane" Grid.Row="1" Visibility="Collapsed">
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+            <Grid x:Name="AccountToolbar" Padding="20,4,20,12" ColumnSpacing="12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AccountLabel" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Button Grid.Column="1" Content="Appearance">
+                    <Button.Flyout><MenuFlyout>
+                        <MenuFlyoutItem Text="Use system theme" Tag="System" Click="ThemeClicked" />
+                        <MenuFlyoutItem Text="Light" Tag="Light" Click="ThemeClicked" />
+                        <MenuFlyoutItem Text="Dark" Tag="Dark" Click="ThemeClicked" />
+                    </MenuFlyout></Button.Flyout>
+                </Button>
+                <Button Grid.Column="2" Content="Switch account" Click="SwitchAccountClicked" />
+                <Button Grid.Column="3" Content="Sign out" Click="SignOutClicked" />
+            </Grid>
+            <views:LibraryView x:Name="Library" Grid.Row="1" PlayRequested="LibraryPlayRequested" SessionExpired="SessionExpired" />
+            <views:PlayerView x:Name="Player" Grid.RowSpan="2" Visibility="Collapsed" BackRequested="PlayerBackRequested" FullscreenRequested="PlayerFullscreenRequested" SessionExpired="SessionExpired" />
+        </Grid>
     </Grid>
 </Page>

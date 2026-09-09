@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RootNamespace>EmbyClient.ServerValidation.ApiProbe</RootNamespace>
+    <AssemblyName>ApiProbe</AssemblyName>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
+    <ProjectReference Include="../../../src/EmbyClient.Playback/EmbyClient.Playback.csproj" />
+  </ItemGroup>
+</Project>

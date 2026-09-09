@@ -8,3 +8,5 @@
 *.ps1 text eol=crlf
 *.png binary
 *.ico binary
+# Preserve the exact bytes recorded in the upstream notice manifest.
+licenses/third-party/*/** -text -whitespace

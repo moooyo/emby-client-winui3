@@ -1,0 +1,147 @@
+name: Windows CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  windows-x64:
+    name: Build, test, and publish unsigned Windows x64 Native AOT
+    runs-on: windows-2025
+    timeout-minutes: 45
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      DOTNET_MULTILEVEL_LOOKUP: '0'
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
+      DOTNET_ROOT: ${{ runner.temp }}\dotnet
+      DOTNET_ROOT_X64: ${{ runner.temp }}\dotnet
+      NUGET_PACKAGES: ${{ runner.temp }}\nuget-packages
+      RestoreLockedMode: 'true'
+    steps:
+      - name: Check out the requested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Read the exact SDK version from global.json
+        id: sdk
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+              throw 'global.json must contain a concrete stable SDK version.'
+          }
+          Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value ("version={0}" -f $version)
+          New-Item -ItemType Directory -Path artifacts/logs -Force | Out-Null
+
+      - name: Install the repository SDK into an isolated directory
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ steps.sdk.outputs.version }}
+          architecture: x64
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: Record the SDK and required Windows compiler toolchain
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $requested = (Get-Content -LiteralPath global.json -Raw | ConvertFrom-Json).sdk.version
+          $actual = (& dotnet --version).Trim()
+          if ($LASTEXITCODE -ne 0 -or $actual -ne $requested) {
+              throw 'The active .NET SDK does not match global.json sdk.version.'
+          }
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $linkers = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'VC\Tools\MSVC\**\bin\Hostx64\x64\link.exe'
+          if ($LASTEXITCODE -ne 0 -or -not $linkers) {
+              throw 'The Windows runner is missing the x64 Visual C++ toolchain required by Native AOT.'
+          }
+          $windowsSdkLibrary = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10\Lib\10.0.26100.0\um\x64\kernel32.lib'
+          if (-not (Test-Path -LiteralPath $windowsSdkLibrary -PathType Leaf)) {
+              throw 'The Windows runner is missing Windows SDK 10.0.26100.0.'
+          }
+          [xml]$packages = Get-Content -LiteralPath Directory.Packages.props -Raw
+          $windowsAppSdk = ($packages.Project.ItemGroup.PackageVersion | Where-Object Include -eq 'Microsoft.WindowsAppSDK').Version
+          @(
+              "Commit: $env:GITHUB_SHA"
+              "Runner image: $env:ImageOS $env:ImageVersion"
+              ".NET SDK: $actual"
+              "Windows App SDK: $windowsAppSdk (Directory.Packages.props)"
+              "Native linkers: $($linkers -join ', ')"
+              "Windows SDK library: $windowsSdkLibrary"
+          ) | Tee-Object -FilePath artifacts/logs/toolchain.txt
+          dotnet --info | Tee-Object -FilePath artifacts/logs/dotnet-info.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Reading .NET SDK information failed.' }
+
+      - name: Restore the solution and all test projects in locked mode
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet restore EmbyClient.slnx --locked-mode -p:Configuration=Release -p:Platform=x64 --nologo
+          if ($LASTEXITCODE -ne 0) { throw 'Locked solution restore failed.' }
+          $projects = Get-ChildItem -LiteralPath tests -Recurse -Filter '*.Tests.csproj' | Sort-Object FullName
+          foreach ($project in $projects) {
+              dotnet restore $project.FullName --locked-mode -p:Configuration=Release --nologo
+              if ($LASTEXITCODE -ne 0) { throw "Locked test restore failed: $($project.Name)" }
+          }
+
+      - name: Build the Release solution
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/Build.ps1 -Configuration Release 2>&1 | Tee-Object -FilePath artifacts/logs/build.txt
+
+      - name: Run API, platform, playback, and media transport tests
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/Test.ps1 -Configuration Release 2>&1 | Tee-Object -FilePath artifacts/logs/tests.txt
+
+      - name: Publish the unsigned Native AOT application
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./scripts/Publish-Aot.ps1 -OutputDirectory (Join-Path $env:GITHUB_WORKSPACE 'artifacts/aot') 2>&1 | Tee-Object -FilePath artifacts/logs/publish-aot.txt
+          $executable = Join-Path $env:GITHUB_WORKSPACE 'artifacts/aot/EmbyClient.App.exe'
+          if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+              throw 'Native AOT publishing did not produce the application executable.'
+          }
+          @(
+              'Emby Client for Windows - unsigned development build'
+              "Source commit: $env:GITHUB_SHA"
+              'Target: Windows x64, Release Native AOT'
+              'Extract the entire artifact folder before running EmbyClient.App.exe.'
+              'This artifact has no publisher signature and is not a release package.'
+              'CI does not establish native UI, graphics, audio device, codec, HDR, or real Emby server compatibility.'
+          ) | Set-Content -LiteralPath artifacts/aot/ARTIFACT-README.txt
+
+      - name: Upload the complete runnable development folder
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: emby-client-windows-x64-aot-unsigned-${{ github.sha }}
+          path: artifacts/aot/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 1
+          include-hidden-files: false
+          archive: true
+
+      - name: Upload available build and test diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-ci-logs-${{ github.sha }}
+          path: artifacts/logs/
+          if-no-files-found: ignore
+          retention-days: 7
+          include-hidden-files: false
+          archive: true

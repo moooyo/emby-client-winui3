@@ -1,0 +1,49 @@
+<UserControl
+    x:Class="EmbyClient.App.Views.PlayerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RequestedTheme="Dark">
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid Padding="20,8" ColumnSpacing="16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <Button Click="BackClicked" AutomationProperties.Name="Back to library"><SymbolIcon Symbol="Back" /></Button>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock x:Name="TitleText" Text="Now playing" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock x:Name="StateText" Text="Choose something to play" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="2" Click="NextClicked" Content="Next in queue" x:Name="NextButton" IsEnabled="False" />
+        </Grid>
+        <Grid Grid.Row="1" Background="Black" MinHeight="160">
+            <MediaPlayerElement x:Name="VideoSurface" AreTransportControlsEnabled="False" IsHitTestVisible="False" Stretch="Uniform" />
+            <ProgressRing x:Name="BufferingRing" Width="48" Height="48" IsActive="False" />
+            <InfoBar x:Name="PlaybackNotice" VerticalAlignment="Top" Margin="24" IsOpen="False" Severity="Error" />
+        </Grid>
+        <StackPanel Grid.Row="2" Padding="24,12,24,20" Spacing="12">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="PositionText" Text="0:00" VerticalAlignment="Center" />
+                <Slider x:Name="Timeline" Grid.Column="1" Minimum="0" Maximum="1" IsEnabled="False" AutomationProperties.Name="Playback position" KeyUp="TimelineKeyUp" />
+                <TextBlock x:Name="DurationText" Text="--:--" Grid.Column="2" VerticalAlignment="Center" />
+            </Grid>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Button x:Name="PauseButton" Click="PauseClicked" AutomationProperties.Name="Pause"><SymbolIcon Symbol="Pause" /></Button>
+                <Button Grid.Column="1" Click="ReplayClicked" AutomationProperties.Name="Restart"><SymbolIcon Symbol="Refresh" /></Button>
+                <ToggleButton x:Name="MuteButton" Grid.Column="2" Click="MuteClicked" AutomationProperties.Name="Mute"><SymbolIcon Symbol="Volume" /></ToggleButton>
+                <Slider x:Name="Volume" Grid.Column="3" Minimum="0" Maximum="100" Value="100" VerticalAlignment="Center" ValueChanged="VolumeChanged" AutomationProperties.Name="Volume" />
+                <CheckBox x:Name="AutoPlayNext" Grid.Column="4" Content="Play next automatically" IsChecked="True" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <Button Grid.Column="5" Click="FullscreenClicked" AutomationProperties.Name="Toggle fullscreen"><SymbolIcon Symbol="FullScreen" /></Button>
+            </Grid>
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                <ComboBox x:Name="SourceSelector" Header="Version" HorizontalAlignment="Stretch" SelectionChanged="SourceChanged" />
+                <ComboBox x:Name="AudioSelector" Grid.Column="1" Header="Audio" HorizontalAlignment="Stretch" SelectionChanged="AudioChanged" />
+                <ComboBox x:Name="SubtitleSelector" Grid.Column="2" Header="Subtitles" HorizontalAlignment="Stretch" SelectionChanged="SubtitleChanged" />
+                <ComboBox x:Name="QualitySelector" Grid.Column="3" Header="Quality limit" HorizontalAlignment="Stretch" SelectionChanged="QualityChanged" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</UserControl>

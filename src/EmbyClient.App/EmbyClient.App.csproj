@@ -34,6 +34,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\licenses\third-party\**\*"
+             Link="licenses\third-party\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Manifest Include="$(ApplicationManifest)" />
+    <ProjectReference Include="../EmbyClient.Api/EmbyClient.Api.csproj" />
+    <ProjectReference Include="../EmbyClient.Playback/EmbyClient.Playback.csproj" />
   </ItemGroup>
 </Project>
