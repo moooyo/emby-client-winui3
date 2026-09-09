@@ -26,10 +26,6 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: '1'
       DOTNET_NOLOGO: '1'
       DOTNET_MULTILEVEL_LOOKUP: '0'
-      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
-      DOTNET_ROOT: ${{ runner.temp }}\dotnet
-      DOTNET_ROOT_X64: ${{ runner.temp }}\dotnet
-      NUGET_PACKAGES: ${{ runner.temp }}\nuget-packages
       RestoreLockedMode: 'true'
     steps:
       - name: Check out the requested revision
@@ -46,6 +42,11 @@ jobs:
               throw 'global.json must contain a concrete stable SDK version.'
           }
           Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value ("version={0}" -f $version)
+          $sdkDirectory = Join-Path $env:RUNNER_TEMP 'dotnet'
+          foreach ($variable in @('DOTNET_INSTALL_DIR', 'DOTNET_ROOT', 'DOTNET_ROOT_X64')) {
+              Add-Content -LiteralPath $env:GITHUB_ENV -Value ("{0}={1}" -f $variable, $sdkDirectory)
+          }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value ("NUGET_PACKAGES={0}" -f (Join-Path $env:RUNNER_TEMP 'nuget-packages'))
           New-Item -ItemType Directory -Path artifacts/logs -Force | Out-Null
 
       - name: Install the repository SDK into an isolated directory

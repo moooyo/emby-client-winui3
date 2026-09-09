@@ -1,6 +1,6 @@
 # Windows continuous integration
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, and uploads its complete unsigned development folder. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The workflow was prepared on 2026-09-09; it has not been dispatched or certified on GitHub as part of this configuration task.
+The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, and uploads its complete unsigned development folder. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`; hosted execution is still being verified.
 
 ## Execution and dependency policy
 
