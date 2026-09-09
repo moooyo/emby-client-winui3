@@ -28,6 +28,7 @@
     <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
     <ProjectReference Include="../../src/EmbyClient.Playback/EmbyClient.Playback.csproj" />
     <Compile Include="../../src/EmbyClient.App/Playback/*.cs" Link="ProductPlayback/%(Filename)%(Extension)" />
+    <Compile Include="../../src/EmbyClient.App/Services/NativePosterDecoder.cs" Link="ProductServices/NativePosterDecoder.cs" />
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
 </Project>

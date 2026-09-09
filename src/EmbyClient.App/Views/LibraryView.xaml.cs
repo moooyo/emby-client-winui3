@@ -1,12 +1,13 @@
 using EmbyClient.Api;
+using EmbyClient.App.Services;
 using EmbyClient.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using System.Collections.Specialized;
 using System.ComponentModel;
-using Windows.Storage.Streams;
 
 namespace EmbyClient.App.Views;
 
@@ -25,11 +26,21 @@ public sealed partial class LibraryView : UserControl
     private bool _updatingNavigation;
     private bool _updatingHomeSection;
 
+    partial void ObservationInitialize();
+    partial void ObservationPosterLoaded(Image image);
+    partial void ObservationPosterUnloaded(Image image);
+    partial void ObservationPosterTagChanged(DependencyObject sender);
+    partial void ObservationBitmapDecoded(BitmapImage bitmap);
+    partial void ObservationPosterAssigned(Image image);
+    partial void ObservationPosterCleared(Image image);
+
     public LibraryView()
     {
         InitializeComponent();
+        ViewModel.Items.CollectionChanged += Items_CollectionChanged;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.SessionExpired += ViewModel_SessionExpired;
+        ObservationInitialize();
     }
 
     public LibraryViewModel ViewModel { get; } = new();
@@ -37,6 +48,12 @@ public sealed partial class LibraryView : UserControl
     public event EventHandler? SessionExpired;
 
     private void ViewModel_SessionExpired(object? sender, EventArgs args) => SessionExpired?.Invoke(this, args);
+
+    private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
+    {
+        // Cached containers can stay loaded after navigation removes their items.
+        if (args.Action == NotifyCollectionChangedAction.Reset) CancelPosterRequests();
+    }
 
     public async Task SetSessionAsync(EmbyApiClient api, string serverId, UserDto user, CancellationToken cancellationToken = default)
     {
@@ -204,6 +221,7 @@ public sealed partial class LibraryView : UserControl
     private async void Poster_Loaded(object sender, RoutedEventArgs args)
     {
         if (sender is not Image image) return;
+        ObservationPosterLoaded(image);
         if (!_posterSubscriptions.ContainsKey(image))
             _posterSubscriptions.Add(image, image.RegisterPropertyChangedCallback(FrameworkElement.TagProperty, PosterTagChanged));
         if (ReferenceEquals(image, DetailPoster)
@@ -214,6 +232,7 @@ public sealed partial class LibraryView : UserControl
     private void Poster_Unloaded(object sender, RoutedEventArgs args)
     {
         if (sender is not Image image) return;
+        ObservationPosterUnloaded(image);
         if (_posterSubscriptions.Remove(image, out var registration))
             image.UnregisterPropertyChangedCallback(FrameworkElement.TagProperty, registration);
         CancelPosterRequest(image);
@@ -221,6 +240,7 @@ public sealed partial class LibraryView : UserControl
 
     private async void PosterTagChanged(DependencyObject sender, DependencyProperty property)
     {
+        ObservationPosterTagChanged(sender);
         if (sender is Image { IsLoaded: true } image && !ReferenceEquals(image, DetailPoster)) await LoadPosterAsync(image);
     }
 
@@ -238,19 +258,16 @@ public sealed partial class LibraryView : UserControl
             var height = width * 3 / 2;
             var bytes = await ViewModel.LoadPosterAsync(item, width, height, token);
             if (bytes is not { Length: > 0 } || token.IsCancellationRequested) return;
-            using var stream = new InMemoryRandomAccessStream();
-            using (var writer = new DataWriter(stream))
+            await NativePosterDecoder.DecodeAndApplyAsync(bytes, width, height, token, bitmap =>
             {
-                writer.WriteBytes(bytes);
-                await writer.StoreAsync().AsTask(token);
-                writer.DetachStream();
-            }
-            stream.Seek(0);
-            var bitmap = new BitmapImage { DecodePixelWidth = width, DecodePixelHeight = height };
-            await bitmap.SetSourceAsync(stream).AsTask(token);
-            if (!token.IsCancellationRequested && ReferenceEquals(image.Tag, item)
-                && _posterRequests.TryGetValue(image, out var current) && ReferenceEquals(current, source))
-                image.Source = bitmap;
+                ObservationBitmapDecoded(bitmap);
+                if (!token.IsCancellationRequested && ReferenceEquals(image.Tag, item)
+                    && _posterRequests.TryGetValue(image, out var current) && ReferenceEquals(current, source))
+                {
+                    image.Source = bitmap;
+                    ObservationPosterAssigned(image);
+                }
+            });
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception exception) when (exception is EmbyApiException or EmbyTransportException or EmbyProtocolException
@@ -276,12 +293,14 @@ public sealed partial class LibraryView : UserControl
             source.Dispose();
         }
         image.Source = null;
+        ObservationPosterCleared(image);
     }
 
     private void CancelPosterRequests()
     {
         foreach (var image in _posterSubscriptions.Keys.Concat(_posterRequests.Keys).Distinct().ToArray()) CancelPosterRequest(image);
         DetailPoster.Source = null;
+        ObservationPosterCleared(DetailPoster);
     }
 
     private async void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs args)

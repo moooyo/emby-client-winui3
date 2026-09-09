@@ -25,6 +25,7 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
     <Version>0.1.0</Version>
+    <LibraryObservation Condition="'$(LibraryObservation)' == ''">false</LibraryObservation>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
@@ -40,5 +41,9 @@
     <Manifest Include="$(ApplicationManifest)" />
     <ProjectReference Include="../EmbyClient.Api/EmbyClient.Api.csproj" />
     <ProjectReference Include="../EmbyClient.Playback/EmbyClient.Playback.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(LibraryObservation)' == 'true'">
+    <Compile Include="..\..\tools\EmbyClient.LibraryObservation\LibraryView.Observation.cs"
+             Link="Observation\LibraryView.Observation.cs" />
   </ItemGroup>
 </Project>

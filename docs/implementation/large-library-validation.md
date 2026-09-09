@@ -1,6 +1,6 @@
-# Large-library Native AOT validation: limited result
+# Large-library Native AOT validation: limited results
 
-Date: 2026-09-09. Two actual Native AOT UI trials each loaded six pages, or 288 records, from a 5,000-item synthetic library. The initial trial completed browsing and revisits without a reported freeze, error, or final poster mismatch. A subsequent fresh-process control completed its scroll/revisit sequence without requesting UI Automation tree/text retrieval. **Memory behavior still requires investigation:** private bytes increased and remained elevated after returning Home in both captures. These finite observations do not establish a memory plateau, a leak-free implementation, full-library loading, or a realized-container count. The two input sequences differ, so their memory deltas are not a controlled estimate of UI Automation overhead.
+Date: 2026-09-09. Four finite Native AOT UI captures each loaded six initial pages, or 288 records, from a 5,000-item synthetic library. **Collection Reset cleanup is now observed in the conditional observation build; memory stability remains unverified.** Its Home state has one bound poster source among 46 subscribed images, with no pending view poster requests. Earlier captures still show private-byte growth and elevated Home readings. The later process CSV ends before Home, so it cannot establish that this growth was resolved. These observations do not establish a memory plateau, a leak-free implementation, full-library loading, or a realized-container count. Different input timing and instrumentation prevent a controlled performance comparison across runs.
 
 ## Initial trial: identity and evidence boundaries
 
@@ -152,8 +152,108 @@ The historical server peak was already **6 in the first control sample** and rem
 
 The original trial interleaved page loading and scrolling, reached items 226–235, included UIA inspection at a different pace, and used a shorter sampling window. Control A loaded six pages first, then followed fixed forward and revisit inputs, and recorded a longer Home interval. Its window dimensions are recorded, whereas the original report lacks that measurement. These differences prevent a strict timing-matched A/B comparison. Comparing their final memory deltas cannot isolate the effect of UIA, and no comparative improvement or regression is claimed. The planned repeated UIA control B was canceled; it is not a missing completed result.
 
+## LibraryObservation: before and after collection Reset cleanup
+
+### Build identity and observer scope
+
+The next two captures used the actual app with [conditional LibraryObservation instrumentation](../../tools/EmbyClient.LibraryObservation/README.md). They are separate Native AOT executables, not the earlier `313A` executable or an uninstrumented distribution build:
+
+- Before Reset cleanup: PID `42488`, SHA-256 `f6635f5d9125ca37fc8353980cc95316658b3cc9eb9c1173b38a41ba400683c2`, with [stage observations](../../artifacts/ui-validation/2026-09-09/large-library-observed-f663/observations.json), [numeric observer log](../../artifacts/ui-validation/2026-09-09/large-library-observed-f663/library-observation-before.jsonl), and [fixture snapshot](../../artifacts/ui-validation/2026-09-09/large-library-observed-f663/fixture-after.json).
+- After Reset cleanup: PID `27732`, SHA-256 `c28f7cfb20006d7fc7f5e44a7072ebcbd6f0e28643091b94cf04aad6eba87b3f`, with [stage observations](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/observations.json), [numeric observer log](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/library-observation-after.jsonl), and [fixture snapshot](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/fixture-after.json).
+
+Both stage logs record `includeText: false` and a 1268 x 834 window. The observer reports a rasterization scale of 1.5 once attached. The source fixture remains synthetic. No forced GC was used.
+
+The [tracked evidence directory](../../tools/EmbyClient.LibraryObservation/verification/README.md) preserves both build manifests and complete numeric logs, the after-build UI timestamps, and selected original screenshots. The larger process CSV and fixture snapshots linked above remain local artifacts.
+
+The [observer implementation](../../tools/EmbyClient.LibraryObservation/LibraryView.Observation.cs) samples the actual view dictionaries, item count, callback totals, natural collection counts, and a bounded weak-reference cohort about every five seconds. It uses `GC.GetTotalMemory(false)`, not a request to collect or drain finalizers. The enabled timer, weak references, serialization buffers, and file writes add their own allocations. Its results must not be presented as a zero-overhead profile of a normal build.
+
+`PosterSubscriptionsCount` counts subscribed Image controls, not visible cards or all realized XAML containers. `PosterRequestsCount` covers the view's asynchronous poster pipeline, not the ImageCache semaphore or only HTTP requests. `BoundPosterSourcesCount`, added in the after log, counts non-null `Image.Source` properties among those subscribed controls. Weak bitmap entries cover completed decoder callbacks; they do not measure native textures, and cleared sources can still have uncollected CLR wrappers. Both logs report zero weak-ring evictions, so observed drops in their live counts were not caused by that ring evicting entries.
+
+### UTC sampling windows and observer clocks
+
+The process CSV and observer JSONL have different origins. CSV rows contain UTC timestamps and sampler elapsed time. JSONL `ElapsedMilliseconds` starts when the observer initializes inside the view and contains no UTC initialization timestamp. The supplied stage logs do not supply that missing anchor. The JSONL tables below therefore retain their own elapsed values and identify item-state transitions; they are not assigned fabricated UTC timestamps or aligned to CSV elapsed zero.
+
+| Capture | Process CSV rows and UTC window | Final CSV elapsed | Observer rows and elapsed window |
+| --- | --- | ---: | --- |
+| Before | [60 rows](../../artifacts/ui-validation/2026-09-09/large-library-observed-f663/memory-20260909-113206-6e759837.csv), 03:32:06.209–03:37:02.220 | 296.028 s | 120 rows, 0–596,150 ms |
+| After | [60 rows](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/memory-20260909-114920-4dbc022a.csv), 03:49:20.634–03:54:16.608 | 295.985 s | 120 rows, 0–596,127 ms |
+
+Both process samplers were configured for 300 seconds. Neither has a row exactly at 300 seconds. The observer has a separate ten-minute bound; its approximately 596-second final row is not evidence of a ten-minute process-memory CSV.
+
+The before CSV includes both revisit screenshots, at 03:35:58.761 and 03:36:32.831 UTC, and the Home transition at 03:36:53.454. It ends only **8.77 seconds after that Home observation**, with just two subsequent rows, at 03:36:57.208 and 03:37:02.220. The later Home screenshot at 03:41:58.061 has no corresponding process sample in this CSV.
+
+The after capture has an operator context-restoration gap of **186.989 seconds** between the page-1 and page-2 screenshots, at 03:49:45.058 and 03:52:52.047 UTC. This gap is not a measured page-loading latency. The following after-build stages show exactly which UI work falls outside its process CSV:
+
+| After-build screenshot stage | UTC | Process CSV coverage |
+| --- | --- | --- |
+| Page 6 | 03:53:24.403 | Inside |
+| Forward 3, around item 151 | 03:53:56.280 | Inside |
+| Revisit 1, around item 51 | 03:54:16.091 | Inside; final row follows 0.517 s later |
+| Revisit 2, around item 51 | 03:54:45.701 | Outside |
+| Home after library | 03:54:53.293 | Outside |
+| Library reopened | 03:55:20.443 | Outside |
+| Detail opened | 03:55:27.605 | Outside |
+| Returned to library | 03:55:36.742 | Outside |
+| Signed out | 03:55:43.800 | Outside |
+
+The after fixture history independently records six initial page responses, sequences 31–36, at offsets 0, 48, 96, 144, 192, and 240, each returning 48 of 5,000 records. The corresponding first/last request times are 03:49:44.205 and 03:53:24.052 UTC. It then records Home at 03:54:51.717, a reopened first page at 03:55:18.737, and another first page on return at 03:55:35.144. These later 48-item responses do not expand the initial traversal to all 5,000 items. The before history likewise confirms six initial pages, sequences 23–28, followed by Home, sequence 29.
+
+The operator completed three forward scrolls to approximately items 51, 101, and 151 and two top-to-51 revisits in the after build. Posters were reported normal through [Home](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/home-after-library.jpg), [library reopen](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/library-reopened.jpg), [detail](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/detail-reopened.jpg), and [return](../../artifacts/ui-validation/2026-09-09/large-library-reset-c28f/back-to-library.jpg). That is a finite functional observation, not a process-memory measurement for those stages.
+
+### What the before log establishes
+
+While 288 items remained loaded, the before log shows natural collection counts advancing and live weak bitmap targets falling to 46 despite additional guarded assignments:
+
+| Observer elapsed ms | Assigned total | Live weak bitmap targets | GC counts, G0/G1/G2 | Managed bytes |
+| ---: | ---: | ---: | --- | ---: |
+| 290,472 | 76 | 75 | 1 / 1 / 1 | 9,302,976 |
+| 295,472 | 125 | 46 | 2 / 2 / 2 | 6,391,568 |
+| 400,778 | 293 | 214 | 2 / 2 / 2 | 15,860,224 |
+| 405,797 | 322 | 46 | 3 / 3 / 3 | 4,490,200 |
+
+This shows that many observed bitmap wrappers were collectible under natural runtime activity. It does not establish that all native resources were released, explain the process-private-byte trend, or turn the earlier memory-growth result into a pass.
+
+In the before log's subsequent one-item Home state, elapsed 445,889–596,150 ms, subscriptions remained 46, pending poster requests were zero, and live weak bitmap targets remained 77 with all GC counts still at 3. `UnloadedTotal` remained zero. This is consistent with containers remaining loaded across navigation, but subscription and weak counts alone cannot count their bound sources. **The before log has no `BoundPosterSourcesCount` field; no retrospective bound-source value is inferred.**
+
+### What Reset cleanup now establishes
+
+The current [LibraryView](../../src/EmbyClient.App/Views/LibraryView.xaml.cs) handles collection `Reset` by canceling poster work and clearing sources across subscribed/requested images, including cached containers that have not raised `Unloaded`. The after log directly observes the resulting source state:
+
+| Observer state | Elapsed ms | Items | Subscriptions | Pending poster requests | Bound poster sources | Live weak bitmap targets |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Six initial pages | 465,810 | 288 | 40 | 0 | 40 | 40 |
+| Later loaded-range sample after natural GC | 531,003 | 288 | 46 | 0 | 46 | 46 |
+| Home, first of six matching samples | 551,036 | 1 | 46 | 0 | 1 | 77 |
+| Home, last matching sample | 576,061 | 1 | 46 | 0 | 1 | 77 |
+| Library reopened | 581,090 | 48 | 46 | 0 | 40 | 117 |
+| Detail state | 586,104 | 0 | 47 | 0 | 1 | 118 |
+| Returned library, final observer row | 596,127 | 48 | 47 | 0 | 40 | 158 |
+
+All six Home samples between 551,036 and 576,061 ms have one item, 46 subscriptions, zero pending requests, and **one bound source**. Thus 45 of the observed subscribed images have a null source at each of those Home samples. Combined with the Reset code path and subsequent normal poster display, this verifies the targeted old-source cleanup behavior in this instrumented run. Retained subscriptions do not mean those controls still retain their old bitmaps through `Image.Source`.
+
+Live weak targets remain 77 at Home, and later reach 158 after new decodes, while GC counts stay at 3. Source clearing does not require every CLR wrapper to disappear before the next natural collection. Conversely, these observations cannot certify native bitmap/texture deallocation or resolve the full process-memory increase. The observer ends with the returned 48-item library state, so it supplies no zero-resource result after the later sign-out screenshot.
+
+### Process memory remains an open result
+
+The endpoint measurements below retain the observed growth. They terminate at different UI stages and must not be compared as an effect-size estimate for Reset cleanup:
+
+| Capture and endpoint | Baseline private MiB | Final private MiB | Private change MiB | Baseline / final handles |
+| --- | ---: | ---: | ---: | --- |
+| Before, shortly after Home | 116.27 | 267.19 | +150.92 | 1,152 / 1,434 |
+| After, first revisit | 113.12 | 265.85 | +152.73 | 1,163 / 1,322 |
+
+Working set increased 146.45 MiB in the before CSV and 149.04 MiB in the after CSV. The after gap and shorter coverage of the completed UI sequence prevent a timing-matched performance A/B. In particular, **the supplied after-build CSV has no private-byte, working-set, or handle sample for the observed Home cleanup, second revisit, reopened library, detail, or return**. The observer's separate managed-byte readings do not fill this gap. The counters show a specific retention path was cleared; they do not show that all private-byte growth was solved or that the normal uninstrumented app meets a long-term memory criterion.
+
+The fixture counters remain cumulative. The before CSV adds 232 image requests, reconciled as 229 completions and 3 cancellations. The after CSV adds 229 requests, 227 completions and 2 cancellations. Its later fixture snapshot includes another two completed requests, outside that CSV window. Historical server peak 6 and the earlier injected playback failure were already present at both baselines. Neither is a new concurrency peak or Retry result for these captures.
+
+## Independent poster-decoder baseline
+
+The separate [80-cycle NativePosterDecoder receipt](../../tools/EmbyClient.NativeProbe/verification/poster-decoder-baseline.json) is now available. It uses the linked product helper, one Image, and the same synthetic PNG after the single download and HTTP/account cleanup. All 80 decode/bind/render-boundary/clear cycles completed without forced GC. Late median handle growth and the last-forty-cycle handle slope were zero; the receipt's result is `BaselineCompleted`.
+
+This baseline has no library paging, card collection, cache, or concurrent poster population. It also records increasing private/managed bytes, no natural GC collections, and allocations from its own cumulative reporting. It does not reproduce the library's handle climb or establish a library-memory root cause. **An isolated one-Image baseline is not large-library acceptance** and does not replace any failed or incomplete memory result above.
+
 ## Follow-up and status
 
-The two finite scrolling exercises are complete at their stated six-page scopes. **A focused memory investigation remains warranted.** Control A includes both revisits and a final sampled Home interval, but does not identify the retained allocations or establish convergence. The next scoped investigation is an independent image-decoder lifecycle control that reuses the product decoder; that work is being handled separately, and no result from it is included here. Further attribution may require allocation/retention data for managed card models, decoded image/native resources, visual containers, and automation peers. A concurrency investigation would need client permit-release and server request start/end/cancellation timelines.
+The four finite scrolling captures cover six initial pages each. The latest instrumented run also confirms normal posters after Home, reopen, detail, and return, and directly confirms the targeted Reset source cleanup. **A focused memory investigation remains warranted.** A comparable after-build process capture would need to include all revisits and a final Home interval; the current after CSV does not. The independent decoder baseline and natural-GC weak-target reductions narrow observations but do not identify every retained allocation or establish convergence. Further attribution may require managed/native allocation data and the lifecycle of cached visual containers. A concurrency investigation would need client permit-release and server request start/end/cancellation timelines.
 
-Do not force garbage collection merely to make an acceptance graph drop, equate working set with live heap, infer realized-container counts from UIA entry counts, or label these results as “all 5,000 items tested” or “no memory growth.” The control A analysis only read the supplied artifacts and updated this report; it did not change product code, run probes, request further UI actions, or take additional process samples.
+Do not force garbage collection merely to make an acceptance graph drop, equate working set with live heap, infer realized-container counts from UIA or subscription counts, or label these results as “all 5,000 items tested” or “no memory growth.” This report update only read existing artifacts and source and edited this document. It did not change product code, run probes/builds, request further UI actions, or take additional process samples.

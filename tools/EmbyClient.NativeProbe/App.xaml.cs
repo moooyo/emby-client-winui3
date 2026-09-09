@@ -38,6 +38,11 @@ public sealed partial class App : Application
         var commandLine = Environment.GetCommandLineArgs().Skip(1).ToArray();
         string directory;
         if (commandLine is ["--output-dir", var normalDirectory]) directory = normalDirectory;
+        else if (commandLine is ["--output-dir", var posterDirectory, "--poster-lifecycle"])
+        {
+            directory = posterDirectory;
+            _posterLifecycle = true;
+        }
         else if (commandLine is ["--output-dir", var isolationDirectory, "--lifecycle-isolation"])
         {
             directory = isolationDirectory;
@@ -116,6 +121,11 @@ public sealed partial class App : Application
         _resultPath = Path.Combine(Path.GetFullPath(directory), "result.json");
         if (File.Exists(_resultPath))
             throw new ArgumentException("The output directory already has a result. Select a new run directory.");
+        if (_posterLifecycle)
+        {
+            LaunchPosterLifecycle();
+            return;
+        }
         if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation && _networkRetryMediaDirectory is null
             && _externalSubtitleCredentialsPath is null) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };

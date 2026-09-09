@@ -136,6 +136,8 @@ The later `20260909-004422857-0cf49f41` candidate packages executable SHA-256 `8
 
 The `20260909-023602459-581a8eef` candidate packages executable SHA-256 `313A94C3C7BE6821B489E49A2A7AC705617D47CC53EFEA3984641C262305D659`, including the new queue/diagnostics UI and default-track recovery fix. Its 54,159,589-byte MSIX has SHA-256 `08BE0EFCA64E20B82A4A7423737449B1BFD88C6F785088E204E5251189D7A6BC`. Structural validation preserves 289 resource keys, including the two new dialogs. Source hashes remained unchanged during packaging. Signing, installation, and packaged runtime remain unverified.
 
+The local `20260909-035712609-cbd31ad5` candidate packages normal executable SHA-256 `B1CBF350968A64456C975932591CDD62FC08D3ED72BDD6892925CEF76F9AD7A5`, including collection Reset poster cleanup and excluding the optional observer. The 54,162,362-byte MSIX has SHA-256 `16BF8706C61F5606825C6579E186B1B360C5A316A9FC121C8DBFB810EB0A60AF`. Structural verification preserved 330 copied source files, 332 payload files, and 289 resource keys; source hashes remained unchanged. The normal executable also passed the focused [B1CBF350 desktop checks](ui-validation.md#poster-cleanup-normal-publish-checkpoint-b1cbf350). Signing, installation, and packaged runtime remain unverified.
+
 ## Hosted structural evidence
 
 Read-only inspection on 2026-09-09 confirmed that both hosted runs below completed locked restore, the Release build, all **306 tests** (API 47, media transport 65, platform 68, playback 126), Native AOT/SBOM publication, unsigned MSIX structural verification, and all artifact uploads. The build reported zero errors and one upstream generated WinUIEx `Icon` warning (`CS0618`).

@@ -80,6 +80,18 @@ At a native paused position of 41.0299911 seconds, root computer-use screenshot 
 
 The [first attempt](../../tools/EmbyClient.NativeProbe/verification/external-subtitle-screenshot-format-failure.json) remains Failed because a JPEG was incorrectly saved with a PNG filename; it is not rewritten as a pass. Both attempts used the same audited executable. The successful second attempt establishes one plain external cue and cleanup, not ASS/PGS fidelity or a repeated subtitle-resource gate. The normal application profile still prefers server burning by default.
 
+## Poster cleanup normal-publish checkpoint: B1CBF350
+
+Executable SHA-256: `B1CBF350968A64456C975932591CDD62FC08D3ED72BDD6892925CEF76F9AD7A5`. This is the normal Native AOT publish after collection Reset poster cleanup, with `LibraryObservation` disabled. No observation manifest or runtime JSONL was present in the publish directory before or after these checks.
+
+- The saved official-server account restored successfully. Its library and detail views displayed the expected placeholders for generated media without poster artwork.
+- Fixture opened through server conversion with English SRT selected. Pausing at 14 seconds showed the red source section. Dragging the timeline to 41 seconds reopened the stream and restored Paused with the expected orange frame and the complete burned cue, "Seek and subtitle delivery check."
+- Selecting subtitle Off briefly displayed Opening, then settled at Paused, 41 seconds, with the orange frame and no caption. The UI still reported Transcode; this is not a DirectStream assertion. Resume returned to Playing and the timeline advanced. Back returned to the correct detail view.
+- After switching to the temporary synthetic large-library account, the ordinary build displayed Home artwork, the library's first-page posters, the selected detail poster, and the first-page posters again after Back. This is a finite navigation regression check, not a repeat of the instrumented memory experiment.
+- The temporary account was signed out, and closing the native window removed both the window and application process. The normal output still contained no observation files.
+
+Original JPEG screenshots and UTC stage records are in ignored `artifacts/ui-validation/2026-09-09/final-b1cb/`. The complete Release test script also passed all 340 tests after the cleanup change. The separately instrumented [Reset lifetime evidence](large-library-validation.md#libraryobservation-before-and-after-collection-reset-cleanup) establishes the bound-source count, which cannot be read from screenshots alone.
+
 ## Remaining final-build acceptance
 
 An earlier relay/SMTC application checkpoint, executable SHA-256 `2ED8644A666DBDA41178171B802E15D1856F680D23C99EBBA2D19C68501FDA4C`, displayed real original video and closed its playing window without an observed crash dialog. The native probe independently checked SMTC Playing, Paused, and retired state. The automation tool did not support the physical media-key input, so that input path has not been established.

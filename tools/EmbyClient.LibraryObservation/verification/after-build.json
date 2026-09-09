@@ -1,0 +1,315 @@
+{
+  "FormatVersion": 1,
+  "Purpose": "Conditional library lifetime observation; not a distribution or acceptance build",
+  "GeneratedAtUtc": "2026-09-09T03:44:20.4598130+00:00",
+  "LibraryObservation": true,
+  "NormalReleaseBuildVerified": true,
+  "DefaultCompileExcludesObservation": true,
+  "EnabledCompileObservationSourceCount": 1,
+  "NativeAotRequested": true,
+  "DotNetSdk": "10.0.301",
+  "RuntimeIdentifier": "win-x64",
+  "TargetFramework": "net10.0-windows10.0.26100.0",
+  "SourceInputsUnchangedDuringBuild": true,
+  "Sources": [
+    {
+      "Path": "Directory.Build.props",
+      "Sha256": "152671a2f256b8953c63fa453a8bd17468b996dd5573b20d51773ab33019cab2"
+    },
+    {
+      "Path": "Directory.Packages.props",
+      "Sha256": "0db6e50291b3aca667f14b7d583b048e383fc027068bd8d3ba6c655cf72a6239"
+    },
+    {
+      "Path": "global.json",
+      "Sha256": "4a5e1b57e81b372b49a3ee4f0b35483d541b45280cf931276828c0920d3f6855"
+    },
+    {
+      "Path": "src/EmbyClient.Api/EmbyApiClient.cs",
+      "Sha256": "c3aa28a72f188966e04f9a4c47e37cf1c8982c178b52c0a7fd86854041826db6"
+    },
+    {
+      "Path": "src/EmbyClient.Api/EmbyApiException.cs",
+      "Sha256": "e6596ddf6516251a8e39f2cd3cf3f45b6d87d29f45c43f9389f29a93d5824942"
+    },
+    {
+      "Path": "src/EmbyClient.Api/EmbyClient.Api.csproj",
+      "Sha256": "acd40234aaa516072266f6ebb527924676dc461e10a0f1b304289a9e83b19198"
+    },
+    {
+      "Path": "src/EmbyClient.Api/EmbyJsonContext.cs",
+      "Sha256": "8b9c9c7ffb1d8079d2d8be99c021ab99ba861a5f50919915b5b118ddc43799ec"
+    },
+    {
+      "Path": "src/EmbyClient.Api/Models.cs",
+      "Sha256": "3fc1d9f40b7339671dcf4dda1660bb3a5a1c9812fef4669a6974e6d7c30181a5"
+    },
+    {
+      "Path": "src/EmbyClient.Api/packages.lock.json",
+      "Sha256": "d9a3e5611e8388d55d0eba98ecabaa64efbf8327c7a7e25127763a93e98a4604"
+    },
+    {
+      "Path": "src/EmbyClient.Api/PlaybackModels.cs",
+      "Sha256": "84c7445a80866b0985094c94ebfbf190735ee17728a8da640480622460389ee3"
+    },
+    {
+      "Path": "src/EmbyClient.App/app.manifest",
+      "Sha256": "0a644a9c368f4876c41b9abeec0e8287922a39b63888ebee3d5938423538c212"
+    },
+    {
+      "Path": "src/EmbyClient.App/App.xaml",
+      "Sha256": "65294ddefe4dd6975ed3176db7d48956c0d5d0457609c7b5783ca437a46baeb0"
+    },
+    {
+      "Path": "src/EmbyClient.App/App.xaml.cs",
+      "Sha256": "4f69e90f16cf7dec82d8bd749acb49e2920e72ebd21734c34a0018c2c0d80d5a"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/AppIcon.ico",
+      "Sha256": "b622196badeced33cc37b6fe166979395a1af41d6c421326be5f2671ce38260a"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/LockScreenLogo.scale-200.png",
+      "Sha256": "e984d6aa2d6f40aefc88b728f7e237eefabbdc5b0128df7b457d4c877f1233d7"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/SplashScreen.scale-200.png",
+      "Sha256": "67728828f1a1b3d6c12c30e6812096e9ffca4a7eced2c787725907370d0024cd"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/Square150x150Logo.scale-200.png",
+      "Sha256": "ad31b15fefd7d478fe9439a3086b32fd1eb7d51b8fe99e3be7607ca95d812bd1"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/Square44x44Logo.scale-200.png",
+      "Sha256": "e6b32f937da4211811da9eaa51e14248adf5100e2b972ff5803fd4e10ae53272"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/Square44x44Logo.targetsize-24_altform-unplated.png",
+      "Sha256": "e7aa3d860ce3d95e7ec17f82c65295bace2a09b56f0b94290b635f65375cef87"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/Square44x44Logo.targetsize-48_altform-lightunplated.png",
+      "Sha256": "c8afdea34791a9a64a53c44f49141c05cd73b91e9b8497fe88dbfb0219feb22c"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/StoreLogo.png",
+      "Sha256": "4ded64b29f7f0d2cc865d32dd89febe2423f2de41851b37d18f7806467315f2f"
+    },
+    {
+      "Path": "src/EmbyClient.App/Assets/Wide310x150Logo.scale-200.png",
+      "Sha256": "2b942434c18690cc43e8924036e5688eebbd39858fe1835357b2ee4078a2d45b"
+    },
+    {
+      "Path": "src/EmbyClient.App/EmbyClient.App.csproj",
+      "Sha256": "a76961b0fb09d193fc140c719111b73657875693bb563378825d8cd05d1587ed"
+    },
+    {
+      "Path": "src/EmbyClient.App/MainPage.xaml",
+      "Sha256": "3d4d1b4e2542b6404c4a72d7a027c5def80072a1f37c36074da02f70dea874c3"
+    },
+    {
+      "Path": "src/EmbyClient.App/MainPage.xaml.cs",
+      "Sha256": "a9227f8e1eaca4da41645be8693c251355aafcf5e4a6514616e5e2abc50ccc47"
+    },
+    {
+      "Path": "src/EmbyClient.App/MainWindow.xaml",
+      "Sha256": "ad89fdb0a11712fffd8ed74cb41c89fb9eaaf7a151a9064e65555cda218ae605"
+    },
+    {
+      "Path": "src/EmbyClient.App/MainWindow.xaml.cs",
+      "Sha256": "5be47124eafcce059a885b10d04284eee0be5127e8c107be1dc7cc782025d7c6"
+    },
+    {
+      "Path": "src/EmbyClient.App/Package.appxmanifest",
+      "Sha256": "092bd06cd49c20af4ed74cc52386a514386123e48da847df7d7c7ea6bee115f2"
+    },
+    {
+      "Path": "src/EmbyClient.App/packages.lock.json",
+      "Sha256": "90390282b816fc8cfc77b6869eeba3c8d44239c6e78add7ae3759f27483e226f"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/HttpRangeStream.cs",
+      "Sha256": "d76a48a650e362c03ee59252b6250a45a84851b1e89d58b434ffec97945f83f9"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs",
+      "Sha256": "5be3b1f39e543702da64f50e995fc38f7605f99934545daabd93da12f3539039"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.cs",
+      "Sha256": "dcfdc61dea2d93a7469ea14014f95f1e0eea0ff47d77f4cf891d33a59236b5b8"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.MediaControls.cs",
+      "Sha256": "afd1605c82fc8cbd39e929f4077e53c4f00f08dee7849257a895d540df951cef"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/ScopedAdaptiveHttpFilter.cs",
+      "Sha256": "771274dd22158e364f5e9c6b9f40ca12b69be576e7418b1081fc8148fce7278b"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/ScopedMediaTransport.cs",
+      "Sha256": "ed0151e72ef3f824deec4b506194d1327398f1caeee8606310dd511b76c21563"
+    },
+    {
+      "Path": "src/EmbyClient.App/Playback/SessionHttpRelay.cs",
+      "Sha256": "d8da59bb83591966f24341a26a2bc74a91d2c0127ae48396a43d382d7338d444"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/AccountStore.cs",
+      "Sha256": "092d0a8089378af06a7b7dd61e9256f60664dd033255f71d88d7435c9bc537cf"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/ConnectionService.cs",
+      "Sha256": "6b03f975811c3d74c2ab6c9fb2968f95c57d7717360bb6cfa9f1daaa342d4312"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/ImageCache.cs",
+      "Sha256": "fcbc26876d03f454f362dbcd4730ec0a74f58f1ce43191d9d117519fc0d3ca95"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/NativePosterDecoder.cs",
+      "Sha256": "338669d154f6c44369931c3ae376875b0a8331d30a5c57184e8e68a6d8362a5a"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/PlaybackDiagnostics.cs",
+      "Sha256": "b90b53e75e1e021e3531bfe09aa909fcb0550db3bd3ef7921e0f03648cf5a939"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/PlaybackDisplayRequest.cs",
+      "Sha256": "babf6f65df810798d85a4bdf0f5b53c33b78d2913fc85b8d87e5243a788a9ea8"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/PlaybackNotificationOwner.cs",
+      "Sha256": "f7e740ece54494a365bd5a95751fedbfb6a5d954a092f8a194ef4a015a91cca5"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/SettingsJsonContext.cs",
+      "Sha256": "202e5d414940781ab83f5edd92c0886f3885051e0207d39b4aab3ed2eadd1fde"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/TransientPlaybackQueue.cs",
+      "Sha256": "4219e88440f94afd0a7051ac55be8fbe625986ce2a670aa327b32b969f30ee01"
+    },
+    {
+      "Path": "src/EmbyClient.App/Services/WindowPlacementStore.cs",
+      "Sha256": "b457715658f9ef9902aed50859d3cc3478d48fa212025c909a614ebad32a86b3"
+    },
+    {
+      "Path": "src/EmbyClient.App/ViewModels/LibraryViewModel.cs",
+      "Sha256": "06df7e8cd3f2f8d6629e611d03a5e3816454b5af1e06cb6bb2b3215fb25c0799"
+    },
+    {
+      "Path": "src/EmbyClient.App/ViewModels/MediaCardViewModel.cs",
+      "Sha256": "f74a093457c8b179529bd0e6033a88b91e5a90c08d3c6da2b414f06d131170fb"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/LibraryView.xaml",
+      "Sha256": "79792d3697490afe221cd1470783de3a5e4b8b73fb62f70f48bb61f86afc7919"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/LibraryView.xaml.cs",
+      "Sha256": "d6ff7485f65c0e56aa7ef8ef3f27708f45cd72a79d670e52d2b31027fa6fae27"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlaybackDiagnosticsDialog.xaml",
+      "Sha256": "60c43a4329264fb4318185efd81162b9e7e838701c208069b4272b129794463c"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlaybackDiagnosticsDialog.xaml.cs",
+      "Sha256": "57d72f3718cfdc42a339402026197e8c221d75a39d9762767841edc7dfc71971"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml",
+      "Sha256": "7d4711a529342dbd8d3b3a2ad5a60a63a55b06f057459efc947bc3fb101b104f"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml.cs",
+      "Sha256": "794e8d8324e8fc133fe0555840bdc43c6df8e982231f70d4756f612b4e43a7df"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlayerView.Diagnostics.cs",
+      "Sha256": "ee41de7ba2a0d7d0ae7884ea56e2ef59dc8967b5dd5e7e2dba09699fe332b46a"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlayerView.xaml",
+      "Sha256": "09b5508c6032bcfbc7420bada0c4c42ad2512329343f82abeed8da731b6493eb"
+    },
+    {
+      "Path": "src/EmbyClient.App/Views/PlayerView.xaml.cs",
+      "Sha256": "8d5690a898cf976a468a2c1fd99961ef2a4fd886bcbf1d67010c4ee2a4e5de23"
+    },
+    {
+      "Path": "src/EmbyClient.Playback/ConservativeDeviceProfile.cs",
+      "Sha256": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff"
+    },
+    {
+      "Path": "src/EmbyClient.Playback/EmbyClient.Playback.csproj",
+      "Sha256": "8589f3a6b4fd297798c8b68c12486abed0085c8d4735ae0d1f86d82fe9c6edce"
+    },
+    {
+      "Path": "src/EmbyClient.Playback/packages.lock.json",
+      "Sha256": "7228d14911c8772a90eb1caaf40e8fd065c45d897bede78c3248ad420c32f564"
+    },
+    {
+      "Path": "src/EmbyClient.Playback/PlaybackContracts.cs",
+      "Sha256": "4d4a84494b5880c25501515e3087ca95b1ce55b664e623a818e9a6465dfb7f1b"
+    },
+    {
+      "Path": "src/EmbyClient.Playback/PlaybackCoordinator.cs",
+      "Sha256": "824b122e2257feef62cfff970a9d8d3b5d18d69a94a167f91e2b467bae9f8c2f"
+    },
+    {
+      "Path": "src/EmbyClient.Playback/PlaybackRequestFactory.cs",
+      "Sha256": "98f31c78c8f620edda48ed496a3f336427686dea2591a251efa3a310e94c088c"
+    },
+    {
+      "Path": "tools/EmbyClient.LibraryObservation/LibraryView.Observation.cs",
+      "Sha256": "09bf403a5528d4976af0098f0bdf29d58834c84f8fce4bfb5947350b80f90c7d"
+    },
+    {
+      "Path": "tools/EmbyClient.LibraryObservation/Publish-Observation.ps1",
+      "Sha256": "94e4b02008da170e694dbaf749e94712cc2c10da1d7fd979154bcf43d0ed2b23"
+    }
+  ],
+  "ResolvedDependencies": [
+    "CommunityToolkit.Mvvm/8.4.2",
+    "EmbyClient.Api/1.0.0",
+    "EmbyClient.Playback/1.0.0",
+    "Microsoft.DotNet.ILCompiler/10.0.9",
+    "Microsoft.NET.ILLink.Tasks/10.0.9",
+    "Microsoft.Web.WebView2/1.0.3719.77",
+    "Microsoft.Windows.AI.MachineLearning/2.1.74",
+    "Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100",
+    "Microsoft.Windows.SDK.BuildTools/10.0.28000.2705",
+    "Microsoft.WindowsAppSDK.AI/2.4.4",
+    "Microsoft.WindowsAppSDK.Base/2.0.4",
+    "Microsoft.WindowsAppSDK.DWrite/2.1.0",
+    "Microsoft.WindowsAppSDK.Foundation/2.3.9",
+    "Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.6",
+    "Microsoft.WindowsAppSDK.ML/2.1.74",
+    "Microsoft.WindowsAppSDK.Runtime/2.4.0",
+    "Microsoft.WindowsAppSDK.Search/2.4.4",
+    "Microsoft.WindowsAppSDK.Widgets/2.0.5",
+    "Microsoft.WindowsAppSDK.WinUI/2.3.6",
+    "Microsoft.WindowsAppSDK/2.4.0",
+    "runtime.win-x64.Microsoft.DotNet.ILCompiler/10.0.9",
+    "System.Numerics.Tensors/9.0.0",
+    "WinUIEx/2.9.3"
+  ],
+  "Executable": {
+    "FileName": "EmbyClient.App.exe",
+    "SizeBytes": 17756672,
+    "Sha256": "c28f7cfb20006d7fc7f5e44a7072ebcbd6f0e28643091b94cf04aad6eba87b3f"
+  },
+  "RuntimeObservation": {
+    "FileName": "library-observation.jsonl",
+    "MaximumBytes": 1048576,
+    "MaximumSeconds": 600,
+    "SampleIntervalSeconds": 5,
+    "WeakCapacityPerType": 2048,
+    "ForcedGc": false,
+    "AutomaticInteraction": false
+  }
+}

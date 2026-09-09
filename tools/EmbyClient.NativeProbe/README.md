@@ -1,5 +1,7 @@
 # Native playback lifecycle probe
 
+The independent [poster decoder lifecycle baseline](POSTER-LIFECYCLE.md) uses an Image-only window and the linked product decoder. It records natural resource trends without forced GC and does not replace any playback or library acceptance result.
+
 This Windows-only .NET 10 / Windows App SDK probe publishes as an unpackaged, self-contained NativeAOT executable. It compiles the product's `src/EmbyClient.App/Playback/*.cs` files through project links and references the real API and playback coordinator projects. It does not maintain a second playback implementation. Dependency versions come from the repository's central package management.
 
 The default lifecycle and synthetic controls accept only `http://127.0.0.1:18961/emby/`. Before using the fixed synthetic `demo` / `demo` account, the probe checks the fixture response header, the explicit synthetic statistics flag, and exact synthetic public server metadata. It then requires item `1001` to identify itself as synthetic and have a measured duration between 59 and 61 seconds. Do not use real credentials with the fixture. The separately authorized `--real-hls` mode described below has a different fixed identity gate and credentials-file contract; it cannot silently replace a synthetic run.

@@ -15,7 +15,7 @@ function Get-ProbeSourceHashes {
     $paths = @(& rg --files src/EmbyClient.Api src/EmbyClient.Playback src/EmbyClient.App/Playback tools/EmbyClient.NativeProbe `
         -g '*.cs' -g '*.csproj' -g '*.xaml' -g '*.manifest' -g 'packages.lock.json' -g '*.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Source enumeration failed.' }
-    $paths += @('global.json', 'Directory.Build.props', 'Directory.Packages.props')
+    $paths += @('global.json', 'Directory.Build.props', 'Directory.Packages.props', 'src/EmbyClient.App/Services/NativePosterDecoder.cs')
     foreach ($relativePath in ($paths | Sort-Object -Unique)) {
         $absolutePath = Join-Path $repositoryRoot $relativePath
         [pscustomobject]@{
