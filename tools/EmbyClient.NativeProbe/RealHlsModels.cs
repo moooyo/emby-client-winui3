@@ -53,6 +53,8 @@ internal sealed class RealHlsLoop
     public long OpenedNativeDurationTicks { get; set; }
     public bool AdaptiveCreationResponsePresentAfterOpen { get; set; }
     public bool AdaptiveCreationResponsePresentAfterSeek { get; set; }
+    public bool ProductAdaptiveFilterPresentAfterOpen { get; set; }
+    public bool ProductAdaptiveFilterPresentAfterSeek { get; set; }
     public bool? SharedPlayerSourceBoundAfterOpen { get; set; }
     public bool? SharedPlayerSourceBoundAfterSeek { get; set; }
     public bool? SharedPlayerSourceClearedAfterStop { get; set; }

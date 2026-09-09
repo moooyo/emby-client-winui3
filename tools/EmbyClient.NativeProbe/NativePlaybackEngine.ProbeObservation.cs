@@ -8,6 +8,7 @@ namespace EmbyClient.App.Playback;
 public sealed partial class NativePlaybackEngine
 {
     internal bool HasAdaptiveCreationResponseForProbe => _current?.AdaptiveCreationResponse is not null;
+    internal bool HasProductAdaptiveFilterForProbe => _current?.AdaptiveFilter is not null;
     internal NativeHlsHttpControlObservation? NativeHttpControlObservation { get; init; }
     internal bool ReuseNativeHttpControlPlayer { get; init; }
     private MediaPlayer? _sharedNativeControlPlayer;
@@ -46,8 +47,11 @@ public sealed partial class NativePlaybackEngine
 
     partial void CreateSessionPlayer(PlaybackEngineRequest request, ref MediaPlayer? player, ref bool ownsPlayer)
     {
+        AttachOpeningCancellationForProbe(request);
         if (!ReuseNativeHttpControlPlayer) return;
-        if (NativeHttpControlObservation is null) throw new PlaybackException("SharedPlayerRequiresNativeHttpControl");
+        if (!request.MediaUri.IsLoopback || request.MediaUri.Port != 19096 || request.MediaUri.Scheme != "http"
+            || request.MediaUri.UserInfo.Length != 0)
+            throw new PlaybackException("OwnedSharedPlayerControlEndpointRequired");
         if (_sharedNativeControlPlayer is null)
         {
             _sharedNativeControlPlayer = new MediaPlayer();

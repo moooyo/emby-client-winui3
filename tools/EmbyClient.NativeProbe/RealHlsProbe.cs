@@ -15,9 +15,12 @@ public sealed partial class App
         {
             RequiredLoops = _realHlsDiagnostic ? 2 : 20,
             ExecutionMode = _realHlsDiagnostic ? "TwoLoopDiagnosticNotResourceAcceptance"
-                : _sharedNativeHlsPlayerControl ? "SharedPlayerNativeHttpHlsControlNotProductAcceptance"
+                : _sharedNativeHlsPlayerControl && _nativeHlsHttpControl ? "SharedPlayerNativeHttpHlsControlNotProductAcceptance"
+                : _sharedNativeHlsPlayerControl ? "SharedPlayerManagedHttpHlsControlNotProductAcceptance"
                 : _nativeHlsHttpControl ? "NativeHttpHlsControlNotProductAcceptance" : "NormalRealHlsLifecycle",
-            Scope = _sharedNativeHlsPlayerControl
+            Scope = _sharedNativeHlsPlayerControl && !_nativeHlsHttpControl
+                ? "Isolated shared-player HLS control using the original product managed scoped HTTP transport on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Twenty complete cycles and forty source/session graphs with one MediaPlayer. Product authentication, redirect, and bounded-download behavior is retained. Not product acceptance or concurrent cancellation/fallback isolation proof."
+                : _sharedNativeHlsPlayerControl
                 ? "Isolated shared-player native HTTP HLS control on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Same twenty complete cycles and forty source/session graphs; one MediaPlayer is reused, with per-session source/event/SMTC/HTTP retirement. Not product acceptance or concurrent cancellation/fallback isolation proof."
                 : _nativeHlsHttpControl
                 ? "Isolated native HTTP HLS control on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Same coordinator, forty native graphs, SMTC, and twenty complete cycles; only adaptive HTTP construction differs. Not product acceptance."
@@ -92,7 +95,7 @@ public sealed partial class App
                 {
                     loop.ApiEvents = observation.Events.Skip(firstApiEvent).ToList();
                     report.Negotiations = observation.Negotiations.ToList();
-                    report.NativeHttpControl = nativeHttpControl?.Capture();
+                    report.NativeHttpControl = nativeHttpControl?.Capture() ?? new NativeHlsHttpControlSample();
                     report.SharedPlayerControl = _sharedNativeHlsPlayerControl ? engine.CaptureSharedNativePlayerControl() : null;
                     SaveRealHls(report);
                 }
@@ -136,7 +139,7 @@ public sealed partial class App
             Require(report.PostWarmupPrivateBytesGrowth <= 64L * 1024 * 1024 && report.PostWarmupHandleGrowth <= 32
                 && !sustainedHandles && !sustainedPrivate, "ResourceGrowthDetected");
             Require(report.Diagnostics.Count == 0, "UnexpectedPlaybackDiagnostic");
-            report.Status = _nativeHlsHttpControl ? "ControlPassed" : "Passed";
+            report.Status = _nativeHlsHttpControl || _sharedNativeHlsPlayerControl ? "ControlPassed" : "Passed";
         }
         catch (Exception exception) { report.Status = "Failed"; report.ErrorCode = ErrorCode(exception); report.ErrorHResult = exception.HResult; }
         finally
@@ -149,7 +152,7 @@ public sealed partial class App
             }
             catch (Exception exception) { report.Status = "Failed"; report.ErrorCode ??= "FinalCleanup_" + ErrorCode(exception); }
             report.FinishedAt = DateTimeOffset.UtcNow;
-            report.NativeHttpControl = nativeHttpControl?.Capture();
+            report.NativeHttpControl = nativeHttpControl?.Capture() ?? new NativeHlsHttpControlSample();
             report.SharedPlayerControl = _sharedNativeHlsPlayerControl ? engine?.CaptureSharedNativePlayerControl() : null;
             SaveRealHls(report);
             Environment.ExitCode = report.Status is "Passed" or "ControlPassed" or "DiagnosticCyclesCompleted" ? 0 : 1;
@@ -177,6 +180,9 @@ public sealed partial class App
         loop.OpenedSnapshotPositionTicks = engine.Snapshot?.PositionTicks ?? -1;
         loop.OpenedNativeDurationTicks = player.PlaybackSession.NaturalDuration.Ticks;
         loop.AdaptiveCreationResponsePresentAfterOpen = engine.HasAdaptiveCreationResponseForProbe;
+        loop.ProductAdaptiveFilterPresentAfterOpen = engine.HasProductAdaptiveFilterForProbe;
+        if (_sharedNativeHlsPlayerControl && !_nativeHlsHttpControl)
+            Require(loop.ProductAdaptiveFilterPresentAfterOpen, "ProductAdaptiveFilterRequiredForSharedControl");
         if (_sharedNativeHlsPlayerControl)
         {
             loop.SharedPlayerSourceBoundAfterOpen = engine.SharedNativeControlSourceBoundForProbe;
@@ -231,6 +237,9 @@ public sealed partial class App
         Require(player is not null && player.IsMuted && coordinator.ActiveContext?.TimelineOffsetTicks == 0, "HlsSeekContextLost");
         loop.PlaybackReplacedBySeek = coordinator.ActiveContext!.PlaybackId != beforeSeekPlaybackId;
         loop.AdaptiveCreationResponsePresentAfterSeek = engine.HasAdaptiveCreationResponseForProbe;
+        loop.ProductAdaptiveFilterPresentAfterSeek = engine.HasProductAdaptiveFilterForProbe;
+        if (_sharedNativeHlsPlayerControl && !_nativeHlsHttpControl)
+            Require(loop.ProductAdaptiveFilterPresentAfterSeek, "ProductAdaptiveFilterRequiredForSharedControl");
         if (_sharedNativeHlsPlayerControl)
         {
             loop.SharedPlayerSourceBoundAfterSeek = engine.SharedNativeControlSourceBoundForProbe;

@@ -2,7 +2,7 @@
 
 A Windows-only media client for Emby Server, using native WinUI 3 controls, WinUIEx, and CommunityToolkit.Mvvm. The project is intended for open-source distribution; the repository license is still awaiting an owner decision.
 
-The repository contains local API documentation, an AOT-safe Emby client, playback coordination, a native library/player UI, and reproducible verification tools. Development is in progress; see the [current stage and verification evidence](docs/implementation/status.md). HLS resource ownership, final interactive acceptance, and formal distribution gates remain open.
+The repository contains local API documentation, an AOT-safe Emby client, playback coordination, a native library/player UI, and reproducible verification tools. Development is in progress; see the [current stage and verification evidence](docs/implementation/status.md). Final integrated UI, network-recovery acceptance, and formal distribution gates remain open.
 
 ## Documentation
 
@@ -48,4 +48,4 @@ Official Emby documentation, official SDK definitions, and upstream Windows/pack
 
 The user has explicitly authorized local builds and tests for the implementation task. Debug builds, actual Native AOT publication, and native rendering have succeeded. An isolated official Emby 4.9.5.0 server passed 40 API checks; actual original video, HLS transcoding, and visible burned-in SRT subtitles have also been inspected in the application. These are separate forms of evidence and do not establish a broad server or hardware support matrix.
 
-All 288 focused tests pass. The product's session-scoped HTTP relay, including system media control state and retirement, passes 20 native direct-play lifecycle cycles and the unchanged resource criteria. Real-server HLS passes 20 functional cycles with actual initial seeking, paused restart at 45 seconds, and server cleanup, but its handle-growth gate still fails. Final pixels and physical media commands remain separate acceptance work. The earlier [research verification plan](docs/research/verification-plan.md) is historical; the [implementation record](docs/implementation/status.md) tracks current authorization and results.
+The latest unified checkpoint passed 288 focused tests; newer recovery, queue, and diagnostics suites are being integrated. The product now reuses one native player per engine/window while retiring every media session independently. Default direct playback and real-server HLS each pass 20 functional cycles and the unchanged resource gate, with handle-median changes of +17 and -6 respectively. Real cancellation, decoder-failure recovery, old-callback isolation, and concurrent disposal also pass. Final integrated pixels and physical media commands remain separate acceptance work. The earlier [research verification plan](docs/research/verification-plan.md) is historical; the [implementation record](docs/implementation/status.md) tracks current authorization and results.

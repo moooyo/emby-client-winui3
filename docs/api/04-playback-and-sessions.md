@@ -237,15 +237,13 @@ The factory applies the established same-server VOD contract to recognized finit
 
 `VideoRouteId` is a single safe path segment within the configured server mount, not necessarily the selected library item's ID. Emby's terminal `/emby` API prefix is optional: a default `/emby/` API root accepts both `/emby/videos/...` and `/videos/...`. For `/team/media/emby/`, the accepted forms are `/team/media/emby/videos/...` and `/team/media/videos/...`; `/videos/...` outside that proxy mount is rejected. The configured mount's path casing is preserved, while Emby route components are case-insensitive. The real alternate-version case selected item `8` and media source `8`, while Emby returned `/videos/7/master.m3u8` and `/videos/7/main.m3u8`. The server used the `MediaSourceId` parameter to select the correct file. The client accepts these bounded same-server aliases and continues reporting the selected item/media-source IDs; it does not rewrite the returned video route. Cross-origin URLs, unrelated or escaped proxy paths, and extra or encoded path separators remain rejected.
 
-### Subtitles
-
 ### Explicit recovery after a transient failure
 
 The client coordinator now offers an explicit, one-use retry after network, timeout, transport-unavailable, or HTTP 500/502/503/504 failures. This is a client operation, not a new Emby endpoint. It completes old session cleanup, requests fresh playback information, opens a new playback ID/server session, and preserves the confirmed absolute position, selected media source/streams, bitrate limit, and pause intent. If playback never actually started, the original requested position remains the recovery position. Replay remains a separate command that starts at zero.
 
 Recovery state is held only in memory. A new play, stop, account cancellation, or disposal invalidates it. An expected recovery ID and transition checks prevent a delayed or duplicate retry from interrupting a newer session. Authentication/permission failures, explicit cancellation, and generic server rejection do not create a retry target. There is no unattended network retry loop.
 
-### Subtitle delivery
+### Subtitles
 
 `IsTextSubtitleStream=true` identifies text subtitles that the guide allows downloading as SRT or WebVTT. Use a negotiated `DeliveryUrl` when supplied. Otherwise request:
 

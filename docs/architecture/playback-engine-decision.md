@@ -6,7 +6,7 @@ Decision date: 2026-09-09. Status: accepted implementation direction; playback r
 
 Use `Windows.Media.Playback.MediaPlayer` with the native WinUI `MediaPlayerElement` as the primary playback implementation. Preserve the engine boundary behind `IPlaybackEngine` and keep Emby negotiation, authentication, reporting, and cleanup in the existing API and playback layers. Keep `LibVLCSharp.WinUI` outside product dependencies at this stage.
 
-This resolves the initial engine-selection question in the [implementation plan](windows-client-plan.md#5-playback-engine-comparison) using the available experiments. It does not certify the native engine as fully stable or complete the plan's playback acceptance gate. The initial resource-growth failure was avoided through the verified HTTP relay path described below; final HLS and system-control integration checks remain separate.
+This resolves the initial engine-selection question in the [implementation plan](windows-client-plan.md#5-playback-engine-comparison) using the available experiments. It does not certify every codec or close the plan's complete acceptance gate. Default direct/HLS lifecycle and system-control ownership checks now pass; final integrated UI and installed-runtime acceptance remain separate.
 
 The evaluated platform is Windows x64 with .NET SDK 10.0.301, a .NET 10 Windows target, and Windows App SDK 2.4.0. Native WinUI remains the application's presentation model. No other operating system is in scope.
 
@@ -30,6 +30,14 @@ The native functional evidence is synthetic and bounded. Native clock progress a
 
 The LibVLC evidence is preserved in the [isolated probe instructions](../../tools/EmbyClient.VlcProbe/README.md) and [checked-in verification snapshot](../../tools/EmbyClient.VlcProbe/verification/2026-09-09.json), including warning text, exception stacks, executable hashes, fixture hashes, and process exit records. Both final processes exited with code 1 without forced termination. The JIT comparison explicitly disables AOT and trimming only for that separately named comparison; it is not a workaround claimed to satisfy the product's AOT direction. The actual AOT publisher output and executable identity support the native-compilation claim; `DynamicCodeSupported=false` alone is insufficient evidence.
 
+## Final native ownership evidence
+
+The initial direct relay measurements above are historical. Real HLS opening and logical seek require two source sessions per cycle. Repeatedly creating and closing a native player still exceeded the resource gate, even with a purely native HTTP control. Reusing one player in controlled experiments reduced the observed growth while retaining the original HTTP transport in the final control.
+
+The product now assigns one `MediaPlayer` to an engine/window. Each session independently detaches the surface, clears its source, unregisters callbacks and media controls, closes its media/HTTP objects, and drains outstanding work. A replacement waits for that retirement. Concurrent engine disposal waits for the same task and closes the shared owner once. Late source cleanup is bound to its recorded use sequence.
+
+The final, normal product configuration passed both unchanged 20-cycle gates: Direct +17 handles/+2,166,784 private bytes, and official-server HLS -6 handles/+720,896 private bytes with 40 encoding cleanups. Separate real opening cancellation, decoder rejection/recovery, old-callback/old-ID checks, and concurrent disposal also passed. [Three final receipts](../../tools/EmbyClient.NativeProbe/verification/README.md) use the same audited Native AOT executable `b4c1773df67e9265ec0a093c9d54188a79b7094f2625b97447eda1f4bbf16ac8`; they explicitly distinguish normal runs from injected faults and earlier controls. HLS stop observation covers API silence, not packet capture or displayed pixels.
+
 ## LibVLC integration findings
 
 The official [managed package](https://www.nuget.org/packages/LibVLCSharp.WinUI/3.10.1) includes the WinUI control and core bindings; the [native Windows package](https://www.nuget.org/packages/VideoLAN.LibVLC.Windows/3.0.23.1) supplies LibVLC separately. The managed package corresponds to repository commit `4896d0e06d19ac40b46802cf7dc167d432f3fd63`. Its .NET 10 asset depends on SharpDX.Direct3D11 4.2.0 and requests Windows App SDK 1.7.250909003 as a minimum; the probe resolves the project's required Windows App SDK 2.4.0.
@@ -44,7 +52,7 @@ LibVLCSharp's [release notes](https://github.com/videolan/libvlcsharp/blob/4896d
 
 ## Consequences and reconsideration gates
 
-The product-linked direct-media lifecycle has passed its unchanged functional and resource criteria. The next checks cover actual HLS timeline behavior and system media controls; an isolated control cannot substitute for either complete path. Native capabilities exposed to Emby remain conservative and tied to measured behavior; using the Windows engine does not guarantee every codec or subtitle format.
+The product-linked direct and real HLS lifecycles have passed their unchanged functional and resource criteria. Final application integration, external subtitles, physical input/output, and package activation still require their corresponding evidence. Native capabilities exposed to Emby remain conservative and tied to measured behavior; using the Windows engine does not guarantee every codec or subtitle format.
 
 Reconsider the official LibVLC WinUI candidate when all of the following evidence is available:
 

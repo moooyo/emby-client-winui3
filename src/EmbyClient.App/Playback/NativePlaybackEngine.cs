@@ -17,7 +17,8 @@ using NativeHttpResponse = Windows.Web.Http.HttpResponseMessage;
 namespace EmbyClient.App.Playback;
 
 /// <summary>
-/// Owns one Windows media player and its authenticated transports. Native objects are touched only on the UI dispatcher.
+/// Keeps one Windows media player for the engine lifetime while each playback owns its sources, subscriptions,
+/// and authenticated transports. Native objects are touched only on the UI dispatcher.
 /// </summary>
 public sealed partial class NativePlaybackEngine(
     DispatcherQueue dispatcher,
@@ -28,6 +29,10 @@ public sealed partial class NativePlaybackEngine(
     private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(45);
     private Session? _current;
     private PlaybackEngineSnapshot? _snapshot;
+    private MediaPlayer? _playerOwner;
+    private Guid _playerOwnerPlaybackId;
+    private long _playerOwnerUseSequence;
+    private Task? _disposalTask;
     private bool _disposed;
     private readonly SemaphoreSlim _openingTransition = new(1, 1);
     private int _volumeLevel = initialVolumeLevel is >= 0 and <= 100
@@ -148,12 +153,27 @@ public sealed partial class NativePlaybackEngine(
 
     public async ValueTask DisposeAsync()
     {
-        var session = await OnDispatcherAsync(() =>
+        var disposal = await OnDispatcherAsync(() =>
         {
+            if (_disposalTask is not null) return _disposalTask;
             _disposed = true;
-            return _current;
+            return _disposalTask = DisposeCoreAsync(_current);
         }).ConfigureAwait(false);
-        if (session is not null) await RetireAsync(session).ConfigureAwait(false);
+        await disposal.ConfigureAwait(false);
+    }
+
+    private async Task DisposeCoreAsync(Session? session)
+    {
+        // Publish the shared completion before cancellation or native events can reenter DisposeAsync.
+        await Task.Yield();
+        try
+        {
+            if (session is not null) await RetireAsync(session).ConfigureAwait(false);
+        }
+        finally
+        {
+            await OnDispatcherAsync(ClosePlayerOwner).ConfigureAwait(false);
+        }
     }
 
     private async Task LoadAsync(Session session)
@@ -274,8 +294,14 @@ public sealed partial class NativePlaybackEngine(
         MediaPlayer? player = null;
         var ownsPlayer = true;
         CreateSessionPlayer(session.Request, ref player, ref ownsPlayer);
-        session.OwnsPlayer = player is null || ownsPlayer;
-        session.Player = player ?? new MediaPlayer();
+        EnsureActive(session);
+        if (player is null)
+        {
+            player = GetPlayerOwner(session);
+            ownsPlayer = false;
+        }
+        session.OwnsPlayer = ownsPlayer;
+        session.Player = player;
         session.Player.AutoPlay = false;
         session.Player.Volume = _volumeLevel / 100d;
         session.Player.IsMuted = _isMuted;
@@ -319,7 +345,7 @@ public sealed partial class NativePlaybackEngine(
 
     private void OnOpened(Session session)
     {
-        if (!IsActive(session)) return;
+        if (!IsActive(session) || session.IsOpened) return;
         try
         {
             ApplyAudioSelection(session);
@@ -486,6 +512,7 @@ public sealed partial class NativePlaybackEngine(
     {
         try { await session.LoadTask.ConfigureAwait(false); }
         catch { }
+        await OnDispatcherAsync(() => ClearRetiredPlayerSource(session)).ConfigureAwait(false);
         if (session.AdaptiveFilter is not null) await session.AdaptiveFilter.DrainAsync().ConfigureAwait(false);
         if (session.DirectRelay is not null) await session.DirectRelay.DisposeAsync().ConfigureAwait(false);
         await session.Transport.DisposeAsync().ConfigureAwait(false);
@@ -604,17 +631,59 @@ public sealed partial class NativePlaybackEngine(
         catch { }
     }
 
-    private Session? Find(Guid id) => _current is { Retired: false } session && session.Request.PlaybackId == id ? session : null;
-    private void Release(Session session, string operation, Action action)
+    private MediaPlayer GetPlayerOwner(Session session)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        _playerOwner ??= new MediaPlayer();
+        // A new playback may borrow the player only after the previous source has been detached.
+        // OpenAsync serializes that complete retirement before creating the replacement session.
+        if (_playerOwner.Source is not null) throw new PlaybackException("PlayerSourceNotReleased");
+        _playerOwnerPlaybackId = session.Request.PlaybackId;
+        session.PlayerOwnerUseSequence = ++_playerOwnerUseSequence;
+        return _playerOwner;
+    }
+
+    private void ClearRetiredPlayerSource(Session session)
+    {
+        if (!session.Retired || session.PlayerOwnerUseSequence == 0
+            || session.PlayerOwnerUseSequence != _playerOwnerUseSequence || _playerOwner is not { } player) return;
+        // Cancellation can reenter a Source setter through a native event. Recheck after LoadAsync has
+        // unwound, while the serialized replacement open still waits for this retirement to finish.
+        Release(session, "ClearRetiredPlayerSource", () =>
+        {
+            if (player.Source is not null) player.Source = null;
+            if (player.Source is not null) throw new PlaybackException("PlayerSourceNotReleased");
+        });
+    }
+
+    private void ClosePlayerOwner()
+    {
+        var player = _playerOwner;
+        _playerOwner = null;
+        if (player is null) return;
+        try { player.Dispose(); }
+        catch
+        {
+            try { Diagnostic?.Invoke(this, new(_playerOwnerPlaybackId, "ClosePlayerOwner", "NativeReleaseFailed")); }
+            catch { }
+            throw new PlaybackException("NativePlayerCloseFailed");
+        }
+    }
+
+    private Session? Find(Guid id) => _current is { } session && session.Request.PlaybackId == id && IsActive(session) ? session : null;
+    private void Release(Session session, string operation, Action action) =>
+        Release(session.Request.PlaybackId, operation, action);
+
+    private void Release(Guid playbackId, string operation, Action action)
     {
         try { action(); }
         catch
         {
-            try { Diagnostic?.Invoke(this, new PlaybackDiagnosticEventArgs(session.Request.PlaybackId, operation, "NativeReleaseFailed")); }
+            try { Diagnostic?.Invoke(this, new PlaybackDiagnosticEventArgs(playbackId, operation, "NativeReleaseFailed")); }
             catch { }
         }
     }
-    private bool IsActive(Session session) => ReferenceEquals(_current, session) && !session.Retired && !session.Lifetime.IsCancellationRequested;
+    private bool IsActive(Session session) => !_disposed && ReferenceEquals(_current, session) && !session.Retired && !session.Lifetime.IsCancellationRequested;
     private void EnsureActive(Session session)
     {
         if (!IsActive(session)) throw new OperationCanceledException(session.Lifetime.Token);
@@ -718,6 +787,7 @@ public sealed partial class NativePlaybackEngine(
         public TimedMetadataTrack[] ExternalTracks { get; set; } = [];
         public MediaPlayer? Player { get; set; }
         public bool OwnsPlayer { get; set; } = true;
+        public long PlayerOwnerUseSequence { get; set; }
         public MediaPlaybackSession? NativeSession { get; set; }
         public MediaSource? MediaSource { get; set; }
         public MediaPlaybackItem? Item { get; set; }

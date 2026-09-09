@@ -25,6 +25,7 @@ public sealed partial class App : Application
     private bool _realHlsDiagnostic;
     private bool _nativeHlsHttpControl;
     private bool _sharedNativeHlsPlayerControl;
+    private bool _lifecycleIsolation;
     private bool _noInFlightGc;
     private bool _noGcRegionActive;
     private const long NoGcRegionBudget = 64L * 1024 * 1024;
@@ -36,6 +37,11 @@ public sealed partial class App : Application
         var commandLine = Environment.GetCommandLineArgs().Skip(1).ToArray();
         string directory;
         if (commandLine is ["--output-dir", var normalDirectory]) directory = normalDirectory;
+        else if (commandLine is ["--output-dir", var isolationDirectory, "--lifecycle-isolation"])
+        {
+            directory = isolationDirectory;
+            _lifecycleIsolation = true;
+        }
         else if (commandLine is ["--output-dir", var smokeDirectory, "--instrumentation-smoke"])
         {
             directory = smokeDirectory;
@@ -67,6 +73,12 @@ public sealed partial class App : Application
             _nativeHlsHttpControl = true;
             _sharedNativeHlsPlayerControl = true;
         }
+        else if (commandLine is ["--output-dir", var managedSharedDirectory, "--real-hls", "--credentials-file", var managedSharedCredentialPath, "--shared-player-control"])
+        {
+            directory = managedSharedDirectory;
+            _realHlsCredentialsPath = Path.GetFullPath(managedSharedCredentialPath);
+            _sharedNativeHlsPlayerControl = true;
+        }
         else if (commandLine is ["--output-dir", var experimentDirectory, "--no-inflight-gc"])
         {
             directory = experimentDirectory;
@@ -93,7 +105,7 @@ public sealed partial class App : Application
         _resultPath = Path.Combine(Path.GetFullPath(directory), "result.json");
         if (File.Exists(_resultPath))
             throw new ArgumentException("The output directory already has a result. Select a new run directory.");
-        if (_controlMode is null && _realHlsCredentialsPath is null) Save();
+        if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };
         _window = new Window
         {
@@ -103,7 +115,8 @@ public sealed partial class App : Application
         };
         _window.AppWindow.Resize(new SizeInt32(480, 300));
         _window.AppWindow.Show(activateWindow: false);
-        _ = _realHlsCredentialsPath is not null ? RunRealHlsAsync()
+        _ = _lifecycleIsolation ? RunIsolationAsync()
+            : _realHlsCredentialsPath is not null ? RunRealHlsAsync()
             : _controlMode is not null ? RunControlAsync(_controlMode) : RunAsync();
     }
 
