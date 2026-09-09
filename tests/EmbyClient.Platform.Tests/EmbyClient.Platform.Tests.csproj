@@ -18,6 +18,8 @@
     <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.cs" Link="Product/ConnectionService.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackDisplayRequest.cs" Link="Product/PlaybackDisplayRequest.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/WindowPlacementStore.cs" Link="Product/WindowPlacementStore.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PlaybackNotificationOwner.cs" Link="Product/PlaybackNotificationOwner.cs" />
     <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
   </ItemGroup>
 </Project>

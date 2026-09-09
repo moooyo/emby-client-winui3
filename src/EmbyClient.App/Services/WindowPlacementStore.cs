@@ -13,7 +13,7 @@ public enum WindowPlacementPersistenceIssue { None, InvalidData, ReadFailed, Wri
 /// Persistence errors and rejected values are recorded in LastIssue without escaping window-close callbacks.
 /// The custom dictionary is used for both packaged and unpackaged application launches.
 /// </remarks>
-public sealed class WindowPlacementStore : IDictionary<string, object>
+public sealed partial class WindowPlacementStore : IDictionary<string, object>
 {
     private const string KeyPrefix = "WindowPersistance_";
     private const int MaximumEntries = 16;

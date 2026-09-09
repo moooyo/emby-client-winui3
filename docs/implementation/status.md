@@ -20,11 +20,11 @@ For the observed finite Emby VOD HLS route, the engine uses the full source time
 
 The local toolchain is .NET SDK `10.0.301`, Windows SDK `10.0.26100.0`, and Visual Studio Community 2026 `18.7.3`. Product dependencies pin Windows App SDK `2.4.0`, WinUIEx `2.9.3`, and CommunityToolkit.Mvvm `8.4.2`.
 
-The final AOT executable SHA-256 for this checkpoint is `803C17E0937E2196A127A72286C1962F563A0C0A323B3D4566DDA9A667FA4EDA`. This identifies the published artifact; it does not mark the interrupted UI check as passed.
+The AOT executable SHA-256 for the latest development checkpoint is `0251D1893FBC1995B7915E4B44D292B6D08CF401509196D91A70353A473992AE`. This identifies the published artifact; it does not mark the interrupted UI check as passed. New display and placement services are partial types so the C#/WinRT source generator can supply AOT-compatible interface metadata; their initial `CsWinRT1028` warnings have been resolved.
 
 | Check | Latest result | What it establishes |
 | --- | --- | --- |
-| `scripts/Test.ps1 -Configuration Release` | **253 passed**: API 47, media transport 65, Windows platform 33, playback 108 | Contracts, transport boundaries, actual Windows user-scoped storage, and coordinator behavior with test adapters |
+| `scripts/Test.ps1 -Configuration Release` | **288 passed**: API 47, media transport 65, Windows platform 68, playback 108 | Contracts, transport boundaries, real Windows account/placement storage, display/notification ownership, cache boundaries, and coordinator behavior with test adapters |
 | Release solution build | **0 errors**; a fresh build reports one upstream generated WinUIEx `Icon` warning, `CS0618` | Compilation; the warning remains visible |
 | App Native AOT publish | **Succeeded** | Native code and the complete self-contained Windows App SDK payload are produced |
 | Hosted Windows CI | **All steps passed** for `b0de519` in [run 34296241270](https://github.com/moooyo/emby-client-winui3/actions/runs/34296241270) | Independent locked restore, Release build, 253 tests, AOT/SBOM output, and artifact upload; later edits require another run |
@@ -32,7 +32,7 @@ The final AOT executable SHA-256 for this checkpoint is `803C17E0937E2196A127A72
 | Official Emby API probe | **40 passed, 0 failed, 0 blocked** against Emby Server `4.9.5.0` | Actual authentication, browsing/user state, media ranges, HLS/WebVTT responses, reports, and cleanup; not native rendering |
 | Direct relay plus system media controls | **20 functional cycles and resource gate passed**; handle growth **+30** against limit **32**, private-memory growth **847,872 bytes** | Bounded synthetic MP4 lifecycle and media-control Playing/Paused/retired state inspection; physical media-key input was not supported by the test tool |
 | Official-server HLS | **20 functional cycles passed**, including starts at 0/17 seconds, new-session seeks to 45 seconds, pause restoration, **40 encoding cleanups**, and no diagnostics | The tested real-server logical-seek lifecycle works; resource acceptance remains separate |
-| HLS resources | **Failed**: handle growth **+52** exceeds limit **32**; private-memory growth approximately **4.51 MB** | The handle-growth issue remains under investigation; functional success does not complete this gate |
+| HLS resources | **Failed**: the first logical-reopen run grew **+52 handles**; explicit creation-response ownership still grew **+70**, above limit **32** | A native HTTP control also failed at +53. Reusing one player in that control passed at +3, but this has not been integrated or accepted as the product path |
 | Integrated UI | Earlier runs displayed original video, HLS conversion, burned-in SRT, and fullscreen entry/exit | The final run was interrupted by Escape and is **incomplete**; earlier observations do not certify the final build |
 
 The native resource gate compares the final five-loop median with loops 5-9, permits at most 32 additional handles and 64 MiB of private-memory growth, and checks for sustained growth. Its limits were not relaxed. The direct and HLS results are separate measurements and must not be combined into a general stability claim.

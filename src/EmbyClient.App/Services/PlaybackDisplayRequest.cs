@@ -6,7 +6,7 @@ namespace EmbyClient.App.Services;
 /// Owns at most one successful display request. The view calls this object on its UI thread.
 /// A suspended or disposed owner cannot be revived by a delayed playback notification.
 /// </summary>
-internal sealed class PlaybackDisplayRequest : IDisposable
+internal sealed partial class PlaybackDisplayRequest : IDisposable
 {
     private readonly Func<IPlaybackDisplayRequest> _createRequest;
     private IPlaybackDisplayRequest? _request;
