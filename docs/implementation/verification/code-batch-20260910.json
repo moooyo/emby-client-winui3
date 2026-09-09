@@ -1,0 +1,104 @@
+{
+  "FormatVersion": 1,
+  "Mode": "ConsolidatedHeadlessCodeChecks",
+  "StartedUtc": "2026-09-10T03:39:19.00188+08:00",
+  "BaseRevision": "3c3c5a46e061abc2d55d8b65ff66958a2c4c2c4b",
+  "Status": "Passed",
+  "Phase": "Completed",
+  "Steps": {
+    "Build": "Passed",
+    "Tests": "Passed",
+    "NativeAotPublish": "Passed",
+    "UnsignedPackageStructure": "Passed"
+  },
+  "DesktopActionsPerformed": false,
+  "NativeApplicationLaunched": false,
+  "PackageInstalled": false,
+  "SourceInputsUnchanged": true,
+  "Executable": {
+    "Path": "D:\\Code\\emby-client-winui3\\artifacts\\verification\\20260910-code-batch-2\\publish\\EmbyClient.App.exe",
+    "SizeBytes": 17910272,
+    "Sha256": "779b23ed8d28b845860ab72abe1764d60fcda7d9b2f6a089efcfea912bcba93c"
+  },
+  "FinishedUtc": "2026-09-10T03:40:34.4593957+08:00",
+  "Tests": [
+    {
+      "Suite": "API",
+      "Total": 47,
+      "Succeeded": 47,
+      "Failed": 0,
+      "Skipped": 0
+    },
+    {
+      "Suite": "MediaTransport",
+      "Total": 125,
+      "Succeeded": 125,
+      "Failed": 0,
+      "Skipped": 0
+    },
+    {
+      "Suite": "Platform",
+      "Total": 132,
+      "Succeeded": 132,
+      "Failed": 0,
+      "Skipped": 0
+    },
+    {
+      "Suite": "Playback",
+      "Total": 136,
+      "Succeeded": 136,
+      "Failed": 0,
+      "Skipped": 0
+    }
+  ],
+  "TotalTests": 440,
+  "Build": {
+    "Errors": 0,
+    "Warnings": 1,
+    "WarningCode": "CS0618",
+    "WarningScope": "Existing generated WinUIEx Icon reference"
+  },
+  "InputSnapshotFile": "code-batch-inputs-20260910.json",
+  "InputSnapshotSha256": "e2940c04ecca2fbf8867a0c222f7dcf7c7f2a9420faffa2c0ce4bca1c9083ef6",
+  "SourceIdentityMeaning": "The base revision plus the recorded working-tree source hashes, unchanged throughout the successful batch. This is not a claim that the base revision alone contains the repairs.",
+  "Sbom": {
+    "Format": "CycloneDX 1.6",
+    "Components": 18,
+    "JsonReadbackPassed": true,
+    "SchemaValidated": false
+  },
+  "Package": {
+    "FileName": "EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-194020447-06a82ff4.msix",
+    "Sha256": "4035046DE57DCC007563D3E8633E6269724E5E3A9AC800AFC33DDDED4246DDD0",
+    "SizeBytes": 54217862,
+    "PayloadFiles": 332,
+    "ResourceKeys": 289,
+    "Validation": [
+      "Native x64 PE shape",
+      "Required self-contained payload files",
+      "Complete PRI resource key preservation",
+      "MakeAppx default semantic validation",
+      "MakeAppx unpack",
+      "All staged file SHA256 round trips",
+      "Source snapshot unchanged",
+      "No package signature"
+    ],
+    "Signed": false,
+    "InstallationVerified": false,
+    "PackageRuntimeVerified": false
+  },
+  "EarlierAttempt": {
+    "ReceiptFile": "code-batch-first-attempt-20260910.json",
+    "Outcome": "Failed during Platform tests",
+    "Failure": "Pre-cancelled remote revocation lacked an explicit cancellation check",
+    "Correction": "Check cancellation before the remote request, after local sign-out",
+    "SourceInputCheck": "Not reached in the first attempt; its false field is the original default, not an observed source change"
+  },
+  "AuxiliaryProbeCompilation": {
+    "Status": "Passed",
+    "ReceiptFile": "native-probe-build-20260910.json",
+    "ExecutableSha256": "9fa11c908ce361c35cdf8d95ecafbda84efb272806b6e8ec1f4d768ef35f3c32",
+    "ExecutableSizeBytes": 15626752,
+    "RuntimeOutcome": "NotRun"
+  }
+}

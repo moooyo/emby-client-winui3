@@ -97,21 +97,30 @@ public sealed partial class ConnectionService : IDisposable
 
     public async Task<string?> SignOutAsync(ConnectedSession session, CancellationToken cancellationToken)
     {
-        var previousAccount = Settings.Accounts.Find(x => x.Key == session.AccountKey);
-        var previousProtectedToken = previousAccount?.ProtectedToken;
-        string? warning = null;
-        try { await session.Api.LogoutAsync(cancellationToken); }
-        catch (Exception ex) when (ex is EmbyApiException or EmbyTransportException or TimeoutException or OperationCanceledException)
-        { warning = "Signed out on this device. The server could not confirm that the previous token was revoked."; }
-        var account = Settings.Accounts.Find(x => x.Key == session.AccountKey);
-        if (account is not null && ReferenceEquals(account, previousAccount)
-            && string.Equals(account.ProtectedToken, previousProtectedToken, StringComparison.Ordinal))
-        {
-            account.ProtectedToken = "";
-            if (Settings.LastAccountKey == session.AccountKey) Settings.LastAccountKey = null;
-            await _store.SaveAsync(Settings, CancellationToken.None);
-        }
+        // Persist the local decision before a slow, cancelled, or unavailable logout request.
+        // Never clear account state again after the remote await: a new sign-in may now own it.
+        AccountStoreException? localFailure = null;
+        try { await ForgetTokenAsync(session.AccountKey); }
+        catch (AccountStoreException error) { localFailure = error; }
+        var warning = await RevokeSessionAsync(session, cancellationToken);
+        if (localFailure is not null)
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(localFailure).Throw();
         return warning;
+    }
+
+    internal static async Task<string?> RevokeSessionAsync(ConnectedSession session, CancellationToken cancellationToken)
+    {
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await session.Api.LogoutAsync(cancellationToken);
+            return null;
+        }
+        catch (Exception ex) when (ex is EmbyApiException or EmbyTransportException or TimeoutException
+            or OperationCanceledException or ObjectDisposedException)
+        {
+            return "Signed out on this device. The server could not confirm that the previous token was revoked.";
+        }
     }
 
     public async Task SetThemeAsync(string theme)

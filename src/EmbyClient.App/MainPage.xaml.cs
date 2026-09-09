@@ -18,6 +18,7 @@ public sealed partial class MainPage : Page
     private bool _initialized;
     private bool _shuttingDown;
     private bool _sessionTransition;
+    private TaskCompletionSource? _sessionExitCompletion;
 
     public MainPage()
     {
@@ -239,23 +240,35 @@ public sealed partial class MainPage : Page
 
     private async Task LeaveSessionAsync(bool signOut, bool sessionExpired = false)
     {
-        if (_sessionTransition) return;
+        if (_sessionTransition || _shuttingDown) return;
         var session = _session;
         if (session is null) return;
         _sessionTransition = true;
-        _session = null;
-        _connectionRequest?.Cancel();
-        SetConnecting(_connectionRequest is not null);
-        ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
-        Library.ClearSession();
-        Player.Visibility = Visibility.Collapsed;
-        Library.Visibility = Visibility.Visible;
-        AccountToolbar.Visibility = Visibility.Visible;
-        ConnectedPane.Visibility = Visibility.Collapsed;
-        ConnectionPane.Visibility = Visibility.Visible;
-        Notice.IsOpen = false;
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _sessionExitCompletion = completion;
         try
         {
+            _session = null;
+            _connectionRequest?.Cancel();
+            SetConnecting(_connectionRequest is not null);
+            ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
+            Library.ClearSession();
+            Player.Visibility = Visibility.Collapsed;
+            Library.Visibility = Visibility.Visible;
+            AccountToolbar.Visibility = Visibility.Visible;
+            ConnectedPane.Visibility = Visibility.Collapsed;
+            ConnectionPane.Visibility = Visibility.Visible;
+            Notice.IsOpen = false;
+
+            Exception? localSignOutError = null;
+            if (signOut || sessionExpired)
+            {
+                // Remove the remembered sign-in before potentially slow playback cleanup,
+                // while keeping the in-memory API token available for Stop/cleanup reports.
+                try { await _connections.ForgetTokenAsync(session.AccountKey); }
+                catch (Exception ex) { localSignOutError = ex; }
+            }
+
             Exception? disconnectError = null;
             try { await Player.DisconnectAsync(); }
             catch (Exception ex) { disconnectError = ex; }
@@ -263,15 +276,16 @@ public sealed partial class MainPage : Page
             if (signOut)
             {
                 using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                var warning = await _connections.SignOutAsync(session, deadline.Token);
-                if (warning is not null) ShowNotice(warning, InfoBarSeverity.Warning);
+                var warning = await ConnectionService.RevokeSessionAsync(session, deadline.Token);
+                if (localSignOutError is null && warning is not null) ShowNotice(warning, InfoBarSeverity.Warning);
             }
-            else if (sessionExpired)
+            else if (sessionExpired && localSignOutError is null)
             {
-                await _connections.ForgetTokenAsync(session.AccountKey);
                 ShowNotice("Your sign-in has expired. Sign in again to continue.", InfoBarSeverity.Warning);
             }
-            if (disconnectError is not null && !Notice.IsOpen)
+            if (localSignOutError is not null)
+                ShowNotice(UiErrors.Describe(localSignOutError), InfoBarSeverity.Warning);
+            else if (disconnectError is not null && !Notice.IsOpen)
                 ShowNotice(UiErrors.Describe(disconnectError), InfoBarSeverity.Warning);
         }
         catch (Exception ex)
@@ -280,9 +294,20 @@ public sealed partial class MainPage : Page
         }
         finally
         {
-            LoadSavedAccounts();
-            _sessionTransition = false;
-            SetConnecting(_connectionRequest is not null);
+            try
+            {
+                _sessionTransition = false;
+                if (!_shuttingDown)
+                {
+                    LoadSavedAccounts();
+                    SetConnecting(_connectionRequest is not null);
+                }
+            }
+            finally
+            {
+                if (ReferenceEquals(_sessionExitCompletion, completion)) _sessionExitCompletion = null;
+                completion.TrySetResult();
+            }
         }
     }
 
@@ -318,7 +343,14 @@ public sealed partial class MainPage : Page
         _shuttingDown = true;
         _connectionRequest?.Cancel();
         Library.ClearSession();
-        await Player.DisconnectAsync();
-        _connections.Dispose();
+        var sessionExit = _sessionExitCompletion?.Task;
+        try
+        {
+            // An existing exit owns local persistence, playback Stop/cleanup, and finally
+            // remote revocation. Do not steal its disconnect while it is still saving.
+            if (sessionExit is not null) await sessionExit;
+            else await Player.DisconnectAsync();
+        }
+        finally { _connections.Dispose(); }
     }
 }

@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace EmbyClient.App.Views;
 
@@ -22,6 +23,8 @@ public sealed partial class LibraryView : UserControl
 {
     private readonly Dictionary<Image, CancellationTokenSource> _posterRequests = [];
     private readonly Dictionary<Image, long> _posterSubscriptions = [];
+    private readonly ConditionalWeakTable<GridViewItem, PosterContainer> _posterContainers = new();
+    private readonly ConditionalWeakTable<Image, PosterLoadState<MediaCardViewModel>> _posterLoads = new();
     private ScrollViewer? _gridScroller;
     private bool _updatingNavigation;
     private bool _updatingHomeSection;
@@ -166,6 +169,75 @@ public sealed partial class LibraryView : UserControl
     {
         var name = !args.InRecycleQueue && args.Item is MediaCardViewModel item ? item.Title : string.Empty;
         AutomationProperties.SetName(args.ItemContainer, name);
+        if (args.ItemContainer is not GridViewItem container) return;
+        if (args.InRecycleQueue)
+        {
+            if (_posterContainers.TryGetValue(container, out var retired))
+            {
+                retired.Realization.Retire();
+                if (retired.Poster?.TryGetTarget(out var previous) == true) CancelContainerPoster(retired, previous);
+            }
+            if (FindPoster(container.ContentTemplateRoot) is { } poster && ReferenceEquals(FindPosterContainer(poster), container))
+                CancelPosterRequest(poster);
+            _posterContainers.Remove(container);
+            return;
+        }
+        if (args.Phase != 0 || args.Item is not MediaCardViewModel card) return;
+        var state = _posterContainers.GetValue(container, static _ => new PosterContainer());
+        var sameItem = state.Realization.TryGetVersion(card, out _);
+        var version = state.Realization.Activate(card);
+        if (!sameItem && state.Poster?.TryGetTarget(out var oldPoster) == true) CancelContainerPoster(state, oldPoster);
+        // Let phase-zero x:Bind set Tag. The later callback still belongs to this realization,
+        // even if the native container has been recycled again before it is dispatched.
+        args.RegisterUpdateCallback((_, update) => ContainerPosterReady(update, state, version));
+    }
+
+    private async void ContainerPosterReady(ContainerContentChangingEventArgs args, PosterContainer expected, long version)
+    {
+        if (args.InRecycleQueue || args.ItemContainer is not GridViewItem container
+            || args.Item is not MediaCardViewModel item || !_posterContainers.TryGetValue(container, out var current)
+            || !ReferenceEquals(current, expected) || !current.Realization.Owns(version, item)) return;
+        if (FindPoster(container.ContentTemplateRoot) is not { } image) return;
+        if (!ReferenceEquals(image.Tag, item) || !TryGetPosterBinding(image, item, out var owner, out var currentVersion)
+            || !ReferenceEquals(owner, current.Realization) || currentVersion != version) return;
+        await LoadPosterAsync(image);
+    }
+
+    private void CancelContainerPoster(PosterContainer state, Image image)
+    {
+        if (_posterLoads.TryGetValue(image, out var load) && load.IsOwnedBy(state.Realization))
+            CancelPosterRequest(image);
+    }
+
+    private static Image? FindPoster(DependencyObject? element)
+    {
+        if (element is Image image) return image;
+        if (element is null) return null;
+        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(element); index++)
+            if (FindPoster(VisualTreeHelper.GetChild(element, index)) is { } child) return child;
+        return null;
+    }
+
+    private bool TryGetPosterBinding(Image image, MediaCardViewModel item, out object owner, out long version)
+    {
+        owner = this;
+        version = 0;
+        if (!image.IsLoaded) return false;
+        if (ReferenceEquals(image, DetailPoster))
+            return ViewModel.HasDetails && ReferenceEquals(item, ViewModel.Detail);
+        if (FindPosterContainer(image) is not { } container || !_posterContainers.TryGetValue(container, out var state)
+            || !state.Realization.TryGetVersion(item, out version)) return false;
+        if (state.Poster is null || !state.Poster.TryGetTarget(out var previous) || !ReferenceEquals(previous, image))
+            state.Poster = new WeakReference<Image>(image);
+        owner = state.Realization;
+        return true;
+    }
+
+    private static GridViewItem? FindPosterContainer(Image image)
+    {
+        DependencyObject? parent = VisualTreeHelper.GetParent(image);
+        while (parent is not null && parent is not GridViewItem) parent = VisualTreeHelper.GetParent(parent);
+        return parent as GridViewItem;
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs args) => await RefreshAsync();
@@ -224,8 +296,6 @@ public sealed partial class LibraryView : UserControl
         ObservationPosterLoaded(image);
         if (!_posterSubscriptions.ContainsKey(image))
             _posterSubscriptions.Add(image, image.RegisterPropertyChangedCallback(FrameworkElement.TagProperty, PosterTagChanged));
-        if (ReferenceEquals(image, DetailPoster)
-            && (!ViewModel.HasDetails || _posterRequests.ContainsKey(image) || image.Source is not null)) return;
         await LoadPosterAsync(image);
     }
 
@@ -236,6 +306,7 @@ public sealed partial class LibraryView : UserControl
         if (_posterSubscriptions.Remove(image, out var registration))
             image.UnregisterPropertyChangedCallback(FrameworkElement.TagProperty, registration);
         CancelPosterRequest(image);
+        _posterLoads.Remove(image);
     }
 
     private async void PosterTagChanged(DependencyObject sender, DependencyProperty property)
@@ -246,25 +317,37 @@ public sealed partial class LibraryView : UserControl
 
     private async Task LoadPosterAsync(Image image)
     {
-        CancelPosterRequest(image);
-        if (image.Tag is not MediaCardViewModel item) return;
+        if (image.Tag is not MediaCardViewModel item || !TryGetPosterBinding(image, item, out var owner, out var ownerVersion))
+        {
+            CancelPosterRequest(image);
+            return;
+        }
+        var scale = XamlRoot?.RasterizationScale ?? 1;
+        var width = (int)Math.Clamp(176 * scale, 176, 704);
+        var height = width * 3 / 2;
+        var load = _posterLoads.GetValue(image, static _ => new PosterLoadState<MediaCardViewModel>());
+        if (!load.TryBegin(item, owner, ownerVersion, width, height, image.Source is not null, out var version)) return;
+        CancelPosterDownload(image);
+        image.Source = null;
+        ObservationPosterCleared(image);
         var source = new CancellationTokenSource();
         var token = source.Token;
         _posterRequests[image] = source;
+        var assigned = false;
         try
         {
-            var scale = XamlRoot?.RasterizationScale ?? 1;
-            var width = (int)Math.Clamp(176 * scale, 176, 704);
-            var height = width * 3 / 2;
             var bytes = await ViewModel.LoadPosterAsync(item, width, height, token);
             if (bytes is not { Length: > 0 } || token.IsCancellationRequested) return;
             await NativePosterDecoder.DecodeAndApplyAsync(bytes, width, height, token, bitmap =>
             {
                 ObservationBitmapDecoded(bitmap);
-                if (!token.IsCancellationRequested && ReferenceEquals(image.Tag, item)
+                if (!token.IsCancellationRequested && load.Owns(version) && ReferenceEquals(image.Tag, item)
+                    && TryGetPosterBinding(image, item, out var currentOwner, out var currentVersion)
+                    && ReferenceEquals(owner, currentOwner) && ownerVersion == currentVersion
                     && _posterRequests.TryGetValue(image, out var current) && ReferenceEquals(current, source))
                 {
                     image.Source = bitmap;
+                    assigned = true;
                     ObservationPosterAssigned(image);
                 }
             });
@@ -277,6 +360,7 @@ public sealed partial class LibraryView : UserControl
         }
         finally
         {
+            load.Complete(version, assigned);
             if (_posterRequests.TryGetValue(image, out var current) && ReferenceEquals(current, source))
             {
                 _posterRequests.Remove(image);
@@ -287,20 +371,33 @@ public sealed partial class LibraryView : UserControl
 
     private void CancelPosterRequest(Image image)
     {
+        if (_posterLoads.TryGetValue(image, out var load)) load.Reset();
+        CancelPosterDownload(image);
+        image.Source = null;
+        ObservationPosterCleared(image);
+    }
+
+    private void CancelPosterDownload(Image image)
+    {
         if (_posterRequests.Remove(image, out var source))
         {
             source.Cancel();
             source.Dispose();
         }
-        image.Source = null;
-        ObservationPosterCleared(image);
     }
 
     private void CancelPosterRequests()
     {
+        // Invalidate every deferred container callback without changing any x:Bind-owned Tag.
+        _posterContainers.Clear();
         foreach (var image in _posterSubscriptions.Keys.Concat(_posterRequests.Keys).Distinct().ToArray()) CancelPosterRequest(image);
-        DetailPoster.Source = null;
-        ObservationPosterCleared(DetailPoster);
+        CancelPosterRequest(DetailPoster);
+    }
+
+    private sealed class PosterContainer
+    {
+        public PosterRealization<MediaCardViewModel> Realization { get; } = new();
+        public WeakReference<Image>? Poster { get; set; }
     }
 
     private async void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs args)

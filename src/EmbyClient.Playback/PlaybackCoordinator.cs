@@ -17,6 +17,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     private readonly TimeProvider _timeProvider;
     private readonly DeviceProfile? _deviceProfile;
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly object _disposalLock = new();
     private readonly CancellationTokenSource _shutdown = new();
     private readonly Channel<WorkItem> _events = Channel.CreateUnbounded<WorkItem>(new UnboundedChannelOptions
     {
@@ -33,6 +34,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     private int _status;
     private int _disposed;
     private int _tickPending;
+    private Task? _disposalTask;
 
     public PlaybackCoordinator(EmbyApiClient api, IPlaybackEngine engine,
         PlaybackCoordinatorOptions? options = null, TimeProvider? timeProvider = null, DeviceProfile? deviceProfile = null)
@@ -933,18 +935,48 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         _ => "PlaybackFailed"
     };
 
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        TaskCompletionSource? completion = null;
+        Task disposal;
+        lock (_disposalLock)
+        {
+            if (_disposalTask is null)
+            {
+                completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                Volatile.Write(ref _disposed, 1);
+                _disposalTask = completion.Task;
+            }
+            disposal = _disposalTask;
+        }
+        // Publish the completion before cancellation or status handlers can reenter disposal.
+        if (completion is not null) _ = CompleteDisposalAsync(completion);
+        return new ValueTask(disposal);
+    }
+
+    private async Task CompleteDisposalAsync(TaskCompletionSource completion)
+    {
+        try
+        {
+            await DisposeCoreAsync().ConfigureAwait(false);
+            completion.TrySetResult();
+        }
+        catch (Exception error) { completion.TrySetException(error); }
+    }
+
+    private async Task DisposeCoreAsync()
+    {
         BeginIntent();
         await _gate.WaitAsync().ConfigureAwait(false);
+        var engineDisposed = false;
         try
         {
             await RetireCurrentAsync(false).ConfigureAwait(false);
             _engine.EventReceived -= OnEngineEvent;
-            await CleanupStepAsync(Guid.Empty, "EngineDispose", _ => _engine.DisposeAsync().AsTask()).ConfigureAwait(false);
-            _pendingEngineStops.Clear();
-            PublishStatus(PlaybackStatus.Idle, null);
+            engineDisposed = await CleanupStepAsync(Guid.Empty, "EngineDispose", _ => _engine.DisposeAsync().AsTask()).ConfigureAwait(false);
+            if (engineDisposed) _pendingEngineStops.Clear();
+            PublishStatus(engineDisposed ? PlaybackStatus.Idle : PlaybackStatus.Failed, null,
+                engineDisposed ? null : "EngineDisposeFailed");
         }
         finally
         {
@@ -954,6 +986,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         }
         await Task.WhenAll(_eventLoop, _timerLoop).ConfigureAwait(false);
         _shutdown.Dispose();
+        if (!engineDisposed) throw new PlaybackException("EngineDisposeFailed");
         // Do not dispose the gate while an already-issued public call may still be awaiting it.
     }
 

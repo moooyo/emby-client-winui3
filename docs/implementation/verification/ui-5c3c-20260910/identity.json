@@ -1,0 +1,15 @@
+{
+  "ObservedAtUtc": "2026-09-09T19:04:38.0189593+00:00",
+  "ProcessId": 29912,
+  "ProcessName": "EmbyClient.App",
+  "StartedAtUtc": "2026-09-09T09:53:07.4874770Z",
+  "Executable": "D:\\Code\\emby-client-winui3\\artifacts\\aot\\EmbyClient.App.exe",
+  "ExecutableSha256": "5C3C472A714316F177C3A4F62C9BE19DF9421CA1FA0B1097F6B33737C687C0D0",
+  "PriorSourceRevision": "3c3c5a46e061abc2d55d8b65ff66958a2c4c2c4b",
+  "MinimizedObservation": "Computer-use reported that the window is minimized after the Minimize action",
+  "LocalDate": "2026-09-10",
+  "PrivateBytes": 229208064,
+  "WorkingSetBytes": 256851968,
+  "Handles": 1950,
+  "Scope": "Normal application UI observations; not an instrumented native probe or a cold-start memory baseline."
+}

@@ -30,20 +30,19 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
     private readonly HashSet<RelayConnection> _clients = [];
     private readonly string _target;
     private readonly string _authority;
-    private readonly Action<string>? _failed;
+    private readonly UpstreamFailureNotificationOwner _failures;
     private readonly Task _acceptLoop;
     private readonly Lazy<Task> _dispose;
     private readonly CancellationTokenRegistration _lifetimeRegistration;
     private int _stopRequested;
-    private int _failureReported;
 
     private ProgressiveHttpRelay(ScopedMediaTransport transport, Uri upstream, string? transcodingContainer,
         CancellationToken lifetime, Action<string>? failed)
     {
         _transport = transport;
         _upstream = upstream;
-        _failed = failed;
         _shutdownToken = _shutdown.Token;
+        _failures = new UpstreamFailureNotificationOwner(_shutdownToken, failed);
         var extension = SelectExtension(transcodingContainer, upstream);
         _fallbackContentType = extension is "mp4" or "m4v" ? "video/mp4" : "application/octet-stream";
         var nonce = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
@@ -393,12 +392,7 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
 
     private void ReportUpstreamFailure(string code, CancellationToken connectionToken)
     {
-        if (code is not ("NetworkFailure" or "AuthenticationRequired" or "NotAllowed" or "UnsupportedFormat")
-            || _shutdownToken.IsCancellationRequested || connectionToken.IsCancellationRequested
-            || Interlocked.Exchange(ref _failureReported, 1) != 0) return;
-        if (_shutdownToken.IsCancellationRequested || connectionToken.IsCancellationRequested) return;
-        try { _failed?.Invoke(code); }
-        catch (Exception) { }
+        _failures.TryCommit(code, connectionToken)?.Deliver();
     }
 
     public ValueTask DisposeAsync() => new(_dispose.Value);
@@ -439,5 +433,39 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
     {
         internal TcpClient Client { get; } = client;
         internal TaskCompletionSource Completed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+}
+
+/// <summary>Separates a session's one failure commitment from delivery outside its admission lock.</summary>
+internal sealed class UpstreamFailureNotificationOwner(CancellationToken shutdown, Action<string>? failed)
+{
+    private readonly object _gate = new();
+    private bool _committed;
+
+    internal CommittedUpstreamFailure? TryCommit(string code, CancellationToken connectionToken)
+    {
+        if (code is not ("NetworkFailure" or "AuthenticationRequired" or "NotAllowed" or "UnsupportedFormat")) return null;
+        var notification = new CommittedUpstreamFailure(code, failed);
+        lock (_gate)
+        {
+            if (_committed || shutdown.IsCancellationRequested || connectionToken.IsCancellationRequested) return null;
+            // The successful eligibility decision under this lock is the linearization point.
+            // Cancellation observed before it consumes nothing. Once committed, delivery cannot
+            // be revoked by a later connection cancellation or steal another caller's opportunity.
+            _committed = true;
+        }
+        return notification;
+    }
+}
+
+internal sealed class CommittedUpstreamFailure(string code, Action<string>? failed)
+{
+    private int _delivered;
+
+    internal void Deliver()
+    {
+        if (Interlocked.Exchange(ref _delivered, 1) != 0) return;
+        try { failed?.Invoke(code); }
+        catch (Exception) { }
     }
 }

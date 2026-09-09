@@ -1,0 +1,17 @@
+{
+  "FormatVersion": 1,
+  "Mode": "ConsolidatedHeadlessCodeChecks",
+  "StartedUtc": "2026-09-09T19:37:15.0716465+00:00",
+  "BaseRevision": "3c3c5a46e061abc2d55d8b65ff66958a2c4c2c4b",
+  "Status": "Failed",
+  "Phase": "Tests",
+  "Steps": {
+    "Build": "Passed"
+  },
+  "DesktopActionsPerformed": false,
+  "NativeApplicationLaunched": false,
+  "PackageInstalled": false,
+  "SourceInputsUnchanged": false,
+  "ErrorType": "System.Management.Automation.RuntimeException",
+  "FinishedUtc": "2026-09-09T19:37:50.7270711+00:00"
+}

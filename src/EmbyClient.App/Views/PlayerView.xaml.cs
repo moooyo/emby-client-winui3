@@ -22,9 +22,11 @@ public sealed partial class PlayerView : UserControl
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly PlaybackDisplayRequest _displayRequest = new();
     private readonly PlaybackNotificationOwner _notificationOwner = new();
+    private readonly PlaybackTimelineDrag _timelineDrag = new();
     private bool _updating;
-    private bool _scrubbing;
     private Guid? _keyboardTimelinePlaybackId;
+    private ItemPreparationRetry? _preparationRetry;
+    private long? _preparationIntent;
     private bool _advancing;
     private Guid? _displayedPlayback;
     private long _bitrate = 20_000_000;
@@ -46,12 +48,14 @@ public sealed partial class PlayerView : UserControl
     {
         InitializeComponent();
         _queue.Changed += (_, _) => UpdateQueueControls();
-        Timeline.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrubbing = true), true);
+        Timeline.AddHandler(PointerPressedEvent, new PointerEventHandler(TimelinePressed), true);
         Timeline.AddHandler(PointerReleasedEvent, new PointerEventHandler(TimelineReleased), true);
+        Timeline.AddHandler(PointerCaptureLostEvent, new PointerEventHandler(TimelineCaptureLost), true);
+        Timeline.AddHandler(PointerCanceledEvent, new PointerEventHandler(TimelineCanceled), true);
         // Slider handles its adjustment keys; observe them without replacing native value changes.
         Timeline.AddHandler(KeyDownEvent, new KeyEventHandler(TimelineKeyDown), true);
         Timeline.AddHandler(KeyUpEvent, new KeyEventHandler(TimelineKeyUp), true);
-        Unloaded += (_, _) => _keyboardTimelinePlaybackId = null;
+        Unloaded += (_, _) => ClearTimelineInteraction();
         _clock.Tick += (_, _) =>
         {
             UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
@@ -172,29 +176,64 @@ public sealed partial class PlayerView : UserControl
         var coordinator = _coordinator;
         if (session is null || coordinator is null || item.Id is null) return;
         var (intent, cancellationToken) = BeginPlayRequest(coordinator);
+        _preparationIntent = intent;
         PlaybackNotice.IsOpen = false;
+        StateText.Text = "Loading item";
+        BufferingRing.IsActive = true;
         SetTransportAvailability(false);
+        Timeline.IsEnabled = false;
         PauseButton.IsEnabled = false;
-        await RunAsync(async () =>
-        {
-            bool OwnsRequest() => intent == _playIntent && ReferenceEquals(session, _session)
-                && ReferenceEquals(coordinator, _coordinator);
-            var detail = queuedEntryId is { } entryId
+        bool OwnsRequest() => intent == _playIntent && ReferenceEquals(session, _session)
+            && ReferenceEquals(coordinator, _coordinator);
+        await RunAsync(() => PlaybackItemPreparation.RunAsync<BaseItemDto>(
+            async token => queuedEntryId is { } entryId
                 ? await _queue.TryPrepareAndConsumeAsync(entryId,
-                    (queued, token) => session.Api.GetItemAsync(queued.Id!, token), OwnsRequest, cancellationToken)
-                : await session.Api.GetItemAsync(item.Id, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (detail is null || !OwnsRequest()) return;
-            _item = detail;
-            TitleText.Text = _item.Name ?? item.Name ?? "Now playing";
-            PopulateSources();
-            _notificationOwner.Arm(intent);
-            await coordinator.PlayAsync(new PlaybackSelection
+                    (queued, requestToken) => session.Api.GetItemAsync(queued.Id!, requestToken), OwnsRequest, token)
+                : await session.Api.GetItemAsync(item.Id, token),
+            async (detail, token) =>
             {
-                ItemId = item.Id, StartPositionTicks = Math.Max(0, startPositionTicks),
-                MaxStreamingBitrate = _bitrate
-            }, cancellationToken);
-        });
+                _item = detail;
+                TitleText.Text = _item.Name ?? item.Name ?? "Now playing";
+                PopulateSources();
+                _notificationOwner.Arm(intent);
+                try
+                {
+                    await coordinator.PlayAsync(new PlaybackSelection
+                    {
+                        ItemId = item.Id, StartPositionTicks = Math.Max(0, startPositionTicks),
+                        MaxStreamingBitrate = _bitrate
+                    }, token);
+                }
+                finally
+                {
+                    if (OwnsRequest()) _preparationIntent = null;
+                }
+            }, OwnsRequest, () => coordinator.StopAsync(), outcome =>
+            {
+                // The old owner's cancellation may already have retired its context. The scoped
+                // preparation policy waits for cleanup without accepting the old Ended notification.
+                _notificationOwner.Invalidate(intent);
+                _preparationIntent = null;
+                _displayRequest.Suspend();
+                ClearTimelineInteraction();
+                _preparationRetry = outcome.PreparationFailed
+                    && (queuedEntryId is null || _queue.Next?.EntryId == queuedEntryId)
+                    ? new(item, startPositionTicks, queuedEntryId) : null;
+                BufferingRing.IsActive = false;
+                Timeline.IsEnabled = false;
+                SetTransportAvailability(false);
+                var failed = outcome.PreparationFailed || outcome.CleanupFailed || coordinator.Status == PlaybackStatus.Failed;
+                StateText.Text = failed ? "Failed" : "Idle";
+                PauseButton.Content = new SymbolIcon(Symbol.Play);
+                PauseButton.IsEnabled = _preparationRetry is not null || _item is not null;
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(PauseButton,
+                    _preparationRetry is not null ? "Retry loading item" : "Play again");
+                if (failed) PlaybackNotice.Severity = InfoBarSeverity.Error;
+                if (outcome.CleanupFailed || coordinator.Status == PlaybackStatus.Failed)
+                    ShowPlaybackError("EngineStopFailed");
+                UpdateRecoveryControls();
+                UpdatePresentationClock();
+            }, cancellationToken));
     }
 
     private void CoordinatorStatusChanged(object? sender, PlaybackStatusChangedEventArgs args)
@@ -208,6 +247,7 @@ public sealed partial class PlayerView : UserControl
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!ReferenceEquals(sender, _coordinator) || !_notificationOwner.IsCurrent(ticket)) return;
+            if (_preparationIntent == ticket.Intent) _preparationIntent = null;
             UpdateDisplayRequest(args.Context?.PlaybackId);
             StateText.Text = args.Status.ToString();
             BufferingRing.IsActive = args.Status is PlaybackStatus.Negotiating or PlaybackStatus.Opening or PlaybackStatus.Buffering;
@@ -241,7 +281,9 @@ public sealed partial class PlayerView : UserControl
 
     private (long Intent, CancellationToken Token) BeginPlayRequest(PlaybackCoordinator coordinator, bool preserveRecovery = false)
     {
-        _keyboardTimelinePlaybackId = null;
+        ClearTimelineInteraction();
+        _preparationRetry = null;
+        _preparationIntent = null;
         var intent = ++_playIntent;
         // Invalidate old notifications before cancellation can publish another terminal status.
         _notificationOwner.BeginPlay(coordinator, intent, coordinator.ActiveContext?.PlaybackId);
@@ -305,6 +347,8 @@ public sealed partial class PlayerView : UserControl
 
     private Task ReplayCurrentAsync()
     {
+        if (_preparationRetry is { } preparation)
+            return PlayItemCoreAsync(preparation.Item, preparation.StartPositionTicks, preparation.QueueEntryId);
         var coordinator = _coordinator;
         if (coordinator is null) return Task.CompletedTask;
         var (intent, token) = BeginPlayRequest(coordinator);
@@ -372,10 +416,11 @@ public sealed partial class PlayerView : UserControl
 
     private void UpdatePosition()
     {
+        if (_preparationIntent == _playIntent) return;
         var context = _coordinator?.ActiveContext;
         if (context is null)
         {
-            _keyboardTimelinePlaybackId = null;
+            ClearTimelineInteraction();
             return;
         }
         _engine?.UpdateMediaControls(context, _coordinator!.Status, TitleText.Text);
@@ -383,9 +428,10 @@ public sealed partial class PlayerView : UserControl
         PositionText.Text = FormatTime(context.PositionTicks);
         DurationText.Text = duration.HasValue ? FormatTime(duration.Value) : "Live";
         Timeline.IsEnabled = context.CanSeek && duration > 0;
+        _timelineDrag.Reconcile(context.PlaybackId, Timeline.IsEnabled);
         if (_keyboardTimelinePlaybackId != context.PlaybackId || !Timeline.IsEnabled)
             _keyboardTimelinePlaybackId = null;
-        if (!_scrubbing && _keyboardTimelinePlaybackId is null)
+        if (!_timelineDrag.IsActive && _keyboardTimelinePlaybackId is null)
         {
             Timeline.Maximum = Math.Max(1, duration.GetValueOrDefault() / (double)TimeSpan.TicksPerSecond);
             Timeline.Value = Math.Clamp(context.PositionTicks / (double)TimeSpan.TicksPerSecond, 0, Timeline.Maximum);
@@ -427,7 +473,9 @@ public sealed partial class PlayerView : UserControl
         if (!ReferenceEquals(sender, _engine) || coordinator?.ActiveContext?.PlaybackId != args.PlaybackId) return;
         if (args.Command == NativeMediaCommand.Stop)
         {
-            _keyboardTimelinePlaybackId = null;
+            ClearTimelineInteraction();
+            _preparationRetry = null;
+            _preparationIntent = null;
             _notificationOwner.BeginStop(coordinator, ++_playIntent, args.PlaybackId);
             _retryRecoveryId = null;
             UpdateRecoveryControls();
@@ -455,11 +503,33 @@ public sealed partial class PlayerView : UserControl
         });
     }
 
+    private void TimelinePressed(object sender, PointerRoutedEventArgs args)
+    {
+        if (Timeline.IsEnabled && _coordinator?.ActiveContext is { CanSeek: true } context)
+            _timelineDrag.Begin(args.Pointer.PointerId, context.PlaybackId);
+    }
+
     private async void TimelineReleased(object sender, PointerRoutedEventArgs args)
     {
-        if (!_scrubbing) return;
-        _scrubbing = false;
-        await SeekFromSliderAsync();
+        var coordinator = _coordinator;
+        var value = Timeline.Value;
+        var playbackId = _timelineDrag.Complete(args.Pointer.PointerId,
+            coordinator?.ActiveContext?.PlaybackId, Timeline.IsEnabled);
+        if (coordinator is not null && playbackId is { } expected)
+            await RunAsync(() => coordinator.SeekAsync(expected, checked((long)(value * TimeSpan.TicksPerSecond))));
+    }
+
+    private void TimelineCaptureLost(object sender, PointerRoutedEventArgs args)
+    {
+        if (_timelineDrag.Capture(args.Pointer.PointerId) is not { } ticket) return;
+        // Slider can release capture inside its own PointerReleased handler, before our routed
+        // handler observes the release. Defer cancellation so that normal release can commit once.
+        if (!DispatcherQueue.TryEnqueue(() => _timelineDrag.Cancel(ticket))) _timelineDrag.Cancel(ticket);
+    }
+
+    private void TimelineCanceled(object sender, PointerRoutedEventArgs args)
+    {
+        if (_timelineDrag.Capture(args.Pointer.PointerId) is { } ticket) _timelineDrag.Cancel(ticket);
     }
 
     private static bool IsTimelineAdjustmentKey(VirtualKey key) => key is VirtualKey.Left or VirtualKey.Right
@@ -482,20 +552,24 @@ public sealed partial class PlayerView : UserControl
             await RunAsync(() => coordinator.SeekAsync(playbackId, checked((long)(value * TimeSpan.TicksPerSecond))));
     }
 
-    private void TimelineLostFocus(object sender, RoutedEventArgs args) => _keyboardTimelinePlaybackId = null;
+    private void TimelineLostFocus(object sender, RoutedEventArgs args) => ClearTimelineInteraction();
 
-    private Task SeekFromSliderAsync() => RunAsync(async () =>
+    private void ClearTimelineInteraction()
     {
-        if (_coordinator is not null && Timeline.IsEnabled)
-            await _coordinator.SeekAsync(checked((long)(Timeline.Value * TimeSpan.TicksPerSecond)));
-    });
+        _keyboardTimelinePlaybackId = null;
+        _timelineDrag.Clear();
+    }
 
     private async void PauseClicked(object sender, RoutedEventArgs args) => await TogglePauseAsync();
 
     public Task TogglePauseAsync() => RunAsync(async () =>
     {
         if (_coordinator is null) return;
-        if (_coordinator.Status == PlaybackStatus.Paused)
+        if (_preparationRetry is not null)
+        {
+            await ReplayCurrentAsync();
+        }
+        else if (_coordinator.Status == PlaybackStatus.Paused)
         {
             _displayRequest.ResumeTracking();
             await _coordinator.ResumeAsync();
@@ -654,7 +728,9 @@ public sealed partial class PlayerView : UserControl
 
     public Task StopAsync()
     {
-        _keyboardTimelinePlaybackId = null;
+        ClearTimelineInteraction();
+        _preparationRetry = null;
+        _preparationIntent = null;
         _displayRequest.Suspend();
         var intent = ++_playIntent;
         _retryRecoveryId = null;
@@ -668,7 +744,9 @@ public sealed partial class PlayerView : UserControl
 
     public async Task DisconnectAsync()
     {
-        _keyboardTimelinePlaybackId = null;
+        ClearTimelineInteraction();
+        _preparationRetry = null;
+        _preparationIntent = null;
         _displayRequest.Suspend();
         _queueDialog?.Hide();
         _diagnosticsDialog?.Hide();
@@ -707,4 +785,6 @@ public sealed partial class PlayerView : UserControl
         _item = null;
         _displayedPlayback = null;
     }
+
+    private sealed record ItemPreparationRetry(BaseItemDto Item, long StartPositionTicks, Guid? QueueEntryId);
 }

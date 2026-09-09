@@ -111,6 +111,20 @@ The corrected executable is `77A90D2DD8D3AD527BFFCFF40361BEAB39FDC2A8F3C90F72E23
 
 The synthetic account was signed out and the final app window/process closed. Original screenshots and stage times are under ignored `artifacts/ui-validation/2026-09-09/focus-77a9/`. Both ordinary AOT publishes succeeded with only the existing generated CS0618 warning. These finite keyboard/focus checks do not establish Narrator, physical media keys, all keyboard layouts, or multi-monitor DPI acceptance.
 
+## Interrupted normal-app checkpoint: 5C3C472A
+
+The user completed saved sign-in on the synthetic large-library account, then resumed desktop verification on 2026-09-10. The [recorded identity](verification/ui-5c3c-20260910/identity.json) is the normal application executable `5C3C472A714316F177C3A4F62C9BE19DF9421CA1FA0B1097F6B33737C687C0D0`, PID 29912. Its process had already been running since 2026-09-09 09:53 UTC; this is not a cold-start or new-publish memory baseline.
+
+The [eight original JPEGs and observation records](verification/ui-5c3c-20260910/observations.json) establish these finite results:
+
+- The minimized application restored to the connected Home library.
+- **Resume at 0:03** opened DirectStream with visible blue video and an advancing displayed position. Accessibility text and image capture are different samples and must not be treated as simultaneous timestamps.
+- Pause settled at displayed 0:42 with the orange source scene. Dragging to displayed 0:17 retained pause and showed the red scene. The mute toggle was selected; no audible-output claim is made.
+- F11 expanded to a 2560 by 1440 capture and Escape restored the 1268 by 834 window, still paused at 0:17. A subsequent actual minimize/restore also preserved the red paused frame. The intermediate restore-animation capture was excluded from stable-layout evidence.
+- Back completed and the item detail offered **Resume at 0:17**.
+
+The operator stopped computer use with the physical Escape key while navigating toward the synthetic test episodes. No new automatic-continuation, audio-track, subtitle, close-during-opening, or long-duration memory result was obtained. The single process-memory/handle snapshot in the identity record is not a convergence measurement. The user then requested code completion followed by a [consolidated validation session](validation-session.md), with no further desktop interruptions during implementation. These screenshots predate the subsequent account, preparation, pointer-drag, and resource-lifecycle repairs.
+
 ## Remaining final-build acceptance
 
 An earlier relay/SMTC application checkpoint, executable SHA-256 `2ED8644A666DBDA41178171B802E15D1856F680D23C99EBBA2D19C68501FDA4C`, displayed real original video and closed its playing window without an observed crash dialog. The native probe independently checked SMTC Playing, Paused, and retired state. The automation tool did not support the physical media-key input, so that input path has not been established.

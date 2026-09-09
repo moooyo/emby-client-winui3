@@ -9,6 +9,7 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
     private readonly ConcurrentQueue<Guid> paused = new();
     private readonly ConcurrentQueue<(Guid PlaybackId, long PositionTicks)> sought = new();
     private PlaybackEngineSnapshot? snapshot;
+    private int disposalCalls;
 
     public event EventHandler<PlaybackEngineEventArgs>? EventReceived;
 
@@ -16,6 +17,9 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
     public Func<Guid, CancellationToken, Task>? OnStopAsync { get; set; }
     public Func<Guid, CancellationToken, Task>? OnPauseAsync { get; set; }
     public Func<Guid, long, CancellationToken, Task>? OnSeekAsync { get; set; }
+    public Func<Task>? OnDisposeAsync { get; set; }
+    public int DisposalCalls => Volatile.Read(ref disposalCalls);
+    public Task? DisposalCompletion { get; private set; }
     public PlaybackEngineRequest[] Opened => opened.ToArray();
     public Guid[] Stopped => stopped.ToArray();
     public Guid[] Paused => paused.ToArray();
@@ -103,7 +107,14 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
 
     public ValueTask DisposeAsync()
     {
+        Interlocked.Increment(ref disposalCalls);
+        DisposalCompletion = DisposeCoreAsync();
+        return new ValueTask(DisposalCompletion);
+    }
+
+    private async Task DisposeCoreAsync()
+    {
+        if (OnDisposeAsync is not null) await OnDisposeAsync();
         IsDisposed = true;
-        return ValueTask.CompletedTask;
     }
 }

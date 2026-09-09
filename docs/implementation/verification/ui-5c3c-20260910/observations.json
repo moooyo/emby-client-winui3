@@ -1,0 +1,82 @@
+[
+  {
+    "Name": "01-library-after-manual-restore",
+    "ArchivedAtUtc": "2026-09-09T19:00:56.278Z",
+    "FileName": "01-library-after-manual-restore.jpg",
+    "Sha256": "106040b08d7152edbf1c7f161a78789b94c937f5d1b6ebc3818c094c5ef4461f",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "The user completed saved sign-in. The current product executable shows the synthetic Home library after restoring its minimized window."
+  },
+  {
+    "Name": "02-direct-playing",
+    "ArchivedAtUtc": "2026-09-09T19:01:40.135Z",
+    "FileName": "02-direct-playing.jpg",
+    "Sha256": "8af5dd837d4945f6346f7f3494e54825df8539987a293da8cec1c651ee294c80",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "Resume at 0:03 opened DirectStream. A blue video image and advancing playback position are visible; screenshot and accessibility positions are separate samples."
+  },
+  {
+    "Name": "03-paused-orange-42",
+    "ArchivedAtUtc": "2026-09-09T19:02:08.473Z",
+    "FileName": "03-paused-orange-42.jpg",
+    "Sha256": "d2ba269c6713222850ed33950b0d609a9e741c20ccbe98f1f54e859765f934de",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "The normal app is paused at the displayed 0:42 position with an orange source scene."
+  },
+  {
+    "Name": "04-paused-seek-red-17",
+    "ArchivedAtUtc": "2026-09-09T19:03:06.569Z",
+    "FileName": "04-paused-seek-red-17.jpg",
+    "Sha256": "23e7a96430f184b84f8fe2ae642bb741926ee1a2ab5140828e9c1722fd524d33",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "Dragging the timeline while paused changes the displayed position to 0:17 and shows the expected red source scene. Pause is retained and the mute toggle is selected."
+  },
+  {
+    "Name": "05-paused-fullscreen",
+    "ArchivedAtUtc": "2026-09-09T19:03:18.675Z",
+    "FileName": "05-paused-fullscreen.jpg",
+    "Sha256": "cd79e98f89723a0c7b722fb6959a60ab2463a48019446132b8062d7c88be1d7e",
+    "WindowId": 328584,
+    "Width": 2560,
+    "Height": 1440,
+    "Observation": "F11 expands the app to fullscreen while retaining Paused at 0:17 and the red video scene."
+  },
+  {
+    "Name": "06-windowed-paused",
+    "ArchivedAtUtc": "2026-09-09T19:03:38.233Z",
+    "FileName": "06-windowed-paused.jpg",
+    "Sha256": "91cf13b59c636606a62d0935745e4815ae7d8a4e2705e96d56627f477abba8ab",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "Escape restores the 1268 by 834 window and preserves Paused at 0:17 with the red scene."
+  },
+  {
+    "Name": "07-paused-after-minimize-restore",
+    "ArchivedAtUtc": "2026-09-09T19:05:12.382Z",
+    "FileName": "07-paused-after-minimize-restore.jpg",
+    "Sha256": "61a226699fc0f186bd1379e90230a62c9a1c7a4fb916d921c3e0e100a1b18396",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "After the tool confirmed minimization, restoring the same window returns the red frame with Paused at 0:17. The first restore-animation capture was not used as the stable layout evidence."
+  },
+  {
+    "Name": "08-detail-after-stop",
+    "ArchivedAtUtc": "2026-09-09T19:06:25.584Z",
+    "FileName": "08-detail-after-stop.jpg",
+    "Sha256": "e070965a552b043b287dfc5168219971cb99b7793ae07e74b806d47709f66449",
+    "WindowId": 328584,
+    "Width": 1268,
+    "Height": 834,
+    "Observation": "Back to library completes and the item detail now offers Resume at 0:17."
+  }
+]
