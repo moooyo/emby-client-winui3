@@ -1,0 +1,15 @@
+{
+  "RecordedUtc": "2026-09-09T21:21:24.1753104+00:00",
+  "ProcessId": 15620,
+  "ProcessStartedUtc": "2026-09-09T21:20:17.3765126Z",
+  "ExecutablePath": "D:\\Code\\emby-client-winui3\\tools\\EmbyClient.LibraryObservation\\artifacts\\publish-startup-attribution-20260910\\EmbyClient.App.exe",
+  "ExecutableSha256": "BA6AFB8D18E86E33DB8CB4C9BD1EDF1F5146AB47182C97EC1B0FC8D57752940F",
+  "SourceRevision": "bc3d290839e708beeefb0bd736f6206876ebda5e",
+  "WindowId": 1772878,
+  "ObservationEnabled": true,
+  "FixturePort": 18962,
+  "FixtureServerId": "synthetic-large-server-5000",
+  "FixtureVersion": "synthetic-1.0",
+  "Scope": "Instrumented library attribution on the existing fixture; no video before memory sampling",
+  "ControlledFixtureLaunch": "Rejected before execution; no port18964 process created"
+}

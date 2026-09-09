@@ -1,0 +1,130 @@
+{
+  "SourceSnapshot": "pre-sign-in-snapshot.jsonl",
+  "SourceSha256": "436456a63cfcece30459a897858d69eb41e5c0fa9afa66a69788127f7155b595",
+  "Identity": "identity.json",
+  "SnapshotRows": 87,
+  "SelectedRows": 81,
+  "Selection": "Exclude the first approximately 30 seconds; include elapsed milliseconds >= 30000",
+  "FirstElapsedMilliseconds": 30052,
+  "LastElapsedMilliseconds": 430665,
+  "SpanSeconds": 400.613,
+  "FirstUtc": "2026-09-09T21:20:47.852000+00:00",
+  "LastUtc": "2026-09-09T21:27:28.465000+00:00",
+  "Metrics": {
+    "ManagedBytes": {
+      "First": 4946000,
+      "Last": 12392584,
+      "Delta": 7446584,
+      "Minimum": 4946000,
+      "Maximum": 12392584
+    },
+    "ManagedAllocatedBytesApproximate": {
+      "First": 4932320,
+      "Last": 12342896,
+      "Delta": 7410576,
+      "Minimum": 4932320,
+      "Maximum": 12342896
+    },
+    "ProcessPrivateBytes": {
+      "First": 107122688,
+      "Last": 114249728,
+      "Delta": 7127040,
+      "Minimum": 107122688,
+      "Maximum": 114249728
+    },
+    "ProcessWorkingSetBytes": {
+      "First": 123371520,
+      "Last": 131563520,
+      "Delta": 8192000,
+      "Minimum": 123371520,
+      "Maximum": 131563520
+    },
+    "ProcessHandleCount": {
+      "First": 1034,
+      "Last": 1037,
+      "Delta": 3,
+      "Minimum": 1026,
+      "Maximum": 1046
+    },
+    "ProcessCpuMilliseconds": {
+      "First": 1562,
+      "Last": 15281,
+      "Delta": 13719,
+      "Minimum": 1562,
+      "Maximum": 15281
+    },
+    "ObserverCompletedSamples": {
+      "First": 6,
+      "Last": 86,
+      "Delta": 80,
+      "Minimum": 6,
+      "Maximum": 86
+    },
+    "ObserverCompletedSampleAllocatedBytes": {
+      "First": 129192,
+      "Last": 1128920,
+      "Delta": 999728,
+      "Minimum": 129192,
+      "Maximum": 1128920
+    }
+  },
+  "AveragePercentOfOneCpuCore": 3.42450195076046,
+  "FieldsZeroThroughoutSnapshot": [
+    "ItemsCount",
+    "PosterSubscriptionsCount",
+    "PosterRequestsCount",
+    "BoundPosterSourcesCount",
+    "LoadedPosterControlsCount",
+    "AttachedPosterControlsCount",
+    "RealizedPosterControlsCount",
+    "DetailPosterBound",
+    "LibraryIsHome",
+    "LibraryHasDetails",
+    "LibraryIsBusy",
+    "LoadedTotal",
+    "UnloadedTotal",
+    "TagChangedTotal",
+    "AssignedTotal",
+    "ClearedTotal",
+    "PosterLoadRequestedTotal",
+    "PosterLoadRejectedTotal",
+    "PosterLoadDeduplicatedTotal",
+    "DecodeStartedTotal",
+    "DecodeCompletedTotal",
+    "DecodeCanceledTotal",
+    "DecodeFailedTotal",
+    "DecodeActive",
+    "DecodePeak",
+    "PresentationClockEnabled",
+    "PresentationClockTicks",
+    "PositionUpdateCalls",
+    "WeakImageTrackedCount",
+    "WeakImageAliveCount",
+    "WeakImageEvictions",
+    "WeakBitmapTrackedCount",
+    "WeakBitmapAliveCount",
+    "WeakBitmapEvictions",
+    "Gen0Collections",
+    "Gen1Collections",
+    "Gen2Collections",
+    "LastGcIndex"
+  ],
+  "Observation": "The selected application remains on the sign-in page awaiting the user. No library items, poster work, playback clock ticks, position updates, or GC collections are reported in this snapshot.",
+  "Conclusion": "This recorded allocation growth does not require poster decoding or playback timer activity. It does not establish that the older 779B Home growth has the same cause.",
+  "Limits": [
+    "ManagedBytes includes uncollected garbage; no collection was observed",
+    "Zero latest-GC fields before the first collection do not mean an empty current heap",
+    "Approximate process-wide allocation counters and memory getters are different sequential measurements",
+    "Recorded synchronous sample allocation is only part of observer overhead and cannot be subtracted as its entire cost",
+    "The instrumented sign-in page is not a normal-build Home-idle or library acceptance sample",
+    "The live log continues; this is an immutable prefix snapshot, not a completed app session",
+    "No allocation stack or native/GPU object census was obtained"
+  ],
+  "RuntimeProfilerAvailability": {
+    "Evidence": "The emitted Native AOT link response names eventpipe-disabled.lib and ILC sets System.Diagnostics.Tracing.EventSource.IsSupported=false",
+    "CurrentBinaryEventPipeEnabled": false,
+    "NoAttachmentAttempted": true,
+    "Documentation": "https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics",
+    "Meaning": "Optional EventPipe support would require another explicitly identified build; no profiling support was retroactively claimed for BA6A"
+  }
+}

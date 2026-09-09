@@ -1,0 +1,35 @@
+{
+  "Scope": "Frozen pre-sign-in prefix, not a completed library or application session",
+  "Files": [
+    {
+      "File": ".gitattributes",
+      "Bytes": 46,
+      "Sha256": "1dc094a56adb9f2b7620ea2678102f09e59a5973202ba83c0a9ca8dfa7ea6f2d"
+    },
+    {
+      "File": "01-saved-sign-in-ready.jpg",
+      "Bytes": 52295,
+      "Sha256": "dc538302e62a5f3fc09ca09dbbcf68f1ab9278d3f77b2e3265de7988072c859f"
+    },
+    {
+      "File": "identity.json",
+      "Bytes": 805,
+      "Sha256": "2bed2253c71a67ec4a9e7a7316758b8b7c4ad4a2a374d962f528e0fcbf964a84"
+    },
+    {
+      "File": "observations.json",
+      "Bytes": 562,
+      "Sha256": "547a72c7d9359a7bf7e740881c247fdac1b7385cb2b91d4656502c0f99675b6f"
+    },
+    {
+      "File": "pre-sign-in-analysis.json",
+      "Bytes": 4481,
+      "Sha256": "5cdff149b44a39a3587cff18a0b34704c668d9e09f41fc69be14214aa0fab83b"
+    },
+    {
+      "File": "pre-sign-in-snapshot.jsonl",
+      "Bytes": 119689,
+      "Sha256": "436456a63cfcece30459a897858d69eb41e5c0fa9afa66a69788127f7155b595"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+[
+  {
+    "Name": "01-saved-sign-in-ready",
+    "ArchivedAtUtc": "2026-09-09T21:21:23.785Z",
+    "FileName": "01-saved-sign-in-ready.jpg",
+    "Sha256": "dc538302e62a5f3fc09ca09dbbcf68f1ab9278d3f77b2e3265de7988072c859f",
+    "WindowId": 1772878,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "Observation": "The startup-safe observation build reaches the sign-in page with the intended synthetic account selected. The user will perform saved authentication manually; this screenshot does not capture the initial disabled interval."
+  }
+]
