@@ -32,6 +32,7 @@ public sealed partial class MainWindow : WindowEx
             AppTitleBar.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
         };
         RootFrame.Content = _page;
+        PersistenceId = "MainWindow";
         AppWindow.Closing += OnClosing;
     }
 

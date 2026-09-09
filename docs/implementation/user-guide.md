@@ -12,6 +12,8 @@ Selecting **Remember this account** saves the access token using Windows user-sc
 
 Use **Appearance** to choose the Windows system theme, a light theme, or a dark theme. Settings are stored for the current Windows user.
 
+The window remembers its size and position between launches. WinUIEx restores that placement when the monitor layout still matches; otherwise the default placement applies. This works for both the development folder and the packaged application.
+
 ## Browse your library
 
 Home offers continue watching, latest items, and next episodes. Select a media library in the navigation pane or use search. Results are paged; the application does not load the complete library into memory. The Favorites view lists items marked as favorites for the signed-in account.
