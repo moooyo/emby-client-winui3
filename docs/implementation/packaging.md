@@ -134,6 +134,23 @@ The first candidate was approximately 51.1 MiB, excluding PDB files. Its detaile
 
 The later `20260909-004422857-0cf49f41` candidate packages executable SHA-256 `803C17E0937E2196A127A72286C1962F563A0C0A323B3D4566DDA9A667FA4EDA`, including the complete notices directory and SBOM. Structural verification passed with 330 source files, 332 payload files, and all 287 resource keys preserved. The 53,972,634-byte unsigned package has SHA-256 `A9AF2021278DA61DF257AB767964E0C69342335FC2EE299460BDCF8C4EC2FB39`. It remains a development checkpoint with no signing, installation, or packaged-runtime claim; later source changes require a new publish and package.
 
+The `20260909-023602459-581a8eef` candidate packages executable SHA-256 `313A94C3C7BE6821B489E49A2A7AC705617D47CC53EFEA3984641C262305D659`, including the new queue/diagnostics UI and default-track recovery fix. Its 54,159,589-byte MSIX has SHA-256 `08BE0EFCA64E20B82A4A7423737449B1BFD88C6F785088E204E5251189D7A6BC`. Structural validation preserves 289 resource keys, including the two new dialogs. Source hashes remained unchanged during packaging. Signing, installation, and packaged runtime remain unverified.
+
+## Hosted structural evidence
+
+Read-only inspection on 2026-09-09 confirmed that both hosted runs below completed locked restore, the Release build, all **306 tests** (API 47, media transport 65, platform 68, playback 126), Native AOT/SBOM publication, unsigned MSIX structural verification, and all artifact uploads. The build reported zero errors and one upstream generated WinUIEx `Icon` warning (`CS0618`).
+
+| Hosted run and source | MSIX filename | MSIX SHA-256 reported by `Package.ps1` |
+| --- | --- | --- |
+| [34300925860](https://github.com/moooyo/emby-client-winui3/actions/runs/34300925860), `023b97dce33633e14aafd63b16b750a21c2e73f1` | `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-015546017-7b5542e9.msix` | `71D6D92B89E1CFC84CF2356809AE5DC09113C3E5F605D5D44A517CA1ED6E4C26` |
+| [34301423262](https://github.com/moooyo/emby-client-winui3/actions/runs/34301423262), `a2e4e4338e1b1086defe8a97c096ffee87a917f9` | `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-020245296-941750f5.msix` | `996D6E72C283B43F15D9485D1E23CAB68FAB1CABDE89FE61FE1AE8F591E0A278` |
+
+The corresponding uploaded MSIX archives include the package, checksum, and review JSON. The earlier [artifact 10084962519](https://github.com/moooyo/emby-client-winui3/actions/runs/34300925860/artifacts/10084962519) is 54,161,198 bytes with archive digest `sha256:1df4a462932a54ec1d2336b79d3652643a53dc12d6f8660fe8ac4281cf6ebac9`. The latest [artifact 10085120746](https://github.com/moooyo/emby-client-winui3/actions/runs/34301423262/artifacts/10085120746), named `emby-client-windows-x64-msix-unsigned-a2e4e4338e1b1086defe8a97c096ffee87a917f9`, is 54,167,100 bytes with archive digest `sha256:b859fec3d237a5b355c9ae13dcbb10bc3f2ec338982010b4cc843132a66d1f3e`. Archive size/digest and contained MSIX size/digest are different identities; no contained package length is inferred from the archive metadata.
+
+The audit used `gh run view` job/step conclusions and logs plus the Actions artifacts API. It did not download, locally rehash, sign, or install either package. Both packaging logs explicitly report structural verification success while leaving installation and packaged runtime behavior unverified. [CI evidence](ci.md#hosted-packaging-receipts) records the AOT and log archive metadata as well.
+
+These exact heads precede the new queue editor, diagnostics/Retry UI, and subsequent network fixes. Their success establishes the hosted packaging pipeline for those revisions, not acceptance of later source changes or an install-tested release. A fresh candidate and its own receipt remain necessary for later revisions.
+
 ## Future single-project MSIX path
 
 The application already has `EnableMsixTooling=true`, and Windows App SDK supports single-project MSIX. The documented automated build switch is `GenerateAppxPackageOnBuild=true`; a packaged configuration also needs the intended `WindowsPackageType` and signing settings. That route recompiles or republishes the application and should receive its own build, AOT, packaging, and runtime validation. It was deliberately not executed during this stage while the main development task was testing native playback. See [single-project MSIX automation](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/single-project-msix#automate-building-and-packaging-your-single-project-msix-app).

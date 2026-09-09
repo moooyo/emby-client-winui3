@@ -1,0 +1,40 @@
+<ContentDialog
+    x:Class="EmbyClient.App.Views.PlaybackQueueDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:services="using:EmbyClient.App.Services"
+    Title="Play queue"
+    CloseButtonText="Close"
+    DefaultButton="Close">
+    <Grid Width="480" MaxHeight="480" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            <RowDefinition Height="*" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="CountText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <TextBlock Grid.Row="1" Text="Queued items play before automatic episode suggestions. The queue is cleared when you disconnect."
+                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Grid Grid.Row="2" MinHeight="120">
+            <TextBlock x:Name="EmptyText" Text="Your queue is empty. Add a movie or episode from the library."
+                       TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="340" />
+            <ListView x:Name="QueueList" SelectionMode="Single" MaxHeight="300"
+                      AutomationProperties.Name="Queued media" SelectionChanged="QueueSelectionChanged"
+                      ContainerContentChanging="QueueContainerContentChanging" KeyDown="QueueKeyDown">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="services:PlaybackQueueEntry">
+                        <StackPanel Padding="0,6" Spacing="2">
+                            <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind Detail}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
+            <Button x:Name="MoveUpButton" Content="Move up" AutomationProperties.Name="Move selected queue item up" Click="MoveUpClicked" IsEnabled="False" />
+            <Button x:Name="MoveDownButton" Content="Move down" AutomationProperties.Name="Move selected queue item down" Click="MoveDownClicked" IsEnabled="False" />
+            <Button x:Name="RemoveButton" Content="Remove" AutomationProperties.Name="Remove selected queue item" Click="RemoveClicked" IsEnabled="False" />
+            <Button x:Name="ClearButton" Content="Clear queue" AutomationProperties.Name="Clear all queued items" Click="ClearClicked" IsEnabled="False" />
+        </StackPanel>
+    </Grid>
+</ContentDialog>

@@ -16,7 +16,8 @@ public sealed partial class PlayerView : UserControl
     private PlaybackCoordinator? _coordinator;
     private NativePlaybackEngine? _engine;
     private BaseItemDto? _item;
-    private readonly Queue<BaseItemDto> _queue = new();
+    private readonly TransientPlaybackQueue _queue = new();
+    private PlaybackQueueDialog? _queueDialog;
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly PlaybackDisplayRequest _displayRequest = new();
     private readonly PlaybackNotificationOwner _notificationOwner = new();
@@ -28,19 +29,27 @@ public sealed partial class PlayerView : UserControl
     private CancellationTokenSource? _playRequest;
     private long _playIntent;
     private bool _expiredReported;
+    private Guid? _retryRecoveryId;
+    private long _retryIntent;
+    private bool _retryInProgress;
 
     public event EventHandler? BackRequested;
     public event EventHandler? FullscreenRequested;
     public event EventHandler? SessionExpired;
+    public event EventHandler? QueueChanged;
+    public int QueueCount => _queue.Count;
+    public bool IsQueueOpen => _queueDialog is not null;
 
     public PlayerView()
     {
         InitializeComponent();
+        _queue.Changed += (_, _) => UpdateQueueControls();
         Timeline.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrubbing = true), true);
         Timeline.AddHandler(PointerReleasedEvent, new PointerEventHandler(TimelineReleased), true);
         _clock.Tick += (_, _) =>
         {
             UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
+            UpdateRecoveryControls();
             UpdatePosition();
         };
         _updating = true;
@@ -63,32 +72,49 @@ public sealed partial class PlayerView : UserControl
         _engine = engine;
         engine.MediaCommandRequested += SystemMediaCommandRequested;
         engine.EventReceived += EnginePlaybackStateChanged;
+        engine.Diagnostic += EngineDiagnosticReceived;
         _coordinator = new PlaybackCoordinator(session.Api, engine);
         _coordinator.StatusChanged += CoordinatorStatusChanged;
-        _coordinator.Diagnostic += (sender, diagnostic) => DispatcherQueue.TryEnqueue(() =>
-        {
-            if (!ReferenceEquals(sender, _coordinator)) return;
-            if (diagnostic.Operation == "Fallback") return;
-            if (diagnostic.ErrorCode == "AuthenticationExpired") { ReportExpiredSession(); return; }
-            PlaybackNotice.Message = "A playback update could not be confirmed by the server. Check your connection if your progress is not saved.";
-            PlaybackNotice.Severity = InfoBarSeverity.Warning;
-            PlaybackNotice.IsOpen = true;
-        });
+        _coordinator.Diagnostic += CoordinatorDiagnosticReceived;
+        BeginDiagnosticPlayback(_playIntent);
         AutoPlayNext.IsChecked = session.User.Configuration?.EnableNextEpisodeAutoPlay != false;
         _bitrate = QualitySelector.SelectedItem is ComboBoxItem { Tag: long desiredBitrate } ? desiredBitrate : 20_000_000;
         if (session.User.Policy?.RemoteClientBitrateLimit is long limit && limit > 0)
             _bitrate = Math.Min(_bitrate, limit);
+        UpdateQueueControls();
         _clock.Start();
     }
 
-    public void Enqueue(BaseItemDto item)
+    internal QueueAddResult Enqueue(BaseItemDto item) => _session is null ? QueueAddResult.InvalidItem : _queue.TryAdd(item);
+
+    public async Task ShowQueueAsync(XamlRoot xamlRoot, ElementTheme theme)
     {
-        _queue.Enqueue(item);
-        NextButton.IsEnabled = true;
-        NextButton.Content = $"Next in queue ({_queue.Count})";
+        if (_session is null || IsModalOpen) return;
+        var dialog = new PlaybackQueueDialog(_queue) { XamlRoot = xamlRoot, RequestedTheme = theme };
+        _queueDialog = dialog;
+        UpdateQueueControls();
+        try { await dialog.ShowAsync(); }
+        finally
+        {
+            dialog.Detach();
+            if (ReferenceEquals(_queueDialog, dialog)) _queueDialog = null;
+            UpdateQueueControls();
+        }
     }
 
-    public async Task PlayItemAsync(BaseItemDto item, long startPositionTicks = 0)
+    private void UpdateQueueControls()
+    {
+        QueueButton.Content = $"Queue ({_queue.Count})";
+        QueueButton.IsEnabled = _session is not null && !IsModalOpen;
+        DiagnosticsButton.IsEnabled = !IsModalOpen;
+        NextButton.IsEnabled = _session is not null && _queue.Count > 0 && !_advancing;
+        NextButton.Content = _queue.Count > 0 ? $"Next in queue ({_queue.Count})" : "Next in queue";
+        QueueChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public Task PlayItemAsync(BaseItemDto item, long startPositionTicks = 0) => PlayItemCoreAsync(item, startPositionTicks);
+
+    private async Task PlayItemCoreAsync(BaseItemDto item, long startPositionTicks, Guid? queuedEntryId = null)
     {
         var session = _session;
         var coordinator = _coordinator;
@@ -97,13 +123,16 @@ public sealed partial class PlayerView : UserControl
         PlaybackNotice.IsOpen = false;
         SetTransportAvailability(false);
         PauseButton.IsEnabled = false;
-        TitleText.Text = item.Name ?? "Now playing";
-        _item = item;
         await RunAsync(async () =>
         {
-            var detail = await session.Api.GetItemAsync(item.Id, cancellationToken);
+            bool OwnsRequest() => intent == _playIntent && ReferenceEquals(session, _session)
+                && ReferenceEquals(coordinator, _coordinator);
+            var detail = queuedEntryId is { } entryId
+                ? await _queue.TryPrepareAndConsumeAsync(entryId,
+                    (queued, token) => session.Api.GetItemAsync(queued.Id!, token), OwnsRequest, cancellationToken)
+                : await session.Api.GetItemAsync(item.Id, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            if (intent != _playIntent || !ReferenceEquals(session, _session)) return;
+            if (detail is null || !OwnsRequest()) return;
             _item = detail;
             TitleText.Text = _item.Name ?? item.Name ?? "Now playing";
             PopulateSources();
@@ -123,6 +152,7 @@ public sealed partial class PlayerView : UserControl
             coordinator.ActiveContext?.PlaybackId, isOpening: args.Status == PlaybackStatus.Opening,
             isNegotiating: args.Status == PlaybackStatus.Negotiating, isEnded: args.Status == PlaybackStatus.Ended);
         if (notification is not { } ticket) return;
+        RecordDiagnosticStatus(ticket, args);
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!ReferenceEquals(sender, _coordinator) || !_notificationOwner.IsCurrent(ticket)) return;
@@ -139,7 +169,10 @@ public sealed partial class PlayerView : UserControl
                 if (_displayedPlayback != context.PlaybackId) PopulateTracks(context);
             }
             if (args.Status == PlaybackStatus.Failed)
+            {
+                SetRecoveryCandidate(args.Recovery);
                 ShowPlaybackError(args.ErrorCode);
+            }
             if (args.Status is PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle)
                 Timeline.IsEnabled = false;
             UpdatePosition();
@@ -147,22 +180,73 @@ public sealed partial class PlayerView : UserControl
                 or PlaybackStatus.Buffering or PlaybackStatus.Seeking);
             PauseButton.IsEnabled = args.Status is PlaybackStatus.Playing or PlaybackStatus.Paused
                 or PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle;
+            UpdateRecoveryControls();
             if (args.Status == PlaybackStatus.Ended && AutoPlayNext.IsChecked == true)
                 _ = AdvanceAsync(ticket);
         });
     }
 
-    private (long Intent, CancellationToken Token) BeginPlayRequest(PlaybackCoordinator coordinator)
+    private (long Intent, CancellationToken Token) BeginPlayRequest(PlaybackCoordinator coordinator, bool preserveRecovery = false)
     {
         var intent = ++_playIntent;
         // Invalidate old notifications before cancellation can publish another terminal status.
         _notificationOwner.BeginPlay(coordinator, intent, coordinator.ActiveContext?.PlaybackId);
+        BeginDiagnosticPlayback(intent);
         _displayRequest.ResumeTracking();
-        _playRequest?.Cancel();
+        // Recovery deliberately retains its retired owner's token until Core consumes the target.
+        // Disposing that CTS releases its resources without cancelling recovery; normal Play/Restart still cancel.
+        if (!preserveRecovery) _playRequest?.Cancel();
         _playRequest?.Dispose();
         _playRequest = new CancellationTokenSource();
         _displayedPlayback = null;
+        _retryRecoveryId = null;
+        UpdateRecoveryControls();
         return (intent, _playRequest.Token);
+    }
+
+    private void SetRecoveryCandidate(PlaybackRecovery? recovery)
+    {
+        _retryRecoveryId = recovery?.RecoveryId;
+        _retryIntent = _playIntent;
+        UpdateRecoveryControls();
+    }
+
+    private void UpdateRecoveryControls()
+    {
+        var coordinator = _coordinator;
+        var available = !_retryInProgress && _retryIntent == _playIntent && _retryRecoveryId.HasValue
+            && coordinator is not null && coordinator.Status == PlaybackStatus.Failed && coordinator.CanRetry
+            && coordinator.Recovery?.RecoveryId == _retryRecoveryId;
+        RetryButton.IsEnabled = available;
+        RetryButton.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void RetryClicked(object sender, RoutedEventArgs args)
+    {
+        var coordinator = _coordinator;
+        var recovery = coordinator?.Recovery;
+        if (_retryInProgress || _retryIntent != _playIntent || _retryRecoveryId is not { } expected
+            || coordinator is null || coordinator.Status != PlaybackStatus.Failed || !coordinator.CanRetry
+            || recovery?.RecoveryId != expected) return;
+        _retryInProgress = true;
+        var (intent, token) = BeginPlayRequest(coordinator, preserveRecovery: true);
+        try
+        {
+            await RunAsync(async () =>
+            {
+                if (!ReferenceEquals(coordinator, _coordinator) || intent != _playIntent
+                    || coordinator.Recovery?.RecoveryId != expected) return;
+                _notificationOwner.Arm(intent);
+                await coordinator.RetryAsync(expected, token);
+            });
+        }
+        finally
+        {
+            _retryInProgress = false;
+            if (ReferenceEquals(coordinator, _coordinator) && intent == _playIntent)
+                SetRecoveryCandidate(coordinator.Recovery);
+            UpdateRecoveryControls();
+        }
     }
 
     private Task ReplayCurrentAsync()
@@ -280,7 +364,11 @@ public sealed partial class PlayerView : UserControl
         var coordinator = _coordinator;
         if (!ReferenceEquals(sender, _engine) || coordinator?.ActiveContext?.PlaybackId != args.PlaybackId) return;
         if (args.Command == NativeMediaCommand.Stop)
+        {
             _notificationOwner.BeginStop(coordinator, ++_playIntent, args.PlaybackId);
+            _retryRecoveryId = null;
+            UpdateRecoveryControls();
+        }
         await RunAsync(async () =>
         {
             if (!ReferenceEquals(coordinator, _coordinator) || coordinator.ActiveContext?.PlaybackId != args.PlaybackId) return;
@@ -392,6 +480,10 @@ public sealed partial class PlayerView : UserControl
     }
 
     private async void NextClicked(object sender, RoutedEventArgs args) => await AdvanceAsync();
+    private async void QueueClicked(object sender, RoutedEventArgs args) =>
+        await RunAsync(() => ShowQueueAsync(XamlRoot, RequestedTheme));
+    private async void DiagnosticsClicked(object sender, RoutedEventArgs args) =>
+        await RunAsync(() => ShowDiagnosticsAsync(XamlRoot, RequestedTheme));
     private void FullscreenClicked(object sender, RoutedEventArgs args) => FullscreenRequested?.Invoke(this, EventArgs.Empty);
     private void BackClicked(object sender, RoutedEventArgs args) => BackRequested?.Invoke(this, EventArgs.Empty);
 
@@ -404,9 +496,10 @@ public sealed partial class PlayerView : UserControl
         if (_advancing || session is null) return;
         if (completion is { } ended && !_notificationOwner.TryBeginAdvance(ended)) return;
         _advancing = true;
+        UpdateQueueControls();
         try
         {
-            BaseItemDto? next = _queue.Count > 0 ? _queue.Dequeue() : null;
+            BaseItemDto? next = _queue.Next?.Item;
             if (next is null && item?.SeriesId is { } seriesId)
             {
                 var episodes = await session.Api.GetEpisodesAsync(seriesId, item.SeasonId, cancellationToken);
@@ -421,9 +514,10 @@ public sealed partial class PlayerView : UserControl
             cancellationToken.ThrowIfCancellationRequested();
             if (intent != _playIntent || !ReferenceEquals(session, _session)
                 || completion is { } completed && !_notificationOwner.IsCurrent(completed)) return;
-            NextButton.IsEnabled = _queue.Count > 0;
-            NextButton.Content = _queue.Count > 0 ? $"Next in queue ({_queue.Count})" : "Next in queue";
-            if (next is not null) await PlayItemAsync(next);
+            // Explicit queue entries take priority even when added during the automatic episode lookup.
+            // The entry remains editable until its detail request succeeds and the same head still owns playback.
+            if (_queue.Next is { } queued) await PlayItemCoreAsync(queued.Item, 0, queued.EntryId);
+            else if (next is not null) await PlayItemAsync(next);
         }
         catch (EmbyApiException ex) when (ex.IsAuthenticationFailure && ex.ApplicationErrorCode != "ParentalControl")
         {
@@ -437,7 +531,7 @@ public sealed partial class PlayerView : UserControl
                 && (!completion.HasValue || _notificationOwner.IsCurrent(completion.Value)))
             { PlaybackNotice.Message = UiErrors.Describe(ex); PlaybackNotice.IsOpen = true; }
         }
-        finally { _advancing = false; }
+        finally { _advancing = false; UpdateQueueControls(); }
     }
 
     private async Task RunAsync(Func<Task> operation)
@@ -456,13 +550,13 @@ public sealed partial class PlayerView : UserControl
 
     private void ShowPlaybackError(string? code)
     {
-        if (code == "AuthenticationExpired") { ReportExpiredSession(); return; }
+        if (code is "AuthenticationExpired" or "AuthenticationRequired") { ReportExpiredSession(); return; }
         PlaybackNotice.Severity = InfoBarSeverity.Error;
         PlaybackNotice.Message = code switch
         {
             "NoCompatibleSource" or "NoCompatibleTranscode" => "The server has no compatible stream for these playback settings.",
             "NegotiationRejected" => "The server did not allow this playback. Check your account permissions and quality settings.",
-            "AccessRestricted" => "The server's access rules do not allow this playback.",
+            "AccessRestricted" or "NotAllowed" => "The server's access rules do not allow this playback.",
             "UnsupportedTrack" or "UnsupportedSubtitle" => "This track cannot be played with the current settings. Choose another track or turn subtitles off.",
             _ => "Playback could not start or was interrupted. Check your connection, or choose another version or quality."
         };
@@ -482,6 +576,8 @@ public sealed partial class PlayerView : UserControl
     {
         _displayRequest.Suspend();
         var intent = ++_playIntent;
+        _retryRecoveryId = null;
+        UpdateRecoveryControls();
         var coordinator = _coordinator;
         if (coordinator is not null) _notificationOwner.BeginStop(coordinator, intent, coordinator.ActiveContext?.PlaybackId);
         else _notificationOwner.Invalidate(intent);
@@ -492,8 +588,13 @@ public sealed partial class PlayerView : UserControl
     public async Task DisconnectAsync()
     {
         _displayRequest.Suspend();
+        _queueDialog?.Hide();
+        _diagnosticsDialog?.Hide();
         _clock.Stop();
         _notificationOwner.Invalidate(++_playIntent);
+        _retryRecoveryId = null;
+        UpdateRecoveryControls();
+        _queue.Clear();
         _playRequest?.Cancel();
         _playRequest?.Dispose();
         _playRequest = null;
@@ -507,15 +608,21 @@ public sealed partial class PlayerView : UserControl
         }
         _coordinator = null;
         _session = null;
+        UpdateQueueControls();
         if (coordinator is not null)
         {
             coordinator.StatusChanged -= CoordinatorStatusChanged;
-            try { await coordinator.DisposeAsync(); }
-            finally { _displayRequest.Suspend(); }
+            var retired = false;
+            try { await coordinator.DisposeAsync(); retired = true; }
+            finally
+            {
+                coordinator.Diagnostic -= CoordinatorDiagnosticReceived;
+                if (engine is not null) engine.Diagnostic -= EngineDiagnosticReceived;
+                RecordDiagnosticRetirement(retired);
+                _displayRequest.Suspend();
+            }
         }
-        _queue.Clear();
         _item = null;
         _displayedPlayback = null;
-        NextButton.IsEnabled = false;
     }
 }

@@ -17,6 +17,10 @@ Connect the app to `http://127.0.0.1:18960` using the development credentials. `
 
 Stop the server with Ctrl+C in its managed terminal session. No independent visible window or background service installation is required.
 
+For a bounded real-AOT scrolling/memory trial, see [Large-library acceptance](Large-Library-Acceptance.md). The optional `--large-library-items 5000` mode adds a separate paged library; `--image-delay-ms 100` adds a bounded image delay, and `--fail-first-playback-info` injects one playback-only HTTP 503 for a Retry trial. All three are off by default and require no real server or account. Use a separate port and isolated artifact output as shown in that guide.
+
+The project excludes local `artifacts/**`, `bin/**`, and `obj/**` from default SDK item discovery. This prevents generated assembly files or published payloads from being compiled or copied by later normal solution builds. Do not remove a running artifact directory to work around build errors; retain the project exclusions and use a separate output directory for each active fixture instance.
+
 ## Implemented development routes
 
 All Emby-shaped paths use the `/emby` prefix. Except public metadata/user discovery and login, routes require a token issued by the fixture. Original-byte media also accepts that fixture token in `api_key` for clients that cannot attach headers.
@@ -29,7 +33,7 @@ All Emby-shaped paths use the `/emby` prefix. Except public metadata/user discov
 - Authenticated `GET`/`HEAD /Videos/{Id}/stream`, using ASP.NET Core file-range processing (`200`, `206`, `416`). The fixture does not pretend to transcode, expose HLS, open live sources, or deliver subtitles.
 - Start, progress, stop, capability registration, and encoding-cleanup counters. Playback reports must reference a play session previously issued for that item.
 
-The catalog is deliberately small and does not reproduce every Emby filter, sort order, permission, version difference, or mutation rule. A completed synthetic playback marks the item played at 90% of its duration; that threshold is a fixture policy, not an assertion about Emby configuration.
+The default catalog is deliberately small and does not reproduce every Emby filter, sort order, permission, version difference, or mutation rule. A completed synthetic playback marks the item played at 90% of its duration; that threshold is a fixture policy, not an assertion about Emby configuration.
 
 ## Read development statistics
 

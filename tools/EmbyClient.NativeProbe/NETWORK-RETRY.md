@@ -1,0 +1,15 @@
+# Bounded real network-failure retry probe
+
+The independent `--network-retry --media-dir <generated-directory>` mode requires the generated 180-second H.264/AAC fixture and the owned synthetic server on port 18961. It uses the default native player owner and PlaybackCoordinator. It does not touch the official validation server, another application's sessions, or global network settings. It never synthesizes an engine Failed event.
+
+The range proxy parses the local synthetic MP4's top-level boxes and permits only the first 512 KiB and the block-aligned moov metadata region during initial playback. Every other range waits behind an explicit gate. The report retains request offsets, forwarded byte counts, status codes, phases, and completion state without recording URLs or authentication headers. The middle byte must remain undelivered and the 90-second target must be outside the native buffered time ranges before faulting.
+
+After actual native playback advances to a nonzero position, the coordinator pauses. The probe requests a seek to the cold 90-second target and releases pending/new requests with real HTTP 503 responses. The fixture remains valid media; only transport availability changes. The initial acceptance gate requires an observed cold HTTP 503 and a correctly classified native-engine NetworkFailure. Native failure kind and HRESULT are recorded independently. A different native result or an already-buffered target is a failed observation, not a retry pass.
+
+After the relay classification repair, a probe-only read observes the product's confirmed relay failure code during the engine Failed event. Both that code and the engine code must be NetworkFailure. The raw Windows failure enum/HRESULT remain recorded when emitted; the product may retire the source before Windows emits its own failure. This does not synthesize a failure event: the causal input remains the actual upstream HTTP 503.
+
+Only after a recoverable failure is offered does the probe restore the proxy and call RetryAsync with the observed recovery ID. Recovery must use a new playback ID and server session, bind a source, reach the recorded nonzero target, preserve paused intent, and subsequently resume with actual native-clock advancement. Both started sessions must have successful ordered Start/Stop reports. Old proxy bindings must issue no new requests after retry, and final native/API/media cleanup must be quiet.
+
+The report distinguishes the original playing/paused position, requested seek target, SeekCompleted events, native failure snapshot, and Recovery.Selection.StartPositionTicks. A cursor at an unsuccessful or not-yet-decoded seek target is never described as a displayed or decoded frame. Retry observations cover native open/clock/pause, not presented pixels or audible output.
+
+This single bounded scenario is separate from the previously completed twenty-loop DirectStream/HLS resource runs. No resource threshold is adjusted or reevaluated here. A failed classification attempt is retained rather than rewritten after a later repair.

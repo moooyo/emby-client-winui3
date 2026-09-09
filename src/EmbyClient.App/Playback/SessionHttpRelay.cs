@@ -26,14 +26,17 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
     private readonly HashSet<RelayConnection> _clients = [];
     private readonly string _target;
     private readonly string _authority;
+    private readonly Action<string>? _failed;
     private readonly Task _acceptLoop;
     private readonly Lazy<Task> _dispose;
     private readonly CancellationTokenRegistration _lifetimeRegistration;
     private int _stopRequested;
+    private int _failureReported;
 
-    private SessionHttpRelay(HttpRangeStream source, string? container, CancellationToken lifetime)
+    private SessionHttpRelay(HttpRangeStream source, string? container, CancellationToken lifetime, Action<string>? failed)
     {
         _source = source;
+        _failed = failed;
         _shutdownToken = _shutdown.Token;
         SourceLength = source.Length;
         var extension = SelectExtension(container, source.ContentType);
@@ -66,7 +69,7 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
     internal string ContentType { get; }
 
     internal static async Task<SessionHttpRelay> OpenAsync(ScopedMediaTransport transport, Uri upstream,
-        string? container, CancellationToken lifetime)
+        string? container, CancellationToken lifetime, Action<string>? failed = null)
     {
         ArgumentNullException.ThrowIfNull(transport);
         ArgumentNullException.ThrowIfNull(upstream);
@@ -75,7 +78,7 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
         try
         {
             lifetime.ThrowIfCancellationRequested();
-            return new SessionHttpRelay(source, container, lifetime);
+            return new SessionHttpRelay(source, container, lifetime, failed);
         }
         catch (OperationCanceledException)
         {
@@ -161,9 +164,18 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
                 while (remaining > 0)
                 {
                     operation.CancelAfter(TransferIdleTimeout);
-                    var read = await cursor.ReadAsync(buffer.AsMemory(0, (int)Math.Min(remaining, CopyBufferSize)), operation.Token)
-                        .ConfigureAwait(false);
-                    if (read == 0) throw new PlaybackException("NetworkFailure");
+                    int read;
+                    try
+                    {
+                        read = await cursor.ReadAsync(buffer.AsMemory(0, (int)Math.Min(remaining, CopyBufferSize)), operation.Token)
+                            .ConfigureAwait(false);
+                        if (read == 0) throw new PlaybackException("NetworkFailure");
+                    }
+                    catch (PlaybackException error)
+                    {
+                        ReportUpstreamFailure(error.ErrorCode);
+                        throw;
+                    }
                     if (!responseStarted)
                     {
                         responseStarted = true;
@@ -355,6 +367,25 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
         RelayConnection[] clients;
         lock (_clientsLock) clients = _clients.ToArray();
         foreach (var client in clients) client.Client.Dispose();
+    }
+
+    private void ReportUpstreamFailure(string errorCode)
+    {
+        var knownCode = errorCode switch
+        {
+            "NetworkFailure" => "NetworkFailure",
+            "AuthenticationRequired" => "AuthenticationRequired",
+            "NotAllowed" => "NotAllowed",
+            "UnsupportedFormat" => "UnsupportedFormat",
+            _ => null
+        };
+        if (knownCode is null || _shutdownToken.IsCancellationRequested
+            || Interlocked.Exchange(ref _failureReported, 1) != 0) return;
+        // Report only a confirmed upstream read failure. Downstream socket closure, invalid local
+        // requests, and cancellation are handled elsewhere without failing the playback session.
+        if (_shutdownToken.IsCancellationRequested) return;
+        try { _failed?.Invoke(knownCode); }
+        catch { }
     }
 
     public ValueTask DisposeAsync() => new(_dispose.Value);

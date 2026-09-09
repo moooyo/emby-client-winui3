@@ -22,6 +22,8 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         InitializeComponent();
+        Player.QueueChanged += (_, _) => UpdateQueueButton();
+        UpdateQueueButton();
         Loaded += OnLoaded;
         KeyDown += OnPageKeyDown;
     }
@@ -142,6 +144,7 @@ public sealed partial class MainPage : Page
         RestoreButton.IsEnabled = available && CanRestoreSelectedAccount();
         foreach (var button in AccountToolbar.Children.OfType<Button>())
             button.IsEnabled = !_sessionTransition && !_shuttingDown;
+        UpdateQueueButton();
         ConnectingProgress.Visibility = connecting || _sessionTransition ? Visibility.Visible : Visibility.Collapsed;
         CancelConnection.Visibility = connecting && !_sessionTransition && !_shuttingDown ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -158,10 +161,16 @@ public sealed partial class MainPage : Page
         }
         if (args.AddToQueue)
         {
-            Player.Enqueue(args.Item);
-            ShowNotice("Added to the play queue.", InfoBarSeverity.Success);
+            var result = Player.Enqueue(args.Item);
+            ShowNotice(result switch
+            {
+                QueueAddResult.Added => "Added to the play queue.",
+                QueueAddResult.Full => $"The queue is full ({TransientPlaybackQueue.MaximumItems} items). Remove an item or clear the queue before adding more.",
+                _ => "This item cannot be added to the play queue."
+            }, result == QueueAddResult.Added ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
             return;
         }
+        Notice.IsOpen = false;
         Player.Visibility = Visibility.Visible;
         Library.Visibility = Visibility.Collapsed;
         AccountToolbar.Visibility = Visibility.Collapsed;
@@ -182,8 +191,30 @@ public sealed partial class MainPage : Page
 
     private void PlayerFullscreenRequested(object? sender, EventArgs args) => FullscreenRequested?.Invoke(this, EventArgs.Empty);
 
+    private void UpdateQueueButton()
+    {
+        LibraryQueueButton.Content = $"Queue ({Player.QueueCount})";
+        LibraryQueueButton.IsEnabled = _session is not null && !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
+        LibraryDiagnosticsButton.IsEnabled = !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
+    }
+
+    private async void QueueClicked(object sender, RoutedEventArgs args)
+    {
+        if (_session is null || _sessionTransition || _shuttingDown) return;
+        try { await Player.ShowQueueAsync(XamlRoot, RequestedTheme); }
+        catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error); }
+    }
+
+    private async void DiagnosticsClicked(object sender, RoutedEventArgs args)
+    {
+        if (_sessionTransition || _shuttingDown) return;
+        try { await Player.ShowDiagnosticsAsync(XamlRoot, RequestedTheme); }
+        catch (Exception) { ShowNotice("Playback diagnostics could not be opened. Try again.", InfoBarSeverity.Warning); }
+    }
+
     private async void OnPageKeyDown(object sender, KeyRoutedEventArgs args)
     {
+        if (Player.IsModalOpen) return;
         if (Player.Visibility != Visibility.Visible) return;
         if (args.Key == VirtualKey.F11)
         {

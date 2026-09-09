@@ -20,6 +20,8 @@
     <Compile Include="../../src/EmbyClient.App/Services/WindowPlacementStore.cs" Link="Product/WindowPlacementStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackNotificationOwner.cs" Link="Product/PlaybackNotificationOwner.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/TransientPlaybackQueue.cs" Link="Product/TransientPlaybackQueue.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PlaybackDiagnostics.cs" Link="Product/PlaybackDiagnostics.cs" />
     <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
   </ItemGroup>
 </Project>

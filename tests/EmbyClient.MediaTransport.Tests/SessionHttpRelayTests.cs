@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -334,6 +335,119 @@ public sealed class SessionHttpRelayTests
         {
             await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation);
         }
+    }
+
+    [Theory]
+    [InlineData(503, "NetworkFailure")]
+    [InlineData(401, "AuthenticationRequired")]
+    [InlineData(403, "NotAllowed")]
+    [InlineData(416, "UnsupportedFormat")]
+    public async Task A_cold_upstream_range_failure_preserves_its_category_and_notifies_only_once(int status, string expectedCode)
+    {
+        var data = CreateData(BlockSize * 2);
+        var failures = new ConcurrentQueue<string>();
+        await using var server = new LoopbackServer((request, _) => Task.FromResult(
+            request.Headers["Range"].StartsWith($"bytes={BlockSize}-", StringComparison.Ordinal)
+                ? new LoopbackResponse(status, []) : RangeResponse(request, data)));
+        await using var transport = CreateTransport(server.BaseUri);
+        await using var relay = await SessionHttpRelay.OpenAsync(transport, server.BaseUri, "mp4", TestCancellation, failures.Enqueue);
+        Assert.Empty(failures);
+
+        var request = BuildRequest(relay.LocalUri, extraHeaders: $"Range: bytes={BlockSize}-{BlockSize + 3}\r\n");
+        var first = await SendAsync(relay.LocalUri, request);
+        var second = await SendAsync(relay.LocalUri, request);
+
+        Assert.Equal(502, first.StatusCode);
+        Assert.Equal(502, second.StatusCode);
+        Assert.Empty(first.Body);
+        Assert.Equal(expectedCode, Assert.Single(failures));
+        Assert.Equal(3, server.Requests.Count);
+    }
+
+    [Fact]
+    public async Task An_upstream_failure_after_local_headers_and_bytes_still_reports_the_confirmed_cause()
+    {
+        var data = CreateData(BlockSize * 2);
+        var failures = new ConcurrentQueue<string>();
+        await using var server = new LoopbackServer((request, _) => Task.FromResult(
+            request.Headers["Range"].StartsWith($"bytes={BlockSize}-", StringComparison.Ordinal)
+                ? new LoopbackResponse(503, []) : RangeResponse(request, data)));
+        await using var transport = CreateTransport(server.BaseUri);
+        await using var relay = await SessionHttpRelay.OpenAsync(transport, server.BaseUri, "mp4", TestCancellation, failures.Enqueue);
+
+        var response = await SendAsync(relay.LocalUri,
+            BuildRequest(relay.LocalUri, extraHeaders: $"Range: bytes=0-{data.Length - 1}\r\n"));
+
+        Assert.Equal(206, response.StatusCode);
+        Assert.Equal(data.Length.ToString(CultureInfo.InvariantCulture), response.Headers["Content-Length"]);
+        Assert.Equal(data.AsSpan(0, BlockSize).ToArray(), response.Body);
+        Assert.Equal("NetworkFailure", Assert.Single(failures));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Stopping_a_pending_upstream_read_does_not_report_a_playback_failure(bool cancelLifetime)
+    {
+        var data = CreateData(BlockSize * 2);
+        var failures = new ConcurrentQueue<string>();
+        var readArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var server = new LoopbackServer((request, _) =>
+        {
+            var response = RangeResponse(request, data);
+            if (!request.Headers["Range"].StartsWith($"bytes={BlockSize}-", StringComparison.Ordinal))
+                return Task.FromResult(response);
+            readArrived.TrySetResult();
+            return Task.FromResult(response with { Body = [], DeclaredContentLength = response.Body.Length, HoldBodyOpen = true });
+        });
+        await using var transport = CreateTransport(server.BaseUri);
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestCancellation);
+        var relay = await SessionHttpRelay.OpenAsync(transport, server.BaseUri, "mp4", lifetime.Token, failures.Enqueue);
+        try
+        {
+            using var client = await ConnectAndWriteAsync(relay.LocalUri,
+                BuildRequest(relay.LocalUri, extraHeaders: $"Range: bytes={BlockSize}-{BlockSize + 3}\r\n"));
+            var connectionEnd = ReadToEndWithDeadlineAsync(client.GetStream());
+            await readArrived.Task.WaitAsync(Deadline, TestCancellation);
+            if (cancelLifetime) lifetime.Cancel();
+            await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation);
+            await connectionEnd;
+            Assert.Empty(failures);
+        }
+        finally { await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation); }
+    }
+
+    [Fact]
+    public async Task Downstream_resets_release_connection_capacity_without_reporting_an_upstream_failure()
+    {
+        var data = CreateData(BlockSize * 8);
+        var failures = new ConcurrentQueue<string>();
+        await using var server = new LoopbackServer((request, _) => Task.FromResult(RangeResponse(request, data)));
+        await using var transport = CreateTransport(server.BaseUri);
+        await using var relay = await SessionHttpRelay.OpenAsync(transport, server.BaseUri, "mp4", TestCancellation, failures.Enqueue);
+        var clients = new List<TcpClient>();
+        try
+        {
+            for (var index = 0; index < 4; index++)
+            {
+                var client = new TcpClient(AddressFamily.InterNetwork) { ReceiveBufferSize = 1024 };
+                clients.Add(client);
+                await client.ConnectAsync(IPAddress.Loopback, relay.LocalUri.Port, TestCancellation).AsTask().WaitAsync(Deadline, TestCancellation);
+                var stream = client.GetStream();
+                await stream.WriteAsync(Encoding.ASCII.GetBytes(BuildRequest(relay.LocalUri)), TestCancellation);
+                Assert.Equal(1, await stream.ReadAsync(new byte[1], TestCancellation).AsTask().WaitAsync(Deadline, TestCancellation));
+            }
+            var waitingHead = SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri, method: "HEAD"));
+            Assert.NotSame(waitingHead, await Task.WhenAny(waitingHead, Task.Delay(100, TestCancellation)));
+            foreach (var client in clients)
+            {
+                client.LingerState = new LingerOption(true, 0);
+                client.Dispose();
+            }
+            Assert.Equal(200, (await waitingHead.WaitAsync(Deadline, TestCancellation)).StatusCode);
+            Assert.Empty(failures);
+        }
+        finally { foreach (var client in clients) client.Dispose(); }
     }
 
     private static string BuildRequest(Uri uri, string method = "GET", string? target = null,

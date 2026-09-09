@@ -28,7 +28,7 @@ Play or resume an item from its details. The player negotiates a source with the
 
 The player provides pause/resume, restart, a seek timeline, volume, mute, fullscreen, version selection, audio selection, subtitles, and a streaming bitrate limit. A selector is disabled when there is no alternative. Track indexes come from the selected Emby media source; they are not assumed to match arbitrary native decoder indexes.
 
-Changing the version, audio track, subtitle, or quality settings can restart the server stream. The coordinator preserves paused playback across this transition. Transcoded seeking can also require a new stream. A short delay during negotiation is expected. The bitrate setting is a maximum used during negotiation, not a guarantee that the server will deliver that exact bitrate. Final HLS timeline compatibility is still being validated; consult the capability matrix before relying on this development build for resumed transcoding.
+Changing the version, audio track, subtitle, or quality settings can restart the server stream. The coordinator preserves paused playback across this transition. Transcoded seeking can also require a new stream. A short delay during negotiation is expected. The bitrate setting is a maximum used during negotiation, not a guarantee that the server will deliver that exact bitrate. Finite VOD HLS has been verified against the documented Emby version; consult the capability matrix for the measured scope.
 
 The initial playback profile targets SDR H.264/AAC MP4 and server-generated HLS. Selected subtitles use server burning by default. Do not assume that installing an optional Windows codec makes it part of the application's advertised direct-play profile.
 
@@ -46,9 +46,17 @@ While video is actually playing, the client requests that Windows keep the displ
 
 ## Queue and episode continuation
 
-Add items to the transient queue from the library. **Next in queue** advances to the next queued item. Queue contents are cleared when disconnecting or closing the application and are not saved as an Emby playlist.
+Add items to the transient queue from the library. Open **Queue** from the library or player to inspect up to 100 upcoming items. Select an entry to move it up or down, remove it, or clear the queue. The Delete key removes the selected entry. Duplicate items have independent queue positions. **Next in queue** advances to the first queued item. Queue contents are cleared when disconnecting or closing the application and are not saved as an Emby playlist.
 
 With **Play next automatically** enabled, natural completion advances through queued items and then looks for a following episode for a series item. The initial setting follows the Emby user's next-episode preference. Manually returning to the library stops playback rather than triggering automatic continuation.
+
+## Recover playback and inspect diagnostics
+
+After a recoverable connection or server failure, **Retry from last position** opens a new playback session with the retained position, source, tracks, bitrate limit, and pause state. Restore the connection before retrying. This action is available only while the failed playback still owns its recovery target. Starting another item, stopping, or disconnecting clears that target. **Restart** remains a separate action that starts the item from zero. Authentication and permission failures do not offer playback retry.
+
+Open **Diagnostics** from the library or player to inspect retained local playback events and application/runtime versions. The records contain fixed event/error categories, selected source codec categories, and random local playback IDs. They omit server addresses, accounts, titles, media paths, access tokens, and raw exception text. Source metadata does not prove which decoder or output format was used.
+
+**Copy snapshot** copies the safe JSON with clipboard history and roaming disabled. **Save snapshot** writes `%LOCALAPPDATA%\EmbyClient.Windows\diagnostics\snapshot.json`, replacing a previous snapshot. **Refresh** rebuilds the view from the bounded local records. Nothing is uploaded automatically. Diagnostic write failures do not interrupt playback.
 
 ## Current support limits
 

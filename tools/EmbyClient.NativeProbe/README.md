@@ -60,6 +60,8 @@ Final sanitized evidence is stored under `verification/` so reviewers do not dep
 
 The separate `--lifecycle-isolation` mode exercises the default player owner through actual Opening cancellation, actual decoder rejection, explicit retired-handler replay, stale-ID commands, and concurrent Opening-time disposal. See [ISOLATION.md](ISOLATION.md) for exact injection boundaries and limits. It is not a resource run. `Start-SyntheticFixture.ps1` launches the existing synthetic server from an isolated artifacts copy, avoiding locks on build output assemblies.
 
+The separate `--network-retry --media-dir <generated-directory>` mode observes a real cold-range HTTP fault and explicit coordinator retry. It requires the generated 180-second synthetic media and never injects an engine failure event. See [NETWORK-RETRY.md](NETWORK-RETRY.md) for the transport gate, position provenance, and acceptance limits.
+
 ## Owned official-server HLS validation
 
 `--real-hls --credentials-file <local-json-file>` is a separate mode for the explicitly authorized disposable Emby Server 4.9.5.0 instance. It accepts only an HTTP loopback URL on port 19096 and requires server ID `cf4feb10df224135877fc61204a28212` before logging in. The local JSON contains `ServerUrl`, `Username`, and `Password`; values are read in-process and are never accepted as CLI arguments, printed, or saved in reports. Authentication must return the same server ID. Item `5` must have the expected 59-61 second duration.

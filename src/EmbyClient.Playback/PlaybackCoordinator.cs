@@ -853,9 +853,9 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         var selection = session.Selection with
         {
             StartPositionTicks = AbsolutePosition(session),
-            MediaSourceId = session.Source?.Id ?? session.Selection.MediaSourceId,
-            AudioStreamIndex = session.Request?.AudioStreamIndex ?? session.Selection.AudioStreamIndex,
-            SubtitleStreamIndex = session.Request?.SubtitleStreamIndex ?? session.Selection.SubtitleStreamIndex
+            // Keep caller track intent: resolving a default index must not turn it into an explicit override.
+            // An explicit audio override disables direct streaming during the next negotiation.
+            MediaSourceId = session.Source?.Id ?? session.Selection.MediaSourceId
         };
         return new RecoveryTarget(new PlaybackRecovery
         {

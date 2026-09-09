@@ -73,7 +73,7 @@ internal static class FixtureRouter
         }
         if (parts is ["Users", _, "Items", "Resume"] && method == "GET")
         {
-            await Json(context, state.Query(request.Query, resume: true, forceRecursive: true), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
+            await Json(context, state.Query(request.Query, resume: true, forceRecursive: true, operation: "Resume"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
         }
         if (parts is ["Users", _, "Items", var itemId] && method == "GET")
         {
@@ -90,29 +90,45 @@ internal static class FixtureRouter
         }
         if (parts is ["Shows", "NextUp"] && method == "GET")
         {
-            await Json(context, state.Query(request.Query, nextUp: true, forceRecursive: true), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
+            await Json(context, state.Query(request.Query, nextUp: true, forceRecursive: true, operation: "NextUp"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
         }
         if (parts is ["Shows", var seriesId, "Seasons"] && method == "GET")
         {
-            await Json(context, state.Query(request.Query, seriesId, "Season"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
+            await Json(context, state.Query(request.Query, seriesId, "Season", operation: "Seasons"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
         }
         if (parts is ["Shows", var episodeSeriesId, "Episodes"] && method == "GET")
         {
             var seasonId = request.Query["SeasonId"].ToString();
             await Json(context, state.Query(request.Query, seasonId.Length > 0 ? seasonId : episodeSeriesId,
-                "Episode", forceRecursive: true), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
+                "Episode", forceRecursive: true, operation: "Episodes"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
         }
         if (parts.Length >= 4 && parts[0] is "Items" or "Users" && parts[2] == "Images" && method is "GET" or "HEAD")
         {
-            var png = state.Poster(parts[0] == "Users" ? "1001" : parts[1]);
-            if (png is null) { context.Response.StatusCode = 404; return; }
-            context.Response.Headers.CacheControl = "private, max-age=3600";
-            await Results.Bytes(png, "image/png").ExecuteAsync(context); return;
+            state.ImageStarted();
+            try
+            {
+                var png = state.Poster(parts[0] == "Users" ? "1001" : parts[1]);
+                if (png is null) { context.Response.StatusCode = 404; return; }
+                if (state.Options.ImageDelayMilliseconds > 0)
+                    await Task.Delay(state.Options.ImageDelayMilliseconds, context.RequestAborted);
+                context.Response.Headers.CacheControl = "private, max-age=3600";
+                await Results.Bytes(png, "image/png").ExecuteAsync(context);
+                state.ImageCompleted(png.Length);
+            }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+                state.ImageCanceled();
+                throw;
+            }
+            finally { state.ImageEnded(); }
+            return;
         }
         if (parts is ["Items", var playbackItemId, "PlaybackInfo"] && method == "POST")
         {
             var body = await Body(context, EmbyJsonContext.Default.PlaybackInfoRequest);
             if (body?.UserId is not null && body.UserId != FixtureState.UserId) { context.Response.StatusCode = 403; return; }
+            if (state.Item(playbackItemId) is not { IsFolder: false }) { context.Response.StatusCode = 404; return; }
+            if (state.ConsumePlaybackInfoFailure(body)) { context.Response.StatusCode = 503; return; }
             var response = state.PlaybackInfo(playbackItemId, body);
             if (response is null) { context.Response.StatusCode = 404; return; }
             await Json(context, response, EmbyJsonContext.Default.PlaybackInfoResponse); return;

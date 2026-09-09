@@ -228,7 +228,7 @@ public sealed partial class NativePlaybackEngine(
             else
             {
                 var relay = await SessionHttpRelay.OpenAsync(session.Transport, session.Request.MediaUri,
-                    session.Request.Source.Container, session.Lifetime.Token).ConfigureAwait(false);
+                    session.Request.Source.Container, session.Lifetime.Token, code => OnRelayFailure(session, code)).ConfigureAwait(false);
                 await OnDispatcherAsync(() =>
                 {
                     // Retain ownership even when cancellation races the completed open; DrainAsync will close the relay.
@@ -315,12 +315,17 @@ public sealed partial class NativePlaybackEngine(
             Publish(session, PlaybackEngineEventKind.Ended, PlaybackEngineState.Ended);
             session.Started.TrySetException(new PlaybackException("PlaybackEndedBeforeStart"));
         });
-        session.Failed = (_, args) => Queue(() => Fail(session, args.Error switch
+        session.Failed = (_, args) => Queue(() =>
         {
-            MediaPlayerError.SourceNotSupported or MediaPlayerError.DecodingError => "UnsupportedFormat",
-            MediaPlayerError.NetworkError => "NetworkFailure",
-            _ => "NativePlaybackFailure"
-        }));
+            if (!IsActive(session)) return;
+            var code = session.RelayFailureCode ?? (args.Error switch
+            {
+                MediaPlayerError.SourceNotSupported or MediaPlayerError.DecodingError => "UnsupportedFormat",
+                MediaPlayerError.NetworkError => "NetworkFailure",
+                _ => "NativePlaybackFailure"
+            });
+            Fail(session, code);
+        });
         session.StateChanged = (_, _) => Queue(() => OnStateChanged(session));
         session.PositionChanged = (_, _) => Queue(() =>
         {
@@ -485,6 +490,15 @@ public sealed partial class NativePlaybackEngine(
         catch (OperationCanceledException) { throw; }
         catch (PlaybackException) { throw; }
         catch { throw new PlaybackException("NativePlaybackFailure"); }
+    }
+
+    private void OnRelayFailure(Session session, string errorCode)
+    {
+        if (session.Lifetime.IsCancellationRequested) return;
+        // Preserve the known cause before notifying the UI: Windows can report a failed HTTP byte
+        // range as DecodingError after the relay sends an error response or closes its local stream.
+        var confirmedCode = session.RecordRelayFailure(errorCode);
+        Queue(() => Fail(session, confirmedCode));
     }
 
     private void Fail(Session session, string errorCode)
@@ -762,6 +776,7 @@ public sealed partial class NativePlaybackEngine(
 
     private sealed partial class Session
     {
+        private string? _relayFailureCode;
         public Session(PlaybackEngineRequest request, CancellationToken cancellationToken)
         {
             Request = request;
@@ -773,6 +788,9 @@ public sealed partial class NativePlaybackEngine(
         public PlaybackEngineRequest Request { get; }
         public CancellationTokenSource Lifetime { get; }
         public ScopedMediaTransport Transport { get; }
+        public string? RelayFailureCode => Volatile.Read(ref _relayFailureCode);
+        public string RecordRelayFailure(string errorCode) =>
+            Interlocked.CompareExchange(ref _relayFailureCode, errorCode, null) ?? errorCode;
         public ScopedMediaTransport? SubtitleTransport { get; set; }
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource? SeekCompletion { get; set; }

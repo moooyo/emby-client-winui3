@@ -9,6 +9,7 @@ public sealed partial class NativePlaybackEngine
 {
     internal bool HasAdaptiveCreationResponseForProbe => _current?.AdaptiveCreationResponse is not null;
     internal bool HasProductAdaptiveFilterForProbe => _current?.AdaptiveFilter is not null;
+    internal string? ConfirmedRelayFailureForProbe => _current?.RelayFailureCode;
     internal NativeHlsHttpControlObservation? NativeHttpControlObservation { get; init; }
     internal bool ReuseNativeHttpControlPlayer { get; init; }
     private MediaPlayer? _sharedNativeControlPlayer;

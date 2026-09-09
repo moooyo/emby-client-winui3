@@ -42,10 +42,38 @@ The user explicitly resumed desktop validation. The actual AOT executable with S
 
 The generated video has five equal 12-second color sections: blue, red, green, orange, and purple. Expected frame colors come from the fixture generator, not the UI's displayed time alone. Screenshots remain in ignored `artifacts/ui-validation/2026-09-09/` with the `0251-` prefix. Both applications used for the placement round trip were closed through their native close control; no root UI playback remains active after this checkpoint.
 
-This executable predates the final shared-player owner, explicit retry UI, editable queue, and diagnostics UI. It establishes the listed behavior at this exact checkpoint; those later changes still need integrated acceptance.
+This executable predates the final shared-player owner, explicit retry UI, editable queue, and diagnostics UI. It establishes the listed behavior at this exact checkpoint.
+
+## Shared-owner, queue, and diagnostics checkpoint: C6E8E17B
+
+Executable SHA-256: `C6E8E17BA130BB4D10A32831F11DB617F26D8F6283D97A9DE19784E25FB2483C`. This publish includes the final shared native owner, upstream relay error classification, editable queue with delayed consumption, and the diagnostics/retry UI. It predates the subsequent recovery-selection correction that preserves default versus explicit track intent.
+
+| Flow | Observed result |
+| --- | --- |
+| Saved sign-in | The dedicated official-server account restored and loaded its movie library and search. |
+| Queue editing | Fixture and Track Validation appeared as two separate entries. Moving the first entry down and back up changed the visible order and retained selection. Boundary move buttons disabled correctly. |
+| Queue keyboard and empty state | Clicking the list and pressing Delete removed the selected Fixture entry. Clear queue removed the remaining entry and displayed the empty-state message with all edit buttons disabled. Escape closed the dialog. The tool's focused-element field remained stale for this modal, so the actual list/count change establishes Delete behavior. |
+| Automatic queue consumption | Track Validation was queued, then Fixture played through DirectStream. Seeking to approximately 57 seconds showed the purple source section. Natural completion opened Track Validation through HLS with advancing time and a blue frame; the queue became empty and Next disabled. |
+| Paused HLS seek | Track Validation was paused, then sought to 17 seconds. After reopening completed, the UI was Paused at 17 seconds and displayed the expected red source frame. |
+| Audio and version changes | French-to-English audio selection retained Paused, 17 seconds, and the red frame. Changing 720p to 480p again retained pause/time and the corresponding red frame. This run showed English selected after the version change; no general server-default-language rule is inferred. |
+| Native diagnostics dialog | The dark native dialog displayed application/runtime/Windows baseline versions, 34 retained events, source categories, and copy/save/refresh controls. Copy reported success with history/roaming disabled. Save succeeded; Refresh retained a valid view and cleared its previous result notice. |
+| Diagnostic file | The saved `snapshot.json` parsed successfully: 17,182 bytes, 34 events, `LocalOnly=true`, and only the defined root/event fields. Targeted inspection found no loopback server address, test username, media title, or credential marker. This complements the service's hostile-input and retention tests. |
+| Close during playback | Resume returned the HLS session to Playing. Closing the native window completed; the window and application process disappeared. The final local diagnostic event was `ResourceReleased` / `None`. This is not a packet-level network-silence assertion. |
+
+Screenshots remain in ignored `artifacts/ui-validation/2026-09-09/` with the `c6e8-` prefix. A library success notice remained visible when entering playback; the next source revision clears that notice on starting a player flow. No crash dialog was observed. Actual playback Retry is not marked passed by this checkpoint.
+
+## Manual recovery checkpoint: 313A94C3
+
+Executable SHA-256: `313A94C3C7BE6821B489E49A2A7AC705617D47CC53EFEA3984641C262305D659`. This publish adds the correction that retains default versus explicit track intent during recovery and clears the old library notice when entering playback.
+
+The actual UI signed in to the separate synthetic fixture on port 18962 with temporary, nonremembered credentials. Selecting **Resume at 0:03** caused the fixture's one-shot playback-negotiation failure: a real HTTP 503 with an empty body. The player showed Failed and the separate **Retry from last position** action. Clicking it once opened DirectStream with actual blue video, an advancing clock, and a displayed position of 0:03. The retry action disappeared after recovery.
+
+Supporting fixture records show exactly one injected failure and one subsequent successful PlaybackInfo negotiation. The new session's Start report was at 30,100,000 ticks (3.01 seconds), followed by Progress and a successful Stop when returning to the library. The library then showed the updated resume position. The temporary account was signed out and the application closed through its own controls.
+
+The failure screen displayed 0:00 while no active stream existed; the recovered session and server Start establish that the retained target was three seconds. This observation does not claim an active-stream interruption or paused recovery; the [real cold-range network probe](../../tools/EmbyClient.NativeProbe/verification/network-retry-nativeaot.json) independently covers those native behaviors. Screenshots and the synthetic supporting receipt remain under ignored `artifacts/ui-validation/2026-09-09/` with the `313a-` prefix.
 
 ## Remaining final-build acceptance
 
 An earlier relay/SMTC application checkpoint, executable SHA-256 `2ED8644A666DBDA41178171B802E15D1856F680D23C99EBBA2D19C68501FDA4C`, displayed real original video and closed its playing window without an observed crash dialog. The native probe independently checked SMTC Playing, Paused, and retired state. The automation tool did not support the physical media-key input, so that input path has not been established.
 
-The next integrated run must use the final shared-player owner together with the editable queue, explicit retry, and diagnostics UI. Check actual frames, paused transitions, queue editing/continuation, retry ownership, and dialog/keyboard behavior, then package that exact publish. Narrator, audible output/device changes, multi-monitor DPI, signed installation, clean-machine playback, and broad server/codec/HDR matrices remain distinct unverified gates. Native resource success cannot substitute for those observations.
+The C6E8E17B and 313A94C3 checkpoints establish the listed shared-owner frames, paused transitions, queue editing/continuation, diagnostics, and manual recovery. Large-library memory behavior and native external subtitles retain separate acceptance records. Narrator, audible output/device changes, multi-monitor DPI, signed installation, clean-machine playback, and broad server/codec/HDR matrices remain distinct unverified gates. Native resource success cannot substitute for those observations.

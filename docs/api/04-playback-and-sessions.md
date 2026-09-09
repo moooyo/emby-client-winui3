@@ -239,7 +239,9 @@ The factory applies the established same-server VOD contract to recognized finit
 
 ### Explicit recovery after a transient failure
 
-The client coordinator now offers an explicit, one-use retry after network, timeout, transport-unavailable, or HTTP 500/502/503/504 failures. This is a client operation, not a new Emby endpoint. It completes old session cleanup, requests fresh playback information, opens a new playback ID/server session, and preserves the confirmed absolute position, selected media source/streams, bitrate limit, and pause intent. If playback never actually started, the original requested position remains the recovery position. Replay remains a separate command that starts at zero.
+The client coordinator now offers an explicit, one-use retry after network, timeout, transport-unavailable, or HTTP 500/502/503/504 failures. This is a client operation, not a new Emby endpoint. It completes old session cleanup, requests fresh playback information, opens a new playback ID/server session, and preserves the absolute engine position, selected media source, track-selection intent, bitrate limit, and pause intent. If playback never actually started, the original requested position remains the recovery position. A native cursor at a failed seek target does not prove that a frame was decoded there. Replay remains a separate command that starts at zero.
+
+Keep automatic track selection distinct from an explicit index. Resolving an automatic audio choice to the source's default index must not turn it into a user override during retry: explicit audio selection can require a different delivery method. Explicit audio/subtitle selections, including subtitles off, remain explicit.
 
 Recovery state is held only in memory. A new play, stop, account cancellation, or disposal invalidates it. An expected recovery ID and transition checks prevent a delayed or duplicate retry from interrupting a newer session. Authentication/permission failures, explicit cancellation, and generic server rejection do not create a retry target. There is no unattended network retry loop.
 

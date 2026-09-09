@@ -1,0 +1,28 @@
+<ContentDialog
+    x:Class="EmbyClient.App.Views.PlaybackDiagnosticsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Playback diagnostics" CloseButtonText="Close" DefaultButton="Close">
+    <Grid Width="480" MaxHeight="460" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            <RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="VersionText" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="1" Text="Local events and media categories only. Snapshots exclude addresses, accounts, titles, paths, and tokens."
+                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <TextBlock Grid.Row="2" x:Name="CountText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <TextBox Grid.Row="3" x:Name="SummaryText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                 FontFamily="Consolas" MinHeight="100" MaxHeight="240"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 AutomationProperties.Name="Safe playback diagnostic events" />
+        <TextBlock Grid.Row="4" Text="Codec categories describe selected source metadata, not verified decoder output."
+                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <InfoBar Grid.Row="5" x:Name="ResultNotice" IsOpen="False" IsClosable="True" />
+        <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="8">
+            <Button x:Name="CopyButton" Content="Copy snapshot" Click="CopyClicked" AutomationProperties.Name="Copy safe diagnostic snapshot" />
+            <Button x:Name="SaveButton" Content="Save snapshot" Click="SaveClicked" AutomationProperties.Name="Save safe diagnostic snapshot locally" />
+            <Button x:Name="RefreshButton" Content="Refresh" Click="RefreshClicked" AutomationProperties.Name="Refresh playback diagnostics" />
+        </StackPanel>
+    </Grid>
+</ContentDialog>

@@ -34,17 +34,19 @@
         <Grid x:Name="ConnectedPane" Grid.Row="1" Visibility="Collapsed">
             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
             <Grid x:Name="AccountToolbar" Padding="20,4,20,12" ColumnSpacing="12">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <TextBlock x:Name="AccountLabel" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                <Button Grid.Column="1" Content="Appearance">
+                <Button Grid.Column="1" x:Name="LibraryQueueButton" Content="Queue (0)" AutomationProperties.Name="Open play queue" Click="QueueClicked" />
+                <Button Grid.Column="2" x:Name="LibraryDiagnosticsButton" Content="Diagnostics" AutomationProperties.Name="Open playback diagnostics" Click="DiagnosticsClicked" />
+                <Button Grid.Column="3" Content="Appearance">
                     <Button.Flyout><MenuFlyout>
                         <MenuFlyoutItem Text="Use system theme" Tag="System" Click="ThemeClicked" />
                         <MenuFlyoutItem Text="Light" Tag="Light" Click="ThemeClicked" />
                         <MenuFlyoutItem Text="Dark" Tag="Dark" Click="ThemeClicked" />
                     </MenuFlyout></Button.Flyout>
                 </Button>
-                <Button Grid.Column="2" Content="Switch account" Click="SwitchAccountClicked" />
-                <Button Grid.Column="3" Content="Sign out" Click="SignOutClicked" />
+                <Button Grid.Column="4" Content="Switch account" Click="SwitchAccountClicked" />
+                <Button Grid.Column="5" Content="Sign out" Click="SignOutClicked" />
             </Grid>
             <views:LibraryView x:Name="Library" Grid.Row="1" PlayRequested="LibraryPlayRequested" SessionExpired="SessionExpired" />
             <views:PlayerView x:Name="Player" Grid.RowSpan="2" Visibility="Collapsed" BackRequested="PlayerBackRequested" FullscreenRequested="PlayerFullscreenRequested" SessionExpired="SessionExpired" />

@@ -1,0 +1,1896 @@
+{
+  "SchemaVersion": 1,
+  "EvidenceKind": "Default product isolation regression after relay failure propagation and retry-intent repairs",
+  "Report": {
+    "Scope": "SYNTHETIC loopback item 1001, default product player owner. Actual native Opening cancellation and invalid-media decoder failure are followed by recovery. Retired handler replay and old-ID commands are explicit fault injection, not naturally observed late callbacks. Separate from resource acceptance.",
+    "Status": "IsolationPassed",
+    "ErrorCode": null,
+    "ErrorHResult": null,
+    "ProcessId": 24400,
+    "NativeAot": true,
+    "StartedAt": "2026-09-09T10:35:03.3266836+08:00",
+    "FinishedAt": "2026-09-09T10:35:14.9563521+08:00",
+    "RequiredCycles": 3,
+    "CompletedCycles": 3,
+    "InvalidMediaRequests": 6,
+    "InvalidMediaCredentialRejections": 0,
+    "FinalPlayerDetached": true,
+    "FinalNetworkQuiet": true,
+    "ConcurrentDispose": {
+      "NativeOpeningObserved": true,
+      "SourceWasBound": true,
+      "OpenWasPending": true,
+      "BothDisposeCallsInitiallyPending": true,
+      "OpenCancelled": true,
+      "FirstDisposeCompleted": true,
+      "SecondDisposeCompleted": true,
+      "SecondDisposeObservedCompleteDrain": true,
+      "OwnerCleared": true,
+      "PlayerDetached": true,
+      "CancelledOpeningDidNotReportStart": true
+    },
+    "Limitations": [
+      "No resource gate is evaluated in this fault-injection process",
+      "Synthetic development API is not a real Emby server",
+      "No presented-pixel, audio-device, physical-key, or exhaustive concurrency claim"
+    ],
+    "Cycles": [
+      {
+        "Number": 1,
+        "Status": "Passed",
+        "Stage": "Complete",
+        "ErrorCode": null,
+        "CancelNativeState": "Opening",
+        "CancelSourceWasBound": true,
+        "CancelOpenTaskWasPending": true,
+        "CancellationObserved": true,
+        "CancellationDetached": true,
+        "CancelledSessionHash": "268915747b6d3d387e7ecf22765ce9e52d6bcb9f375cefc933e01010e6ce7ff8",
+        "NativeDecoderFailureCode": "UnsupportedFormat",
+        "DecoderFailureTerminalCode": "NoCompatibleStream",
+        "DecoderFailureSourceWasBound": true,
+        "FailureDetached": true,
+        "FailedSessionHash": "dda9d6c84eea202479a0285bc1d4e09a414011a5d99d5d8119836785c69d179b",
+        "Recoveries": [
+          {
+            "Kind": "AfterOpeningCancellation",
+            "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+            "NativeInitialTicks": 52355413,
+            "PausedDriftTicks": 0,
+            "ResumedNativeTicks": 54783118,
+            "ReplayedCallbacks": 7,
+            "StaleIdCommands": 9,
+            "CurrentSourceSurvived": true,
+            "MutedVolumePreserved": true,
+            "NoRetiredEngineEvents": true,
+            "NoUnexpectedApiControls": true,
+            "ApiSettledBeforeReplay": true,
+            "ApiReplayStartCount": 6,
+            "EngineReplayStartCount": 28,
+            "ValidReportOrder": true,
+            "DetachedAfterStop": true
+          },
+          {
+            "Kind": "AfterNativeDecoderFailure",
+            "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+            "NativeInitialTicks": 52287496,
+            "PausedDriftTicks": 0,
+            "ResumedNativeTicks": 54726243,
+            "ReplayedCallbacks": 7,
+            "StaleIdCommands": 9,
+            "CurrentSourceSurvived": true,
+            "MutedVolumePreserved": true,
+            "NoRetiredEngineEvents": true,
+            "NoUnexpectedApiControls": true,
+            "ApiSettledBeforeReplay": true,
+            "ApiReplayStartCount": 14,
+            "EngineReplayStartCount": 52,
+            "ValidReportOrder": true,
+            "DetachedAfterStop": true
+          }
+        ]
+      },
+      {
+        "Number": 2,
+        "Status": "Passed",
+        "Stage": "Complete",
+        "ErrorCode": null,
+        "CancelNativeState": "Opening",
+        "CancelSourceWasBound": true,
+        "CancelOpenTaskWasPending": true,
+        "CancellationObserved": true,
+        "CancellationDetached": true,
+        "CancelledSessionHash": "fd6510d69c628951c241697d0414bccad04e0caa9edf840243d4f7471d59956c",
+        "NativeDecoderFailureCode": "UnsupportedFormat",
+        "DecoderFailureTerminalCode": "NoCompatibleStream",
+        "DecoderFailureSourceWasBound": true,
+        "FailureDetached": true,
+        "FailedSessionHash": "d443023d49093e033574a686090c0a7163e6adc1ec6d043d2ea400a2228b7b45",
+        "Recoveries": [
+          {
+            "Kind": "AfterOpeningCancellation",
+            "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+            "NativeInitialTicks": 52336663,
+            "PausedDriftTicks": 0,
+            "ResumedNativeTicks": 54785826,
+            "ReplayedCallbacks": 7,
+            "StaleIdCommands": 9,
+            "CurrentSourceSurvived": true,
+            "MutedVolumePreserved": true,
+            "NoRetiredEngineEvents": true,
+            "NoUnexpectedApiControls": true,
+            "ApiSettledBeforeReplay": true,
+            "ApiReplayStartCount": 22,
+            "EngineReplayStartCount": 74,
+            "ValidReportOrder": true,
+            "DetachedAfterStop": true
+          },
+          {
+            "Kind": "AfterNativeDecoderFailure",
+            "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+            "NativeInitialTicks": 52375413,
+            "PausedDriftTicks": 0,
+            "ResumedNativeTicks": 54801451,
+            "ReplayedCallbacks": 7,
+            "StaleIdCommands": 9,
+            "CurrentSourceSurvived": true,
+            "MutedVolumePreserved": true,
+            "NoRetiredEngineEvents": true,
+            "NoUnexpectedApiControls": true,
+            "ApiSettledBeforeReplay": true,
+            "ApiReplayStartCount": 29,
+            "EngineReplayStartCount": 100,
+            "ValidReportOrder": true,
+            "DetachedAfterStop": true
+          }
+        ]
+      },
+      {
+        "Number": 3,
+        "Status": "Passed",
+        "Stage": "Complete",
+        "ErrorCode": null,
+        "CancelNativeState": "Opening",
+        "CancelSourceWasBound": true,
+        "CancelOpenTaskWasPending": true,
+        "CancellationObserved": true,
+        "CancellationDetached": true,
+        "CancelledSessionHash": "77599b5883b434b4a484984a029ce451fbfd36b0c998e470bb909626828fda02",
+        "NativeDecoderFailureCode": "UnsupportedFormat",
+        "DecoderFailureTerminalCode": "NoCompatibleStream",
+        "DecoderFailureSourceWasBound": true,
+        "FailureDetached": true,
+        "FailedSessionHash": "d82e34434fe62bd0dbd7ab5b1e548dd79e87ab577b5abdda33ab11542163aefd",
+        "Recoveries": [
+          {
+            "Kind": "AfterOpeningCancellation",
+            "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+            "NativeInitialTicks": 52318121,
+            "PausedDriftTicks": 0,
+            "ResumedNativeTicks": 54778326,
+            "ReplayedCallbacks": 7,
+            "StaleIdCommands": 9,
+            "CurrentSourceSurvived": true,
+            "MutedVolumePreserved": true,
+            "NoRetiredEngineEvents": true,
+            "NoUnexpectedApiControls": true,
+            "ApiSettledBeforeReplay": true,
+            "ApiReplayStartCount": 37,
+            "EngineReplayStartCount": 122,
+            "ValidReportOrder": true,
+            "DetachedAfterStop": true
+          },
+          {
+            "Kind": "AfterNativeDecoderFailure",
+            "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+            "NativeInitialTicks": 52426038,
+            "PausedDriftTicks": 0,
+            "ResumedNativeTicks": 54936242,
+            "ReplayedCallbacks": 7,
+            "StaleIdCommands": 9,
+            "CurrentSourceSurvived": true,
+            "MutedVolumePreserved": true,
+            "NoRetiredEngineEvents": true,
+            "NoUnexpectedApiControls": true,
+            "ApiSettledBeforeReplay": true,
+            "ApiReplayStartCount": 45,
+            "EngineReplayStartCount": 147,
+            "ValidReportOrder": true,
+            "DetachedAfterStop": true
+          }
+        ]
+      }
+    ],
+    "EngineEvents": [
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 1857706,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "492d05098911d2771d17022bbdc2fce5f7f7e3f57fb8f746fac49717f36b4713",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 2488121,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "cbd576a2f4fd56d2ab85dd45c4caefd0234948e45d000afb828cc90da3ad90b3",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "cbd576a2f4fd56d2ab85dd45c4caefd0234948e45d000afb828cc90da3ad90b3",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "39dcc8529fa4ec9db680ea853bc6fff3825d4d97e6f26625a2856f842abe7a5f",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 54784576,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "27b01a644ce6747b018e8076b23b42d62caeec2b0f3c107a2a4e52fbef0481b7",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "27b01a644ce6747b018e8076b23b42d62caeec2b0f3c107a2a4e52fbef0481b7",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "27b01a644ce6747b018e8076b23b42d62caeec2b0f3c107a2a4e52fbef0481b7",
+        "Kind": "StateChanged",
+        "State": "Idle",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "27b01a644ce6747b018e8076b23b42d62caeec2b0f3c107a2a4e52fbef0481b7",
+        "Kind": "Failed",
+        "State": "Failed",
+        "PositionTicks": 0,
+        "ErrorCode": "UnsupportedFormat"
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52399996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52399996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52399996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52399996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "a9552d00ff2b60acc3dee29a85d7f83c62dea24d868f9213e1375e8204615611",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 54727284,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "31c6e7b5eebd6c2b6ad62648cf75b68d42b651d33d60453d4a0f2a383421ec7f",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "31c6e7b5eebd6c2b6ad62648cf75b68d42b651d33d60453d4a0f2a383421ec7f",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "83ab140e73f41316f355a03421c933dff984105a4c73e7f5c1bccd36308590a6",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 54786659,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "22b2023cb9d3f9624799d1fff54937732fe957b2cdbaf7c3f61aeea51882ddda",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "22b2023cb9d3f9624799d1fff54937732fe957b2cdbaf7c3f61aeea51882ddda",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "22b2023cb9d3f9624799d1fff54937732fe957b2cdbaf7c3f61aeea51882ddda",
+        "Kind": "StateChanged",
+        "State": "Idle",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "22b2023cb9d3f9624799d1fff54937732fe957b2cdbaf7c3f61aeea51882ddda",
+        "Kind": "Failed",
+        "State": "Failed",
+        "PositionTicks": 0,
+        "ErrorCode": "UnsupportedFormat"
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52374580,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "5d1aba3c205ff2fac42918a82c829d5f1317eaee71bd2b13edba97a8e6640286",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 54802493,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "d18b0f9c927d2d40b02f3f5c350c12fde1970d11b6aa7ad35cd58d3670c56a72",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "d18b0f9c927d2d40b02f3f5c350c12fde1970d11b6aa7ad35cd58d3670c56a72",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52499996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "fec2664792a16cd9a89d5d5ef89d5361b1e27186f7f200ce20ee4697694ffc93",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 54779576,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "42bce4f7e445a458a315de5bab7a785caca73017308a6b71988cf7be7aeb470b",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "42bce4f7e445a458a315de5bab7a785caca73017308a6b71988cf7be7aeb470b",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "42bce4f7e445a458a315de5bab7a785caca73017308a6b71988cf7be7aeb470b",
+        "Kind": "StateChanged",
+        "State": "Idle",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "42bce4f7e445a458a315de5bab7a785caca73017308a6b71988cf7be7aeb470b",
+        "Kind": "Failed",
+        "State": "Failed",
+        "PositionTicks": 0,
+        "ErrorCode": "UnsupportedFormat"
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Opening",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 0,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Buffering",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 50000000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 50100000,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Paused",
+        "PositionTicks": 52599996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "PositionChanged",
+        "State": "Playing",
+        "PositionTicks": 52699996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Playing",
+        "PositionTicks": 52699996,
+        "ErrorCode": null
+      },
+      {
+        "PlaybackHash": "695189f2cf7440fc56cc4ae82f77217bf48c3c07d124d405871cbef2d5bc0de3",
+        "Kind": "StateChanged",
+        "State": "Stopped",
+        "PositionTicks": 54937492,
+        "ErrorCode": null
+      }
+    ],
+    "ApiEvents": [
+      {
+        "Operation": "Start",
+        "SessionHash": "d1a8748fd78d63cf7fd7312ce942a1d9e6d66c9fffeb18163fca26ab6e04e963",
+        "PositionTicks": 100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "d1a8748fd78d63cf7fd7312ce942a1d9e6d66c9fffeb18163fca26ab6e04e963",
+        "PositionTicks": 2488121,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 50100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 50100000,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 50100000,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 52499996,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 52499996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 52599996,
+        "EventName": "StateChange",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 52599996,
+        "EventName": "StateChange",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 52599996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "4c9a930e4f2da751e646d570842793c5def4893e6e85eedf784cbb2967e939bf",
+        "PositionTicks": 54784576,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 50100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 50100000,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 52399996,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 52399996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 52399996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 52499996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "81c92f49cf2abf60e78d3b3e71b36d9ec71bb8caa70f94be8274324c4f0ed7a6",
+        "PositionTicks": 54727284,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 50100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 50100000,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 50100000,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 52499996,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 52499996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 52599996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 52599996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "b26f31771245741e22302b72e4742cd22afd856bb0f12732bbb5313c9d58c416",
+        "PositionTicks": 54786659,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 50100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 52374580,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 52499996,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 52499996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 52499996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 52599996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "4e3409e5e9271ebc4a47bf4b6703eea1c4a529ca4feca39e8e88bd81c416ad73",
+        "PositionTicks": 54802493,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 50100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 50100000,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 52499996,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 52499996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 52499996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 52599996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 52599996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "7280a042b2b9a2e4881d5d77157e922b6a03351c9d9a88427ec52278425b12fe",
+        "PositionTicks": 54779576,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 50000000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 50100000,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 50100000,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 52599996,
+        "EventName": "Pause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 52599996,
+        "EventName": "TimeUpdate",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 52599996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Progress",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 52699996,
+        "EventName": "Unpause",
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "fffbf0c7985bcfdf1368bd2aa11a4deb2a73557e9e692d2acc6988df42235a7a",
+        "PositionTicks": 54937492,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Start",
+        "SessionHash": "d23d5912a9fc248865b231e56052e4a7530428d79bf63cc1c53bd34c5b312940",
+        "PositionTicks": 100000,
+        "EventName": null,
+        "StatusCode": 204
+      },
+      {
+        "Operation": "Stop",
+        "SessionHash": "d23d5912a9fc248865b231e56052e4a7530428d79bf63cc1c53bd34c5b312940",
+        "PositionTicks": 2316247,
+        "EventName": null,
+        "StatusCode": 204
+      }
+    ],
+    "Diagnostics": [
+      "Fallback:UnsupportedFormat",
+      "Fallback:UnsupportedFormat",
+      "Fallback:UnsupportedFormat"
+    ]
+  },
+  "BuildManifest": {
+    "FormatVersion": 1,
+    "Configuration": "Release",
+    "RuntimeIdentifier": "win-x64",
+    "TargetFramework": "net10.0-windows10.0.26100.0",
+    "NativeAotRequested": true,
+    "DotNetSdk": "10.0.301",
+    "GeneratedAtUtc": "2026-09-09T10:34:09.8109707+08:00",
+    "SourceInputsUnchangedDuringPublish": true,
+    "Sources": [
+      {
+        "Path": "Directory.Build.props",
+        "Sha256": "152671a2f256b8953c63fa453a8bd17468b996dd5573b20d51773ab33019cab2"
+      },
+      {
+        "Path": "Directory.Packages.props",
+        "Sha256": "0db6e50291b3aca667f14b7d583b048e383fc027068bd8d3ba6c655cf72a6239"
+      },
+      {
+        "Path": "global.json",
+        "Sha256": "4a5e1b57e81b372b49a3ee4f0b35483d541b45280cf931276828c0920d3f6855"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyApiClient.cs",
+        "Sha256": "c3aa28a72f188966e04f9a4c47e37cf1c8982c178b52c0a7fd86854041826db6"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyApiException.cs",
+        "Sha256": "e6596ddf6516251a8e39f2cd3cf3f45b6d87d29f45c43f9389f29a93d5824942"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyClient.Api.csproj",
+        "Sha256": "acd40234aaa516072266f6ebb527924676dc461e10a0f1b304289a9e83b19198"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyJsonContext.cs",
+        "Sha256": "8b9c9c7ffb1d8079d2d8be99c021ab99ba861a5f50919915b5b118ddc43799ec"
+      },
+      {
+        "Path": "src/EmbyClient.Api/Models.cs",
+        "Sha256": "3fc1d9f40b7339671dcf4dda1660bb3a5a1c9812fef4669a6974e6d7c30181a5"
+      },
+      {
+        "Path": "src/EmbyClient.Api/packages.lock.json",
+        "Sha256": "d9a3e5611e8388d55d0eba98ecabaa64efbf8327c7a7e25127763a93e98a4604"
+      },
+      {
+        "Path": "src/EmbyClient.Api/PlaybackModels.cs",
+        "Sha256": "84c7445a80866b0985094c94ebfbf190735ee17728a8da640480622460389ee3"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/HttpRangeStream.cs",
+        "Sha256": "d76a48a650e362c03ee59252b6250a45a84851b1e89d58b434ffec97945f83f9"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs",
+        "Sha256": "5be3b1f39e543702da64f50e995fc38f7605f99934545daabd93da12f3539039"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.cs",
+        "Sha256": "dcfdc61dea2d93a7469ea14014f95f1e0eea0ff47d77f4cf891d33a59236b5b8"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.MediaControls.cs",
+        "Sha256": "afd1605c82fc8cbd39e929f4077e53c4f00f08dee7849257a895d540df951cef"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ScopedAdaptiveHttpFilter.cs",
+        "Sha256": "771274dd22158e364f5e9c6b9f40ca12b69be576e7418b1081fc8148fce7278b"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ScopedMediaTransport.cs",
+        "Sha256": "ed0151e72ef3f824deec4b506194d1327398f1caeee8606310dd511b76c21563"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/SessionHttpRelay.cs",
+        "Sha256": "d8da59bb83591966f24341a26a2bc74a91d2c0127ae48396a43d382d7338d444"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/ConservativeDeviceProfile.cs",
+        "Sha256": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/EmbyClient.Playback.csproj",
+        "Sha256": "8589f3a6b4fd297798c8b68c12486abed0085c8d4735ae0d1f86d82fe9c6edce"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/packages.lock.json",
+        "Sha256": "7228d14911c8772a90eb1caaf40e8fd065c45d897bede78c3248ad420c32f564"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackContracts.cs",
+        "Sha256": "4d4a84494b5880c25501515e3087ca95b1ce55b664e623a818e9a6465dfb7f1b"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackCoordinator.cs",
+        "Sha256": "824b122e2257feef62cfff970a9d8d3b5d18d69a94a167f91e2b467bae9f8c2f"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackRequestFactory.cs",
+        "Sha256": "98f31c78c8f620edda48ed496a3f336427686dea2591a251efa3a310e94c088c"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/app.manifest",
+        "Sha256": "f5b6ec234184577d6f8e1bd3a335ae68590be4b241571cab8d80c6bb51cbe706"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/App.xaml",
+        "Sha256": "97aa49b7a0225167f798c68cb299f02d9d765ad4c0203797bfa57393f8140044"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/App.xaml.cs",
+        "Sha256": "7817eabd7b895f67ab7725273823c37e76d374d8c4347b16578089ffe9800bb8"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ColdRangeProxy.cs",
+        "Sha256": "799fe1e685a498cfbc1eaa1511067bcdabbaa76919b044213247b1e23cad1c27"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/EmbyClient.NativeProbe.csproj",
+        "Sha256": "58807ea909e7f73516798445b96f7322484dfaf2adbbbf6b1f1b4f3f63b7247b"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleLaunch.cs",
+        "Sha256": "e7902b34f6de2b4bb20244901a7a10a963629c382a85df621991bc683bc06295"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleModels.cs",
+        "Sha256": "87bbbc012461ee283819c3be049c3aad5b81aa503bdab295aafd3bfc671133ae"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleProbe.cs",
+        "Sha256": "13991ff5ad6b5e068faeed4ae86ac574498cbf66c13cfa27c63c98efffbd9ddf"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/FilePlaybackControl.cs",
+        "Sha256": "a8ca106e6270df0639b2c38143cf226f7d52bd744a0c902c050b90a1ef0a8653"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/HlsApiObservationHandler.cs",
+        "Sha256": "b3b87d78967fe25f7c54204d971a6b6609afa4acbb74eccffc4dfbf8d05ed56a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/HlsSeekObservation.cs",
+        "Sha256": "6e1a5ab4e40f31188127371dd2260d5d6bacdf9b8978fa47d37ff6bd289bf7e4"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/InvalidMediaFixture.cs",
+        "Sha256": "5654f407caad4d5bb8fd8f45ad76c53afc6497a39015693da7cb8bb3cf3d9843"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationFailureEngine.cs",
+        "Sha256": "7c19476a529212d7aae9ee697fca01341da95acc3513368be013f22365723de8"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationModels.cs",
+        "Sha256": "fa53449e9734d9814c2d71775d27ab6fb9c923d3716bc39285ec0d2f26184cc7"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationProbe.cs",
+        "Sha256": "a9590c4c17eff40b101ef9ec56e8a683906b2a867ab551389ca57c7a7fa98775"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/MediaControlsRetirementObservation.cs",
+        "Sha256": "664cf7ea10e287b7ab826dcc7bdf3179e189efa6eb43f3068e3b8bc4f1a9cd79"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativeHlsHttpControl.cs",
+        "Sha256": "7c47c1cdeeddbe0948cf18b761830be150b058b09ac379ec1ddf385360113ffc"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.IsolationProbe.cs",
+        "Sha256": "5b844b70a8759f00c3c81c5c4abe8618a8a0ed493d785482d55c696c602d8d1f"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.ProbeObservation.cs",
+        "Sha256": "63ad06f8ae97fddd6da8c65ed697383f3f9c9acc07cddfc77acc472c809d036f"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryEngine.cs",
+        "Sha256": "f22cf7a8bcc441c37a3b6e9375d8371544a195f3b20b9a938a409d682e312a87"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryModels.cs",
+        "Sha256": "8aaec80173bc3a6fbd41e6ea50a000f497d76483028d77d161729319d605ab66"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryProbe.cs",
+        "Sha256": "69da69d9dda3226b8f9571399c832faba1762ac6abcd0797b506fdf5e045a0b1"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/packages.lock.json",
+        "Sha256": "62426a1a5b632616a71d5194a03af9ad171f7303e24cb1e2b0c6243194a12a0a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ProbeModels.cs",
+        "Sha256": "78fe764cd8b81fb3c6279dd94d6de8df687d95d59fe9406a4f95307920c7fd81"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Publish-Probe.ps1",
+        "Sha256": "11ef2200045d314cd5f5130a6caf0441ae3653ea8b0025a18514660461ecd4a2"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/RealHlsModels.cs",
+        "Sha256": "994330a663e2347805370f14151435f621eeb92c2157db01cb0a660b6fdf8eba"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/RealHlsProbe.cs",
+        "Sha256": "62cf8d20d6c1cf235a08d05c7de3765b8d0bafaf426d94f139c74e63222474b0"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Start-SyntheticFixture.ps1",
+        "Sha256": "dd486688f63a9013c49bfae7d56b7467c88e0a12630e07e20f1e228e413805f5"
+      }
+    ],
+    "ResolvedDependencies": [
+      "EmbyClient.Api/1.0.0",
+      "EmbyClient.Playback/1.0.0",
+      "Microsoft.DotNet.ILCompiler/10.0.9",
+      "Microsoft.NET.ILLink.Tasks/10.0.9",
+      "Microsoft.Web.WebView2/1.0.3719.77",
+      "Microsoft.Windows.AI.MachineLearning/2.1.74",
+      "Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100",
+      "Microsoft.Windows.SDK.BuildTools/10.0.28000.2705",
+      "Microsoft.WindowsAppSDK.AI/2.4.4",
+      "Microsoft.WindowsAppSDK.Base/2.0.4",
+      "Microsoft.WindowsAppSDK.DWrite/2.1.0",
+      "Microsoft.WindowsAppSDK.Foundation/2.3.9",
+      "Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.6",
+      "Microsoft.WindowsAppSDK.ML/2.1.74",
+      "Microsoft.WindowsAppSDK.Runtime/2.4.0",
+      "Microsoft.WindowsAppSDK.Search/2.4.4",
+      "Microsoft.WindowsAppSDK.Widgets/2.0.5",
+      "Microsoft.WindowsAppSDK.WinUI/2.3.6",
+      "Microsoft.WindowsAppSDK/2.4.0",
+      "runtime.win-x64.Microsoft.DotNet.ILCompiler/10.0.9",
+      "System.Numerics.Tensors/9.0.0"
+    ],
+    "Executable": {
+      "FileName": "EmbyClient.NativeProbe.exe",
+      "SizeBytes": 14572544,
+      "Sha256": "0b20093b9f54d5f3cb94a99ccbbc501a78b88e800b800bd1a260712967a5e5b8"
+    }
+  },
+  "Fixture": {
+    "Kind": "SYNTHETIC generated sixty-second H264 AAC fixture",
+    "ServerId": "synthetic-server-0001",
+    "ServerVersion": "synthetic-1.0",
+    "ItemId": "1001",
+    "MediaSha256": "cff6e01f40ca1478eadba80d4570645e979ad6ee7bd32b326fb5152982a37459",
+    "MetadataSha256": "2e7496fa140a47a9210a1f518e5214bdfd295a439d693483cdd80a7f5fada3e0",
+    "ServerExecutableSha256": "81cf7e45e1fb64d525cfded5578ee0f34e09cff218b2d6800e97e59c7acb52bb"
+  },
+  "Conclusion": "The targeted default-owner isolation suite passed again after the relay error-classification changes: three actual Opening cancellations, three actual invalid-media decoder failures and recoveries, forty-two explicit retired-callback/failure-entry replays, fifty-four old-ID commands, and concurrent Opening-time disposal. Only the three expected unsupported-format fallback diagnostics occurred. This separate regression does not replace the earlier resource or network-recovery receipts."
+}

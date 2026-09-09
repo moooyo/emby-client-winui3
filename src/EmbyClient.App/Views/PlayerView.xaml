@@ -14,7 +14,11 @@
                 <TextBlock x:Name="TitleText" Text="Now playing" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="StateText" Text="Choose something to play" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </StackPanel>
-            <Button Grid.Column="2" Click="NextClicked" Content="Next in queue" x:Name="NextButton" IsEnabled="False" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                <Button Click="QueueClicked" Content="Queue (0)" x:Name="QueueButton" IsEnabled="False" AutomationProperties.Name="Open play queue" />
+                <Button Click="DiagnosticsClicked" Content="Diagnostics" x:Name="DiagnosticsButton" AutomationProperties.Name="Open playback diagnostics" />
+                <Button Click="NextClicked" Content="Next in queue" x:Name="NextButton" IsEnabled="False" />
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Background="Black" MinHeight="160">
             <MediaPlayerElement x:Name="VideoSurface" AreTransportControlsEnabled="False" IsHitTestVisible="False" Stretch="Uniform" />
@@ -22,6 +26,8 @@
             <InfoBar x:Name="PlaybackNotice" VerticalAlignment="Top" Margin="24" IsOpen="False" Severity="Error" />
         </Grid>
         <StackPanel Grid.Row="2" Padding="24,12,24,20" Spacing="12">
+            <Button x:Name="RetryButton" Content="Retry from last position" Click="RetryClicked" HorizontalAlignment="Left"
+                    Visibility="Collapsed" IsEnabled="False" AutomationProperties.Name="Retry playback from last position" />
             <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <TextBlock x:Name="PositionText" Text="0:00" VerticalAlignment="Center" />
@@ -31,7 +37,7 @@
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <Button x:Name="PauseButton" Click="PauseClicked" AutomationProperties.Name="Pause"><SymbolIcon Symbol="Pause" /></Button>
-                <Button Grid.Column="1" Click="ReplayClicked" AutomationProperties.Name="Restart"><SymbolIcon Symbol="Refresh" /></Button>
+                <Button Grid.Column="1" Click="ReplayClicked" AutomationProperties.Name="Restart from beginning" ToolTipService.ToolTip="Restart from beginning"><SymbolIcon Symbol="Refresh" /></Button>
                 <ToggleButton x:Name="MuteButton" Grid.Column="2" Click="MuteClicked" AutomationProperties.Name="Mute"><SymbolIcon Symbol="Volume" /></ToggleButton>
                 <Slider x:Name="Volume" Grid.Column="3" Minimum="0" Maximum="100" Value="100" VerticalAlignment="Center" ValueChanged="VolumeChanged" AutomationProperties.Name="Volume" />
                 <CheckBox x:Name="AutoPlayNext" Grid.Column="4" Content="Play next automatically" IsChecked="True" HorizontalAlignment="Right" VerticalAlignment="Center" />

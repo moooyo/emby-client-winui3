@@ -26,6 +26,7 @@ public sealed partial class App : Application
     private bool _nativeHlsHttpControl;
     private bool _sharedNativeHlsPlayerControl;
     private bool _lifecycleIsolation;
+    private string? _networkRetryMediaDirectory;
     private bool _noInFlightGc;
     private bool _noGcRegionActive;
     private const long NoGcRegionBudget = 64L * 1024 * 1024;
@@ -41,6 +42,16 @@ public sealed partial class App : Application
         {
             directory = isolationDirectory;
             _lifecycleIsolation = true;
+        }
+        else if (commandLine is ["--output-dir", var networkDirectory, "--network-retry", "--media-dir", var networkMediaDirectory])
+        {
+            directory = networkDirectory;
+            _networkRetryMediaDirectory = Path.GetFullPath(networkMediaDirectory);
+        }
+        else if (commandLine is ["--output-dir", var subtitleDirectory, "--external-subtitle", "--credentials-file", var subtitleCredentials])
+        {
+            directory = subtitleDirectory;
+            _externalSubtitleCredentialsPath = Path.GetFullPath(subtitleCredentials);
         }
         else if (commandLine is ["--output-dir", var smokeDirectory, "--instrumentation-smoke"])
         {
@@ -105,7 +116,8 @@ public sealed partial class App : Application
         _resultPath = Path.Combine(Path.GetFullPath(directory), "result.json");
         if (File.Exists(_resultPath))
             throw new ArgumentException("The output directory already has a result. Select a new run directory.");
-        if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation) Save();
+        if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation && _networkRetryMediaDirectory is null
+            && _externalSubtitleCredentialsPath is null) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };
         _window = new Window
         {
@@ -115,7 +127,9 @@ public sealed partial class App : Application
         };
         _window.AppWindow.Resize(new SizeInt32(480, 300));
         _window.AppWindow.Show(activateWindow: false);
-        _ = _lifecycleIsolation ? RunIsolationAsync()
+        _ = _externalSubtitleCredentialsPath is not null ? RunExternalSubtitleModeAsync()
+            : _networkRetryMediaDirectory is not null ? RunNetworkRetryAsync()
+            : _lifecycleIsolation ? RunIsolationAsync()
             : _realHlsCredentialsPath is not null ? RunRealHlsAsync()
             : _controlMode is not null ? RunControlAsync(_controlMode) : RunAsync();
     }

@@ -7,7 +7,7 @@ namespace EmbyClient.FixtureServer;
 
 internal sealed class FixtureState
 {
-    public const string ServerId = "synthetic-server-0001";
+    public string ServerId => Options.LargeLibraryItems > 0 ? $"synthetic-large-server-{Options.LargeLibraryItems}" : "synthetic-server-0001";
     public const string UserId = "synthetic-user-demo";
     public long DurationTicks => Options.Media.DurationTicks;
     private readonly object _gate = new();
@@ -16,6 +16,7 @@ internal sealed class FixtureState
     private readonly ConcurrentDictionary<string, string> _tokens = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, string> _playSessions = new(StringComparer.Ordinal);
     private readonly List<FixturePlaybackEvent> _events = [];
+    private readonly List<FixtureLibraryQuery> _queries = [];
     private readonly Dictionary<string, byte[]> _posters = [];
     private readonly long _mediaLength;
     private int _loginCount;
@@ -26,12 +27,23 @@ internal sealed class FixtureState
     private int _partialResponses;
     private int _capabilityUpdates;
     private int _encodingCleanups;
+    private int _queryCount;
+    private int _imageRequests;
+    private int _activeImages;
+    private int _peakImages;
+    private int _completedImages;
+    private int _canceledImages;
+    private long _imageBytes;
+    private int _injectedPlaybackInfoFailures;
 
     public FixtureState(FixtureOptions options)
     {
         Options = options;
         _mediaLength = new FileInfo(options.MediaPath).Length;
         _items = CreateCatalog().ToDictionary(item => item.Id!, StringComparer.Ordinal);
+        byte[][] largePosters = options.LargeLibraryItems == 0 ? [] : Enumerable.Range(0, 24)
+            .Select(index => FixturePng.Create(480, 720, (40 + index * 31 % 160, 45 + index * 47 % 155, 60 + index * 23 % 140)))
+            .ToArray();
         foreach (var item in _items.Values)
         {
             _userData[item.Id!] = new UserItemDataDto
@@ -39,8 +51,16 @@ internal sealed class FixtureState
                 ItemId = item.Id, Key = item.Id, IsFavorite = false, Played = false,
                 PlaybackPositionTicks = item.Id == "1002" ? 3 * TimeSpan.TicksPerSecond : 0, PlayCount = 0
             };
-            var color = item.Id == "1001" ? (48, 108, 183) : item.Id == "1002" ? (163, 70, 103) : (39, 137, 111);
-            _posters[item.Id!] = FixturePng.Create(240, 360, color);
+            if (item.Id!.StartsWith("large-", StringComparison.Ordinal) && item.Type == "Movie")
+            {
+                var index = int.Parse(item.Id.AsSpan(6), CultureInfo.InvariantCulture);
+                _posters[item.Id] = largePosters[(index - 1) % largePosters.Length];
+            }
+            else
+            {
+                var color = item.Id == "1001" ? (48, 108, 183) : item.Id == "1002" ? (163, 70, 103) : (39, 137, 111);
+                _posters[item.Id] = FixturePng.Create(240, 360, color);
+            }
         }
     }
 
@@ -48,7 +68,8 @@ internal sealed class FixtureState
 
     public PublicSystemInfo PublicInfo => new()
     {
-        Id = ServerId, ServerName = "SYNTHETIC Emby Client Fixture", Version = "synthetic-1.0",
+        Id = ServerId, ServerName = Options.LargeLibraryItems > 0
+            ? $"SYNTHETIC Large Library ({Options.LargeLibraryItems})" : "SYNTHETIC Emby Client Fixture", Version = "synthetic-1.0",
         LocalAddress = $"http://127.0.0.1:{Options.Port}", LocalAddresses = [$"http://127.0.0.1:{Options.Port}"]
     };
 
@@ -108,6 +129,22 @@ internal sealed class FixtureState
     public void MediaRequested(bool range) { Interlocked.Increment(ref _mediaRequests); if (range) Interlocked.Increment(ref _rangeRequests); }
     public void PartialResponse() => Interlocked.Increment(ref _partialResponses);
 
+    public void ImageStarted()
+    {
+        Interlocked.Increment(ref _imageRequests);
+        var active = Interlocked.Increment(ref _activeImages);
+        while (true)
+        {
+            var peak = Volatile.Read(ref _peakImages);
+            if (active <= peak || Interlocked.CompareExchange(ref _peakImages, active, peak) == peak) break;
+        }
+    }
+    public void ImageCompleted(int length) { Interlocked.Increment(ref _completedImages); Interlocked.Add(ref _imageBytes, length); }
+    public void ImageCanceled() => Interlocked.Increment(ref _canceledImages);
+    public void ImageEnded() => Interlocked.Decrement(ref _activeImages);
+    public bool ConsumePlaybackInfoFailure(PlaybackInfoRequest? request) => Options.FailFirstPlaybackInfo
+        && request?.IsPlayback == true && Interlocked.CompareExchange(ref _injectedPlaybackInfoFailures, 1, 0) == 0;
+
     public BaseItemDto? Item(string itemId)
     {
         lock (_gate)
@@ -118,11 +155,14 @@ internal sealed class FixtureState
 
     public QueryResult<BaseItemDto> Views() => new()
     {
-        Items = [Item("movies")!, Item("shows")!], TotalRecordCount = 2
+        Items = Options.LargeLibraryItems > 0
+            ? [Item("movies")!, Item("shows")!, Item("large-movies")!] : [Item("movies")!, Item("shows")!],
+        TotalRecordCount = Options.LargeLibraryItems > 0 ? 3 : 2
     };
 
     public QueryResult<BaseItemDto> Query(IQueryCollection query, string? parentOverride = null,
-        string? typeOverride = null, bool resume = false, bool nextUp = false, bool forceRecursive = false)
+        string? typeOverride = null, bool resume = false, bool nextUp = false, bool forceRecursive = false,
+        string operation = "Items")
     {
         lock (_gate)
         {
@@ -155,18 +195,25 @@ internal sealed class FixtureState
                 ? items.OrderByDescending(item => item.Name, StringComparer.OrdinalIgnoreCase)
                 : items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase);
             var array = items.ToArray();
-            var offset = Integer(query, "StartIndex", 0, 0, 10000);
+            var offset = Integer(query, "StartIndex", 0, 0, Math.Max(10000, _items.Count));
             var limit = Integer(query, "Limit", 50, 1, 500);
+            var page = array.Skip(offset).Take(limit).Select(WithUserData).ToArray();
+            if (Options.LargeLibraryItems > 0)
+                page = page.Select(item => item with { MediaSources = null, MediaStreams = null, Chapters = null }).ToArray();
+            _queries.Add(new FixtureLibraryQuery(++_queryCount, operation,
+                parent is not null && _items.ContainsKey(parent) ? parent : null, offset, limit, page.Length,
+                array.Length, !string.IsNullOrWhiteSpace(search), DateTimeOffset.UtcNow));
+            if (_queries.Count > 200) _queries.RemoveAt(0);
             return new QueryResult<BaseItemDto>
             {
-                Items = array.Skip(offset).Take(limit).Select(WithUserData).ToArray(), TotalRecordCount = array.Length
+                Items = page, TotalRecordCount = array.Length
             };
         }
     }
 
     public BaseItemDto[] Latest(IQueryCollection query)
     {
-        var result = Query(query, forceRecursive: true).Items.Where(item => item.Type is "Movie" or "Episode").ToArray();
+        var result = Query(query, forceRecursive: true, operation: "Latest").Items.Where(item => item.Type is "Movie" or "Episode").ToArray();
         if (Boolean(query, "GroupItems") == false) return result;
         return result.Select(item => item.Type == "Episode" ? Item(item.SeriesId!)! : item)
             .DistinctBy(item => item.Id).ToArray();
@@ -236,7 +283,13 @@ internal sealed class FixtureState
                 CapabilityUpdates = Volatile.Read(ref _capabilityUpdates), EncodingCleanups = Volatile.Read(ref _encodingCleanups),
                 MediaLength = _mediaLength, StartCount = _events.Count(item => item.Kind == "Start"),
                 ProgressCount = _events.Count(item => item.Kind == "Progress"), StopCount = _events.Count(item => item.Kind == "Stop"),
-                Events = _events.ToArray()
+                Events = _events.ToArray(), LargeLibraryItems = Options.LargeLibraryItems, CatalogItems = _items.Count,
+                QueryCount = _queryCount, Queries = _queries.ToArray(), ImageDelayMilliseconds = Options.ImageDelayMilliseconds,
+                ImageRequests = Volatile.Read(ref _imageRequests), ActiveImages = Volatile.Read(ref _activeImages),
+                PeakActiveImages = Volatile.Read(ref _peakImages), CompletedImages = Volatile.Read(ref _completedImages),
+                CanceledImages = Volatile.Read(ref _canceledImages), ImageBytesServed = Interlocked.Read(ref _imageBytes),
+                FailFirstPlaybackInfoEnabled = Options.FailFirstPlaybackInfo,
+                InjectedPlaybackInfoFailures = Volatile.Read(ref _injectedPlaybackInfoFailures)
             };
         }
     }
@@ -292,6 +345,14 @@ internal sealed class FixtureState
         yield return Item("2100", "Season 1", "Season", "2000") with { SeriesId = "2000", SeriesName = "Synthetic Screen Tests", IndexNumber = 1 };
         yield return Item("2101", "Synthetic Episode One", "Episode", "2100") with { SeriesId = "2000", SeriesName = "Synthetic Screen Tests", SeasonId = "2100", IndexNumber = 1, ParentIndexNumber = 1 };
         yield return Item("2102", "Synthetic Episode Two", "Episode", "2100") with { SeriesId = "2000", SeriesName = "Synthetic Screen Tests", SeasonId = "2100", IndexNumber = 2, ParentIndexNumber = 1 };
+        if (Options.LargeLibraryItems > 0)
+        {
+            yield return Item("large-movies", $"Synthetic Large Movies ({Options.LargeLibraryItems})", "CollectionFolder")
+                with { CollectionType = "movies", ChildCount = Options.LargeLibraryItems };
+            for (var index = 1; index <= Options.LargeLibraryItems; index++)
+                yield return Item($"large-{index:D6}", $"Synthetic Large Movie {index:D6}", "Movie", "large-movies")
+                    with { ProductionYear = 2000 + index % 27 };
+        }
     }
 
     private static string? Value(IQueryCollection query, string name) => query.TryGetValue(name, out var value) ? value.ToString() : null;
@@ -303,6 +364,8 @@ internal sealed class FixtureState
 
 internal sealed record FixturePlaybackEvent(string Kind, string ItemId, string PlaySessionId, long PositionTicks,
     string? EventName, bool? Failed, DateTimeOffset Timestamp);
+internal sealed record FixtureLibraryQuery(int Sequence, string Operation, string? ParentId, int StartIndex,
+    int Limit, int ReturnedItems, int TotalRecordCount, bool HasSearch, DateTimeOffset Timestamp);
 
 internal sealed class FixtureStats
 {
@@ -321,4 +384,17 @@ internal sealed class FixtureStats
     public int StopCount { get; init; }
     public long MediaLength { get; init; }
     public FixturePlaybackEvent[] Events { get; init; } = [];
+    public int LargeLibraryItems { get; init; }
+    public int CatalogItems { get; init; }
+    public int QueryCount { get; init; }
+    public FixtureLibraryQuery[] Queries { get; init; } = [];
+    public int ImageDelayMilliseconds { get; init; }
+    public int ImageRequests { get; init; }
+    public int ActiveImages { get; init; }
+    public int PeakActiveImages { get; init; }
+    public int CompletedImages { get; init; }
+    public int CanceledImages { get; init; }
+    public long ImageBytesServed { get; init; }
+    public bool FailFirstPlaybackInfoEnabled { get; init; }
+    public int InjectedPlaybackInfoFailures { get; init; }
 }

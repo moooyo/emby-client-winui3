@@ -38,16 +38,24 @@ app.Run(async context =>
 Console.WriteLine($"SYNTHETIC Emby fixture listening at http://127.0.0.1:{options.Port}/emby/");
 Console.WriteLine("Development data only. This service does not establish Emby compatibility.");
 Console.WriteLine("Read playback counters at /_fixture/stats. Request bodies and credentials are not logged.");
+if (options.LargeLibraryItems > 0)
+    Console.WriteLine($"Large-library mode: {options.LargeLibraryItems} synthetic movies in a separate library.");
+if (options.FailFirstPlaybackInfo)
+    Console.WriteLine("The first valid PlaybackInfo POST with IsPlayback=true will return a synthetic HTTP 503.");
 await app.RunAsync();
 
 namespace EmbyClient.FixtureServer
 {
-    internal sealed record FixtureOptions(int Port, string MediaPath, MediaFixtureMetadata Media)
+    internal sealed record FixtureOptions(int Port, string MediaPath, MediaFixtureMetadata Media,
+        int LargeLibraryItems = 0, int ImageDelayMilliseconds = 0, bool FailFirstPlaybackInfo = false)
     {
         public static FixtureOptions Parse(string[] arguments)
         {
             var port = 18960;
             string? mediaDirectory = null;
+            var largeLibraryItems = 0;
+            var imageDelayMilliseconds = 0;
+            var failFirstPlaybackInfo = false;
             for (var index = 0; index < arguments.Length; index++)
             {
                 switch (arguments[index])
@@ -60,8 +68,21 @@ namespace EmbyClient.FixtureServer
                     case "--media-dir" when index + 1 < arguments.Length:
                         mediaDirectory = Path.GetFullPath(arguments[++index]);
                         break;
+                    case "--large-library-items" when index + 1 < arguments.Length:
+                        if (!int.TryParse(arguments[++index], NumberStyles.None, CultureInfo.InvariantCulture, out largeLibraryItems)
+                            || largeLibraryItems is < 1 or > 10000)
+                            throw new ArgumentException("The large-library count must be between 1 and 10000.");
+                        break;
+                    case "--image-delay-ms" when index + 1 < arguments.Length:
+                        if (!int.TryParse(arguments[++index], NumberStyles.None, CultureInfo.InvariantCulture, out imageDelayMilliseconds)
+                            || imageDelayMilliseconds is < 0 or > 1000)
+                            throw new ArgumentException("The synthetic image delay must be between 0 and 1000 milliseconds.");
+                        break;
+                    case "--fail-first-playback-info":
+                        failFirstPlaybackInfo = true;
+                        break;
                     default:
-                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960]");
+                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info]");
                 }
             }
 
@@ -84,7 +105,7 @@ namespace EmbyClient.FixtureServer
                 || !string.Equals(metadata.VideoCodec, "H264", StringComparison.OrdinalIgnoreCase)
                 || !string.Equals(metadata.AudioCodec, "AAC", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The generated media metadata does not match the synthetic MP4.");
-            return new FixtureOptions(port, path, metadata);
+            return new FixtureOptions(port, path, metadata, largeLibraryItems, imageDelayMilliseconds, failFirstPlaybackInfo);
         }
     }
 
