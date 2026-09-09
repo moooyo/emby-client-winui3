@@ -31,7 +31,7 @@
             <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <TextBlock x:Name="PositionText" Text="0:00" VerticalAlignment="Center" />
-                <Slider x:Name="Timeline" Grid.Column="1" Minimum="0" Maximum="1" IsEnabled="False" AutomationProperties.Name="Playback position" KeyUp="TimelineKeyUp" />
+                <Slider x:Name="Timeline" Grid.Column="1" Minimum="0" Maximum="1" IsEnabled="False" AutomationProperties.Name="Playback position" LostFocus="TimelineLostFocus" />
                 <TextBlock x:Name="DurationText" Text="--:--" Grid.Column="2" VerticalAlignment="Center" />
             </Grid>
             <Grid ColumnSpacing="16">

@@ -16,9 +16,10 @@ public sealed partial class PlayerView
 
     public bool IsModalOpen => IsQueueOpen || _diagnosticsDialog is not null;
 
-    public async Task ShowDiagnosticsAsync(XamlRoot xamlRoot, ElementTheme theme)
+    public async Task ShowDiagnosticsAsync(XamlRoot xamlRoot, ElementTheme theme, Control? trigger = null)
     {
         if (IsModalOpen) return;
+        var restoreFocus = CaptureDialogFocus(trigger, xamlRoot);
         var dialog = new PlaybackDiagnosticsDialog(_diagnostics) { XamlRoot = xamlRoot, RequestedTheme = theme };
         _diagnosticsDialog = dialog;
         UpdateQueueControls();
@@ -27,6 +28,7 @@ public sealed partial class PlayerView
         {
             if (ReferenceEquals(_diagnosticsDialog, dialog)) _diagnosticsDialog = null;
             UpdateQueueControls();
+            restoreFocus();
         }
     }
 

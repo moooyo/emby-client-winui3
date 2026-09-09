@@ -92,6 +92,25 @@ Executable SHA-256: `B1CBF350968A64456C975932591CDD62FC08D3ED72BDD6892925CEF76F9
 
 Original JPEG screenshots and UTC stage records are in ignored `artifacts/ui-validation/2026-09-09/final-b1cb/`. The complete Release test script also passed all 340 tests after the cleanup change. The separately instrumented [Reset lifetime evidence](large-library-validation.md#libraryobservation-before-and-after-collection-reset-cleanup) establishes the bound-source count, which cannot be read from screenshots alone.
 
+## Keyboard timeline and dialog focus checkpoints: DBC6C326 and 77A90D2D
+
+The DBC6C326 executable (`DBC6C326B9B17B953EBE7F68E6270B489AEFB4E204F05CE4326C4EFC0AF5C5FB`) adds keyboard editing ownership to the timeline. Slider adjustment keys retain their native value behavior; the 500 ms position refresh cannot overwrite a pending edit, and KeyUp submits the captured value against its original playback ID. Lost focus, stopping, disconnection, unloading, and a replaced playback context invalidate the edit.
+
+Actual DirectStream playback of the generated 60-second fixture was paused at approximately 13 seconds. Shift+Tab focused the timeline with a visible focus outline. Home sought to zero and showed the blue source frame; Right advanced to one second and Up to two seconds, with pause retained. Page Up at zero and Page Down at one second produced no visible value change; no large-step behavior is claimed. Tab moved to Resume, Space resumed playback, F11 entered fullscreen, Escape restored the window, and Space still paused the same player afterward. The tool sends individual key presses and did not verify a sustained physical key hold across a refresh interval. The held-edit guard also has static ownership/lifecycle review; it is not represented as a physical-key stress test.
+
+This run exposed a separate focus defect: opening Queue from the library and closing it with Escape focused Appearance. Pressing Enter then opened the appearance menu instead of Queue. The original screenshots and stage times are retained under ignored `artifacts/ui-validation/2026-09-09/keyboard-dbc6/`.
+
+The corrected executable is `77A90D2DD8D3AD527BFFCFF40361BEAB39FDC2A8F3C90F72E2340506BB21D9E8`. Queue and Diagnostics now receive the actual triggering control, re-enable both toolbars after the dialog completes, and restore that control only if the session, playback intent, view, and visible usable target remain current. No focus restoration is attempted into a replaced or collapsed view.
+
+| Entry point | Observed corrected behavior |
+| --- | --- |
+| Library Queue | Escape returned the visible focus outline to Queue; Enter reopened Queue. Activating its Close button with Enter again returned focus to Queue. |
+| Library Diagnostics | Tab from Queue reached Diagnostics; Enter opened it. Escape returned focus and Enter reopened Diagnostics. Clicking Close also allowed Enter to reopen the same dialog. |
+| Player Queue | The same Escape/Enter round trip worked over paused DirectStream video. Activating Close with Enter returned the outline to the player Queue button. |
+| Player Diagnostics | Tab/Enter opened the dark native dialog. Both Escape and the clicked Close button allowed Enter to reopen Diagnostics, with pause and the 18-second frame retained. |
+
+The synthetic account was signed out and the final app window/process closed. Original screenshots and stage times are under ignored `artifacts/ui-validation/2026-09-09/focus-77a9/`. Both ordinary AOT publishes succeeded with only the existing generated CS0618 warning. These finite keyboard/focus checks do not establish Narrator, physical media keys, all keyboard layouts, or multi-monitor DPI acceptance.
+
 ## Remaining final-build acceptance
 
 An earlier relay/SMTC application checkpoint, executable SHA-256 `2ED8644A666DBDA41178171B802E15D1856F680D23C99EBBA2D19C68501FDA4C`, displayed real original video and closed its playing window without an observed crash dialog. The native probe independently checked SMTC Playing, Paused, and retired state. The automation tool did not support the physical media-key input, so that input path has not been established.

@@ -1,6 +1,6 @@
 # Large-library Native AOT validation: limited results
 
-Date: 2026-09-09. Four finite Native AOT UI captures each loaded six initial pages, or 288 records, from a 5,000-item synthetic library. **Collection Reset cleanup is now observed in the conditional observation build; memory stability remains unverified.** Its Home state has one bound poster source among 46 subscribed images, with no pending view poster requests. Earlier captures still show private-byte growth and elevated Home readings. The later process CSV ends before Home, so it cannot establish that this growth was resolved. These observations do not establish a memory plateau, a leak-free implementation, full-library loading, or a realized-container count. Different input timing and instrumentation prevent a controlled performance comparison across runs.
+Date: 2026-09-09. Five finite Native AOT UI captures each loaded six initial pages, or 288 records, from a 5,000-item synthetic library. **Targeted collection Reset cleanup was observed in an instrumented build, but private bytes still increased in the later normal AOT build.** That normal build completed five revisits and a separate Home-idle sampling period, during which private bytes rose from 294.13 to 302.65 MiB while image-request counters stayed unchanged. The earlier cleanup evidence remains valid, and memory stability remains unverified. These observations do not establish a memory plateau, a leak-free implementation, full-library loading, or a realized-container count. Different input timing, starting states, and instrumentation prevent a controlled performance comparison across runs.
 
 ## Initial trial: identity and evidence boundaries
 
@@ -252,8 +252,66 @@ The separate [80-cycle NativePosterDecoder receipt](../../tools/EmbyClient.Nativ
 
 This baseline has no library paging, card collection, cache, or concurrent poster population. It also records increasing private/managed bytes, no natural GC collections, and allocations from its own cumulative reporting. It does not reproduce the library's handle climb or establish a library-memory root cause. **An isolated one-Image baseline is not large-library acceptance** and does not replace any failed or incomplete memory result above.
 
+## Normal Native AOT B1CB: five revisits and separate Home sampling
+
+### Identity and completed scope
+
+The operator identifies this as the normal Native AOT app, **without the LibraryObservation observer**, using PID `28856` and executable SHA-256 `B1CBF350968A64456C975932591CDD62FC08D3ED72BDD6892925CEF76F9AD7A5`. The [preserved stage log](../../tools/EmbyClient.LibraryObservation/verification/normal-b1cb/observations.json) records `includeText: false` and a 1268 x 834 window. This capture has no observer weak-target, bound-source, or GC counters. The prior instrumented source-cleanup result must remain associated with its own executable.
+
+The operator reports no forced GC, build, media conversion, or native probe during these samples. Other concurrent work was limited to lightweight reading or source edits. Window observations used screenshots without requested UIA tree/text retrieval.
+
+All **six pages / 288 records were preloaded before the main process sampler started**. The [preserved fixture snapshot](../../tools/EmbyClient.LibraryObservation/verification/normal-b1cb/fixture-after.json) records page sequences 2–7, at offsets 0 through 240, each returning 48 of 5,000 records. The final page request was at 04:14:55.492 UTC and its screenshot at 04:14:55.886. Thus the first process sample at 04:14:56.266, already **165.00 MiB private bytes**, is a loaded-library baseline, not a cold Home baseline. Setup/loading memory growth is outside this CSV.
+
+After setup, the operator completed three forward scrolls to approximately items 51, 101, and 151, then **five** top-to-51 revisits. Their screenshot timestamps were 04:16:49.485, 04:17:12.950, 04:17:37.376, 04:18:23.703, and 04:18:50.981 UTC. Home followed at 04:19:21.450, after the fixture's Home/Resume query at 04:19:20.573. No further library pages appear in the fixture history. The final Home screenshot is at 04:22:55.064.
+
+### Two preserved CSV files with independent clocks
+
+The following are exact copies of the supplied CSV files. They remain separate and retain their original `ElapsedSeconds` values:
+
+| File and purpose | Rows | Configured duration | Actual UTC row window | First / last elapsed seconds |
+| --- | ---: | ---: | --- | --- |
+| [Main scrolling/revisit CSV](../../tools/EmbyClient.LibraryObservation/verification/normal-b1cb/memory-20260909-121456-8d41aa92.csv) | 60 | 300 s | 04:14:56.266–04:19:52.206 | 0.009 / 295.948 |
+| [Separate Home-idle CSV](../../tools/EmbyClient.LibraryObservation/verification/normal-b1cb/home-idle/memory-20260909-121940-73242413.csv) | 36 | 180 s | 04:19:40.291–04:22:35.930 | 0.015 / 175.653 |
+
+Their UTC windows **overlap by 11.915 seconds**, from 04:19:40.291 through 04:19:52.206. Each file has three rows in that overlap, taken at different instants. The tail begins with its own elapsed zero approximately 18.841 seconds after the Home screenshot. Do not concatenate the elapsed columns, add the configured durations as non-overlapping coverage, or describe the main 300-second file as covering the entire later idle period.
+
+Both configured sampling runs completed, but neither has a row exactly at its duration boundary. The last tail row is approximately 194.480 seconds after the Home screenshot. The final Home screenshot occurs another 19.134 seconds after that row and supplies no additional process-memory reading.
+
+### Main capture and repeated content
+
+The following main-CSV checkpoints use the first row after each listed screenshot stage, except for the already-loaded baseline:
+
+| Main CSV checkpoint | UTC | Private MiB | Handles | Image requests |
+| --- | --- | ---: | ---: | ---: |
+| Six pages already loaded | 04:14:56.266 | 165.00 | 1,194 | 41 |
+| After forward 3 | 04:16:21.592 | 204.83 | 1,242 | 176 |
+| After revisit 1 | 04:16:51.687 | 246.99 | 1,310 | 222 |
+| After revisit 2 | 04:17:16.740 | 244.56 | 1,320 | 222 |
+| After revisit 3 | 04:17:41.819 | 259.18 | 1,306 | 222 |
+| After revisit 4 | 04:18:26.958 | 274.61 | 1,312 | 222 |
+| After revisit 5 | 04:18:52.018 | 283.24 | 1,279 | 222 |
+| First row after Home | 04:19:22.110 | 294.13 | 1,390 | 223 |
+
+The revisit endpoints include a reduction from 246.99 to 244.56 MiB, followed by higher later readings. They are not monotonically increasing, and handles fluctuate independently. Image requests remain at 222 across all five sampled revisit endpoints and increase to 223 at Home. Repeated-content process growth therefore remains visible without additional library pages or additional image HTTP requests between those revisit endpoints; these counters do not identify which managed/native allocations caused it.
+
+The main file ends at **294.61 MiB private bytes, 316.70 MiB working set, and 1,382 handles**. Relative to its loaded baseline, those changes are **+129.61 MiB private bytes, +125.80 MiB working set, and +188 handles**. These are main-file deltas only, not an app-startup delta or a sum with the overlapping tail.
+
+### Home tail: memory growth with unchanged network counters
+
+| Separate tail checkpoint | UTC | Private MiB | Working-set MiB | Handles |
+| --- | --- | ---: | ---: | ---: |
+| First row | 04:19:40.291 | 294.13 | 316.66 | 1,390 |
+| Last row | 04:22:35.930 | 302.65 | 325.12 | 1,311 |
+| Tail-only change | Approximately 175.639 s between rows | +8.52 | +8.46 | -79 |
+
+All 36 tail rows have **223 image requests, 219 completions, 4 cancellations, zero active images, and 8 queries**. The unchanged completed/canceled totals reconcile with the request total. These are fixture image-route counters, not a count of every HTTP request made by the app. The declining handle count does not establish stable private memory: **private bytes still increase by 8.52 MiB during the separately sampled Home tail**.
+
+In the main capture, the historical server image peak advances from 4 to 5, first sampled at 04:16:06.537. All main and tail instantaneous active-image samples are zero. As in the earlier runs, the server handler lifetime differs from the client's four-permit cache boundary; this sparse data does not attribute the transient peak. The fixture records no playback negotiation, media request, or injected failure in this run.
+
+This normal-build result adds complete five-revisit coverage and a longer sampled Home period without the conditional observer. It does **not** show that private-byte growth has stabilized or that the earlier Reset repair resolved every resource issue. It also is not a strict performance comparison with the earlier two-revisit, cold-Home-baseline, or instrumented captures. No native allocation/GC trace was collected here, so the cause and retained allocation types remain open.
+
 ## Follow-up and status
 
-The four finite scrolling captures cover six initial pages each. The latest instrumented run also confirms normal posters after Home, reopen, detail, and return, and directly confirms the targeted Reset source cleanup. **A focused memory investigation remains warranted.** A comparable after-build process capture would need to include all revisits and a final Home interval; the current after CSV does not. The independent decoder baseline and natural-GC weak-target reductions narrow observations but do not identify every retained allocation or establish convergence. Further attribution may require managed/native allocation data and the lifecycle of cached visual containers. A concurrency investigation would need client permit-release and server request start/end/cancellation timelines.
+The five finite scrolling captures cover six initial pages each. The instrumented Reset run confirms normal posters after Home, reopen, detail, and return, and directly confirms the targeted source cleanup. The later normal B1CB run completes five revisits and a separate Home tail, closing that coverage gap for its own executable while still showing increasing private bytes. **A focused memory investigation remains warranted.** The independent decoder baseline and natural-GC weak-target reductions narrow observations but do not identify every retained allocation or establish convergence. Further attribution may require managed/native allocation data and the lifecycle of cached visual containers. A concurrency investigation would need client permit-release and server request start/end/cancellation timelines.
 
-Do not force garbage collection merely to make an acceptance graph drop, equate working set with live heap, infer realized-container counts from UIA or subscription counts, or label these results as “all 5,000 items tested” or “no memory growth.” This report update only read existing artifacts and source and edited this document. It did not change product code, run probes/builds, request further UI actions, or take additional process samples.
+Do not force garbage collection merely to make an acceptance graph drop, equate working set with live heap, infer realized-container counts from UIA or subscription counts, or label these results as “all 5,000 items tested” or “no memory growth.” This documentation update used existing evidence, preserved the two B1CB CSVs and its stage/fixture JSON files, and edited this report. It did not change product code, run probes/builds, request further UI actions, or take additional process samples.

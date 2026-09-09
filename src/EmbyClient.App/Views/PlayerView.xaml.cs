@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.System;
 
 namespace EmbyClient.App.Views;
@@ -23,6 +24,7 @@ public sealed partial class PlayerView : UserControl
     private readonly PlaybackNotificationOwner _notificationOwner = new();
     private bool _updating;
     private bool _scrubbing;
+    private Guid? _keyboardTimelinePlaybackId;
     private bool _advancing;
     private Guid? _displayedPlayback;
     private long _bitrate = 20_000_000;
@@ -46,6 +48,10 @@ public sealed partial class PlayerView : UserControl
         _queue.Changed += (_, _) => UpdateQueueControls();
         Timeline.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrubbing = true), true);
         Timeline.AddHandler(PointerReleasedEvent, new PointerEventHandler(TimelineReleased), true);
+        // Slider handles its adjustment keys; observe them without replacing native value changes.
+        Timeline.AddHandler(KeyDownEvent, new KeyEventHandler(TimelineKeyDown), true);
+        Timeline.AddHandler(KeyUpEvent, new KeyEventHandler(TimelineKeyUp), true);
+        Unloaded += (_, _) => _keyboardTimelinePlaybackId = null;
         _clock.Tick += (_, _) =>
         {
             UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
@@ -87,9 +93,10 @@ public sealed partial class PlayerView : UserControl
 
     internal QueueAddResult Enqueue(BaseItemDto item) => _session is null ? QueueAddResult.InvalidItem : _queue.TryAdd(item);
 
-    public async Task ShowQueueAsync(XamlRoot xamlRoot, ElementTheme theme)
+    public async Task ShowQueueAsync(XamlRoot xamlRoot, ElementTheme theme, Control? trigger = null)
     {
         if (_session is null || IsModalOpen) return;
+        var restoreFocus = CaptureDialogFocus(trigger, xamlRoot);
         var dialog = new PlaybackQueueDialog(_queue) { XamlRoot = xamlRoot, RequestedTheme = theme };
         _queueDialog = dialog;
         UpdateQueueControls();
@@ -99,7 +106,30 @@ public sealed partial class PlayerView : UserControl
             dialog.Detach();
             if (ReferenceEquals(_queueDialog, dialog)) _queueDialog = null;
             UpdateQueueControls();
+            restoreFocus();
         }
+    }
+
+    private Action CaptureDialogFocus(Control? trigger, XamlRoot xamlRoot)
+    {
+        var session = _session;
+        var intent = _playIntent;
+        var playerVisibility = Visibility;
+        return () =>
+        {
+            if (trigger is null || IsModalOpen || !ReferenceEquals(session, _session)
+                || intent != _playIntent || playerVisibility != Visibility) return;
+            try
+            {
+                if (!trigger.IsLoaded || !trigger.IsEnabled || !ReferenceEquals(trigger.XamlRoot, xamlRoot)
+                    || trigger.ActualWidth <= 0 || trigger.ActualHeight <= 0) return;
+                for (DependencyObject? element = trigger; element is not null; element = VisualTreeHelper.GetParent(element))
+                    if (element is UIElement visual && visual.Visibility != Visibility.Visible) return;
+                // The caller has re-enabled both toolbar entries before restoring the original target.
+                trigger.Focus(FocusState.Programmatic);
+            }
+            catch (Exception) { /* Focus restoration is best effort when the window is closing. */ }
+        };
     }
 
     private void UpdateQueueControls()
@@ -188,6 +218,7 @@ public sealed partial class PlayerView : UserControl
 
     private (long Intent, CancellationToken Token) BeginPlayRequest(PlaybackCoordinator coordinator, bool preserveRecovery = false)
     {
+        _keyboardTimelinePlaybackId = null;
         var intent = ++_playIntent;
         // Invalidate old notifications before cancellation can publish another terminal status.
         _notificationOwner.BeginPlay(coordinator, intent, coordinator.ActiveContext?.PlaybackId);
@@ -319,13 +350,19 @@ public sealed partial class PlayerView : UserControl
     private void UpdatePosition()
     {
         var context = _coordinator?.ActiveContext;
-        if (context is null) return;
+        if (context is null)
+        {
+            _keyboardTimelinePlaybackId = null;
+            return;
+        }
         _engine?.UpdateMediaControls(context, _coordinator!.Status, TitleText.Text);
         var duration = context.Source.RunTimeTicks;
         PositionText.Text = FormatTime(context.PositionTicks);
         DurationText.Text = duration.HasValue ? FormatTime(duration.Value) : "Live";
         Timeline.IsEnabled = context.CanSeek && duration > 0;
-        if (!_scrubbing)
+        if (_keyboardTimelinePlaybackId != context.PlaybackId || !Timeline.IsEnabled)
+            _keyboardTimelinePlaybackId = null;
+        if (!_scrubbing && _keyboardTimelinePlaybackId is null)
         {
             Timeline.Maximum = Math.Max(1, duration.GetValueOrDefault() / (double)TimeSpan.TicksPerSecond);
             Timeline.Value = Math.Clamp(context.PositionTicks / (double)TimeSpan.TicksPerSecond, 0, Timeline.Maximum);
@@ -365,6 +402,7 @@ public sealed partial class PlayerView : UserControl
         if (!ReferenceEquals(sender, _engine) || coordinator?.ActiveContext?.PlaybackId != args.PlaybackId) return;
         if (args.Command == NativeMediaCommand.Stop)
         {
+            _keyboardTimelinePlaybackId = null;
             _notificationOwner.BeginStop(coordinator, ++_playIntent, args.PlaybackId);
             _retryRecoveryId = null;
             UpdateRecoveryControls();
@@ -399,11 +437,27 @@ public sealed partial class PlayerView : UserControl
         await SeekFromSliderAsync();
     }
 
+    private static bool IsTimelineAdjustmentKey(VirtualKey key) => key is VirtualKey.Left or VirtualKey.Right
+        or VirtualKey.Up or VirtualKey.Down or VirtualKey.Home or VirtualKey.End or VirtualKey.PageUp or VirtualKey.PageDown;
+
+    private void TimelineKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (IsTimelineAdjustmentKey(args.Key) && Timeline.IsEnabled
+            && _coordinator?.ActiveContext is { CanSeek: true } context)
+            _keyboardTimelinePlaybackId ??= context.PlaybackId;
+    }
+
     private async void TimelineKeyUp(object sender, KeyRoutedEventArgs args)
     {
-        if (args.Key is VirtualKey.Left or VirtualKey.Right or VirtualKey.Home or VirtualKey.End or VirtualKey.PageUp or VirtualKey.PageDown)
-            await SeekFromSliderAsync();
+        if (!IsTimelineAdjustmentKey(args.Key) || _keyboardTimelinePlaybackId is not { } playbackId) return;
+        var value = Timeline.Value;
+        var coordinator = _coordinator;
+        _keyboardTimelinePlaybackId = null;
+        if (coordinator is not null && Timeline.IsEnabled)
+            await RunAsync(() => coordinator.SeekAsync(playbackId, checked((long)(value * TimeSpan.TicksPerSecond))));
     }
+
+    private void TimelineLostFocus(object sender, RoutedEventArgs args) => _keyboardTimelinePlaybackId = null;
 
     private Task SeekFromSliderAsync() => RunAsync(async () =>
     {
@@ -481,9 +535,9 @@ public sealed partial class PlayerView : UserControl
 
     private async void NextClicked(object sender, RoutedEventArgs args) => await AdvanceAsync();
     private async void QueueClicked(object sender, RoutedEventArgs args) =>
-        await RunAsync(() => ShowQueueAsync(XamlRoot, RequestedTheme));
+        await RunAsync(() => ShowQueueAsync(XamlRoot, RequestedTheme, sender as Control));
     private async void DiagnosticsClicked(object sender, RoutedEventArgs args) =>
-        await RunAsync(() => ShowDiagnosticsAsync(XamlRoot, RequestedTheme));
+        await RunAsync(() => ShowDiagnosticsAsync(XamlRoot, RequestedTheme, sender as Control));
     private void FullscreenClicked(object sender, RoutedEventArgs args) => FullscreenRequested?.Invoke(this, EventArgs.Empty);
     private void BackClicked(object sender, RoutedEventArgs args) => BackRequested?.Invoke(this, EventArgs.Empty);
 
@@ -574,6 +628,7 @@ public sealed partial class PlayerView : UserControl
 
     public Task StopAsync()
     {
+        _keyboardTimelinePlaybackId = null;
         _displayRequest.Suspend();
         var intent = ++_playIntent;
         _retryRecoveryId = null;
@@ -587,6 +642,7 @@ public sealed partial class PlayerView : UserControl
 
     public async Task DisconnectAsync()
     {
+        _keyboardTimelinePlaybackId = null;
         _displayRequest.Suspend();
         _queueDialog?.Hide();
         _diagnosticsDialog?.Hide();

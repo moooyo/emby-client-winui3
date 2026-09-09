@@ -201,14 +201,14 @@ public sealed partial class MainPage : Page
     private async void QueueClicked(object sender, RoutedEventArgs args)
     {
         if (_session is null || _sessionTransition || _shuttingDown) return;
-        try { await Player.ShowQueueAsync(XamlRoot, RequestedTheme); }
+        try { await Player.ShowQueueAsync(XamlRoot, RequestedTheme, sender as Control); }
         catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error); }
     }
 
     private async void DiagnosticsClicked(object sender, RoutedEventArgs args)
     {
         if (_sessionTransition || _shuttingDown) return;
-        try { await Player.ShowDiagnosticsAsync(XamlRoot, RequestedTheme); }
+        try { await Player.ShowDiagnosticsAsync(XamlRoot, RequestedTheme, sender as Control); }
         catch (Exception) { ShowNotice("Playback diagnostics could not be opened. Try again.", InfoBarSeverity.Warning); }
     }
 
