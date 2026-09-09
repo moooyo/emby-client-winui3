@@ -122,7 +122,10 @@ try {
             Sha256 = (Get-FileHash -LiteralPath $executable.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         }
         RuntimeObservation = [ordered]@{
-            SchemaVersion = 2
+            SchemaVersion = 3
+            StartTrigger = 'FirstLibrarySetSessionAfterAuthentication'
+            StartTriggerCode = 1
+            OneShot = $true
             FileName = 'library-observation.jsonl'
             MaximumBytes = 1048576
             MaximumSeconds = 1800

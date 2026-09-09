@@ -1,0 +1,22 @@
+{
+  "Scope": "Read-only IL inspection of intermediate assemblies; the application was not loaded or executed",
+  "Result": "Passed",
+  "Assemblies": [
+    {
+      "Assembly": "D:\\Code\\emby-client-winui3\\tools\\EmbyClient.LibraryObservation\\artifacts\\build-publish-session-triggered-20260910\\normal-build\\bin\\EmbyClient.App\\release_win-x64\\EmbyClient.App.dll",
+      "Sha256": "4799D527961D42FAB88BB2CD51C19F2B02D108BD0E8A3D98AF141590E46B1804",
+      "StartHookDefinitions": 0,
+      "Callers": []
+    },
+    {
+      "Assembly": "D:\\Code\\emby-client-winui3\\tools\\EmbyClient.LibraryObservation\\artifacts\\build-publish-session-triggered-20260910\\observation-build\\bin\\EmbyClient.App\\release_win-x64\\EmbyClient.App.dll",
+      "Sha256": "F74457B432293C31B0E3CECC5D2DE98286A510CDFB924BEE6F5123C6B6036415",
+      "StartHookDefinitions": 1,
+      "Callers": [
+        "EmbyClient.App.Views.LibraryView+<SetSessionAsync>d__29::MoveNext"
+      ]
+    }
+  ],
+  "InitialHelperFailure": "The first metadata helper run could not serialize its report because reflection JSON was disabled. It was changed to source-generated JSON and rerun successfully; neither product build failed.",
+  "RuntimeAcceptance": "NotRun by this check"
+}

@@ -29,7 +29,7 @@ public sealed partial class LibraryView : UserControl
     private bool _updatingNavigation;
     private bool _updatingHomeSection;
 
-    partial void ObservationInitialize();
+    partial void ObservationSessionStarted();
     partial void ObservationPosterLoaded(Image image);
     partial void ObservationPosterUnloaded(Image image);
     partial void ObservationPosterTagChanged(DependencyObject sender);
@@ -46,7 +46,6 @@ public sealed partial class LibraryView : UserControl
         ViewModel.Items.CollectionChanged += Items_CollectionChanged;
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.SessionExpired += ViewModel_SessionExpired;
-        ObservationInitialize();
     }
 
     public LibraryViewModel ViewModel { get; } = new();
@@ -63,6 +62,7 @@ public sealed partial class LibraryView : UserControl
 
     public async Task SetSessionAsync(EmbyApiClient api, string serverId, UserDto user, CancellationToken cancellationToken = default)
     {
+        ObservationSessionStarted();
         CancelPosterRequests();
         SearchBox.Text = string.Empty;
         await ViewModel.SetSessionAsync(api, serverId, user, cancellationToken);

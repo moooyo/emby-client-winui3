@@ -1,0 +1,30 @@
+{
+  "SourceBaseRevision": "4e02d18",
+  "Problem": "The startup-based collector expired during the manual authentication handoff, before library work could be measured",
+  "Change": "Start the one-shot bounded collector at the first authenticated Library.SetSessionAsync call; no log or timer starts in the constructor",
+  "NormalReleaseBuild": "Passed",
+  "ObservationNativeAot": "Passed",
+  "Executable": {
+    "FileName": "EmbyClient.App.exe",
+    "SizeBytes": 18014720,
+    "Sha256": "257b0f462e2b0d45c34eb6632e2c29edf184310047905fc48bc069d5e3212cbe"
+  },
+  "SourceInputsUnchangedDuringBuild": true,
+  "SourceHashesMatchAtArchive": true,
+  "DefaultObservationCompileSources": 0,
+  "EnabledObservationCompileSources": 1,
+  "NormalStartHookDefinitions": 0,
+  "EnabledStartHookDefinitions": 1,
+  "EnabledStartHookCallers": [
+    "EmbyClient.App.Views.LibraryView+<SetSessionAsync>d__29::MoveNext"
+  ],
+  "SchemaVersion": 3,
+  "StartTriggerCode": 1,
+  "OneShot": true,
+  "MaximumSecondsAfterSessionStart": 1800,
+  "MaximumBytes": 1048576,
+  "Warnings": [
+    "Existing generated WinUIEx CS0618"
+  ],
+  "RuntimeAcceptance": "Pending the newly published application run; previous BA6A logs are not relabeled"
+}

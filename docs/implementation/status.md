@@ -66,6 +66,8 @@ Real-server checks used an isolated official Emby `4.9.5.0` Linux amd64 instance
 
 ## Remaining release gates
 
+The BA6A collector's startup-based timeout expired before both delayed manual sign-in handoffs. The [257B0F46 observation repair](verification/observation-session-triggered-20260910.json) now starts its bounded window at the first authenticated Library.SetSessionAsync call. Normal Release and enabled AOT compile, and IL inspection confirms no normal start hook and only one enabled caller in session setup. This corrects the test workflow; library-memory acceptance remains pending.
+
 The subsequent [bc3d290 hosted run](verification/windows-ci-bc3d290.json) now passes all 449 tests, normal AOT, and unsigned MSIX checks, including the startup-initialization repair. The BA6A client is awaiting manual saved sign-in. Its frozen prefixes show allocation without poster/playback-clock work, then a natural Gen 0 collection that reduces ManagedBytes by 13.8369 MiB and a finite private-byte tail with no sampled change. The [first-GC analysis](verification/ui-ba6a-presignin-20260910/pre-sign-in-first-gc-analysis.json) does not replace the pending library/Home experiment or close the memory gate. Further automated continuation is blocked on the manual authentication handoff; the controlled-fixture launch restriction also remains unresolved.
 
 - Resolve large-library memory behavior and complete the remaining subtitle and integrated acceptance checks.

@@ -36,10 +36,14 @@ public sealed partial class LibraryView
     private int _observedDecodePeak;
     private long _observationAllocatedBytes;
     private long _observationSamples;
+    private bool _observationStartAttempted;
     private bool _observationActive;
 
-    partial void ObservationInitialize()
+    partial void ObservationSessionStarted()
     {
+        // The first authenticated session owns this one attempt, including a missing marker or I/O failure.
+        if (_observationStartAttempted) return;
+        _observationStartAttempted = true;
         // Only the separately published observation directory receives a log. Never overwrite a prior run.
         if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "library-observation-build.json"))) return;
         try
@@ -181,7 +185,8 @@ public sealed partial class LibraryView
             using (var writer = new Utf8JsonWriter(buffer))
             {
                 writer.WriteStartObject();
-                writer.WriteNumber("SchemaVersion", 2);
+                writer.WriteNumber("SchemaVersion", 3);
+                writer.WriteNumber("StartTrigger", 1);
                 writer.WriteNumber("UtcUnixTimeMilliseconds", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 writer.WriteNumber("ElapsedMilliseconds", (long)elapsed.TotalMilliseconds);
                 writer.WriteNumber("ProcessId", Environment.ProcessId);
