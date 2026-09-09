@@ -1,0 +1,469 @@
+{
+  "EvidenceKind": "RecordedFfmpegTailCommandReplay",
+  "Report": {
+    "OutputDirectory": "<artifact-output-directory>",
+    "OfficialFfmpegSha256": "0307ef7d12036e6fc9f6f25cba1396159160f1e4d8a553cb4f6271be0e152c9b",
+    "ServerInputsUnchanged": true,
+    "ServerApiRequests": 0,
+    "Cases": [
+      {
+        "Case": "successful-mp4-srt",
+        "SourceLog": "ffmpeg-transcode-9424f1b0-7461-4276-a5f3-1c487da9b642_1.txt",
+        "SourceLogSha256": "0b25aea1449acc204e53c9d3dc909289c69dd01640f7a21b3bfc1f42244739cb",
+        "InputSha256": "cff6e01f40ca1478eadba80d4570645e979ad6ee7bd32b326fb5152982a37459",
+        "InputFileName": "Fixture (2026).mp4",
+        "ReplacedOutputPathsOnly": [
+          {
+            "Option": "-print_graphs_file",
+            "OriginalFileName": "ffmpeg-transcode-9424f1b0-7461-4276-a5f3-1c487da9b642_1graph.txt",
+            "NewFileName": "ffmpeg-transcode-9424f1b0-7461-4276-a5f3-1c487da9b642_1graph.txt"
+          },
+          {
+            "Option": "-segment_list",
+            "OriginalFileName": "638967.m3u8",
+            "NewFileName": "638967.m3u8"
+          },
+          {
+            "Option": "segment-output",
+            "OriginalFileName": "638967_%d.ts",
+            "NewFileName": "638967_%d.ts"
+          }
+        ],
+        "CommandOptions": [
+          [
+            "-copyts",
+            true
+          ],
+          [
+            "-start_at_zero",
+            true
+          ],
+          [
+            "-ss",
+            "00:00:39.000"
+          ],
+          [
+            "-c:v:0",
+            "h264"
+          ],
+          [
+            "-sn",
+            true
+          ],
+          [
+            "-c:v:0",
+            "libx264"
+          ],
+          [
+            "-g:v:0",
+            "90"
+          ],
+          [
+            "-keyint_min:v:0",
+            "90"
+          ],
+          [
+            "-r:v:0",
+            "30"
+          ],
+          [
+            "-c:a:0",
+            "aac"
+          ],
+          [
+            "-avoid_negative_ts",
+            "disabled"
+          ],
+          [
+            "-segment_time",
+            "00:00:03.000"
+          ],
+          [
+            "-segment_start_number",
+            "13"
+          ],
+          [
+            "-individual_header_trailer",
+            "0"
+          ],
+          [
+            "-write_header_trailer",
+            "0"
+          ],
+          [
+            "-segment_write_temp",
+            "1"
+          ]
+        ],
+        "SubtitleFilterPresent": true,
+        "ExitCode": 0,
+        "OutputShape": [
+          {
+            "Name": "638967.m3u8",
+            "Bytes": 361,
+            "Sha256": "e6954c355b3e45cada5a2a5c8e2c61cb0d6f550fbcb549fe74eb944d2370571e"
+          },
+          {
+            "Name": "638967_13.ts",
+            "Bytes": 87044,
+            "Sha256": "508d48cb38856dddeeb2b00df7aec6e58adb03f753fc76e52406d981dd75af6f"
+          },
+          {
+            "Name": "638967_14.ts",
+            "Bytes": 82532,
+            "Sha256": "ce8554d6975035595439ce14487116206b318eaf42be3c47e0be1a33072f1219"
+          },
+          {
+            "Name": "638967_15.ts",
+            "Bytes": 82156,
+            "Sha256": "9969901525811809d1b256b59d6aa0c4deb4503222c6eac5376fed2822479bcb"
+          },
+          {
+            "Name": "638967_16.ts",
+            "Bytes": 82344,
+            "Sha256": "298d46f5654e4c66fcf00135ce969efecbf7fd8c5686ebd68a5c36c256534f23"
+          },
+          {
+            "Name": "638967_17.ts",
+            "Bytes": 82156,
+            "Sha256": "9886a59de0023fa24343081d0c1c18cea10d4941ec7a619e3c1030d7c03e4d13"
+          },
+          {
+            "Name": "638967_18.ts",
+            "Bytes": 82532,
+            "Sha256": "97ba80cecff7f1628dfed9c99af49134934eeb2f2bfbdf583f977b17b4182bf5"
+          },
+          {
+            "Name": "638967_19.ts",
+            "Bytes": 82532,
+            "Sha256": "acdf83d185466400eeb03b1c2b941f2acea414cfac0bf64df53e39703d519cfa"
+          },
+          {
+            "Name": "638967_20.ts",
+            "Bytes": 2256,
+            "Sha256": "9ee1c0987331fb2a6fe5910f52b073386cc4fdbb2de4fad740b79ff1fcae7f81"
+          }
+        ],
+        "TailFiles": [
+          {
+            "Name": "638967_20.ts",
+            "Bytes": 2256,
+            "ProbeExitCode": 0,
+            "Streams": [
+              {
+                "index": 0,
+                "codec_type": "video",
+                "codec_name": "h264",
+                "start_time": "70.000000",
+                "duration": "0.066667",
+                "r_frame_rate": "30/1",
+                "avg_frame_rate": "0/0"
+              },
+              {
+                "index": 1,
+                "codec_type": "audio",
+                "codec_name": "aac",
+                "start_time": "69.949333",
+                "duration": "0.021333",
+                "r_frame_rate": "0/0",
+                "avg_frame_rate": "0/0"
+              }
+            ],
+            "PacketCount": 5,
+            "Packets": [
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.949333",
+                "dts_time": "69.949333",
+                "duration_time": "0.021333",
+                "size": "349",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.970667",
+                "dts_time": "69.970667",
+                "duration_time": "0.021333",
+                "size": "357",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.992000",
+                "dts_time": "69.992000",
+                "duration_time": "0.021333",
+                "size": "326",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 0,
+                "codec_type": "video",
+                "pts_time": "70.000000",
+                "dts_time": "69.933333",
+                "duration_time": "0.033333",
+                "size": "265",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 0,
+                "codec_type": "video",
+                "pts_time": "70.033333",
+                "dts_time": "69.966667",
+                "duration_time": "0.033333",
+                "size": "45",
+                "flags": "__"
+              }
+            ],
+            "AudioPacketCount": 3
+          }
+        ],
+        "SegmentCompleteLines": [
+          "13:01:19.436 SegmentComplete=video:0 Index=13 Start=0.000000 End=42.000000 Duration=42.000000 offset_pts=0 start_pts=0 Frames=90 filename=638967_13.ts",
+          "13:01:19.560 SegmentComplete=video:0 Index=14 Start=42.000000 End=45.000000 Duration=3.000000 offset_pts=0 start_pts=42000000 Frames=90 filename=638967_14.ts",
+          "13:01:19.695 SegmentComplete=video:0 Index=15 Start=45.000000 End=48.000000 Duration=3.000000 offset_pts=0 start_pts=45000000 Frames=90 filename=638967_15.ts",
+          "13:01:19.819 SegmentComplete=video:0 Index=16 Start=48.000000 End=51.000000 Duration=3.000000 offset_pts=0 start_pts=48000000 Frames=90 filename=638967_16.ts",
+          "13:01:19.942 SegmentComplete=video:0 Index=17 Start=51.000000 End=54.000000 Duration=3.000000 offset_pts=0 start_pts=51000000 Frames=90 filename=638967_17.ts",
+          "13:01:20.071 SegmentComplete=video:0 Index=18 Start=54.000000 End=57.000000 Duration=3.000000 offset_pts=0 start_pts=54000000 Frames=90 filename=638967_18.ts",
+          "13:01:20.161 SegmentComplete=video:0 Index=19 Start=57.000000 End=60.000000 Duration=3.000000 offset_pts=0 start_pts=57000000 Frames=90 filename=638967_19.ts",
+          "SegmentComplete=video:0 Index=20 Start=60.000000 End=60.066667 Duration=0.066667 offset_pts=0 start_pts=60000000 Frames=2 filename=638967_20.ts"
+        ],
+        "FinalProgress": [
+          "elapsed=00:00:01.12 frame=  632 fps=561 q=-1.0 Lsize=N/A time=00:00:20.71 bitrate=N/A throttle=off speed=18.4x    "
+        ],
+        "FontSelections": [
+          "13:01:19.155 [subtitles@f1 @ 0x200817c0] fontselect: (Arial, 400, 0) -> <system-font-path>, 0, LiberationSans"
+        ]
+      },
+      {
+        "Case": "failed-ass-mkv-tail",
+        "SourceLog": "ffmpeg-transcode-94cd62f5-5679-4f53-9a77-ca3f1a2fbcfd_1.txt",
+        "SourceLogSha256": "0560a1cc0bb6f5b7951c0ead89f6f5fb74d753cb6f9ae061ba963f757c348361",
+        "InputSha256": "e189fbfd8f90f88c056ddb1855999ddae9db7f0e228b9f6ed78f2f75d3be4ba2",
+        "InputFileName": "Styled ASS Validation (2026).mkv",
+        "ReplacedOutputPathsOnly": [
+          {
+            "Option": "-print_graphs_file",
+            "OriginalFileName": "ffmpeg-transcode-94cd62f5-5679-4f53-9a77-ca3f1a2fbcfd_1graph.txt",
+            "NewFileName": "ffmpeg-transcode-94cd62f5-5679-4f53-9a77-ca3f1a2fbcfd_1graph.txt"
+          },
+          {
+            "Option": "-segment_list",
+            "OriginalFileName": "B41591.m3u8",
+            "NewFileName": "B41591.m3u8"
+          },
+          {
+            "Option": "segment-output",
+            "OriginalFileName": "B41591_%d.ts",
+            "NewFileName": "B41591_%d.ts"
+          }
+        ],
+        "CommandOptions": [
+          [
+            "-copyts",
+            true
+          ],
+          [
+            "-start_at_zero",
+            true
+          ],
+          [
+            "-ss",
+            "00:01:00.000"
+          ],
+          [
+            "-c:v:0",
+            "h264"
+          ],
+          [
+            "-sn",
+            true
+          ],
+          [
+            "-c:v:0",
+            "libx264"
+          ],
+          [
+            "-g:v:0",
+            "93"
+          ],
+          [
+            "-keyint_min:v:0",
+            "93"
+          ],
+          [
+            "-r:v:0",
+            "30.08333396911621"
+          ],
+          [
+            "-c:a:0",
+            "copy"
+          ],
+          [
+            "-avoid_negative_ts",
+            "disabled"
+          ],
+          [
+            "-segment_time",
+            "00:00:03.000"
+          ],
+          [
+            "-segment_start_number",
+            "20"
+          ],
+          [
+            "-individual_header_trailer",
+            "0"
+          ],
+          [
+            "-write_header_trailer",
+            "0"
+          ],
+          [
+            "-segment_write_temp",
+            "1"
+          ]
+        ],
+        "SubtitleFilterPresent": true,
+        "ExitCode": 0,
+        "OutputShape": [
+          {
+            "Name": "B41591.m3u8",
+            "Bytes": 144,
+            "Sha256": "3d781acbae85a80243907e45e4e323a9efb663d7005488e1f643e977e3bbae59"
+          },
+          {
+            "Name": "B41591_20.ts",
+            "Bytes": 3948,
+            "Sha256": "e3f7a7568ef717f3f842e861c7d44510a12c515466cc9da1af399171e7e93438"
+          }
+        ],
+        "TailFiles": [
+          {
+            "Name": "B41591_20.ts",
+            "Bytes": 3948,
+            "ProbeExitCode": 0,
+            "Streams": [
+              {
+                "index": 0,
+                "codec_type": "video",
+                "codec_name": "h264",
+                "start_time": "70.000000",
+                "duration": "0.033233",
+                "r_frame_rate": "361/12",
+                "avg_frame_rate": "0/0"
+              },
+              {
+                "index": 1,
+                "codec_type": "audio",
+                "codec_name": "aac",
+                "start_time": "69.883000",
+                "duration": "0.021333",
+                "r_frame_rate": "0/0",
+                "avg_frame_rate": "0/0"
+              }
+            ],
+            "PacketCount": 7,
+            "Packets": [
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.883000",
+                "dts_time": "69.883000",
+                "duration_time": "0.021333",
+                "size": "344",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.904333",
+                "dts_time": "69.904333",
+                "duration_time": "0.021333",
+                "size": "348",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.925667",
+                "dts_time": "69.925667",
+                "duration_time": "0.021333",
+                "size": "370",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.947000",
+                "dts_time": "69.947000",
+                "duration_time": "0.021333",
+                "size": "367",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.968333",
+                "dts_time": "69.968333",
+                "duration_time": "0.021333",
+                "size": "365",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 1,
+                "codec_type": "audio",
+                "pts_time": "69.989667",
+                "dts_time": "69.989667",
+                "duration_time": "0.021333",
+                "size": "325",
+                "flags": "K_"
+              },
+              {
+                "stream_index": 0,
+                "codec_type": "video",
+                "pts_time": "70.000000",
+                "dts_time": "70.000000",
+                "duration_time": "0.033233",
+                "size": "1014",
+                "flags": "K_"
+              }
+            ],
+            "AudioPacketCount": 6
+          }
+        ],
+        "SegmentCompleteLines": [
+          "SegmentComplete=video:0 Index=20 Start=0.000000 End=60.033244 Duration=60.033244 offset_pts=0 start_pts=0 Frames=1 filename=B41591_20.ts"
+        ],
+        "FinalProgress": [
+          "elapsed=00:00:00.11 frame=    1 fps=0.0 q=29.0 Lsize=N/A time=00:00:00.00 bitrate=N/A throttle=off speed=   0x    "
+        ],
+        "FontSelections": []
+      }
+    ]
+  },
+  "SourceReceiptRelativePath": "tools/EmbyClient.SubtitleFixtures/artifacts/tail-command-replay-20260909-050118-93f65da2/replay-evidence.json",
+  "SourceReceiptSha256": "f86ee51451d4a00f5f5bb05e8118f0ec989d415c9ab951a9b1c378fcb5005d5f",
+  "Collector": {
+    "Path": "tools/EmbyClient.SubtitleFixtures/replay_tail_commands.py",
+    "FileSha256AtArchival": "ba1bddd2b0b0ff8181050f9c43a06209cf1f0e004575960c92e5dc6308892039"
+  },
+  "Sanitization": {
+    "Review": "Static review of existing files only; no server, media tool, native process, or verification run was started for archival.",
+    "Retained": "Safe typed observations, generated item/source identities, hashed device/session identities, numeric packet or box metadata, and HTTP statuses.",
+    "Excluded": "Raw playlists, authentication payloads, credential files, access tokens, full URLs, media prefix bytes, media outputs, and raw command/log files.",
+    "Redactions": [
+      "Absolute output directory replaced by a placeholder.",
+      "Absolute system-font path replaced by a placeholder; family selection retained."
+    ]
+  },
+  "Conclusion": "Replaying the historical successful MP4/SRT command produced a 2256-byte segment twenty with two H.264 packets and three AAC packets. Replaying the actual failed ASS/MKV tail command exited zero and produced a 3948-byte segment twenty with one H.264 keyframe and six AAC packets. Both files were readable by FFprobe. This rules out absent output, absent audio, or a nonzero FFmpeg exit for the reproduced tail command, but does not establish why the Emby HTTP request rejected its initialization.",
+  "Limitations": [
+    "The two recorded commands are not a single-variable control: the successful source starts at 39 seconds/segment thirteen, while the failed ASS tail restart starts at 60 seconds/segment twenty; frame rate, GOP, audio handling, filter, and container also differ.",
+    "Only diagnostic, playlist-output, and segment-output paths were changed. The collector ServerInputsUnchanged field describes output-only argument rewriting; the report contains input hashes but no separate before/after checksum measurement.",
+    "An offline FFprobe-readable TS is not an Emby HTTP success or a native rendering pass. The original failed server/native receipts remain unchanged.",
+    "The prior wrapper attempt failed before FFmpeg because its library environment reached host unshare. That infrastructure-only attempt is preserved in ignored artifacts and is not a media result."
+  ]
+}

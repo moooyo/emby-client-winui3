@@ -16,6 +16,7 @@
     <Compile Include="../../src/EmbyClient.App/Playback/ScopedMediaTransport.cs" Link="Playback/ScopedMediaTransport.cs" />
     <Compile Include="../../src/EmbyClient.App/Playback/HttpRangeStream.cs" Link="Playback/HttpRangeStream.cs" />
     <Compile Include="../../src/EmbyClient.App/Playback/SessionHttpRelay.cs" Link="Playback/SessionHttpRelay.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/ProgressiveHttpRelay.cs" Link="Playback/ProgressiveHttpRelay.cs" />
     <Compile Include="../../src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs" Link="Playback/MediaDeliveryClassifier.cs" />
   </ItemGroup>
 </Project>

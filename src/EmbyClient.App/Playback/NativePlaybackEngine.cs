@@ -225,6 +225,19 @@ public sealed partial class NativePlaybackEngine(
                     session.MediaSource = MediaSource.CreateFromAdaptiveMediaSource(adaptive);
                 }).ConfigureAwait(false);
             }
+            else if (session.Request.DeliveryMethod == PlaybackDeliveryMethod.Transcode
+                && session.Request.TimelineKind == PlaybackTimelineKind.ProgressiveSegment)
+            {
+                var relay = await ProgressiveHttpRelay.OpenAsync(session.Transport, session.Request.MediaUri,
+                    session.Request.Source.TranscodingContainer, session.Lifetime.Token, code => OnRelayFailure(session, code)).ConfigureAwait(false);
+                await OnDispatcherAsync(() =>
+                {
+                    // Preserve ownership across cancellation so retirement drains the streaming response lease.
+                    session.ProgressiveRelay = relay;
+                    EnsureActive(session);
+                    session.MediaSource = MediaSource.CreateFromUri(relay.LocalUri);
+                }).ConfigureAwait(false);
+            }
             else
             {
                 var relay = await SessionHttpRelay.OpenAsync(session.Transport, session.Request.MediaUri,
@@ -312,6 +325,13 @@ public sealed partial class NativePlaybackEngine(
         session.Ended = (_, _) => Queue(() =>
         {
             if (!IsActive(session)) return;
+            // An ended callback can already be queued when the relay records a source failure.
+            // Preserve that known failure instead of letting a successful end retire its queued notification.
+            if (session.RelayFailureCode is { } relayFailure)
+            {
+                Fail(session, relayFailure);
+                return;
+            }
             Publish(session, PlaybackEngineEventKind.Ended, PlaybackEngineState.Ended);
             session.Started.TrySetException(new PlaybackException("PlaybackEndedBeforeStart"));
         });
@@ -529,6 +549,7 @@ public sealed partial class NativePlaybackEngine(
         await OnDispatcherAsync(() => ClearRetiredPlayerSource(session)).ConfigureAwait(false);
         if (session.AdaptiveFilter is not null) await session.AdaptiveFilter.DrainAsync().ConfigureAwait(false);
         if (session.DirectRelay is not null) await session.DirectRelay.DisposeAsync().ConfigureAwait(false);
+        if (session.ProgressiveRelay is not null) await session.ProgressiveRelay.DisposeAsync().ConfigureAwait(false);
         await session.Transport.DisposeAsync().ConfigureAwait(false);
         if (session.SubtitleTransport is not null) await session.SubtitleTransport.DisposeAsync().ConfigureAwait(false);
         session.Cancellation.Dispose();
@@ -537,6 +558,7 @@ public sealed partial class NativePlaybackEngine(
         {
             session.AdaptiveFilter = null;
             session.DirectRelay = null;
+            session.ProgressiveRelay = null;
             session.SubtitleTransport = null;
             session.LoadTask = Task.CompletedTask;
             session.SeekCompletion = null;
@@ -815,6 +837,7 @@ public sealed partial class NativePlaybackEngine(
         public IDisposable? AdaptiveFilterOwner { get; set; }
         public ScopedAdaptiveHttpFilter? AdaptiveFilter { get; set; }
         public SessionHttpRelay? DirectRelay { get; set; }
+        public ProgressiveHttpRelay? ProgressiveRelay { get; set; }
         public IRandomAccessStream? SubtitleStream { get; set; }
         public TimedTextSource? TimedText { get; set; }
         public TypedEventHandler<MediaPlayer, object>? Opened { get; set; }

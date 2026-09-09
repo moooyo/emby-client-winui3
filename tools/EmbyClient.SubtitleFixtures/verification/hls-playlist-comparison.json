@@ -1,0 +1,354 @@
+{
+  "EvidenceKind": "OriginalAssAndSrtPlaylistComparison",
+  "Report": {
+    "RecordedUtc": "2026-09-09T04:56:19Z",
+    "SegmentRequests": 0,
+    "NativePlayback": false,
+    "ProfileSourceSha256": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff",
+    "CoordinatorSourceSha256": "824b122e2257feef62cfff970a9d8d3b5d18d69a94a167f91e2b467bae9f8c2f",
+    "Cases": [
+      {
+        "Label": "ass-mkv",
+        "ItemId": "19",
+        "MediaSourceId": "mediasource_19",
+        "DeviceIdHash": "180a64651ab54d707f8ed858947a355aeb034f5866c5ba5a818450ac75be2341",
+        "SegmentRequests": 0,
+        "PlaybackStarted": false,
+        "ServerVersion": "4.9.5.0",
+        "SourceRunTimeTicks": 600330000,
+        "SourceContainer": "mkv",
+        "SubtitleCodec": "ass",
+        "SubtitleDeliveryMethod": "Encode",
+        "PlaySessionIdHash": "2aee52cb59e5ce98e1909c3f3414190ce0052aff2fcfe8e12d28fd019cbd3d99",
+        "RequestedStartTimeTicks": 410000000,
+        "MasterQuery": {
+          "MediaSourceId": [
+            "mediasource_19"
+          ],
+          "StartTimeTicks": [
+            "410000000"
+          ],
+          "VideoCodec": [
+            "h264"
+          ],
+          "AudioCodec": [
+            "aac"
+          ],
+          "SubtitleStreamIndex": [
+            "2"
+          ],
+          "SubtitleMethod": [
+            "Encode"
+          ],
+          "TranscodeReasons": [
+            "SubtitleCodecNotSupported,DirectPlayError"
+          ]
+        },
+        "MediaQuery": {
+          "MediaSourceId": [
+            "mediasource_19"
+          ],
+          "StartTimeTicks": [
+            "410000000"
+          ],
+          "VideoCodec": [
+            "h264"
+          ],
+          "AudioCodec": [
+            "aac"
+          ],
+          "SubtitleStreamIndex": [
+            "2"
+          ],
+          "SubtitleMethod": [
+            "Encode"
+          ],
+          "TranscodeReasons": [
+            "SubtitleCodecNotSupported,DirectPlayError"
+          ]
+        },
+        "MediaSequence": "0",
+        "PlaylistType": "VOD",
+        "TargetDuration": "4",
+        "ExtInfCount": 21,
+        "ExtInfTotalSeconds": "63.0000",
+        "ExtInfLastTwoSeconds": [
+          "3.0000",
+          "3.0000"
+        ],
+        "EndList": true,
+        "ExtXStart": [
+          "#EXT-X-START:TIME-OFFSET=41"
+        ],
+        "SegmentNumberFirst": 0,
+        "SegmentNumberLast": 20,
+        "SegmentNumberCount": 21,
+        "MasterSha256": "38f01f16591f4b98835893bcbb41f57b5b032d357da511ef56d45d7de0d82096",
+        "MediaSha256": "3ef970c04d9b8ad20b59d1964be48c9743234360189bf891e84b998d9e1e2b37",
+        "MasterTags": [
+          "#EXTM3U",
+          "#EXT-X-VERSION:3",
+          "#EXT-X-INDEPENDENT-SEGMENTS",
+          "#EXT-X-STREAM-INF:BANDWIDTH=1124194,AVERAGE-BANDWIDTH=936828,CODECS=\"avc1.640029,mp4a.40.2\",RESOLUTION=1280x720,FRAME-RATE=30.083"
+        ],
+        "SafeMediaTags": [
+          "#EXT-X-PLAYLIST-TYPE:VOD",
+          "#EXT-X-TARGETDURATION:4",
+          "#EXT-X-MEDIA-SEQUENCE:0",
+          "#EXT-X-START:TIME-OFFSET=41",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXT-X-ENDLIST"
+        ],
+        "Cleanup": [
+          {
+            "Operation": "OwnStopEncoding",
+            "Status": 204
+          },
+          {
+            "Operation": "OwnLogout",
+            "Status": 204
+          }
+        ],
+        "ApiEvents": [
+          {
+            "Method": "GET",
+            "Path": "/emby/System/Info/Public",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Users/AuthenticateByName",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Items/19/PlaybackInfo",
+            "Status": 200
+          },
+          {
+            "Method": "GET",
+            "Path": "/videos/19/master.m3u8",
+            "Status": 200
+          },
+          {
+            "Method": "GET",
+            "Path": "/videos/19/main.m3u8",
+            "Status": 200
+          },
+          {
+            "Method": "DELETE",
+            "Path": "/emby/Videos/ActiveEncodings",
+            "Status": 204
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Sessions/Logout",
+            "Status": 204
+          }
+        ],
+        "PlaybackReportsSent": false,
+        "Status": "Observed"
+      },
+      {
+        "Label": "srt-mp4",
+        "ItemId": "5",
+        "MediaSourceId": "mediasource_5",
+        "DeviceIdHash": "8945944e0aa4169b008e11a3668d8de9e2de4067c188cc97237d6931c09abd86",
+        "SegmentRequests": 0,
+        "PlaybackStarted": false,
+        "ServerVersion": "4.9.5.0",
+        "SourceRunTimeTicks": 600106460,
+        "SourceContainer": "mp4",
+        "SubtitleCodec": "srt",
+        "SubtitleDeliveryMethod": "Encode",
+        "PlaySessionIdHash": "d7d051e910b1eb0d0420b1e0bdbe7326e1399713db2b6a4a5f9a9c57bbb992db",
+        "RequestedStartTimeTicks": 410000000,
+        "MasterQuery": {
+          "MediaSourceId": [
+            "mediasource_5"
+          ],
+          "StartTimeTicks": [
+            "410000000"
+          ],
+          "VideoCodec": [
+            "h264"
+          ],
+          "AudioCodec": [
+            "aac"
+          ],
+          "SubtitleStreamIndex": [
+            "2"
+          ],
+          "SubtitleMethod": [
+            "Encode"
+          ],
+          "TranscodeReasons": [
+            "SubtitleCodecNotSupported,DirectPlayError"
+          ]
+        },
+        "MediaQuery": {
+          "MediaSourceId": [
+            "mediasource_5"
+          ],
+          "StartTimeTicks": [
+            "410000000"
+          ],
+          "VideoCodec": [
+            "h264"
+          ],
+          "AudioCodec": [
+            "aac"
+          ],
+          "SubtitleStreamIndex": [
+            "2"
+          ],
+          "SubtitleMethod": [
+            "Encode"
+          ],
+          "TranscodeReasons": [
+            "SubtitleCodecNotSupported,DirectPlayError"
+          ]
+        },
+        "MediaSequence": "0",
+        "PlaylistType": "VOD",
+        "TargetDuration": "4",
+        "ExtInfCount": 21,
+        "ExtInfTotalSeconds": "63.0000",
+        "ExtInfLastTwoSeconds": [
+          "3.0000",
+          "3.0000"
+        ],
+        "EndList": true,
+        "ExtXStart": [
+          "#EXT-X-START:TIME-OFFSET=41"
+        ],
+        "SegmentNumberFirst": 0,
+        "SegmentNumberLast": 20,
+        "SegmentNumberCount": 21,
+        "MasterSha256": "057cf10d9e427178096a63161af4f07ed42f192e16f0d3172728250a308dca14",
+        "MediaSha256": "6236e06860d02b0609563f1326f928248b58638f9e17ad282dc54f4018fd3d48",
+        "MasterTags": [
+          "#EXTM3U",
+          "#EXT-X-VERSION:3",
+          "#EXT-X-INDEPENDENT-SEGMENTS",
+          "#EXT-X-STREAM-INF:BANDWIDTH=215844,AVERAGE-BANDWIDTH=179870,CODECS=\"avc1.640029,mp4a.40.2\",RESOLUTION=1280x720,FRAME-RATE=30.000"
+        ],
+        "SafeMediaTags": [
+          "#EXT-X-PLAYLIST-TYPE:VOD",
+          "#EXT-X-TARGETDURATION:4",
+          "#EXT-X-MEDIA-SEQUENCE:0",
+          "#EXT-X-START:TIME-OFFSET=41",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXTINF:3.0000, nodesc",
+          "#EXT-X-ENDLIST"
+        ],
+        "Cleanup": [
+          {
+            "Operation": "OwnStopEncoding",
+            "Status": 204
+          },
+          {
+            "Operation": "OwnLogout",
+            "Status": 204
+          }
+        ],
+        "ApiEvents": [
+          {
+            "Method": "GET",
+            "Path": "/emby/System/Info/Public",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Users/AuthenticateByName",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Items/5/PlaybackInfo",
+            "Status": 200
+          },
+          {
+            "Method": "GET",
+            "Path": "/videos/5/master.m3u8",
+            "Status": 200
+          },
+          {
+            "Method": "GET",
+            "Path": "/videos/5/main.m3u8",
+            "Status": 200
+          },
+          {
+            "Method": "DELETE",
+            "Path": "/emby/Videos/ActiveEncodings",
+            "Status": 204
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Sessions/Logout",
+            "Status": 204
+          }
+        ],
+        "PlaybackReportsSent": false,
+        "Status": "Observed"
+      }
+    ]
+  },
+  "SourceReceiptRelativePath": "tools/EmbyClient.SubtitleFixtures/artifacts/playlist-inspection-20260909-045619-15c4a6ce/playlist-evidence.json",
+  "SourceReceiptSha256": "9a321bf7ca13edc4a12d7764e944247a38f250fcc3a7070c7f047ca0aa811bd7",
+  "Collector": {
+    "Path": "tools/EmbyClient.SubtitleFixtures/inspect_playlists.py",
+    "FileSha256AtArchival": "5690906901d874620293c71fb2d148ed0278c13daeb0cbdd66321001468e5ad8"
+  },
+  "Sanitization": {
+    "Review": "Static review of existing files only; no server, media tool, native process, or verification run was started for archival.",
+    "Retained": "Safe typed observations, generated item/source identities, hashed device/session identities, numeric packet or box metadata, and HTTP statuses.",
+    "Excluded": "Raw playlists, authentication payloads, credential files, access tokens, full URLs, media prefix bytes, media outputs, and raw command/log files.",
+    "Redactions": []
+  },
+  "Conclusion": "The original ASS/MKV and SRT/MP4 sources both returned VOD media sequence zero, 21 declared three-second segments numbered zero through twenty, total declared duration 63 seconds, ENDLIST, and EXT-X-START at 41 seconds. Source durations were 60.033 and 60.010646 seconds. Master frame-rate attributes differed at 30.083 and 30.000. No media segment was requested. Both own encoding cleanup and logout returned 204.",
+  "Limitations": [
+    "These are actual playlist responses from independent HTTP-only sessions using a reviewed literal copy of the default profile, not a native playback or a product runtime test.",
+    "Declared durations and segment routes do not prove segment availability or decodability. The equal 63-second playlists do not identify the cause of different tail-segment outcomes.",
+    "Raw master/main playlists and full URLs were excluded. Selected non-secret query parameters, tags, and response hashes are retained."
+  ]
+}

@@ -1,6 +1,6 @@
 # Windows continuous integration
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. Hosted packaging now has its own successful receipts: [run 34300925860](https://github.com/moooyo/emby-client-winui3/actions/runs/34300925860) and [run 34301423262](https://github.com/moooyo/emby-client-winui3/actions/runs/34301423262). Both passed all 306 tests and every build, publish, package, and upload step. These revisions precede the new queue editor, diagnostics/Retry UI, and subsequent network fixes; they do not verify those later changes.
+The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, constructs and checks an unsigned MSIX, and uploads both development outputs. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The latest audited [run 34313098711](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711), exact source `c6f967ee9be005378abbcc58f9d46cb084e08615`, passed all 340 tests and every job step, completing at 2026-09-09 05:03:05 UTC. Earlier successful and failed checkpoints remain recorded below. Hosted success establishes build/test/package results; the [keyboard and dialog-focus observations](ui-validation.md#keyboard-timeline-and-dialog-focus-checkpoints-dbc6c326-and-77a90d2d) are separate desktop evidence tied to their own executable hashes.
 
 The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`, where runner environment variables are available.
 
@@ -41,7 +41,7 @@ The official [Windows 2025 image inventory at commit a0faebe84ce88a79331aebb1874
 
 Microsoft's [Native AOT prerequisites](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) require Visual Studio 2022 or later with the C++ desktop workload for Windows. The workflow checks that the x64 linker and the target Windows SDK library exist, records their paths, and logs the actual SDK and image version. The hosted image label is rolling; pinning action commits does not make the entire hosted machine immutable. A later image change can require an explicit repository update or a dedicated runner.
 
-Both audited packaging runs used image `win25-vs2026 20260824.214.3`, with Visual Studio 2026 Enterprise, .NET SDK `10.0.301`, and Windows SDK `10.0.26100.0`. This is the executed toolchain, distinct from the earlier published inventory snapshot above. Their logs confirm test totals of 47, 65, 68, and 126 and an 18-component SBOM. The Release build summary reports one upstream generated WinUIEx `Icon` warning (`CS0618`) and zero errors; native code generation and publication then complete successfully.
+The first two audited packaging runs used image `win25-vs2026 20260824.214.3`, with Visual Studio 2026 Enterprise, .NET SDK `10.0.301`, and Windows SDK `10.0.26100.0`. This is the executed toolchain, distinct from the earlier published inventory snapshot above. Their logs confirm test totals of 47, 65, 68, and 126 and an 18-component SBOM. The Release build summary reports one upstream generated WinUIEx `Icon` warning (`CS0618`) and zero errors; native code generation and publication then complete successfully. The latest `c6f967e` run again records image `win25-vs2026 20260824.214.3` and SDK `10.0.301`; its updated test totals are documented below.
 
 ## Hosted packaging receipts
 
@@ -54,7 +54,7 @@ The following results were checked read-only on 2026-09-09 using `gh run view` f
 
 Each run completed locked restore, the Release solution build, 306 tests with zero failures, Native AOT publication, SBOM generation, `Package.ps1` structural verification, and separate MSIX/AOT/log uploads. The packaging log explicitly leaves installation and packaged runtime behavior unverified. SBOM publication confirms JSON readback; the publisher script does not run schema validation.
 
-For the latest audited head, the API reported the following complete artifact names and archive metadata. All three were unexpired when inspected and use seven-day retention.
+For the earlier `a2e4e433` head, the API reported the following complete artifact names and archive metadata. All three were unexpired when inspected and use seven-day retention.
 
 | Artifact | Archive bytes | GitHub archive SHA-256 digest |
 | --- | ---: | --- |
@@ -62,7 +62,7 @@ For the latest audited head, the API reported the following complete artifact na
 | [emby-client-windows-x64-aot-unsigned-a2e4e4338e1b1086defe8a97c096ffee87a917f9](https://github.com/moooyo/emby-client-winui3/actions/runs/34301423262/artifacts/10085122455) | 75,377,319 | `2493830a813ffc67cd82a6f749f00e41740df422ce9ced7a7c9950cea785e0da` |
 | [windows-ci-logs-a2e4e4338e1b1086defe8a97c096ffee87a917f9](https://github.com/moooyo/emby-client-winui3/actions/runs/34301423262/artifacts/10085122789) | 3,476 | `21f66e4cc8059e76e451a9a569865f77ef45763751019402558a23b752e0e2b1` |
 
-These hashes and sizes identify uploaded GitHub archives, not the contained executable or MSIX. The latest contained MSIX's builder-reported SHA-256 is `996D6E72C283B43F15D9485D1E23CAB68FAB1CABDE89FE61FE1AE8F591E0A278`; [packaging evidence](packaging.md#hosted-structural-evidence) records its exact filename and the preceding successful candidate. A newer working tree or artifact needs its own receipt.
+These hashes and sizes identify uploaded GitHub archives, not the contained executable or MSIX. That `a2e4e433` MSIX's builder-reported SHA-256 is `996D6E72C283B43F15D9485D1E23CAB68FAB1CABDE89FE61FE1AE8F591E0A278`; [packaging evidence](packaging.md#hosted-structural-evidence) records its exact filename and the preceding successful candidate. A newer working tree or artifact needs its own receipt.
 
 The later [run 34304285991](https://github.com/moooyo/emby-client-winui3/actions/runs/34304285991), source `42011fb8fdce53a0771bd903dc7ffb1695bf42d8`, also passed every step. It covers the editable queue, diagnostics, relay classification, and default-track retry correction: 340 tests (47 API, 73 transport, 88 platform, 132 playback), a Release build with one existing `CS0618` warning and zero errors, Native AOT output, an 18-component SBOM, and unsigned package verification.
 
@@ -71,6 +71,22 @@ Its AOT archive [10086142609](https://github.com/moooyo/emby-client-winui3/actio
 The subsequent [run 34309591888](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888), exact source `076dbbe21ebae00e3722174f1e882d854b84c004`, passed all job steps after collection Reset poster cleanup and the isolated observation tools were added. Its Release build reported one existing CS0618 warning and zero errors; all 340 tests passed (47 API, 73 transport, 88 platform, 132 playback), followed by Native AOT publication, an 18-component SBOM, unsigned MSIX structural verification, and all uploads. The normal application build excludes the library observer.
 
 The AOT archive [10087940397](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888/artifacts/10087940397) is 75,822,354 bytes with archive digest `sha256:82c7f72e81d8b3733ec088a418ebe1af4240dbfeb6c685e3169bc12337aa5c99`. The MSIX archive [10087938664](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888/artifacts/10087938664) is 54,284,090 bytes with archive digest `sha256:542287d9f6a87ef7d11e8db7559efaf9ed8cd25b39effe2a78bf16138616fc7c`. The contained `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-040826837-a8c55b3e.msix` has builder-reported file SHA-256 `15ABC58F07A04168C7AFBE25416DECAA6E5F2AFE9DF923DAC9144EAC5B03C851`. The logs archive is [10087940712](https://github.com/moooyo/emby-client-winui3/actions/runs/34309591888/artifacts/10087940712), 3,491 bytes. These are scoped hosted build results, not installed runtime, desktop rendering, or a long-duration memory pass.
+
+### Latest receipt: keyboard and focus revision c6f967e
+
+Read-only GitHub API/job-log inspection confirmed [run 34313098711 / job 102343633461](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711/job/102343633461) for exact head `c6f967ee9be005378abbcc58f9d46cb084e08615`. All 16 reported steps, including setup and post-job steps, concluded `success`. The job completed at **2026-09-09 05:03:05 UTC**; the run metadata was updated one second later.
+
+The logs establish locked restore, a successful Release build with **one existing generated `CS0618` warning and zero errors**, and **340 succeeded / zero failed / zero skipped tests**: 47 API, 73 media transport, 88 Windows platform, and 132 playback. Native code generation and AOT publication succeeded. The generated SBOM contains 18 components and passed JSON readback; schema validation was not performed by that script. Unsigned MSIX structural verification and all three uploads succeeded.
+
+The contained package is `EmbyClient.Windows_0.1.0.0_x64_unsigned_20260909-050241216-330b1ec4.msix`, with builder-reported file SHA-256 **`7833160FEE8EEBD6BDBFD9662CBB651256F2FB79D30965DD7AC698A70F7B5413`**. The Actions API separately reports these archive identities:
+
+| Artifact | Archive bytes | GitHub archive SHA-256 digest |
+| --- | ---: | --- |
+| [emby-client-windows-x64-msix-unsigned-c6f967ee9be005378abbcc58f9d46cb084e08615](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711/artifacts/10089144103) | 54,283,155 | `7270c8ca57ac42130549d612986a329d0e6cc7a738ec21ba13899b05b0503e7a` |
+| [emby-client-windows-x64-aot-unsigned-c6f967ee9be005378abbcc58f9d46cb084e08615](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711/artifacts/10089146006) | 75,832,398 | `7e911236760648ef460fa79b19cc9f575795ebc4dcc438960a32178e6f647d2a` |
+| [windows-ci-logs-c6f967ee9be005378abbcc58f9d46cb084e08615](https://github.com/moooyo/emby-client-winui3/actions/runs/34313098711/artifacts/10089146307) | 3,483 | `0a66d86c0b773b6324ccb72f7ba5e2cb2181d89a5906dbc41e19f51d8595fa67` |
+
+All three archives were unexpired at inspection, with expiry dates on 2026-09-16. No application/package artifact was downloaded or installed during this audit, so the contained-package hash remains builder-reported. The package log explicitly leaves installation and packaged runtime behavior unverified. The separately observed timeline keys and four Queue/Diagnostics focus-return paths do not expand hosted CI into native UI, Narrator, physical-key, complex-subtitle, or installed-release acceptance.
 
 ## Pinned official actions
 

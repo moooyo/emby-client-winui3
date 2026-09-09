@@ -58,6 +58,16 @@ public sealed partial class App : Application
             directory = subtitleDirectory;
             _externalSubtitleCredentialsPath = Path.GetFullPath(subtitleCredentials);
         }
+        else if (commandLine is ["--output-dir", var complexDirectory, var complexMode, "--credentials-file", var complexCredentials,
+            "--fixture-manifest", var complexManifest, "--case", var complexCase]
+            && complexMode is "--complex-subtitle" or "--complex-subtitle-http-profile-control")
+        {
+            directory = complexDirectory;
+            _complexSubtitleCredentialsPath = Path.GetFullPath(complexCredentials);
+            _complexSubtitleManifestPath = Path.GetFullPath(complexManifest);
+            _complexSubtitleCaseId = complexCase;
+            _complexSubtitleHttpProfileControl = complexMode == "--complex-subtitle-http-profile-control";
+        }
         else if (commandLine is ["--output-dir", var smokeDirectory, "--instrumentation-smoke"])
         {
             directory = smokeDirectory;
@@ -127,17 +137,19 @@ public sealed partial class App : Application
             return;
         }
         if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation && _networkRetryMediaDirectory is null
-            && _externalSubtitleCredentialsPath is null) Save();
+            && _externalSubtitleCredentialsPath is null && _complexSubtitleCredentialsPath is null) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };
         _window = new Window
         {
-            Title = "SYNTHETIC native playback probe",
+            Title = _complexSubtitleCaseId is null ? "SYNTHETIC native playback probe"
+                : (_complexSubtitleHttpProfileControl ? "SYNTHETIC subtitle HTTP profile control: " : "SYNTHETIC complex subtitle: ") + _complexSubtitleCaseId,
             Content = _controlMode is null or "file-playback" or "file-stream-playback" or "file-managed-stream-playback" or "native-http-playback"
                 ? _element : new TextBlock { Text = "Isolated native resource control: " + _controlMode }
         };
-        _window.AppWindow.Resize(new SizeInt32(480, 300));
+        _window.AppWindow.Resize(_complexSubtitleCaseId is null ? new SizeInt32(480, 300) : new SizeInt32(960, 600));
         _window.AppWindow.Show(activateWindow: false);
-        _ = _externalSubtitleCredentialsPath is not null ? RunExternalSubtitleModeAsync()
+        _ = _complexSubtitleCredentialsPath is not null ? RunComplexSubtitleModeAsync()
+            : _externalSubtitleCredentialsPath is not null ? RunExternalSubtitleModeAsync()
             : _networkRetryMediaDirectory is not null ? RunNetworkRetryAsync()
             : _lifecycleIsolation ? RunIsolationAsync()
             : _realHlsCredentialsPath is not null ? RunRealHlsAsync()

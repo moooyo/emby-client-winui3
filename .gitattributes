@@ -10,3 +10,4 @@
 *.ico binary
 # Preserve the exact bytes recorded in the upstream notice manifest.
 licenses/third-party/*/** -text -whitespace
+tools/EmbyClient.SubtitleFixtures/licenses/** -text -whitespace

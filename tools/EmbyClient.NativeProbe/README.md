@@ -1,5 +1,9 @@
 # Native playback lifecycle probe
 
+The [progressive HTTP subtitle profile control](PROGRESSIVE-CONTROL.md) is prepared as an explicitly separate, unrun control. It preserves `ForceTranscoding=false` and does not change the main application's default HLS profile. Current authorization permits CLI build/test work only; do not launch any player or window.
+
+The independent [complex subtitle server-encoding mode](COMPLEX-SUBTITLES.md) verifies a manifest-bound ASS or PGS cue and its later disabling through the default product profile. It requires separate real screenshot confirmations. The first ASS attempt failed before visual readiness and is retained separately; further runs require coordination.
+
 The independent [poster decoder lifecycle baseline](POSTER-LIFECYCLE.md) uses an Image-only window and the linked product decoder. It records natural resource trends without forced GC and does not replace any playback or library acceptance result.
 
 This Windows-only .NET 10 / Windows App SDK probe publishes as an unpackaged, self-contained NativeAOT executable. It compiles the product's `src/EmbyClient.App/Playback/*.cs` files through project links and references the real API and playback coordinator projects. It does not maintain a second playback implementation. Dependency versions come from the repository's central package management.

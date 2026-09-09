@@ -1,0 +1,638 @@
+{
+  "EvidenceKind": "AssProgressivePrefixControl",
+  "Report": {
+    "RecordedUtc": "2026-09-09T05:10:33Z",
+    "ControlOnly": true,
+    "NativePlayback": false,
+    "PlayableOrCompleteMediaVerified": false,
+    "MaximumMediaBytesPerCase": 65536,
+    "ScriptSha256": "09367284a379ec81ddaa52efcd5cbe400af5f55ae338d9bb4166fc4b02dabcf5",
+    "ProfileSourceSha256": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff",
+    "CoordinatorSourceSha256": "824b122e2257feef62cfff970a9d8d3b5d18d69a94a167f91e2b467bae9f8c2f",
+    "Cases": [
+      {
+        "ItemId": "19",
+        "MediaSourceId": "mediasource_19",
+        "SubtitleStreamIndex": 2,
+        "RequestedStartTimeTicks": 0,
+        "DeviceIdHash": "f2b67cb449ceac36fdcc27c4dd87740e2ffe6d19dcbaebdf2de58c4a8c4863d5",
+        "NativePlayback": false,
+        "PlaybackReportsSent": false,
+        "MaximumMediaBytes": 65536,
+        "ProfileChangesFromBaseline": {
+          "TranscodingProfiles[0].Container": "mp4",
+          "TranscodingProfiles[0].Protocol": "http"
+        },
+        "Stage": "Complete",
+        "ServerVersion": "4.9.5.0",
+        "RequestWithoutIdentity": {
+          "MediaSourceId": "mediasource_19",
+          "MaxStreamingBitrate": 20000000,
+          "StartTimeTicks": 0,
+          "SubtitleStreamIndex": 2,
+          "MaxAudioChannels": 2,
+          "DeviceProfile": {
+            "Name": "Windows Native AVC AAC Baseline",
+            "MaxStreamingBitrate": 20000000,
+            "MaxStaticBitrate": 20000000,
+            "DirectPlayProfiles": [
+              {
+                "Type": "Video",
+                "Container": "mp4",
+                "VideoCodec": "h264",
+                "AudioCodec": "aac"
+              }
+            ],
+            "TranscodingProfiles": [
+              {
+                "Type": "Video",
+                "Container": "mp4",
+                "Protocol": "http",
+                "Context": "Streaming",
+                "VideoCodec": "h264",
+                "AudioCodec": "aac",
+                "MaxAudioChannels": "2",
+                "BreakOnNonKeyFrames": false,
+                "CopyTimestamps": false
+              }
+            ],
+            "CodecProfiles": [
+              {
+                "Type": "Video",
+                "Codec": "h264",
+                "Conditions": [
+                  {
+                    "Condition": "EqualsAny",
+                    "Property": "VideoProfile",
+                    "Value": "high|main|baseline|constrained baseline",
+                    "IsRequired": true
+                  },
+                  {
+                    "Condition": "LessThanEqual",
+                    "Property": "VideoLevel",
+                    "Value": "41",
+                    "IsRequired": true
+                  },
+                  {
+                    "Condition": "LessThanEqual",
+                    "Property": "VideoBitDepth",
+                    "Value": "8",
+                    "IsRequired": true
+                  },
+                  {
+                    "Condition": "Equals",
+                    "Property": "IsInterlaced",
+                    "Value": "false",
+                    "IsRequired": true
+                  }
+                ]
+              },
+              {
+                "Type": "VideoAudio",
+                "Codec": "aac",
+                "Conditions": [
+                  {
+                    "Condition": "LessThanEqual",
+                    "Property": "AudioChannels",
+                    "Value": "2",
+                    "IsRequired": true
+                  }
+                ]
+              }
+            ],
+            "SubtitleProfiles": [
+              {
+                "Format": "srt",
+                "Method": "Encode"
+              },
+              {
+                "Format": "vtt",
+                "Method": "Encode"
+              },
+              {
+                "Format": "ass",
+                "Method": "Encode"
+              },
+              {
+                "Format": "ssa",
+                "Method": "Encode"
+              },
+              {
+                "Format": "sub",
+                "Method": "Encode"
+              },
+              {
+                "Format": "pgssub",
+                "Method": "Encode"
+              },
+              {
+                "Format": "dvdsub",
+                "Method": "Encode"
+              }
+            ]
+          },
+          "EnableDirectPlay": false,
+          "EnableDirectStream": true,
+          "EnableTranscoding": true,
+          "AllowVideoStreamCopy": true,
+          "AllowAudioStreamCopy": true,
+          "AllowInterlacedVideoStreamCopy": false,
+          "IsPlayback": true,
+          "AutoOpenLiveStream": false
+        },
+        "PlaySessionIdHash": "315b4cd6a0bf68fc13a6fe579d63e96ec3f7bb9cb96f8a34fa17725e03b0fa63",
+        "Negotiated": {
+          "SourceProtocol": "File",
+          "SourceContainer": "mkv",
+          "SourceRunTimeTicks": 600330000,
+          "SourceSize": 1397328,
+          "TranscodingSubProtocol": "http",
+          "TranscodingContainer": "mp4",
+          "SupportsTranscoding": true,
+          "SubtitleCodec": "ass",
+          "SubtitleDeliveryMethod": "Encode",
+          "ReturnedSafeQuery": {
+            "MediaSourceId": [
+              "mediasource_19"
+            ],
+            "VideoCodec": [
+              "h264"
+            ],
+            "AudioCodec": [
+              "aac"
+            ],
+            "VideoBitrate": [
+              "19808000"
+            ],
+            "AudioBitrate": [
+              "192000"
+            ],
+            "SubtitleStreamIndex": [
+              "2"
+            ],
+            "SubtitleMethod": [
+              "Encode"
+            ],
+            "TranscodeReasons": [
+              "SubtitleCodecNotSupported,DirectPlayError"
+            ]
+          }
+        },
+        "AppliedFactoryMissingStartTime": false,
+        "RequestedStreamSafeQuery": {
+          "MediaSourceId": [
+            "mediasource_19"
+          ],
+          "VideoCodec": [
+            "h264"
+          ],
+          "AudioCodec": [
+            "aac"
+          ],
+          "VideoBitrate": [
+            "19808000"
+          ],
+          "AudioBitrate": [
+            "192000"
+          ],
+          "SubtitleStreamIndex": [
+            "2"
+          ],
+          "SubtitleMethod": [
+            "Encode"
+          ],
+          "TranscodeReasons": [
+            "SubtitleCodecNotSupported,DirectPlayError"
+          ]
+        },
+        "Http": {
+          "Status": 200,
+          "ContentType": "video/mp4",
+          "ContentLength": null,
+          "TransferEncoding": "chunked",
+          "AcceptRanges": "none",
+          "ContentRange": null,
+          "ContentEncoding": null,
+          "RequestedRange": "bytes=0-65535",
+          "HeadersAfterSeconds": 1.21,
+          "PrefixAfterSeconds": 1.211,
+          "RangeObservation": "RangeNotHonoredAsPartialResponse",
+          "FullResponseNotRead": true
+        },
+        "Prefix": {
+          "BytesRead": 65536,
+          "Sha256": "443de362c21a0303e8b02fd4daeb3420ee0d3e23a9e9b17ed6282220f821a620",
+          "TopLevelBoxes": [
+            {
+              "Type": "ftyp",
+              "Offset": 0,
+              "DeclaredSize": 36,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "moov",
+              "Offset": 36,
+              "DeclaredSize": 1225,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "moof",
+              "Offset": 1261,
+              "DeclaredSize": 3980,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "mdat",
+              "Offset": 5241,
+              "DeclaredSize": 109092,
+              "CompleteInPrefix": false
+            }
+          ],
+          "MarkerByteOffsets": {
+            "ftyp": 4,
+            "moov": 40,
+            "moof": 1265
+          },
+          "MarkerPresenceDoesNotProvePlayableOrComplete": true
+        },
+        "Status": "BoundedResponseObserved",
+        "MediaResponseDisposed": true,
+        "MediaConnectionClosed": true,
+        "Cleanup": [
+          {
+            "Operation": "OwnStopEncoding",
+            "Status": 204
+          },
+          {
+            "Operation": "OwnLogout",
+            "Status": 204
+          }
+        ],
+        "CleanupSucceeded": true,
+        "ApiEvents": [
+          {
+            "Method": "GET",
+            "Path": "/emby/System/Info/Public",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Users/AuthenticateByName",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Items/19/PlaybackInfo",
+            "Status": 200
+          },
+          {
+            "Method": "GET",
+            "Path": "/videos/19/stream.mp4",
+            "Status": 200,
+            "MediaPrefixOnly": true
+          },
+          {
+            "Method": "DELETE",
+            "Path": "/emby/Videos/ActiveEncodings",
+            "Status": 204
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Sessions/Logout",
+            "Status": 204
+          }
+        ]
+      },
+      {
+        "ItemId": "19",
+        "MediaSourceId": "mediasource_19",
+        "SubtitleStreamIndex": 2,
+        "RequestedStartTimeTicks": 410000000,
+        "DeviceIdHash": "27b9b7339e84a8891ca2e804fa685dec2ca0e5923a0fcd934465e22b76d90d22",
+        "NativePlayback": false,
+        "PlaybackReportsSent": false,
+        "MaximumMediaBytes": 65536,
+        "ProfileChangesFromBaseline": {
+          "TranscodingProfiles[0].Container": "mp4",
+          "TranscodingProfiles[0].Protocol": "http"
+        },
+        "Stage": "Complete",
+        "ServerVersion": "4.9.5.0",
+        "RequestWithoutIdentity": {
+          "MediaSourceId": "mediasource_19",
+          "MaxStreamingBitrate": 20000000,
+          "StartTimeTicks": 410000000,
+          "SubtitleStreamIndex": 2,
+          "MaxAudioChannels": 2,
+          "DeviceProfile": {
+            "Name": "Windows Native AVC AAC Baseline",
+            "MaxStreamingBitrate": 20000000,
+            "MaxStaticBitrate": 20000000,
+            "DirectPlayProfiles": [
+              {
+                "Type": "Video",
+                "Container": "mp4",
+                "VideoCodec": "h264",
+                "AudioCodec": "aac"
+              }
+            ],
+            "TranscodingProfiles": [
+              {
+                "Type": "Video",
+                "Container": "mp4",
+                "Protocol": "http",
+                "Context": "Streaming",
+                "VideoCodec": "h264",
+                "AudioCodec": "aac",
+                "MaxAudioChannels": "2",
+                "BreakOnNonKeyFrames": false,
+                "CopyTimestamps": false
+              }
+            ],
+            "CodecProfiles": [
+              {
+                "Type": "Video",
+                "Codec": "h264",
+                "Conditions": [
+                  {
+                    "Condition": "EqualsAny",
+                    "Property": "VideoProfile",
+                    "Value": "high|main|baseline|constrained baseline",
+                    "IsRequired": true
+                  },
+                  {
+                    "Condition": "LessThanEqual",
+                    "Property": "VideoLevel",
+                    "Value": "41",
+                    "IsRequired": true
+                  },
+                  {
+                    "Condition": "LessThanEqual",
+                    "Property": "VideoBitDepth",
+                    "Value": "8",
+                    "IsRequired": true
+                  },
+                  {
+                    "Condition": "Equals",
+                    "Property": "IsInterlaced",
+                    "Value": "false",
+                    "IsRequired": true
+                  }
+                ]
+              },
+              {
+                "Type": "VideoAudio",
+                "Codec": "aac",
+                "Conditions": [
+                  {
+                    "Condition": "LessThanEqual",
+                    "Property": "AudioChannels",
+                    "Value": "2",
+                    "IsRequired": true
+                  }
+                ]
+              }
+            ],
+            "SubtitleProfiles": [
+              {
+                "Format": "srt",
+                "Method": "Encode"
+              },
+              {
+                "Format": "vtt",
+                "Method": "Encode"
+              },
+              {
+                "Format": "ass",
+                "Method": "Encode"
+              },
+              {
+                "Format": "ssa",
+                "Method": "Encode"
+              },
+              {
+                "Format": "sub",
+                "Method": "Encode"
+              },
+              {
+                "Format": "pgssub",
+                "Method": "Encode"
+              },
+              {
+                "Format": "dvdsub",
+                "Method": "Encode"
+              }
+            ]
+          },
+          "EnableDirectPlay": false,
+          "EnableDirectStream": true,
+          "EnableTranscoding": true,
+          "AllowVideoStreamCopy": true,
+          "AllowAudioStreamCopy": true,
+          "AllowInterlacedVideoStreamCopy": false,
+          "IsPlayback": true,
+          "AutoOpenLiveStream": false
+        },
+        "PlaySessionIdHash": "7f2f1acc600718e98c75af0dd9eb566f1685f1accb11e6fd6c7dbe318c61b0ea",
+        "Negotiated": {
+          "SourceProtocol": "File",
+          "SourceContainer": "mkv",
+          "SourceRunTimeTicks": 600330000,
+          "SourceSize": 1397328,
+          "TranscodingSubProtocol": "http",
+          "TranscodingContainer": "mp4",
+          "SupportsTranscoding": true,
+          "SubtitleCodec": "ass",
+          "SubtitleDeliveryMethod": "Encode",
+          "ReturnedSafeQuery": {
+            "MediaSourceId": [
+              "mediasource_19"
+            ],
+            "StartTimeTicks": [
+              "410000000"
+            ],
+            "VideoCodec": [
+              "h264"
+            ],
+            "AudioCodec": [
+              "aac"
+            ],
+            "VideoBitrate": [
+              "19808000"
+            ],
+            "AudioBitrate": [
+              "192000"
+            ],
+            "SubtitleStreamIndex": [
+              "2"
+            ],
+            "SubtitleMethod": [
+              "Encode"
+            ],
+            "TranscodeReasons": [
+              "SubtitleCodecNotSupported,DirectPlayError"
+            ]
+          }
+        },
+        "AppliedFactoryMissingStartTime": false,
+        "RequestedStreamSafeQuery": {
+          "MediaSourceId": [
+            "mediasource_19"
+          ],
+          "StartTimeTicks": [
+            "410000000"
+          ],
+          "VideoCodec": [
+            "h264"
+          ],
+          "AudioCodec": [
+            "aac"
+          ],
+          "VideoBitrate": [
+            "19808000"
+          ],
+          "AudioBitrate": [
+            "192000"
+          ],
+          "SubtitleStreamIndex": [
+            "2"
+          ],
+          "SubtitleMethod": [
+            "Encode"
+          ],
+          "TranscodeReasons": [
+            "SubtitleCodecNotSupported,DirectPlayError"
+          ]
+        },
+        "Http": {
+          "Status": 200,
+          "ContentType": "video/mp4",
+          "ContentLength": null,
+          "TransferEncoding": "chunked",
+          "AcceptRanges": "none",
+          "ContentRange": null,
+          "ContentEncoding": null,
+          "RequestedRange": "bytes=0-65535",
+          "HeadersAfterSeconds": 1.113,
+          "PrefixAfterSeconds": 1.114,
+          "RangeObservation": "RangeNotHonoredAsPartialResponse",
+          "FullResponseNotRead": true
+        },
+        "Prefix": {
+          "BytesRead": 65536,
+          "Sha256": "5bfb670bddece99e47b1636b8d41accb5a4d7ee123452229d4e8b582ef8d48fe",
+          "TopLevelBoxes": [
+            {
+              "Type": "ftyp",
+              "Offset": 0,
+              "DeclaredSize": 36,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "moov",
+              "Offset": 36,
+              "DeclaredSize": 1225,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "moof",
+              "Offset": 1261,
+              "DeclaredSize": 1600,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "mdat",
+              "Offset": 2861,
+              "DeclaredSize": 12871,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "moof",
+              "Offset": 15732,
+              "DeclaredSize": 3228,
+              "CompleteInPrefix": true
+            },
+            {
+              "Type": "mdat",
+              "Offset": 18960,
+              "DeclaredSize": 73150,
+              "CompleteInPrefix": false
+            }
+          ],
+          "MarkerByteOffsets": {
+            "ftyp": 4,
+            "moov": 40,
+            "moof": 1265
+          },
+          "MarkerPresenceDoesNotProvePlayableOrComplete": true
+        },
+        "Status": "BoundedResponseObserved",
+        "MediaResponseDisposed": true,
+        "MediaConnectionClosed": true,
+        "Cleanup": [
+          {
+            "Operation": "OwnStopEncoding",
+            "Status": 204
+          },
+          {
+            "Operation": "OwnLogout",
+            "Status": 204
+          }
+        ],
+        "CleanupSucceeded": true,
+        "ApiEvents": [
+          {
+            "Method": "GET",
+            "Path": "/emby/System/Info/Public",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Users/AuthenticateByName",
+            "Status": 200
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Items/19/PlaybackInfo",
+            "Status": 200
+          },
+          {
+            "Method": "GET",
+            "Path": "/videos/19/stream.mp4",
+            "Status": 200,
+            "MediaPrefixOnly": true
+          },
+          {
+            "Method": "DELETE",
+            "Path": "/emby/Videos/ActiveEncodings",
+            "Status": 204
+          },
+          {
+            "Method": "POST",
+            "Path": "/emby/Sessions/Logout",
+            "Status": 204
+          }
+        ]
+      }
+    ],
+    "Status": "BoundedResponsesObserved"
+  },
+  "SourceReceiptRelativePath": "tools/EmbyClient.SubtitleFixtures/artifacts/progressive-prefix-control-20260909-051033-7d97c315/progressive-evidence.json",
+  "SourceReceiptSha256": "3e6b452036045540827aa2351922513f88876ea5dff25b47329f58cad5a8be35",
+  "Collector": {
+    "Path": "tools/EmbyClient.SubtitleFixtures/inspect_progressive_control.py",
+    "FileSha256AtArchival": "09367284a379ec81ddaa52efcd5cbe400af5f55ae338d9bb4166fc4b02dabcf5"
+  },
+  "Sanitization": {
+    "Review": "Static review of existing files only; no server, media tool, native process, or verification run was started for archival.",
+    "Retained": "Safe typed observations, generated item/source identities, hashed device/session identities, numeric packet or box metadata, and HTTP statuses.",
+    "Excluded": "Raw playlists, authentication payloads, credential files, access tokens, full URLs, media prefix bytes, media outputs, and raw command/log files.",
+    "Redactions": []
+  },
+  "Conclusion": "The original ASS source negotiated http/mp4 Encode at zero and 41 seconds. Each response supplied a bounded 65536-byte prefix after HTTP 200 with chunked transfer, no Content-Length, Accept-Ranges none, and no Content-Range. The requested range was not honored as a partial response. Complete ftyp, moov, and moof boxes were observed within each prefix; media completeness, decoding, native pixels, seek, duration, resource behavior, and full playback were not verified. Both own encoding cleanup and logout returned 204.",
+  "Limitations": [
+    "This control changes only the transcoding profile container/protocol from ts/hls to mp4/http. Request flags correspond to ForceTranscoding=false; it does not change the product default profile.",
+    "No native player or Playing report was used. Each response was deliberately closed after 64 KiB; it is not a range-support or completed-playback pass.",
+    "Original ASS and PGS HLS native failures remain failures. No screenshot, font-fidelity, bitmap-fidelity, or subtitle-disable success is established."
+  ]
+}
