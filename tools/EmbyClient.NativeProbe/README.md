@@ -1,6 +1,6 @@
 # Native playback lifecycle probe
 
-The [progressive HTTP subtitle profile control](PROGRESSIVE-CONTROL.md) is prepared as an explicitly separate, unrun control. It preserves `ForceTranscoding=false` and does not change the main application's default HLS profile. Current authorization permits CLI build/test work only; do not launch any player or window.
+The [progressive HTTP subtitle profile control](PROGRESSIVE-CONTROL.md) is explicitly separate from default-profile acceptance. It preserves `ForceTranscoding=false` and does not change the main application's default HLS profile. Its existing receipt is compile-only; a later native run requires current authorization and a current verified server binding. Replacement server identities require the documented explicit `--expected-server-id` option and a newly audited executable.
 
 The independent [complex subtitle server-encoding mode](COMPLEX-SUBTITLES.md) verifies a manifest-bound ASS or PGS cue and its later disabling through the default product profile. It requires separate real screenshot confirmations. The first ASS attempt failed before visual readiness and is retained separately; further runs require coordination.
 

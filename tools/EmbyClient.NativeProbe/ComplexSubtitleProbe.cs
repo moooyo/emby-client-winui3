@@ -13,10 +13,14 @@ namespace EmbyClient.NativeProbe;
 /// <summary>Observes one complex subtitle's default server burn-in and subsequent disabling.</summary>
 internal static partial class ComplexSubtitleProbe
 {
+    private const string LegacyOwnedServerId = "cf4feb10df224135877fc61204a28212";
+
     internal static async Task<ComplexSubtitleReport> RunAsync(DispatcherQueue dispatcher, MediaPlayerElement element,
         string credentialsPath, string manifestPath, string caseId, string outputDirectory,
-        CancellationToken cancellationToken = default, bool progressiveHttpProfileControl = false)
+        CancellationToken cancellationToken = default, bool progressiveHttpProfileControl = false, string? expectedServerId = null)
     {
+        // Approval is independent of the fixture document. Never learn the expected identity from it.
+        var expectedIdentity = expectedServerId ?? LegacyOwnedServerId;
         var output = Path.GetFullPath(outputDirectory);
         Directory.CreateDirectory(output);
         var reportPath = Path.Combine(output, "complex-subtitle-report.json");
@@ -59,11 +63,12 @@ internal static partial class ComplexSubtitleProbe
         {
             Save();
             Require(report.NativeAot, "NativeAotRequired");
+            Require(expectedIdentity.Length == 32 && expectedIdentity.All(char.IsAsciiHexDigit), "InvalidExpectedServerId");
             Require(new FileInfo(manifestPath).Length is > 0 and <= 64 * 1024, "ManifestSizeInvalid");
             var manifestBytes = await File.ReadAllBytesAsync(manifestPath, deadline.Token);
             var manifest = JsonSerializer.Deserialize(manifestBytes, ComplexSubtitleJsonContext.Default.ComplexSubtitleManifest);
             Require(manifest is { FormatVersion: 1, Synthetic: true }
-                && manifest.ServerId == "cf4feb10df224135877fc61204a28212" && manifest.ServerVersion == "4.9.5.0",
+                && manifest.ServerId == expectedIdentity && manifest.ServerVersion == "4.9.5.0",
                 "BoundOwnedFixtureManifestRequired");
             var fixture = manifest!.Cases.SingleOrDefault(value => value.CaseId == caseId);
             Require(fixture is not null, "FixtureCaseMissing");
@@ -90,14 +95,15 @@ internal static partial class ComplexSubtitleProbe
             var api = new EmbyApiClient(http, new Uri("http://127.0.0.1:19096"),
                 new ClientIdentity("Emby Native Complex Subtitle Probe", "Windows complex subtitle probe", device, "0.1.0"));
             var publicInfo = await api.GetPublicSystemInfoAsync(deadline.Token);
-            Require(publicInfo.Id == manifest.ServerId && publicInfo.Version == manifest.ServerVersion,
+            Require(publicInfo.Id == expectedIdentity && publicInfo.Id == manifest.ServerId
+                && publicInfo.Version == "4.9.5.0" && publicInfo.Version == manifest.ServerVersion,
                 "OfficialServerIdentityMismatch");
             report.ServerIdHash = Hash(publicInfo.Id!);
             AuthenticationResult authentication;
             try { authentication = await api.AuthenticateByNameAsync(credentials.Username!, credentials.Password!, deadline.Token); }
             finally { credentials.Password = null; Array.Clear(credentialBytes); }
             Require(authentication.AccessToken is not null && authentication.User?.Id is not null
-                && authentication.ServerId == publicInfo.Id, "AuthenticationFailed");
+                && authentication.ServerId == expectedIdentity && authentication.ServerId == publicInfo.Id, "AuthenticationFailed");
             authenticated = api.WithAuthentication(authentication.AccessToken!, authentication.User!.Id!);
             var item = await authenticated.GetItemAsync(fixture.ItemId!, deadline.Token);
             Require(item.Id == fixture.ItemId && item.Name == fixture.ExpectedItemName, "ManifestItemBindingMismatch");

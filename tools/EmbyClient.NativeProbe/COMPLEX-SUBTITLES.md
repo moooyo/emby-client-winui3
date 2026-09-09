@@ -13,12 +13,15 @@ Task<ComplexSubtitleReport> ComplexSubtitleProbe.RunAsync(
     string caseId,
     string outputDirectory,
     CancellationToken cancellationToken = default,
-    bool progressiveHttpProfileControl = false);
+    bool progressiveHttpProfileControl = false,
+    string? expectedServerId = null);
 ```
 
-The default-mode dispatch is `--output-dir <fresh-directory> --complex-subtitle --credentials-file <owned-file> --fixture-manifest <bound-manifest> --case <ass-styled|pgs-bitmap>`. When runtime verification is authorized, it opens one independent native window without requesting activation and runs exactly one selected case. All new source files are included by the existing recursive NativeProbe source audit. Native product files are linked rather than copied into this probe. The independent [HTTP profile control](PROGRESSIVE-CONTROL.md) is explicitly marked and does not replace the default HLS result.
+The default-mode dispatch is `--output-dir <fresh-directory> --complex-subtitle --credentials-file <owned-file> --fixture-manifest <bound-manifest> --case <ass-styled|pgs-bitmap> [--expected-server-id <verified-id>]`. When runtime verification is authorized, it opens one independent native window without requesting activation and runs exactly one selected case. All new source files are included by the existing recursive NativeProbe source audit. Native product files are linked rather than copied into this probe. The independent [HTTP profile control](PROGRESSIVE-CONTROL.md) is explicitly marked and does not replace the default HLS result.
 
-The credentials file is read only inside the process. The only permitted server is the existing owned official loopback server on port 19096, with its exact expected ID and version. The case IDs select fixture descriptions, not Emby item IDs. Both item and media-source IDs must be populated by the fixture binding process and verified again against the actual API. A generation-only manifest with null IDs is rejected. An embedded subtitle index from FFprobe is insufficient until the selected API source confirms its codec, index, embedded status, and text/bitmap kind.
+The credentials file is read only inside the process. The endpoint remains fixed to `http://127.0.0.1:19096` and version `4.9.5.0`. An explicit `--expected-server-id` must come from the operator's independent verification of the restored or newly created owned server, not from blindly reading the fixture manifest. It must contain exactly 32 ASCII hexadecimal characters. Its original spelling is compared exactly with the manifest, public system information, and authentication response; it is not normalized or inferred. Omitting the option retains the legacy pinned identity `cf4feb10df224135877fc61204a28212` for legacy-scope runs.
+
+A newly created server requires a newly bound manifest containing its actual ID, item/source IDs, and API subtitle indexes, plus its own disposable credentials file. Do not relabel an old manifest as a new server or modify historical receipts. The case IDs select fixture descriptions, not Emby item IDs. Both item and media-source IDs are verified again against the actual API. A generation-only manifest with null IDs is rejected. An embedded subtitle index from FFprobe is insufficient until the selected API source confirms its codec, index, embedded status, and text/bitmap kind. The independent RealHls and ExternalSubtitle modes retain their separate legacy identity pins and are not broadened by this option.
 
 The fixture manifest schema is `FormatVersion: 1`, `Synthetic: true`, `ServerId`, `ServerVersion`, and a `Cases` array. Each case contains these fields:
 

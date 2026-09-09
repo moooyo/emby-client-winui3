@@ -47,6 +47,14 @@ The latest development AOT executable SHA-256 is `5C3C472A714316F177C3A4F62C9BE1
 
 The native resource gate compares the final five-loop median with loops 5-9, permits at most 32 additional handles and 64 MiB of private-memory growth, and checks for sustained growth. Its limits were not relaxed. The direct and HLS results are separate measurements and must not be combined into a general stability claim.
 
+### Resumed desktop verification setup
+
+Local desktop verification was authorized again on 2026-09-09. The normal `5C3C472A` executable launched to its sign-in view and closed with no remaining application process; a subsequent launch remains at saved sign-in, awaiting manual authentication. A temporary headless helper using the unchanged product `ConnectionService` and `AccountStore` prepared the dedicated synthetic account, verified actual Windows token protection/unprotection, and preserved the original settings backup and three other accounts. These are preparation and window-lifecycle observations, not new playback, automatic-restore, or memory acceptance.
+
+The old WSL temporary official-server directory no longer existed. A new isolated Emby `4.9.5.0` instance has identity `16874ca71afa40619afdec87163a4e40`; its ordinary playback account and ASS/PGS item/source bindings were verified again. The original complex-subtitle media/reference bytes are unchanged. The separately lost two-version audio fixture was regenerated from its original recipe and recorded with new hashes, with item `14`, sources `mediasource_14` (720p) / `mediasource_13` (480p), and audio indexes 1 (English) / 2 (French). Historical identities, generated hashes, and receipts were not relabeled.
+
+The complex-subtitle probe now accepts a separately supplied `--expected-server-id`, while retaining exact manifest/public-info/authentication identity agreement and the fixed loopback origin/version. Its [new source-audited AOT receipt](../../tools/EmbyClient.NativeProbe/verification/progressive-rebound-build.json) passes compilation with executable `9DA1E3AC`, but automatic approval review rejected its launch before process creation with only `blocked by policy`. The native control remains **NotRun**. No new subtitle frame, paused transition, tail, or native cleanup result is claimed; this runtime restriction is separate from the user's renewed desktop authorization.
+
 Real-server checks used an isolated official Emby `4.9.5.0` Linux amd64 instance over loopback, dedicated test accounts, and generated media. No production credentials or user media were used. Detailed scopes are in the [server results](../../tools/EmbyClient.ServerValidation/RESULTS.md), [native probe](../../tools/EmbyClient.NativeProbe/README.md), and [capability matrix](capabilities.md).
 
 ## Remaining release gates

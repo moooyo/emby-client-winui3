@@ -1,0 +1,313 @@
+{
+  "FormatVersion": 1,
+  "EvidenceKind": "CompileOnly",
+  "Status": "BuildSucceeded",
+  "Scope": "Independent NativeAOT publication with explicit expected-server identity support for complex subtitle controls. The normal application and its default profile are unchanged.",
+  "Verification": {
+    "PublishExitCode": 0,
+    "NativeCodeGenerationReported": true,
+    "SourceInputsUnchangedDuringPublish": true,
+    "ExecutableHashMatchedManifest": true,
+    "ExpectedServerId": "16874ca71afa40619afdec87163a4e40",
+    "BoundFixtureManifestSha256": "5a32e2305a6c0ec0562effbb00cde1215d9f745764b783ae9b7f032ee371a8fc",
+    "LegacyIdentityPinPreserved": true,
+    "RealHlsAndExternalSubtitleModesChanged": false
+  },
+  "RuntimeOutcome": "NotRun",
+  "LaunchAttempt": {
+    "Outcome": "RejectedBeforeProcessCreation",
+    "Reason": "blocked by policy",
+    "ProcessStarted": false,
+    "RunDirectoryCreated": false,
+    "VisualConfirmationPerformed": false
+  },
+  "Limitations": [
+    "The automatic approval review rejected the native control launch; no player, media request, frame, timing, tail, or cleanup observation was produced by this attempted run.",
+    "The prior compile-only receipt and actual default-profile ASS/PGS failures remain unchanged.",
+    "This result does not certify the new server binding at native runtime or change product compatibility claims."
+  ],
+  "BuildManifest": {
+    "FormatVersion": 1,
+    "Configuration": "Release",
+    "RuntimeIdentifier": "win-x64",
+    "TargetFramework": "net10.0-windows10.0.26100.0",
+    "NativeAotRequested": true,
+    "DotNetSdk": "10.0.301",
+    "GeneratedAtUtc": "2026-09-09T17:52:09.0667948+08:00",
+    "SourceInputsUnchangedDuringPublish": true,
+    "Sources": [
+      {
+        "Path": "Directory.Build.props",
+        "Sha256": "152671a2f256b8953c63fa453a8bd17468b996dd5573b20d51773ab33019cab2"
+      },
+      {
+        "Path": "Directory.Packages.props",
+        "Sha256": "0db6e50291b3aca667f14b7d583b048e383fc027068bd8d3ba6c655cf72a6239"
+      },
+      {
+        "Path": "global.json",
+        "Sha256": "4a5e1b57e81b372b49a3ee4f0b35483d541b45280cf931276828c0920d3f6855"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyApiClient.cs",
+        "Sha256": "c3aa28a72f188966e04f9a4c47e37cf1c8982c178b52c0a7fd86854041826db6"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyApiException.cs",
+        "Sha256": "e6596ddf6516251a8e39f2cd3cf3f45b6d87d29f45c43f9389f29a93d5824942"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyClient.Api.csproj",
+        "Sha256": "acd40234aaa516072266f6ebb527924676dc461e10a0f1b304289a9e83b19198"
+      },
+      {
+        "Path": "src/EmbyClient.Api/EmbyJsonContext.cs",
+        "Sha256": "8b9c9c7ffb1d8079d2d8be99c021ab99ba861a5f50919915b5b118ddc43799ec"
+      },
+      {
+        "Path": "src/EmbyClient.Api/Models.cs",
+        "Sha256": "3fc1d9f40b7339671dcf4dda1660bb3a5a1c9812fef4669a6974e6d7c30181a5"
+      },
+      {
+        "Path": "src/EmbyClient.Api/packages.lock.json",
+        "Sha256": "d9a3e5611e8388d55d0eba98ecabaa64efbf8327c7a7e25127763a93e98a4604"
+      },
+      {
+        "Path": "src/EmbyClient.Api/PlaybackModels.cs",
+        "Sha256": "84c7445a80866b0985094c94ebfbf190735ee17728a8da640480622460389ee3"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/HttpRangeStream.cs",
+        "Sha256": "d76a48a650e362c03ee59252b6250a45a84851b1e89d58b434ffec97945f83f9"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs",
+        "Sha256": "5be3b1f39e543702da64f50e995fc38f7605f99934545daabd93da12f3539039"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.cs",
+        "Sha256": "cc0f5eecdef20a2369306d78eff744cc0d8e2f77cc4dcb426282a96c4136534b"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/NativePlaybackEngine.MediaControls.cs",
+        "Sha256": "afd1605c82fc8cbd39e929f4077e53c4f00f08dee7849257a895d540df951cef"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ProgressiveHttpRelay.cs",
+        "Sha256": "b88e467f0d83d953a4c46f6cbd250934836638257a922ee96d1d034446ff8b7e"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ScopedAdaptiveHttpFilter.cs",
+        "Sha256": "771274dd22158e364f5e9c6b9f40ca12b69be576e7418b1081fc8148fce7278b"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/ScopedMediaTransport.cs",
+        "Sha256": "d44846b43bd1ab9bc895c8a9f782da72d572b08a227ed06b0a36047e243dd502"
+      },
+      {
+        "Path": "src/EmbyClient.App/Playback/SessionHttpRelay.cs",
+        "Sha256": "d8da59bb83591966f24341a26a2bc74a91d2c0127ae48396a43d382d7338d444"
+      },
+      {
+        "Path": "src/EmbyClient.App/Services/NativePosterDecoder.cs",
+        "Sha256": "338669d154f6c44369931c3ae376875b0a8331d30a5c57184e8e68a6d8362a5a"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/ConservativeDeviceProfile.cs",
+        "Sha256": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/EmbyClient.Playback.csproj",
+        "Sha256": "8589f3a6b4fd297798c8b68c12486abed0085c8d4735ae0d1f86d82fe9c6edce"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/packages.lock.json",
+        "Sha256": "7228d14911c8772a90eb1caaf40e8fd065c45d897bede78c3248ad420c32f564"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackContracts.cs",
+        "Sha256": "4d4a84494b5880c25501515e3087ca95b1ce55b664e623a818e9a6465dfb7f1b"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackCoordinator.cs",
+        "Sha256": "824b122e2257feef62cfff970a9d8d3b5d18d69a94a167f91e2b467bae9f8c2f"
+      },
+      {
+        "Path": "src/EmbyClient.Playback/PlaybackRequestFactory.cs",
+        "Sha256": "98f31c78c8f620edda48ed496a3f336427686dea2591a251efa3a310e94c088c"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/app.manifest",
+        "Sha256": "f5b6ec234184577d6f8e1bd3a335ae68590be4b241571cab8d80c6bb51cbe706"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/App.xaml",
+        "Sha256": "97aa49b7a0225167f798c68cb299f02d9d765ad4c0203797bfa57393f8140044"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/App.xaml.cs",
+        "Sha256": "fdea3a6e83c1473652a657af4ed0a9a079d733cf31c68e71d36f7e24efc5b131"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ColdRangeProxy.cs",
+        "Sha256": "799fe1e685a498cfbc1eaa1511067bcdabbaa76919b044213247b1e23cad1c27"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ComplexSubtitleLaunch.cs",
+        "Sha256": "174b8a998ba7daef02070d0d1a7a69799ab8f4ba5979f560bc68cb03f222f99a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ComplexSubtitleModels.cs",
+        "Sha256": "476f71c72b9fd58e60b6074549ec79dbbec7672c7f7aa28de7ec67d5160656ec"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ComplexSubtitleProbe.cs",
+        "Sha256": "b12b7abd222e79409a10dabe975a50f3f014555d674c7ea669ed1cc52b1298f8"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ComplexSubtitleProgressiveControl.cs",
+        "Sha256": "99e921e1ad8c4c9f42f33b016ad5797b98f2e92176590aeaf06e10290f60ca7a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/EmbyClient.NativeProbe.csproj",
+        "Sha256": "d045d28e82f1a7f6cadd3e71d219466d3c37e35bc0cc9478d9e03490ba4e6469"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleLaunch.cs",
+        "Sha256": "e7902b34f6de2b4bb20244901a7a10a963629c382a85df621991bc683bc06295"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleModels.cs",
+        "Sha256": "87bbbc012461ee283819c3be049c3aad5b81aa503bdab295aafd3bfc671133ae"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ExternalSubtitleProbe.cs",
+        "Sha256": "13991ff5ad6b5e068faeed4ae86ac574498cbf66c13cfa27c63c98efffbd9ddf"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/FilePlaybackControl.cs",
+        "Sha256": "a8ca106e6270df0639b2c38143cf226f7d52bd744a0c902c050b90a1ef0a8653"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/HlsApiObservationHandler.cs",
+        "Sha256": "b3b87d78967fe25f7c54204d971a6b6609afa4acbb74eccffc4dfbf8d05ed56a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/HlsSeekObservation.cs",
+        "Sha256": "6e1a5ab4e40f31188127371dd2260d5d6bacdf9b8978fa47d37ff6bd289bf7e4"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/InvalidMediaFixture.cs",
+        "Sha256": "5654f407caad4d5bb8fd8f45ad76c53afc6497a39015693da7cb8bb3cf3d9843"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationFailureEngine.cs",
+        "Sha256": "7c19476a529212d7aae9ee697fca01341da95acc3513368be013f22365723de8"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationModels.cs",
+        "Sha256": "fa53449e9734d9814c2d71775d27ab6fb9c923d3716bc39285ec0d2f26184cc7"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/IsolationProbe.cs",
+        "Sha256": "a9590c4c17eff40b101ef9ec56e8a683906b2a867ab551389ca57c7a7fa98775"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/MediaControlsRetirementObservation.cs",
+        "Sha256": "664cf7ea10e287b7ab826dcc7bdf3179e189efa6eb43f3068e3b8bc4f1a9cd79"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativeHlsHttpControl.cs",
+        "Sha256": "7c47c1cdeeddbe0948cf18b761830be150b058b09ac379ec1ddf385360113ffc"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.ComplexSubtitleProbe.cs",
+        "Sha256": "904ecd51ee380443360c82d958bf319cdc1602d70f23f13a1dfafc9d70d67f96"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.IsolationProbe.cs",
+        "Sha256": "5b844b70a8759f00c3c81c5c4abe8618a8a0ed493d785482d55c696c602d8d1f"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NativePlaybackEngine.ProbeObservation.cs",
+        "Sha256": "63ad06f8ae97fddd6da8c65ed697383f3f9c9acc07cddfc77acc472c809d036f"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryEngine.cs",
+        "Sha256": "f22cf7a8bcc441c37a3b6e9375d8371544a195f3b20b9a938a409d682e312a87"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryModels.cs",
+        "Sha256": "8aaec80173bc3a6fbd41e6ea50a000f497d76483028d77d161729319d605ab66"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/NetworkRetryProbe.cs",
+        "Sha256": "69da69d9dda3226b8f9571399c832faba1762ac6abcd0797b506fdf5e045a0b1"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/packages.lock.json",
+        "Sha256": "62426a1a5b632616a71d5194a03af9ad171f7303e24cb1e2b0c6243194a12a0a"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/PosterLifecycleModels.cs",
+        "Sha256": "39f2f3203911e0fe9ebe1819474c4ca62325fc48f74f8031b1b485f44e6db06b"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/PosterLifecycleProbe.cs",
+        "Sha256": "de82cc5de5fba209088df3fd209ce625cc5fa3cd8cc1543f5e5366689a327664"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/ProbeModels.cs",
+        "Sha256": "78fe764cd8b81fb3c6279dd94d6de8df687d95d59fe9406a4f95307920c7fd81"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Publish-Probe.ps1",
+        "Sha256": "ff833b3620c2de8aed3490e2bec45531553f9804ad70d32efcfc987ab7a59839"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/RealHlsModels.cs",
+        "Sha256": "994330a663e2347805370f14151435f621eeb92c2157db01cb0a660b6fdf8eba"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/RealHlsProbe.cs",
+        "Sha256": "62cf8d20d6c1cf235a08d05c7de3765b8d0bafaf426d94f139c74e63222474b0"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Start-SyntheticFixture.ps1",
+        "Sha256": "dd486688f63a9013c49bfae7d56b7467c88e0a12630e07e20f1e228e413805f5"
+      },
+      {
+        "Path": "tools/EmbyClient.NativeProbe/Wait-ComplexSubtitleReady.ps1",
+        "Sha256": "db0ee62a394f9d491fa3b8b22e498b3ca19671b0b225ab379b133195575e6bbe"
+      }
+    ],
+    "ResolvedDependencies": [
+      "EmbyClient.Api/1.0.0",
+      "EmbyClient.Playback/1.0.0",
+      "Microsoft.DotNet.ILCompiler/10.0.9",
+      "Microsoft.NET.ILLink.Tasks/10.0.9",
+      "Microsoft.Web.WebView2/1.0.3719.77",
+      "Microsoft.Windows.AI.MachineLearning/2.1.74",
+      "Microsoft.Windows.SDK.BuildTools.MSIX/1.7.251221100",
+      "Microsoft.Windows.SDK.BuildTools/10.0.28000.2705",
+      "Microsoft.WindowsAppSDK.AI/2.4.4",
+      "Microsoft.WindowsAppSDK.Base/2.0.4",
+      "Microsoft.WindowsAppSDK.DWrite/2.1.0",
+      "Microsoft.WindowsAppSDK.Foundation/2.3.9",
+      "Microsoft.WindowsAppSDK.InteractiveExperiences/2.1.6",
+      "Microsoft.WindowsAppSDK.ML/2.1.74",
+      "Microsoft.WindowsAppSDK.Runtime/2.4.0",
+      "Microsoft.WindowsAppSDK.Search/2.4.4",
+      "Microsoft.WindowsAppSDK.Widgets/2.0.5",
+      "Microsoft.WindowsAppSDK.WinUI/2.3.6",
+      "Microsoft.WindowsAppSDK/2.4.0",
+      "runtime.win-x64.Microsoft.DotNet.ILCompiler/10.0.9",
+      "System.Numerics.Tensors/9.0.0"
+    ],
+    "Executable": {
+      "FileName": "EmbyClient.NativeProbe.exe",
+      "SizeBytes": 15622656,
+      "Sha256": "9da1e3ac847486b195b04d8b4052c59f46608ccc4b3c1cd40a39191d5bf05da8"
+    }
+  }
+}

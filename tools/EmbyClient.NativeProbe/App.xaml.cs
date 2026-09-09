@@ -58,15 +58,19 @@ public sealed partial class App : Application
             directory = subtitleDirectory;
             _externalSubtitleCredentialsPath = Path.GetFullPath(subtitleCredentials);
         }
+        else if (commandLine is ["--output-dir", var reboundDirectory, var reboundMode, "--credentials-file", var reboundCredentials,
+            "--fixture-manifest", var reboundManifest, "--case", var reboundCase, "--expected-server-id", var reboundServerId]
+            && reboundMode is "--complex-subtitle" or "--complex-subtitle-http-profile-control")
+        {
+            directory = reboundDirectory;
+            ConfigureComplexSubtitleMode(reboundCredentials, reboundManifest, reboundCase, reboundMode, reboundServerId);
+        }
         else if (commandLine is ["--output-dir", var complexDirectory, var complexMode, "--credentials-file", var complexCredentials,
             "--fixture-manifest", var complexManifest, "--case", var complexCase]
             && complexMode is "--complex-subtitle" or "--complex-subtitle-http-profile-control")
         {
             directory = complexDirectory;
-            _complexSubtitleCredentialsPath = Path.GetFullPath(complexCredentials);
-            _complexSubtitleManifestPath = Path.GetFullPath(complexManifest);
-            _complexSubtitleCaseId = complexCase;
-            _complexSubtitleHttpProfileControl = complexMode == "--complex-subtitle-http-profile-control";
+            ConfigureComplexSubtitleMode(complexCredentials, complexManifest, complexCase, complexMode);
         }
         else if (commandLine is ["--output-dir", var smokeDirectory, "--instrumentation-smoke"])
         {

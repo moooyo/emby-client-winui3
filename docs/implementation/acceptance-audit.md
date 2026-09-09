@@ -4,6 +4,8 @@ Snapshot: 2026-09-09. This assesses the [implementation plan](../architecture/wi
 
 The [current status](status.md) owns the latest normal application publication and CI checkpoint. A publication still in progress is not an accepted executable, and observations below remain attached to their named artifacts rather than an assumed later SHA.
 
+The [resumed desktop setup](status.md#resumed-desktop-verification-setup) records renewed user authorization, a replacement isolated server and bindings, a successful identity-aware probe compilation, and a launch rejected by automatic approval review before process creation. The normal app is awaiting manual saved sign-in. These preparation results do not close the native or UI gates below; references to the earlier desktop pause describe the earlier evidence checkpoint.
+
 Project/interface names in the plan are illustrative boundaries, not a checklist of required assemblies. The present `Api`, `Playback`, and Windows app modules preserve the important separation. A separate `ICredentialStore`, reporter project, DI container, Generic Host, VLC adapter, or extra Toolkit package is not required merely to reproduce an example name. Local verification was explicitly authorized during implementation; the earlier research-stage `test-env` restriction does not invalidate that evidence.
 
 ## Phase conclusions

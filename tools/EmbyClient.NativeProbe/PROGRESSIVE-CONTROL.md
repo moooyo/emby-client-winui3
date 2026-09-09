@@ -1,10 +1,26 @@
 # Progressive HTTP subtitle profile control
 
-This control is code prepared for later verification. It has not been run. The current task authorization permits CLI compilation and tests only: do not start NativeProbe, an App window, a media player, or desktop automation without a new explicit runtime authorization. No visual or native HTTP compatibility pass is claimed.
+This control has compile-only evidence and no completed native runtime acceptance. The earlier no-player verification phase did not authorize a later run; runtime execution uses the operator's current authorization and the current owned-server binding. No visual or native HTTP compatibility pass is claimed by the existing build receipt.
 
 The independent Release NativeAOT publication completed successfully. The [compile-only receipt](verification/progressive-http-control-build.json) records the unchanged source audit, resolved toolchain/dependencies, and executable hash/size. Its runtime outcome is explicitly `NotRun`; no executable or window was launched for that artifact. Compilation does not resolve the existing ASS/PGS HLS failures or validate the native queued-Ended race.
 
-The future control dispatch is `--output-dir <fresh-directory> --complex-subtitle-http-profile-control --credentials-file <owned-file> --fixture-manifest <bound-manifest> --case <ass-styled|pgs-bitmap>`. It reuses the existing identity, manifest, actual API source/track binding, native event observation, PNG, and root visual-confirmation contracts. The report has `ExecutionMode: ProgressiveHttpProfileControl`, `ProfileControl: true`, and can finish successfully only as `ControlPassed`, never a default-profile `Passed` result.
+The control dispatch is `--output-dir <fresh-directory> --complex-subtitle-http-profile-control --credentials-file <owned-file> --fixture-manifest <bound-manifest> --case <ass-styled|pgs-bitmap> [--expected-server-id <verified-id>]`. It reuses the existing identity, manifest, actual API source/track binding, native event observation, PNG, and root visual-confirmation contracts. The report has `ExecutionMode: ProgressiveHttpProfileControl`, `ProfileControl: true`, and can finish successfully only as `ControlPassed`, never a default-profile `Passed` result.
+
+Identity rebinding is explicit. The new option accepts only a 32-character ASCII hexadecimal ID independently verified by the operator. The supplied ID, bound manifest ID, actual public server ID, and authentication server ID must all match exactly. Loopback address/port and version `4.9.5.0` remain fixed. The omitted-option legacy command remains pinned to `cf4feb10df224135877fc61204a28212`; it does not automatically trust a replacement server. The current newly verified server identity is `16874ca71afa40619afdec87163a4e40`, which must be supplied explicitly with its new manifest and credentials.
+
+The commands differ only by that independent identity argument:
+
+```powershell
+# Legacy scope: requires the original server identity and original binding.
+& $legacyExe --output-dir $newLegacyRun --complex-subtitle-http-profile-control --credentials-file $legacyCredentials --fixture-manifest $legacyManifest --case ass-styled
+
+# Rebound scope: requires a fresh source-audited executable supporting this option.
+& $freshExe --output-dir $newRun --complex-subtitle-http-profile-control --credentials-file $newCredentials --fixture-manifest $newManifest --case ass-styled --expected-server-id 16874ca71afa40619afdec87163a4e40
+```
+
+Use `pgs-bitmap` with another fresh run directory only after the first run has completed cleanup. The older compiled executable with SHA-256 `ad7321ab16eda60219cdefc28390e5f6de310762ecacba0e0e399f5f32a26e70` predates this CLI option and cannot be used for the new identity. Publish the updated sources into a new independent directory after review, preserve that build manifest with each new run, and leave the old compile-only and failed-runtime receipts unchanged.
+
+The [rebound build receipt](verification/progressive-rebound-build.json) records the subsequent successful NativeAOT publication: executable SHA-256 `9da1e3ac847486b195b04d8b4052c59f46608ccc4b3c1cd40a39191d5bf05da8`, 15,622,656 bytes, and 61 unchanged audited source inputs. The user authorized local desktop verification, but automatic approval review rejected the launch command with only `blocked by policy`. Rejection occurred before process creation; the proposed run directory was not created. This is **NotRun**, not a native playback failure or acceptance pass. The previous WSL temporary server directory had disappeared, so the replacement server uses new credentials and a newly API-bound manifest; all old receipts remain associated with their original identities.
 
 The request changes only each default TranscodingProfile's `Container` from `ts` to `mp4` and `Protocol` from `hls` to `http`. All other profile fields remain from `ConservativeDeviceProfile.Create()`. `ForceTranscoding` remains false, audio selection stays automatic, external WebVTT stays disabled, and the original explicitly selected subtitle index is retained. The main application default profile is unchanged. No HLS response, HTTP 500, or existing failure receipt is rewritten or ignored.
 
@@ -20,4 +36,4 @@ For a later authorized visual run, `complex-subtitle-tailframe-ready.json` requi
 
 After that confirmation, the control resumes and requires an actual Native Ended event, a source-relative end within one second of the manifest runtime, the matching Coordinator Ended event, and a fully drained session with no bound player/source. A recorded failure aborts this wait. Final cleanup verifies two or three unique Start/Stop pairs according to the actual graph count and exactly one ordered StopEncoding per Transcode session. The same session can supply Disabled and TailFrame observations; it is counted once. Player-owner disposal and logout remain final requirements.
 
-This is one prepared source-start/control sequence. Start zero, resource loops, broad server compatibility, and long-duration stability are separate future stages. The queued-native-Ended versus relay-error race requires actual dispatcher/player execution to verify dynamically; code inspection and CLI transport/Core tests do not certify that native timing scenario. Its execution remains pending under the current no-player authorization.
+This is one prepared source-start/control sequence. Start zero, resource loops, broad server compatibility, and long-duration stability are separate future stages. The queued-native-Ended versus relay-error race requires actual dispatcher/player execution to verify dynamically; code inspection and CLI transport/Core tests do not certify that native timing scenario. Its execution remains pending until separately observed and recorded.
