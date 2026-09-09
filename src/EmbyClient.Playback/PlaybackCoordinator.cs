@@ -121,8 +121,16 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     public Task PauseAsync(CancellationToken cancellationToken = default) =>
         ControlAsync((id, token) => _engine.PauseAsync(id, token), "Pause", cancellationToken);
 
+    /// <summary>Ignores a delayed media command if its playback has been retired or replaced.</summary>
+    public Task PauseAsync(Guid expectedPlaybackId, CancellationToken cancellationToken = default) =>
+        ControlAsync((id, token) => _engine.PauseAsync(id, token), "Pause", cancellationToken, expectedPlaybackId);
+
     public Task ResumeAsync(CancellationToken cancellationToken = default) =>
         ControlAsync((id, token) => _engine.ResumeAsync(id, token), "Unpause", cancellationToken);
+
+    /// <summary>Ignores a delayed media command if its playback has been retired or replaced.</summary>
+    public Task ResumeAsync(Guid expectedPlaybackId, CancellationToken cancellationToken = default) =>
+        ControlAsync((id, token) => _engine.ResumeAsync(id, token), "Unpause", cancellationToken, expectedPlaybackId);
 
     public Task SetVolumeAsync(int volumeLevel, bool isMuted, CancellationToken cancellationToken = default)
     {
@@ -131,14 +139,25 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         return ControlAsync((id, token) => _engine.SetVolumeAsync(id, volumeLevel, isMuted, token), "VolumeChange", cancellationToken);
     }
 
-    public async Task SeekAsync(long absolutePositionTicks, CancellationToken cancellationToken = default)
+    public Task SeekAsync(long absolutePositionTicks, CancellationToken cancellationToken = default) =>
+        SeekCoreAsync(absolutePositionTicks, cancellationToken);
+
+    /// <summary>Seeks only if the expected playback is still current after acquiring the transition gate.</summary>
+    public Task SeekAsync(Guid expectedPlaybackId, long absolutePositionTicks, CancellationToken cancellationToken = default) =>
+        SeekCoreAsync(absolutePositionTicks, cancellationToken, expectedPlaybackId);
+
+    private async Task SeekCoreAsync(long absolutePositionTicks, CancellationToken cancellationToken, Guid? expectedPlaybackId = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(absolutePositionTicks);
-        ThrowIfDisposed();
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (expectedPlaybackId is { } expected && !HasExpectedPlayback(expected)) return;
+        if (!expectedPlaybackId.HasValue) ArgumentOutOfRangeException.ThrowIfNegative(absolutePositionTicks);
+        if (!expectedPlaybackId.HasValue) ThrowIfDisposed();
+        try { await _gate.WaitAsync(cancellationToken).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (expectedPlaybackId is { } cancelledId && FindExpectedCommandTarget(cancelledId) is null) { return; }
         try
         {
-            var session = RequirePlayingSession();
+            var session = expectedPlaybackId is { } id ? FindExpectedCommandTarget(id) : RequirePlayingSession();
+            if (session is null) return;
+            ArgumentOutOfRangeException.ThrowIfNegative(absolutePositionTicks);
             CaptureEngineSnapshot(session);
             var target = ClampPosition(absolutePositionTicks, session.Source?.RunTimeTicks);
             if (session.Request!.TimelineKind == PlaybackTimelineKind.FullSource && session.LatestSnapshot?.CanSeek == true)
@@ -189,6 +208,29 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         }
         finally { _gate.Release(); }
         // The parameter cancels neither stop reporting nor native/server resource cleanup.
+    }
+
+    /// <summary>
+    /// Stops only the observed playback. It does not advance the global intent or cancel a newer PlayAsync request.
+    /// Once its matching session is cancelled, cleanup uses independent bounded cancellation like the unscoped stop.
+    /// </summary>
+    public async Task StopAsync(Guid expectedPlaybackId, CancellationToken cancellationToken = default)
+    {
+        if (Volatile.Read(ref _disposed) != 0) return;
+        var observed = Volatile.Read(ref _current);
+        if (observed is null || observed.Retired || observed.Id != expectedPlaybackId) return;
+        // Cancel the captured session, never whatever _current might become between this read and the gate.
+        CancelSession(observed);
+        await _gate.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            var session = _current;
+            if (Volatile.Read(ref _disposed) != 0 || session is null || session.Id != expectedPlaybackId || session.Retired) return;
+            await RetireAsync(session, false).ConfigureAwait(false);
+            PublishStatus(_pendingEngineStops.Count == 0 ? PlaybackStatus.Idle : PlaybackStatus.Failed,
+                session, _pendingEngineStops.Count == 0 ? null : "EngineStopFailed");
+        }
+        finally { _gate.Release(); }
     }
 
     private async Task StartCoreAsync(PlaybackSelection selection, long intent, CancellationToken cancellationToken,
@@ -378,13 +420,17 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         session.LiveStreamIds.Add(source.LiveStreamId);
     }
 
-    private async Task ControlAsync(Func<Guid, CancellationToken, Task> action, string eventName, CancellationToken cancellationToken)
+    private async Task ControlAsync(Func<Guid, CancellationToken, Task> action, string eventName, CancellationToken cancellationToken,
+        Guid? expectedPlaybackId = null)
     {
-        ThrowIfDisposed();
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (expectedPlaybackId is { } expected && !HasExpectedPlayback(expected)) return;
+        if (!expectedPlaybackId.HasValue) ThrowIfDisposed();
+        try { await _gate.WaitAsync(cancellationToken).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (expectedPlaybackId is { } cancelledId && FindExpectedCommandTarget(cancelledId) is null) { return; }
         try
         {
-            var session = RequirePlayingSession();
+            var session = expectedPlaybackId is { } id ? FindExpectedCommandTarget(id) : RequirePlayingSession();
+            if (session is null) return;
             using var operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, session.Lifetime.Token);
             try
             {
@@ -718,6 +764,13 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
 
     private Session RequirePlayingSession() => _current is { StartReported: true, Retired: false } session
         && !session.Lifetime.IsCancellationRequested ? session : throw new InvalidOperationException("There is no active playback.");
+
+    private bool HasExpectedPlayback(Guid playbackId) => Volatile.Read(ref _disposed) == 0
+        && Volatile.Read(ref _current) is { Retired: false } session && session.Id == playbackId;
+
+    private Session? FindExpectedCommandTarget(Guid playbackId) => Volatile.Read(ref _disposed) == 0
+        && Volatile.Read(ref _current) is { StartReported: true, Retired: false } session
+        && session.Id == playbackId && !session.Lifetime.IsCancellationRequested ? session : null;
 
     private long BeginIntent()
     {
