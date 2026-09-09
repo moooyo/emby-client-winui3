@@ -184,12 +184,11 @@ public sealed class PlaybackConcurrencyTests
     }
 
     [Fact(Timeout = 15000)]
-    public async Task Queued_pause_and_unpause_events_preserve_each_state_while_another_report_is_in_flight()
+    public async Task Queued_pause_and_unpause_events_are_coalesced_into_the_latest_state_after_an_in_flight_report()
     {
         await using var context = new PlaybackTestContext();
         var firstReportEntered = PlaybackLifecycleTests.Signal();
         var releaseFirstReport = PlaybackLifecycleTests.Signal();
-        var unpauseReported = PlaybackLifecycleTests.Signal();
         context.Handler.RespondAsync = async (request, token) =>
         {
             if (request.Uri.AbsolutePath == "/emby/Sessions/Playing/Progress")
@@ -200,7 +199,6 @@ public sealed class PlaybackConcurrencyTests
                     firstReportEntered.TrySetResult();
                     await releaseFirstReport.Task.WaitAsync(token);
                 }
-                if (eventName == "Unpause") unpauseReported.TrySetResult();
             }
             return context.Respond(request);
         };
@@ -208,20 +206,18 @@ public sealed class PlaybackConcurrencyTests
         var volume = context.Coordinator.SetVolumeAsync(50, false, TestContext.Current.CancellationToken);
         await firstReportEntered.Task.WaitAsync(TestContext.Current.CancellationToken);
 
+        var drained = PlaybackQueuedStateTests.WaitForPositionNotifications(context.Coordinator, 100_000_009, 3);
         var snapshot = context.Engine.Snapshot!;
         context.Engine.Emit(PlaybackEngineEventKind.StateChanged, snapshot with { State = PlaybackEngineState.Paused, PositionTicks = 100_000_003 });
         context.Engine.Emit(PlaybackEngineEventKind.StateChanged, snapshot with { State = PlaybackEngineState.Playing, PositionTicks = 100_000_009 });
         releaseFirstReport.TrySetResult();
         await volume;
-        await unpauseReported.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
-        await context.Coordinator.StopAsync(TestContext.Current.CancellationToken);
+        await drained.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         var reports = context.Handler.At("Sessions/Playing/Progress").Select(request => request.JsonBody).ToArray();
-        Assert.Equal(new[] { "VolumeChange", "Pause", "Unpause" }, reports.Select(report => report.GetProperty("EventName").GetString()));
-        Assert.True(reports[1].GetProperty("IsPaused").GetBoolean());
-        Assert.False(reports[2].GetProperty("IsPaused").GetBoolean());
-        Assert.Equal(100_000_003, reports[1].GetProperty("PositionTicks").GetInt64());
-        Assert.Equal(100_000_009, reports[2].GetProperty("PositionTicks").GetInt64());
+        Assert.Equal("VolumeChange", Assert.Single(reports).GetProperty("EventName").GetString());
+        Assert.Equal(PlaybackStatus.Playing, context.Coordinator.Status);
+        Assert.Equal(100_000_009, context.Coordinator.ActiveContext?.PositionTicks);
     }
 
     [Fact(Timeout = 15000)]

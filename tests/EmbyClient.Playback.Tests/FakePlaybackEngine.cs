@@ -15,6 +15,7 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
     public Func<PlaybackEngineRequest, CancellationToken, Task>? OnOpenAsync { get; set; }
     public Func<Guid, CancellationToken, Task>? OnStopAsync { get; set; }
     public Func<Guid, CancellationToken, Task>? OnPauseAsync { get; set; }
+    public Func<Guid, long, CancellationToken, Task>? OnSeekAsync { get; set; }
     public PlaybackEngineRequest[] Opened => opened.ToArray();
     public Guid[] Stopped => stopped.ToArray();
     public Guid[] Paused => paused.ToArray();
@@ -60,12 +61,12 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
         return Task.CompletedTask;
     }
 
-    public Task SeekAsync(Guid playbackId, long positionTicks, CancellationToken cancellationToken = default)
+    public async Task SeekAsync(Guid playbackId, long positionTicks, CancellationToken cancellationToken = default)
     {
         sought.Enqueue((playbackId, positionTicks));
+        if (OnSeekAsync is not null) await OnSeekAsync(playbackId, positionTicks, cancellationToken);
         if (Snapshot is { } current && current.PlaybackId == playbackId)
             Volatile.Write(ref snapshot, current with { PositionTicks = positionTicks });
-        return Task.CompletedTask;
     }
 
     public Task SetVolumeAsync(Guid playbackId, int volumeLevel, bool isMuted, CancellationToken cancellationToken = default)

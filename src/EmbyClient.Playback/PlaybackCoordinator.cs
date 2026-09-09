@@ -533,10 +533,15 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                     }
                     else if (session.StartReported)
                     {
-                        CaptureEngineSnapshot(session);
-                        if (item.IsTimer) await ReportProgressAsync(session, "TimeUpdate").ConfigureAwait(false);
-                        else if (HasStateChange(session, item.EngineEvent?.Snapshot))
-                            await ReportProgressAsync(session, StateEventName(session, item.EngineEvent?.Snapshot), item.EngineEvent?.Snapshot).ConfigureAwait(false);
+                        // A queued state notification may predate a completed seek or control report.
+                        // Sample the current engine instance instead of replaying its obsolete event snapshot.
+                        var snapshot = _engine.Snapshot;
+                        if (snapshot?.PlaybackId != session.Id) continue;
+                        AcceptSnapshot(session, snapshot);
+                        snapshot = Volatile.Read(ref session.LatestSnapshot);
+                        if (item.IsTimer) await ReportProgressAsync(session, "TimeUpdate", snapshot).ConfigureAwait(false);
+                        else if (HasStateChange(session, snapshot))
+                            await ReportProgressAsync(session, StateEventName(session, snapshot), snapshot).ConfigureAwait(false);
                         PublishEngineStatus(session);
                     }
                 }
