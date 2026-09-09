@@ -26,6 +26,7 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
     <Version>0.1.0</Version>
     <LibraryObservation Condition="'$(LibraryObservation)' == ''">false</LibraryObservation>
+    <DefineConstants Condition="'$(LibraryObservation)' == 'true'">$(DefineConstants);LIBRARY_OBSERVATION</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />

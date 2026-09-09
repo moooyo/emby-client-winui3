@@ -1,0 +1,99 @@
+{
+  "CapturedAtUtc": "2026-09-09T20:54:03.0035450+00:00",
+  "Scope": "Synthetic HTTP fixture controls only; no native media decoding or desktop operations",
+  "Build": {
+    "ExitCode": 0,
+    "Warnings": 0,
+    "Errors": 0,
+    "Configuration": "Release",
+    "Output": "artifacts/boundary-build-20260910-reviewed",
+    "Log": "artifacts/boundary-build-20260910-reviewed.log",
+    "ServerDllSha256": "0ceb41558f534424d6e2d71051a7c1d8930ed6d738ac97452b4f3547baff99c9"
+  },
+  "Checks": {
+    "ExitCode": 0,
+    "Passed": 40,
+    "Log": "artifacts/boundary-checks-20260910-reviewed.log",
+    "LogSha256": "1286c085e9ba33fe1bb1bd7d2747328f7ce84ee09356b85494f6d18477273472",
+    "CompletedAssertions": [
+      "Default item details succeed.",
+      "Default media returns the original fixture bytes.",
+      "Boundary controls and observations are disabled by default.",
+      "Authentication, unknown items, and list requests preserve their normal status.",
+      "Invalid and list requests do not consume a detail attempt.",
+      "The configured detail attempt combines its delay with one HTTP 503.",
+      "The selected detail request remains in flight during its delay.",
+      "A concurrent later detail attempt is independent of the delayed request.",
+      "Canceling a detail request does not repeat the injected failure.",
+      "The failure is observed exactly once.",
+      "Canceled details never report a completed response.",
+      "Control history retains at most 200 events while total counters remain monotonic.",
+      "Statistics do not contain the fixture access token.",
+      "Invalid media sessions do not consume the opening delay.",
+      "Canceling the first HEAD does not release a concurrent media range.",
+      "A different playback session is not held by the first-session gate.",
+      "Concurrent range headers and bytes wait for the original media deadline.",
+      "A late range shares the original deadline instead of starting a full new delay.",
+      "The released media gate is not restarted by later requests.",
+      "The first delayed media session is explicitly identified by its synthetic session ID.",
+      "Invalid Stop reports do not enter a boundary delay.",
+      "A delayed Stop does not update playback state before its delay releases.",
+      "Canceling a delayed Stop prevents its synthetic state mutation.",
+      "A completed delayed Stop applies exactly once.",
+      "The token remains valid while Logout is delayed.",
+      "Canceling delayed Logout does not revoke the token.",
+      "Completed delayed Logout revokes the token after the boundary.",
+      "All completed and canceled delay scopes leave zero active delays.",
+      "Query-token authentication remains valid while Logout is delayed.",
+      "Logout revokes the same query token accepted by authentication.",
+      "Invalid configuration is rejected before binding: --first-media-delay-ms 30001",
+      "Invalid configuration is rejected before binding: --stop-delay-ms -1",
+      "Invalid configuration is rejected before binding: --item-detail-failure 1001:0",
+      "Invalid configuration is rejected before binding: --item-detail-delay 1001:1:0",
+      "Invalid configuration is rejected before binding: --item-detail-failure missing:1",
+      "Invalid configuration is rejected before binding: --item-detail-delay 1001:1:30001",
+      "Invalid configuration is rejected before binding: --item-detail-failure 1001:1 --item-detail-failure 1001:1",
+      "Invalid configuration is rejected before binding: --item-detail-delay 1001:1:100 --item-detail-delay 1001:1:200",
+      "Invalid configuration is rejected before binding: --item-detail-failure 1001:1 --item-detail-failure 1001:2 --item-detail-failure 1001:3 --item-detail-failure 1001:4 --item-detail-failure 1001:5 --item-detail-failure 1001:6 --item-detail-failure 1001:7 --item-detail-failure 1001:8 --item-detail-failure 1001:9 --item-detail-failure 1001:10 --item-detail-failure 1001:11 --item-detail-failure 1001:12 --item-detail-failure 1001:13 --item-detail-failure 1001:14 --item-detail-failure 1001:15 --item-detail-failure 1001:16 --item-detail-failure 1001:17 --item-detail-failure 1001:18 --item-detail-failure 1001:19 --item-detail-failure 1001:20 --item-detail-failure 1001:21 --item-detail-failure 1001:22 --item-detail-failure 1001:23 --item-detail-failure 1001:24 --item-detail-failure 1001:25 --item-detail-failure 1001:26 --item-detail-failure 1001:27 --item-detail-failure 1001:28 --item-detail-failure 1001:29 --item-detail-failure 1001:30 --item-detail-failure 1001:31 --item-detail-failure 1001:32 --item-detail-failure 1001:33",
+      "Invalid configuration is rejected before binding: --logout-delay-ms"
+    ]
+  },
+  "SourceFiles": [
+    {
+      "Path": "Program.cs",
+      "Sha256": "0db6159b27468948ab60f3885cfcdd2132a11d7bb7de067f21c77d13ea2b7986"
+    },
+    {
+      "Path": "FixtureBoundaryControls.cs",
+      "Sha256": "2be735e6f90ca57103c03b1ff15af9929e022d72750c3e06872e3f7773bc0aa7"
+    },
+    {
+      "Path": "FixtureRouter.cs",
+      "Sha256": "2df671d54d6b12f629caa87c97ef7654ebb7176b7b6898270e829197ed02b033"
+    },
+    {
+      "Path": "FixtureState.cs",
+      "Sha256": "e6983bc43b75a8e30a660f0a96626eb392de9c92bb221cbb5c72fa4f67d006f5"
+    },
+    {
+      "Path": "FixtureJsonContext.cs",
+      "Sha256": "c66c3f2336172414bbf6d77740fd89932beb661ba5ce97ca941ee931766c10e4"
+    },
+    {
+      "Path": "EmbyClient.FixtureServer.csproj",
+      "Sha256": "d920ebfad7110f9e35343c74eedb50cba480966a96a923548d56e0f742e5c921"
+    },
+    {
+      "Path": "Tests/Program.cs",
+      "Sha256": "d32d5cf779d1d5879ae3497413ee4b708f9fad65a423c08b03264439151a7a44"
+    },
+    {
+      "Path": "Tests/FixtureBoundaryChecks.csproj",
+      "Sha256": "ad49b8285c614bf2e658159156242cd3ac611fc5cef9d5917999e0af2061050b"
+    },
+    {
+      "Path": "Tests/packages.lock.json",
+      "Sha256": "2241481b7e74dcdcd600303146b730ecc12cbd8e49aa55755ef95ee499fe229a"
+    }
+  ]
+}

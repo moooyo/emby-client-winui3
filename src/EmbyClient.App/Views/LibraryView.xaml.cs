@@ -36,6 +36,9 @@ public sealed partial class LibraryView : UserControl
     partial void ObservationBitmapDecoded(BitmapImage bitmap);
     partial void ObservationPosterAssigned(Image image);
     partial void ObservationPosterCleared(Image image);
+    partial void ObservationPosterLoadRequested();
+    partial void ObservationPosterLoadRejected();
+    partial void ObservationPosterLoadDeduplicated();
 
     public LibraryView()
     {
@@ -317,8 +320,10 @@ public sealed partial class LibraryView : UserControl
 
     private async Task LoadPosterAsync(Image image)
     {
+        ObservationPosterLoadRequested();
         if (image.Tag is not MediaCardViewModel item || !TryGetPosterBinding(image, item, out var owner, out var ownerVersion))
         {
+            ObservationPosterLoadRejected();
             CancelPosterRequest(image);
             return;
         }
@@ -326,7 +331,11 @@ public sealed partial class LibraryView : UserControl
         var width = (int)Math.Clamp(176 * scale, 176, 704);
         var height = width * 3 / 2;
         var load = _posterLoads.GetValue(image, static _ => new PosterLoadState<MediaCardViewModel>());
-        if (!load.TryBegin(item, owner, ownerVersion, width, height, image.Source is not null, out var version)) return;
+        if (!load.TryBegin(item, owner, ownerVersion, width, height, image.Source is not null, out var version))
+        {
+            ObservationPosterLoadDeduplicated();
+            return;
+        }
         CancelPosterDownload(image);
         image.Source = null;
         ObservationPosterCleared(image);
@@ -338,7 +347,7 @@ public sealed partial class LibraryView : UserControl
         {
             var bytes = await ViewModel.LoadPosterAsync(item, width, height, token);
             if (bytes is not { Length: > 0 } || token.IsCancellationRequested) return;
-            await NativePosterDecoder.DecodeAndApplyAsync(bytes, width, height, token, bitmap =>
+            void ApplyPoster(BitmapImage bitmap)
             {
                 ObservationBitmapDecoded(bitmap);
                 if (!token.IsCancellationRequested && load.Owns(version) && ReferenceEquals(image.Tag, item)
@@ -350,7 +359,12 @@ public sealed partial class LibraryView : UserControl
                     assigned = true;
                     ObservationPosterAssigned(image);
                 }
-            });
+            }
+#if LIBRARY_OBSERVATION
+            await ObservePosterDecodeAsync(bytes, width, height, token, ApplyPoster);
+#else
+            await NativePosterDecoder.DecodeAndApplyAsync(bytes, width, height, token, ApplyPoster);
+#endif
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception exception) when (exception is EmbyApiException or EmbyTransportException or EmbyProtocolException

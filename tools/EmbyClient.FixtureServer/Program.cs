@@ -42,12 +42,15 @@ if (options.LargeLibraryItems > 0)
     Console.WriteLine($"Large-library mode: {options.LargeLibraryItems} synthetic movies in a separate library.");
 if (options.FailFirstPlaybackInfo)
     Console.WriteLine("The first valid PlaybackInfo POST with IsPlayback=true will return a synthetic HTTP 503.");
+if (options.BoundaryControls is { Enabled: true })
+    Console.WriteLine("Opt-in boundary controls are enabled. Read bounded, credential-free observations at /_fixture/stats.");
 await app.RunAsync();
 
 namespace EmbyClient.FixtureServer
 {
     internal sealed record FixtureOptions(int Port, string MediaPath, MediaFixtureMetadata Media,
-        int LargeLibraryItems = 0, int ImageDelayMilliseconds = 0, bool FailFirstPlaybackInfo = false)
+        int LargeLibraryItems = 0, int ImageDelayMilliseconds = 0, bool FailFirstPlaybackInfo = false,
+        FixtureBoundaryOptions? BoundaryControls = null)
     {
         public static FixtureOptions Parse(string[] arguments)
         {
@@ -56,6 +59,7 @@ namespace EmbyClient.FixtureServer
             var largeLibraryItems = 0;
             var imageDelayMilliseconds = 0;
             var failFirstPlaybackInfo = false;
+            var boundaryOptions = new FixtureBoundaryOptionsBuilder();
             for (var index = 0; index < arguments.Length; index++)
             {
                 switch (arguments[index])
@@ -81,8 +85,23 @@ namespace EmbyClient.FixtureServer
                     case "--fail-first-playback-info":
                         failFirstPlaybackInfo = true;
                         break;
+                    case "--item-detail-failure" when index + 1 < arguments.Length:
+                        boundaryOptions.AddDetailFailure(arguments[++index]);
+                        break;
+                    case "--item-detail-delay" when index + 1 < arguments.Length:
+                        boundaryOptions.AddDetailDelay(arguments[++index]);
+                        break;
+                    case "--first-media-delay-ms" when index + 1 < arguments.Length:
+                        boundaryOptions.FirstMediaDelayMilliseconds = FixtureBoundaryOptionsBuilder.ParseDelay(arguments[++index]);
+                        break;
+                    case "--stop-delay-ms" when index + 1 < arguments.Length:
+                        boundaryOptions.StopDelayMilliseconds = FixtureBoundaryOptionsBuilder.ParseDelay(arguments[++index]);
+                        break;
+                    case "--logout-delay-ms" when index + 1 < arguments.Length:
+                        boundaryOptions.LogoutDelayMilliseconds = FixtureBoundaryOptionsBuilder.ParseDelay(arguments[++index]);
+                        break;
                     default:
-                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info]");
+                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
                 }
             }
 
@@ -105,7 +124,8 @@ namespace EmbyClient.FixtureServer
                 || !string.Equals(metadata.VideoCodec, "H264", StringComparison.OrdinalIgnoreCase)
                 || !string.Equals(metadata.AudioCodec, "AAC", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The generated media metadata does not match the synthetic MP4.");
-            return new FixtureOptions(port, path, metadata, largeLibraryItems, imageDelayMilliseconds, failFirstPlaybackInfo);
+            return new FixtureOptions(port, path, metadata, largeLibraryItems, imageDelayMilliseconds,
+                failFirstPlaybackInfo, boundaryOptions.Build());
         }
     }
 

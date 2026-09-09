@@ -1,0 +1,37 @@
+[
+  {
+    "Mode": "normal-build",
+    "Sha256": "85fbd4d1a21032aaf28ebd8fdbdc66a5149cde7181261986f04dac523625ad5b",
+    "ObservationMethods": [],
+    "ObservationTypes": []
+  },
+  {
+    "Mode": "observation-build",
+    "Sha256": "e034a1f3796cb19fb69e3f593019aebe9ebca7850a53e19f0ba3927f8b64b8f0",
+    "ObservationMethods": [
+      "ObservationInitialize",
+      "ObservationPosterLoaded",
+      "ObservationPosterUnloaded",
+      "ObservationPosterTagChanged",
+      "ObservationBitmapDecoded",
+      "ObservationPosterAssigned",
+      "ObservationPosterCleared",
+      "ObservationPosterLoadRequested",
+      "ObservationPosterLoadRejected",
+      "ObservationPosterLoadDeduplicated",
+      "ObservePosterDecodeAsync",
+      "ObservationTick",
+      "ObservationViewUnloaded",
+      "WriteObservationSample",
+      "StopObservation",
+      "ObservationClockTick",
+      "ObservationPositionUpdate",
+      "ObservationClockState"
+    ],
+    "ObservationTypes": [
+      "LibraryRuntimeObservation",
+      "ObservationWeakRing`1",
+      "<ObservePosterDecodeAsync>d__93"
+    ]
+  }
+]

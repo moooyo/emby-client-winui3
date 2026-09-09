@@ -41,6 +41,7 @@ internal sealed class FixtureState
         Options = options;
         _mediaLength = new FileInfo(options.MediaPath).Length;
         _items = CreateCatalog().ToDictionary(item => item.Id!, StringComparer.Ordinal);
+        BoundaryControls = new FixtureBoundaryControls(options.BoundaryControls, _items.Keys.ToHashSet(StringComparer.Ordinal));
         byte[][] largePosters = options.LargeLibraryItems == 0 ? [] : Enumerable.Range(0, 24)
             .Select(index => FixturePng.Create(480, 720, (40 + index * 31 % 160, 45 + index * 47 % 155, 60 + index * 23 % 140)))
             .ToArray();
@@ -65,6 +66,7 @@ internal sealed class FixtureState
     }
 
     public FixtureOptions Options { get; }
+    public FixtureBoundaryControls BoundaryControls { get; }
 
     public PublicSystemInfo PublicInfo => new()
     {
@@ -112,15 +114,19 @@ internal sealed class FixtureState
 
     public bool IsAuthenticated(HttpRequest request)
     {
-        var token = request.Headers["X-Emby-Token"].ToString();
-        if (token.Length == 0) token = request.Query["api_key"].ToString();
+        var token = RequestToken(request);
         return token.Length > 0 && _tokens.ContainsKey(token);
     }
 
     public void Logout(HttpRequest request)
     {
+        _tokens.TryRemove(RequestToken(request), out _);
+    }
+
+    private static string RequestToken(HttpRequest request)
+    {
         var token = request.Headers["X-Emby-Token"].ToString();
-        _tokens.TryRemove(token, out _);
+        return token.Length > 0 ? token : request.Query["api_key"].ToString();
     }
 
     public void AuthenticationFailed() => Interlocked.Increment(ref _authenticationFailures);
@@ -289,7 +295,8 @@ internal sealed class FixtureState
                 PeakActiveImages = Volatile.Read(ref _peakImages), CompletedImages = Volatile.Read(ref _completedImages),
                 CanceledImages = Volatile.Read(ref _canceledImages), ImageBytesServed = Interlocked.Read(ref _imageBytes),
                 FailFirstPlaybackInfoEnabled = Options.FailFirstPlaybackInfo,
-                InjectedPlaybackInfoFailures = Volatile.Read(ref _injectedPlaybackInfoFailures)
+                InjectedPlaybackInfoFailures = Volatile.Read(ref _injectedPlaybackInfoFailures),
+                BoundaryControls = BoundaryControls.Stats()
             };
         }
     }
@@ -397,4 +404,5 @@ internal sealed class FixtureStats
     public long ImageBytesServed { get; init; }
     public bool FailFirstPlaybackInfoEnabled { get; init; }
     public int InjectedPlaybackInfoFailures { get; init; }
+    public FixtureBoundaryStats? BoundaryControls { get; init; }
 }

@@ -79,7 +79,13 @@ internal static class FixtureRouter
         {
             var item = state.Item(itemId);
             if (item is null) { context.Response.StatusCode = 404; return; }
-            await Json(context, item, EmbyJsonContext.Default.BaseItemDto); return;
+            await state.BoundaryControls.ItemDetailAsync(itemId, async fail =>
+            {
+                if (fail) context.Response.StatusCode = 503;
+                else await Json(context, item, EmbyJsonContext.Default.BaseItemDto);
+                return context.Response.StatusCode;
+            }, context.RequestAborted);
+            return;
         }
         if (parts is ["Users", _, var operation, var stateItemId]
             && operation is "FavoriteItems" or "PlayedItems" && method is "POST" or "DELETE")
@@ -138,8 +144,12 @@ internal static class FixtureRouter
             var playSessionId = request.Query["PlaySessionId"].ToString();
             if (!state.OwnsPlayback(streamItemId, playSessionId)) { context.Response.StatusCode = 404; return; }
             state.MediaRequested(request.Headers.ContainsKey("Range"));
-            await Results.File(state.Options.MediaPath, contentType: "video/mp4", enableRangeProcessing: true).ExecuteAsync(context);
-            if (context.Response.StatusCode == StatusCodes.Status206PartialContent) state.PartialResponse();
+            await state.BoundaryControls.MediaAsync(streamItemId, playSessionId, async () =>
+            {
+                await Results.File(state.Options.MediaPath, contentType: "video/mp4", enableRangeProcessing: true).ExecuteAsync(context);
+                if (context.Response.StatusCode == StatusCodes.Status206PartialContent) state.PartialResponse();
+                return context.Response.StatusCode;
+            }, context.RequestAborted);
             return;
         }
         if (parts is ["Sessions", "Playing"] && method == "POST")
@@ -159,8 +169,14 @@ internal static class FixtureRouter
         if (parts is ["Sessions", "Playing", "Stopped"] && method == "POST")
         {
             var report = await Body(context, EmbyJsonContext.Default.PlaybackStopInfo);
-            context.Response.StatusCode = report is not null && state.Record("Stop", report.ItemId,
-                report.PlaySessionId, report.PositionTicks, failed: report.Failed) ? 204 : 400;
+            if (report is null || !state.OwnsPlayback(report.ItemId, report.PlaySessionId))
+            { context.Response.StatusCode = 400; return; }
+            await state.BoundaryControls.StopAsync(report.ItemId!, report.PlaySessionId!, () =>
+            {
+                context.Response.StatusCode = state.Record("Stop", report.ItemId,
+                    report.PlaySessionId, report.PositionTicks, failed: report.Failed) ? 204 : 400;
+                return Task.FromResult(context.Response.StatusCode);
+            }, context.RequestAborted);
             return;
         }
         if (parts is ["Sessions", "Capabilities", "Full"] && method == "POST")
@@ -170,7 +186,12 @@ internal static class FixtureRouter
         }
         if (parts is ["Sessions", "Logout"] && method == "POST")
         {
-            state.Logout(request); context.Response.StatusCode = 204; return;
+            await state.BoundaryControls.LogoutAsync(() =>
+            {
+                state.Logout(request); context.Response.StatusCode = 204;
+                return Task.FromResult(context.Response.StatusCode);
+            }, context.RequestAborted);
+            return;
         }
         if (parts is ["Videos", "ActiveEncodings"] && method == "DELETE")
         {

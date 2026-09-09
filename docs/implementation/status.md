@@ -6,6 +6,8 @@ The current work mode is [code completion followed by consolidated validation](v
 
 ## Implemented scope
 
+After the 779B batch, the [attribution and boundary-control stage](verification/attribution-boundaries-20260910.json) prepares the next investigation without desktop activity. An opt-in observer now counts decode/load/timer activity alongside managed allocation, last-GC, process-memory, CPU, and UTC samples. Ordinary Release and the separate B4C41DE8 observation AOT compile successfully; normal IL excludes the observer. The synthetic fixture gains bounded detail/media/Stop/Logout controls and passes 40 independent HTTP harness checks, including corrected query-token logout. These are new tooling results, not a new normal-player acceptance or a memory fix. The existing 779B fixture process was not replaced.
+
 | Area | Current implementation | Acceptance boundary |
 | --- | --- | --- |
 | API and accounts | Typed Emby client, generated JSON, authentication, protected saved tokens, stable device identity, account switching, and logout | Automated coverage and one official server version; no Emby Connect |

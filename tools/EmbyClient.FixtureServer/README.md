@@ -19,7 +19,9 @@ Stop the server with Ctrl+C in its managed terminal session. No independent visi
 
 For a bounded real-AOT scrolling/memory trial, see [Large-library acceptance](Large-Library-Acceptance.md). The optional `--large-library-items 5000` mode adds a separate paged library; `--image-delay-ms 100` adds a bounded image delay, and `--fail-first-playback-info` injects one playback-only HTTP 503 for a Retry trial. All three are off by default and require no real server or account. Use a separate port and isolated artifact output as shown in that guide.
 
-The project excludes local `artifacts/**`, `bin/**`, and `obj/**` from default SDK item discovery. This prevents generated assembly files or published payloads from being compiled or copied by later normal solution builds. Do not remove a running artifact directory to work around build errors; retain the project exclusions and use a separate output directory for each active fixture instance.
+For deterministic detail-loading, media-opening, and account-cleanup boundaries, see [Boundary controls](Boundary-Controls.md). These additional controls are also off by default, limited to a 30-second delay, and accompanied by bounded synthetic event observations. The documented command-line checks use separate loopback instances and do not control the desktop.
+
+The project excludes local `artifacts/**`, `bin/**`, `obj/**`, and the independent `Tests/**` harness from default SDK item discovery. This prevents generated assembly files, published payloads, or the harness entry point from being compiled or copied by later normal solution builds. Do not remove a running artifact directory to work around build errors; retain the project exclusions and use a separate output directory for each active fixture instance.
 
 ## Implemented development routes
 

@@ -1,0 +1,66 @@
+{
+  "DateLocal": "2026-09-10",
+  "SourceBaseRevision": "730c58e48f854a6c17445e01073fe213af51f557",
+  "Scope": "Attribution tooling and deterministic HTTP fixture boundaries; not a new desktop acceptance batch",
+  "LocalVerificationAuthorized": true,
+  "DesktopActionsPerformed": false,
+  "NormalAppReleaseBuild": {
+    "Succeeded": true,
+    "Errors": 0,
+    "Warnings": [
+      "Existing generated WinUIEx CS0618"
+    ],
+    "ObservationCompileSources": 0,
+    "ObservationSymbolDefined": false,
+    "ObservationIlMethods": 0,
+    "ObservationIlTypes": 0
+  },
+  "ObservationNativeAot": {
+    "Succeeded": true,
+    "Executable": {
+      "FileName": "EmbyClient.App.exe",
+      "SizeBytes": 18012672,
+      "Sha256": "b4c41de8bffe5c2d7add38960b9507673b2077781ec55501f96e585586cc8fb9"
+    },
+    "SourcesUnchangedDuringBuild": true,
+    "SourceHashesMatchAtArchive": true,
+    "CompileSources": 1,
+    "ObservationSymbolDefined": true,
+    "ObservationIlMethods": 18,
+    "ObservationIlTypes": 3,
+    "RuntimeLogExistsAtArchive": false,
+    "RuntimeAcceptance": "NotRun"
+  },
+  "FixtureBoundaryChecks": {
+    "Passed": 40,
+    "Failed": 0,
+    "ExitCode": 0,
+    "SourceHashesMatchAtArchive": true,
+    "Build": {
+      "ExitCode": 0,
+      "Warnings": 0,
+      "Errors": 0,
+      "Configuration": "Release",
+      "Output": "artifacts/boundary-build-20260910-reviewed",
+      "Log": "artifacts/boundary-build-20260910-reviewed.log",
+      "ServerDllSha256": "0ceb41558f534424d6e2d71051a7c1d8930ed6d738ac97452b4f3547baff99c9"
+    },
+    "Scope": "Owned ephemeral-loopback HTTP tests with test-only bytes; no decoder or UI"
+  },
+  "Evidence": [
+    "tools/EmbyClient.LibraryObservation/verification/attribution-20260910/build.json",
+    "tools/EmbyClient.LibraryObservation/verification/attribution-20260910/compile-inputs.json",
+    "tools/EmbyClient.LibraryObservation/verification/attribution-20260910/il-observation-exclusion.json",
+    "tools/EmbyClient.FixtureServer/verification/boundary-checks-20260910.json"
+  ],
+  "Remaining": [
+    "Obtain an explicitly authorized instrumented runtime sample to attribute the unresolved 779B memory trend",
+    "Use actual observed client state plus boundary events for failed detail/queue preparation and Opening/cleanup races",
+    "Keep complex subtitle, hardware/accessibility, and installed-release acceptance separate"
+  ],
+  "PreservedRestrictions": [
+    "Existing port 18962 fixture not restarted or mutated",
+    "No previously rejected NativeProbe launch or official-server request retried",
+    "No forced GC, new default playback profile, or new memory-convergence claim"
+  ]
+}

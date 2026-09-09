@@ -2,7 +2,7 @@
 
 This tool adds numeric observation to the actual application's `LibraryView`. It does not create a replacement library, mock image cache, or decoder. The normal app defaults to `LibraryObservation=false`: the external partial implementation is absent from `Compile`, and unimplemented `partial void` hooks and their argument evaluation are removed by the C# compiler. There is no observation timer, weak registry, or log in that normal build.
 
-The enabled build observes the existing item collection, poster dictionaries, and original image lifecycle. `NativePosterDecoder` is unchanged: `SetSourceAsync` completes, the original ownership check assigns `Image.Source` inside its apply callback, and the stream is released afterward. Added hooks are synchronous counters/weak tracking only. They do not close WinRT operations, change cancellation, add caching, assign other images, scroll, inspect automation peers, or force GC.
+The enabled build observes the existing item collection, poster dictionaries, and original image lifecycle. `NativePosterDecoder` is unchanged: `SetSourceAsync` completes, the original ownership check assigns `Image.Source` inside its apply callback, and the stream is released afterward. Schema 2 adds a conditional async wrapper that counts the original helper's starts, completions, cancellations, and failures and rethrows every exception. Its state machine is an additional observation cost; the default build excludes it through `LIBRARY_OBSERVATION`. Synchronous partial hooks count load attempts and actual presentation-clock/update callbacks. They do not close WinRT operations, change cancellation, add caching, assign other images, scroll, inspect automation peers, or force GC.
 
 ## Publish separately
 
@@ -20,28 +20,46 @@ After publication, the operator may launch the separate executable and interact 
 
 ## Runtime output and bounds
 
-The sole runtime output is `library-observation.jsonl` beside the observation executable. All values are numeric; field names are fixed. No titles, item/server/account IDs, credentials, paths, URIs, exception text, or raw API data are recorded. A row is sampled initially and about every five seconds on the UI dispatcher. The observer stops after ten minutes, before exceeding 1 MiB, when the view unloads, or on an observation I/O failure. It does not interfere with business error handling. The first scale can be zero if `XamlRoot` is not yet attached.
+The sole runtime output is `library-observation.jsonl` beside the observation executable. All values are numeric; field names are fixed. No titles, item/server/account IDs, credentials, paths, URIs, exception text, or raw API data are recorded. A row is sampled initially and about every five seconds on the UI dispatcher. Schema 2 includes the process ID and a numeric UTC anchor. The observer stops after thirty minutes, before exceeding 1 MiB, when the view unloads, or on an observation I/O failure. The longer time bound allows a manual authentication handoff and a separate Home-idle period; it does not extend the byte cap. It does not interfere with business error handling. The first scale can be zero if `XamlRoot` is not yet attached.
 
 The file uses `CreateNew`: an existing log is never overwritten or combined with a subsequent launch. Archive that run explicitly or publish into a new directory before another observation. A missing/truncated log is not a pass. The build manifest contains build provenance only; it is separate from runtime numeric records.
 
 | Field group | Meaning |
 | --- | --- |
 | `ElapsedMilliseconds` | Monotonic time since observer initialization; correlate with a separately recorded launch time and process sampler |
+| `SchemaVersion`, `UtcUnixTimeMilliseconds`, `ProcessId` | Schema 2 and a UTC Unix-millisecond/process anchor for matching external samples; fields in one row are sequential reads, not an atomic snapshot |
 | `ItemsCount` | Actual `ViewModel.Items.Count`; not total server library size |
 | `PosterSubscriptionsCount`, `PosterRequestsCount` | Actual private dictionaries; requests cover the full view pipeline, not only server HTTP activity |
 | `BoundPosterSourcesCount` | Subscribed Image controls whose Source is non-null at sampling time; not a native allocation count |
+| `LoadedPosterControlsCount`, `AttachedPosterControlsCount`, `RealizedPosterControlsCount` | Subsets of the subscription dictionary: IsLoaded, a GridViewItem ancestor, and an ancestor still present in the current realization table. DetailPoster is excluded from the last two. These are not a census of every XAML container or a guarantee that a particular item binding is current. |
+| `DetailPosterBound`, `LibraryIsHome`, `LibraryHasDetails`, `LibraryIsBusy`, `LibraryVisibility` | Numeric view state; booleans use 0/1 and Visibility uses its enum value. Visibility does not describe ancestor visibility. |
 | `LoadedTotal`, `UnloadedTotal` | Poster event callback totals; repeated load/unload of the same control increments these counters |
 | `TagChangedTotal` | Received registered Image Tag-change callbacks, including detail notifications that the existing handler does not reload |
 | `AssignedTotal` | Original guarded `image.Source = bitmap` assignments that actually executed |
 | `ClearedTotal` | Original `Source = null` assignments, including assignments when Source was already null; not a count of native deallocations |
+| `PosterLoadRequestedTotal`, `PosterLoadRejectedTotal`, `PosterLoadDeduplicatedTotal` | Load method entries, unusable binding returns, and existing-load/source deduplication returns. These do not equal HTTP requests. |
+| `DecodeStartedTotal`, `DecodeCompletedTotal`, `DecodeCanceledTotal`, `DecodeFailedTotal`, `DecodeActive`, `DecodePeak` | Full original decoder-helper invocations, including stream setup and the guarded apply callback. Active counts wrapper calls. A completed helper may discard stale decoded output. Canceled means the wrapper received an OperationCanceledException, not confirmed native-operation cancellation. Failure counters include helper or callback exceptions and do not identify a native decoder error category. While the observer is active, started equals completed + canceled + failed + active. |
+| `PresentationClockEnabled`, `PresentationClockTicks`, `PositionUpdateCalls` | Actual PlayerView timer transitions/callbacks and position-update method entries while observation is active. Method entries can return early; these are not decoded-frame counts or total dispatcher activity. |
 | `WeakImageTrackedCount`, `WeakImageAliveCount`, `WeakImageEvictions` | A 2,048-slot weak ring of distinct currently tracked CLR Image wrappers; eviction limits the observed cohort |
 | `WeakBitmapTrackedCount`, `WeakBitmapAliveCount`, `WeakBitmapEvictions` | A 2,048-slot weak ring of bitmaps that reached the completed decoder's apply callback, before the ownership check; failed/cancelled decodes that never call apply are outside this cohort |
 | `Gen0Collections`, `Gen1Collections`, `Gen2Collections`, `ManagedBytes` | Natural runtime GC counters and `GC.GetTotalMemory(false)`; no collection or finalizer drainage is requested |
+| `ManagedAllocatedBytesApproximate` | Process-wide cumulative `GC.GetTotalAllocatedBytes(false)`; approximate allocation volume, not retained bytes |
+| `LastGcIndex`, `LastGcHeapSizeBytes`, `LastGcFragmentedBytes`, `LastGcCommittedBytes` | Information from the latest reported GC, which can predate the sample. An unchanged GC index means these values do not describe a new collection; none are current native-heap or GPU bytes. |
+| `ProcessPrivateBytes`, `ProcessWorkingSetBytes`, `ProcessHandleCount`, `ProcessCpuMilliseconds` | Current process counters, including the observer's own cost; cumulative CPU time is not instantaneous CPU percentage. Working set and private bytes must remain distinct. |
+| `ObserverCompletedSamples`, `ObserverCompletedSampleAllocatedBytes` | Previous completed synchronous samples and their measured current-thread allocations. The current row is accounted for in a later row. This excludes callback weak-reference allocation, async-wrapper costs, other threads, and native work, so it is not a complete overhead subtraction. |
 | `RasterizationScale` | Current XamlRoot scale, or zero when unavailable |
 
 Weak registries store only `WeakReference<T>`, never persistent Image/BitmapImage targets. Counting temporarily tests those references synchronously. A live CLR wrapper is not a measured native pixel/texture allocation; a dead wrapper does not prove that all corresponding native resources have been released. Ring entries may be dead, and evicted still-live objects are no longer counted. These counts must not be presented as the total native image population.
 
-The enabled observer itself allocates weak references and small JSON buffers and adds a dispatcher timer/file writes. Those costs appear in managed/process measurements and can affect natural collection timing. This is an instrumented comparison, not a zero-overhead profile. There is no memory-growth threshold, pass judgment, automatic capture, forced cleanup, or UI assertion in this tool.
+The enabled observer itself allocates weak references, async wrappers, process-query objects, and JSON buffers and adds a dispatcher timer/file writes. Those costs appear in managed/process measurements and can affect natural collection timing. Its counts stop at the observation boundary; no final row or zero-active-decoder result is guaranteed after unloading, expiration, a byte cap, or I/O failure. This is an instrumented comparison, not a zero-overhead profile. There is no memory-growth threshold, pass judgment, automatic capture, forced cleanup, or UI assertion in this tool.
+
+Schema 2 is intended to distinguish ongoing product callbacks/decodes from managed allocation growth and process-only growth during the next explicitly authorized observation session. A build receipt alone supplies none of those runtime conclusions. The existing 779B normal-build acceptance and older schema-less observation files retain their own executable identities.
+
+## Schema 2 build checkpoint: 2026-09-10
+
+The [retained build manifest](verification/attribution-20260910/build.json) records an ordinary Release build and the separate schema 2 Native AOT publication, with source inputs unchanged throughout and still matching at archival. The [compile inputs](verification/attribution-20260910/compile-inputs.json) show zero observation sources and no observation symbol by default, versus one source and the symbol when enabled. [Read-only IL metadata inspection](verification/attribution-20260910/il-observation-exclusion.json) found zero observation methods/types in the normal assembly and 18 methods/3 types in the enabled intermediate assembly. It did not load or run either application.
+
+The observation executable is `b4c41de8bffe5c2d7add38960b9507673b2077781ec55501f96e585586cc8fb9`, 18,012,672 bytes. Both compilation paths retain only the existing generated WinUIEx CS0618 warning. The observation application was not launched, no runtime JSONL existed at archival, and the normal product AOT was not republished by this stage. These results do not resolve the preceding private-memory trend.
 
 ## Build checkpoint, not runtime evidence
 

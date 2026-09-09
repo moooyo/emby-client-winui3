@@ -44,6 +44,10 @@ public sealed partial class PlayerView : UserControl
     public int QueueCount => _queue.Count;
     public bool IsQueueOpen => _queueDialog is not null;
 
+    partial void ObservationClockTick();
+    partial void ObservationPositionUpdate();
+    partial void ObservationClockState(bool enabled);
+
     public PlayerView()
     {
         InitializeComponent();
@@ -58,6 +62,7 @@ public sealed partial class PlayerView : UserControl
         Unloaded += (_, _) => ClearTimelineInteraction();
         _clock.Tick += (_, _) =>
         {
+            ObservationClockTick();
             UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
             UpdateRecoveryControls();
             UpdatePosition();
@@ -112,6 +117,7 @@ public sealed partial class PlayerView : UserControl
         if (shouldRun == _clock.IsEnabled) return;
         if (shouldRun) _clock.Start();
         else _clock.Stop();
+        ObservationClockState(_clock.IsEnabled);
     }
 
     private static bool NeedsPlaybackPolling(PlaybackStatus status) => status is PlaybackStatus.Opening
@@ -416,6 +422,7 @@ public sealed partial class PlayerView : UserControl
 
     private void UpdatePosition()
     {
+        ObservationPositionUpdate();
         if (_preparationIntent == _playIntent) return;
         var context = _coordinator?.ActiveContext;
         if (context is null)
@@ -751,6 +758,7 @@ public sealed partial class PlayerView : UserControl
         _queueDialog?.Hide();
         _diagnosticsDialog?.Hide();
         _clock.Stop();
+        ObservationClockState(false);
         _notificationOwner.Invalidate(++_playIntent);
         _retryRecoveryId = null;
         UpdateRecoveryControls();

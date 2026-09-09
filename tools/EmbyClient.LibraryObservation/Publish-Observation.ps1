@@ -45,7 +45,7 @@ function Get-ObservationSources {
 function Get-CompileObservation([string]$Mode) {
     $arguments = @('msbuild', 'src/EmbyClient.App/EmbyClient.App.csproj', '-nologo', '-verbosity:quiet',
         '-p:Configuration=Release', '-p:Platform=x64',
-        '-getProperty:LibraryObservation,PublishAot,TargetFramework,RuntimeIdentifier', '-getItem:Compile')
+        '-getProperty:LibraryObservation,PublishAot,TargetFramework,RuntimeIdentifier,DefineConstants', '-getItem:Compile')
     if ($Mode) { $arguments += "-p:LibraryObservation=$Mode" }
     $text = @(& dotnet @arguments)
     if ($LASTEXITCODE -ne 0) { throw 'Compile item evaluation failed.' }
@@ -56,6 +56,7 @@ function Get-CompileObservation([string]$Mode) {
         PublishAot = [string]$result.Properties.PublishAot
         TargetFramework = [string]$result.Properties.TargetFramework
         RuntimeIdentifier = [string]$result.Properties.RuntimeIdentifier
+        ObservationSymbolDefined = @(([string]$result.Properties.DefineConstants -split ';') | Where-Object { $_ -eq 'LIBRARY_OBSERVATION' }).Count -eq 1
         ObservationSourceCount = @($identities | Where-Object { $_.EndsWith('/LibraryView.Observation.cs', [StringComparison]::OrdinalIgnoreCase) }).Count
         CompileItems = $identities
     }
@@ -67,10 +68,10 @@ try {
     $beforeJson = ConvertTo-Json -InputObject $sourcesBefore -Depth 5 -Compress
     $defaultCompile = Get-CompileObservation ''
     $enabledCompile = Get-CompileObservation 'true'
-    if ($defaultCompile.LibraryObservation -ne 'false' -or $defaultCompile.ObservationSourceCount -ne 0) {
+    if ($defaultCompile.LibraryObservation -ne 'false' -or $defaultCompile.ObservationSourceCount -ne 0 -or $defaultCompile.ObservationSymbolDefined) {
         throw 'The default app unexpectedly includes observation code.'
     }
-    if ($enabledCompile.LibraryObservation -ne 'true' -or $enabledCompile.ObservationSourceCount -ne 1 -or $enabledCompile.PublishAot -ne 'true') {
+    if ($enabledCompile.LibraryObservation -ne 'true' -or $enabledCompile.ObservationSourceCount -ne 1 -or $enabledCompile.PublishAot -ne 'true' -or -not $enabledCompile.ObservationSymbolDefined) {
         throw 'The enabled Release build does not contain exactly one observation source and Native AOT.'
     }
     [ordered]@{ Default = $defaultCompile; Enabled = $enabledCompile } |
@@ -121,9 +122,10 @@ try {
             Sha256 = (Get-FileHash -LiteralPath $executable.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
         }
         RuntimeObservation = [ordered]@{
+            SchemaVersion = 2
             FileName = 'library-observation.jsonl'
             MaximumBytes = 1048576
-            MaximumSeconds = 600
+            MaximumSeconds = 1800
             SampleIntervalSeconds = 5
             WeakCapacityPerType = 2048
             ForcedGc = $false
