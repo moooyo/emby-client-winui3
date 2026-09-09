@@ -40,6 +40,8 @@ The initial playback profile targets SDR H.264/AAC MP4 and server-generated HLS.
 
 Focused buttons, selectors, and sliders retain their normal Windows keyboard behavior. Return to the library to stop playback and refresh server-backed information.
 
+While video is actually playing, the client requests that Windows keep the display on. Pausing, buffering, stopping, or disconnecting releases that request. Display-request availability does not prevent playback, and the client does not change the user's Windows power settings.
+
 ## Queue and episode continuation
 
 Add items to the transient queue from the library. **Next in queue** advances to the next queued item. Queue contents are cleared when disconnecting or closing the application and are not saved as an Emby playlist.

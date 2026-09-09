@@ -18,6 +18,7 @@ public sealed partial class PlayerView : UserControl
     private BaseItemDto? _item;
     private readonly Queue<BaseItemDto> _queue = new();
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private readonly PlaybackDisplayRequest _displayRequest = new();
     private bool _updating;
     private bool _scrubbing;
     private bool _advancing;
@@ -36,7 +37,11 @@ public sealed partial class PlayerView : UserControl
         InitializeComponent();
         Timeline.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) => _scrubbing = true), true);
         Timeline.AddHandler(PointerReleasedEvent, new PointerEventHandler(TimelineReleased), true);
-        _clock.Tick += (_, _) => UpdatePosition();
+        _clock.Tick += (_, _) =>
+        {
+            UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
+            UpdatePosition();
+        };
         _updating = true;
         foreach (var mbps in new[] { 5, 10, 20, 40, 80 })
         {
@@ -56,6 +61,7 @@ public sealed partial class PlayerView : UserControl
             initialVolumeLevel: (int)Volume.Value, initialMuted: MuteButton.IsChecked == true);
         _engine = engine;
         engine.MediaCommandRequested += SystemMediaCommandRequested;
+        engine.EventReceived += EnginePlaybackStateChanged;
         _coordinator = new PlaybackCoordinator(session.Api, engine);
         _coordinator.StatusChanged += CoordinatorStatusChanged;
         _coordinator.Diagnostic += (sender, diagnostic) => DispatcherQueue.TryEnqueue(() =>
@@ -86,6 +92,7 @@ public sealed partial class PlayerView : UserControl
         var session = _session;
         var coordinator = _coordinator;
         if (session is null || coordinator is null || item.Id is null) return;
+        _displayRequest.ResumeTracking();
         _playRequest?.Cancel();
         _playRequest?.Dispose();
         _playRequest = new CancellationTokenSource();
@@ -118,6 +125,7 @@ public sealed partial class PlayerView : UserControl
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!ReferenceEquals(sender, _coordinator)) return;
+            UpdateDisplayRequest(args.Context?.PlaybackId);
             StateText.Text = args.Status.ToString();
             BufferingRing.IsActive = args.Status is PlaybackStatus.Negotiating or PlaybackStatus.Opening or PlaybackStatus.Buffering;
             var canStart = args.Status is PlaybackStatus.Paused or PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle;
@@ -214,6 +222,27 @@ public sealed partial class PlayerView : UserControl
         }
     }
 
+    private void EnginePlaybackStateChanged(object? sender, PlaybackEngineEventArgs args)
+    {
+        if (args.Kind == PlaybackEngineEventKind.PositionChanged) return;
+        // Native pause/buffering can precede a coordinator report waiting on the server.
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (ReferenceEquals(sender, _engine)) UpdateDisplayRequest(args.Snapshot.PlaybackId);
+        });
+    }
+
+    private void UpdateDisplayRequest(Guid? notificationPlaybackId)
+    {
+        var coordinator = _coordinator;
+        var context = coordinator?.ActiveContext;
+        var snapshot = _engine?.Snapshot;
+        var isPlayingVideo = coordinator?.Status == PlaybackStatus.Playing
+            && snapshot?.PlaybackId == context?.PlaybackId && snapshot?.State == PlaybackEngineState.Playing
+            && context?.Source.MediaStreams?.Any(stream => string.Equals(stream.Type, "Video", StringComparison.OrdinalIgnoreCase)) == true;
+        _displayRequest.Update(context?.PlaybackId, notificationPlaybackId, isPlayingVideo);
+    }
+
     private static string FormatTime(long ticks)
     {
         var time = TimeSpan.FromTicks(Math.Max(0, ticks));
@@ -230,12 +259,14 @@ public sealed partial class PlayerView : UserControl
             switch (args.Command)
             {
                 case NativeMediaCommand.Play:
+                    _displayRequest.ResumeTracking();
                     await coordinator.ResumeAsync(args.PlaybackId);
                     break;
                 case NativeMediaCommand.Pause:
                     await coordinator.PauseAsync(args.PlaybackId);
                     break;
                 case NativeMediaCommand.Stop:
+                    _displayRequest.Suspend();
                     await coordinator.StopAsync(args.PlaybackId);
                     break;
                 case NativeMediaCommand.Seek when args.PositionTicks is { } ticks:
@@ -269,8 +300,16 @@ public sealed partial class PlayerView : UserControl
     public Task TogglePauseAsync() => RunAsync(async () =>
     {
         if (_coordinator is null) return;
-        if (_coordinator.Status == PlaybackStatus.Paused) await _coordinator.ResumeAsync();
-        else if (_coordinator.Status is PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle) await _coordinator.ReplayAsync();
+        if (_coordinator.Status == PlaybackStatus.Paused)
+        {
+            _displayRequest.ResumeTracking();
+            await _coordinator.ResumeAsync();
+        }
+        else if (_coordinator.Status is PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle)
+        {
+            _displayRequest.ResumeTracking();
+            await _coordinator.ReplayAsync();
+        }
         else await _coordinator.PauseAsync();
     });
 
@@ -283,7 +322,11 @@ public sealed partial class PlayerView : UserControl
 
     private async void ReplayClicked(object sender, RoutedEventArgs args) => await RunAsync(async () =>
     {
-        if (_coordinator is not null) await _coordinator.ReplayAsync();
+        if (_coordinator is not null)
+        {
+            _displayRequest.ResumeTracking();
+            await _coordinator.ReplayAsync();
+        }
     });
 
     private async void VolumeChanged(object sender, RangeBaseValueChangedEventArgs args)
@@ -404,12 +447,14 @@ public sealed partial class PlayerView : UserControl
     private void ReportExpiredSession()
     {
         if (_expiredReported || _session is null) return;
+        _displayRequest.Suspend();
         _expiredReported = true;
         SessionExpired?.Invoke(this, EventArgs.Empty);
     }
 
     public Task StopAsync()
     {
+        _displayRequest.Suspend();
         ++_playIntent;
         _playRequest?.Cancel();
         var coordinator = _coordinator;
@@ -418,6 +463,7 @@ public sealed partial class PlayerView : UserControl
 
     public async Task DisconnectAsync()
     {
+        _displayRequest.Suspend();
         _clock.Stop();
         ++_playIntent;
         _playRequest?.Cancel();
@@ -426,13 +472,18 @@ public sealed partial class PlayerView : UserControl
         var coordinator = _coordinator;
         var engine = _engine;
         _engine = null;
-        if (engine is not null) engine.MediaCommandRequested -= SystemMediaCommandRequested;
+        if (engine is not null)
+        {
+            engine.MediaCommandRequested -= SystemMediaCommandRequested;
+            engine.EventReceived -= EnginePlaybackStateChanged;
+        }
         _coordinator = null;
         _session = null;
         if (coordinator is not null)
         {
             coordinator.StatusChanged -= CoordinatorStatusChanged;
-            await coordinator.DisposeAsync();
+            try { await coordinator.DisposeAsync(); }
+            finally { _displayRequest.Suspend(); }
         }
         _queue.Clear();
         _item = null;
