@@ -239,6 +239,14 @@ The factory applies the established same-server VOD contract to recognized finit
 
 ### Subtitles
 
+### Explicit recovery after a transient failure
+
+The client coordinator now offers an explicit, one-use retry after network, timeout, transport-unavailable, or HTTP 500/502/503/504 failures. This is a client operation, not a new Emby endpoint. It completes old session cleanup, requests fresh playback information, opens a new playback ID/server session, and preserves the confirmed absolute position, selected media source/streams, bitrate limit, and pause intent. If playback never actually started, the original requested position remains the recovery position. Replay remains a separate command that starts at zero.
+
+Recovery state is held only in memory. A new play, stop, account cancellation, or disposal invalidates it. An expected recovery ID and transition checks prevent a delayed or duplicate retry from interrupting a newer session. Authentication/permission failures, explicit cancellation, and generic server rejection do not create a retry target. There is no unattended network retry loop.
+
+### Subtitle delivery
+
 `IsTextSubtitleStream=true` identifies text subtitles that the guide allows downloading as SRT or WebVTT. Use a negotiated `DeliveryUrl` when supplied. Otherwise request:
 
 ```text

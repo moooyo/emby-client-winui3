@@ -28,6 +28,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     private readonly Task _timerLoop;
     private Session? _current;
     private PlaybackSelection? _lastSelection;
+    private RecoveryTarget? _recovery;
     private long _intent;
     private int _status;
     private int _disposed;
@@ -56,6 +57,42 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     public event EventHandler<PlaybackDiagnosticEventArgs>? Diagnostic;
     public PlaybackStatus Status => (PlaybackStatus)Volatile.Read(ref _status);
     public PlaybackContext? ActiveContext => CreateContext(Volatile.Read(ref _current));
+    public PlaybackRecovery? Recovery => GetRecoveryTarget()?.State;
+    public bool CanRetry => Recovery is not null;
+
+    /// <summary>Retries the currently available failure once, retaining its position, tracks, and pause intent.</summary>
+    public Task RetryAsync(CancellationToken cancellationToken = default) => Recovery is { } recovery
+        ? RetryAsync(recovery.RecoveryId, cancellationToken) : Task.CompletedTask;
+
+    /// <summary>
+    /// Consumes only the observed recovery target. Stale or duplicate retry commands never cancel newer playback.
+    /// Every retry negotiates a new server session after the previous playback's cleanup has finished.
+    /// </summary>
+    public async Task RetryAsync(Guid expectedRecoveryId, CancellationToken cancellationToken = default)
+    {
+        if (GetRecoveryTarget() is not { } observed || observed.State.RecoveryId != expectedRecoveryId) return;
+        try { await _gate.WaitAsync(cancellationToken).ConfigureAwait(false); }
+        catch (OperationCanceledException) when (GetRecoveryTarget() != observed) { return; }
+        try
+        {
+            if (GetRecoveryTarget() != observed || Volatile.Read(ref _current) is not null) return;
+            cancellationToken.ThrowIfCancellationRequested();
+            // Retain the target if a native resource still cannot be released. This uses the existing resource gate.
+            await RetryPendingEngineStopsAsync().ConfigureAwait(false);
+            if (GetRecoveryTarget() != observed || Volatile.Read(ref _current) is not null) return;
+            cancellationToken.ThrowIfCancellationRequested();
+            var intent = unchecked(observed.Intent + 1);
+            // Claim the target once. Closing the failed playback can invalidate it without touching a newer session.
+            if (Interlocked.CompareExchange(ref _recovery, null, observed) != observed) return;
+            // New Play/Stop/Dispose requests advance intent before taking the gate. An older retry must yield to them.
+            if (Interlocked.CompareExchange(ref _intent, intent, observed.Intent) != observed.Intent) return;
+            var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : observed.OwnerCancellationToken;
+            EnsureIntent(intent, ownerToken);
+            await StartCoreAsync(observed.State.Selection, intent, ownerToken,
+                restorePaused: observed.State.IsPaused).ConfigureAwait(false);
+        }
+        finally { _gate.Release(); }
+    }
 
     public async Task PlayAsync(PlaybackSelection selection, CancellationToken cancellationToken = default)
     {
@@ -217,6 +254,11 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     public async Task StopAsync(Guid expectedPlaybackId, CancellationToken cancellationToken = default)
     {
         if (Volatile.Read(ref _disposed) != 0) return;
+        if (GetRecoveryTarget() is { } recovery && recovery.State.FailedPlaybackId == expectedPlaybackId)
+        {
+            Interlocked.CompareExchange(ref _recovery, null, recovery);
+            return;
+        }
         var observed = Volatile.Read(ref _current);
         if (observed is null || observed.Retired || observed.Id != expectedPlaybackId) return;
         // Cancel the captured session, never whatever _current might become between this read and the gate.
@@ -239,7 +281,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         EnsureIntent(intent, cancellationToken);
         await RetryPendingEngineStopsAsync().ConfigureAwait(false);
         EnsureIntent(intent, cancellationToken);
-        var session = new Session(selection, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdown.Token), cancellationToken);
+        var session = new Session(selection, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _shutdown.Token), cancellationToken, intent);
         session.RestorePaused = restorePaused;
         Volatile.Write(ref _current, session);
         Volatile.Write(ref _lastSelection, selection);
@@ -344,6 +386,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             CaptureEngineSnapshot(session);
             var fallback = session.Selection with { StartPositionTicks = AbsolutePosition(session), ForceTranscoding = true };
             var fallbackPaused = restorePaused || ShouldPauseAfterRestart(session);
+            var recovery = CreateRecoveryTarget(session, exception);
             await RetireAsync(session, exception is not OperationCanceledException).ConfigureAwait(false);
             if (retry)
             {
@@ -351,6 +394,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                 await StartCoreAsync(fallback, intent, cancellationToken, reportEvent, fallbackPaused).ConfigureAwait(false);
                 return;
             }
+            PublishRecovery(recovery);
             PublishStatus(exception is OperationCanceledException ? PlaybackStatus.Idle : PlaybackStatus.Failed, session, code);
             if (exception is OperationCanceledException) throw;
             throw new PlaybackException(code);
@@ -451,7 +495,9 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
 
     private async Task HandleControlFailureAsync(Session session, Exception exception)
     {
+        var recovery = CreateRecoveryTarget(session, exception);
         await RetireAsync(session, exception is not OperationCanceledException).ConfigureAwait(false);
+        PublishRecovery(recovery);
         PublishStatus(exception is OperationCanceledException ? PlaybackStatus.Idle : PlaybackStatus.Failed, session, ErrorCode(exception));
     }
 
@@ -523,13 +569,18 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                         var fallback = session.Selection with { StartPositionTicks = AbsolutePosition(session), ForceTranscoding = true };
                         var restorePaused = ShouldPauseAfterRestart(session);
                         var retry = !session.Selection.ForceTranscoding && IsFallbackCode(code);
+                        var recovery = CreateRecoveryTarget(session, new PlaybackException(code));
                         await RetireAsync(session, true).ConfigureAwait(false);
                         if (retry && intent == Volatile.Read(ref _intent))
                         {
                             EmitDiagnostic(session.Id, "Fallback", code);
                             await StartCoreAsync(fallback, intent, session.OwnerCancellationToken, restorePaused: restorePaused).ConfigureAwait(false);
                         }
-                        else PublishStatus(PlaybackStatus.Failed, session, code);
+                        else
+                        {
+                            PublishRecovery(recovery);
+                            PublishStatus(PlaybackStatus.Failed, session, code);
+                        }
                     }
                     else if (session.StartReported)
                     {
@@ -738,7 +789,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     private void PublishStatus(PlaybackStatus status, Session? session, string? code = null)
     {
         Volatile.Write(ref _status, (int)status);
-        try { StatusChanged?.Invoke(this, new(status, CreateContext(session), code)); }
+        try { StatusChanged?.Invoke(this, new(status, CreateContext(session), code, Recovery)); }
         catch { /* Consumer UI failures must not interrupt server resource cleanup. */ }
     }
 
@@ -780,9 +831,59 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     private long BeginIntent()
     {
         var intent = Interlocked.Increment(ref _intent);
+        Interlocked.Exchange(ref _recovery, null);
         if (Volatile.Read(ref _current) is { } session) CancelSession(session);
         return intent;
     }
+
+    private RecoveryTarget? GetRecoveryTarget()
+    {
+        var recovery = Volatile.Read(ref _recovery);
+        return recovery is not null && Volatile.Read(ref _disposed) == 0
+            && recovery.Intent == Volatile.Read(ref _intent) && !recovery.OwnerCancellationToken.IsCancellationRequested
+            ? recovery : null;
+    }
+
+    private RecoveryTarget? CreateRecoveryTarget(Session session, Exception exception)
+    {
+        if (!IsRecoverableFailure(exception) || session.Lifetime.IsCancellationRequested
+            || session.OwnerCancellationToken.IsCancellationRequested || session.Intent != Volatile.Read(ref _intent)
+            || Volatile.Read(ref _disposed) != 0) return null;
+        CaptureEngineSnapshot(session);
+        var selection = session.Selection with
+        {
+            StartPositionTicks = AbsolutePosition(session),
+            MediaSourceId = session.Source?.Id ?? session.Selection.MediaSourceId,
+            AudioStreamIndex = session.Request?.AudioStreamIndex ?? session.Selection.AudioStreamIndex,
+            SubtitleStreamIndex = session.Request?.SubtitleStreamIndex ?? session.Selection.SubtitleStreamIndex
+        };
+        return new RecoveryTarget(new PlaybackRecovery
+        {
+            RecoveryId = Guid.NewGuid(),
+            FailedPlaybackId = session.Id,
+            Selection = selection,
+            IsPaused = ShouldPauseAfterRestart(session),
+            ErrorCode = ErrorCode(exception)
+        }, session.Intent, session.OwnerCancellationToken);
+    }
+
+    private void PublishRecovery(RecoveryTarget? recovery)
+    {
+        // Publish only after retirement has completed, and never revive a failure superseded during cleanup.
+        if (recovery is not null && Volatile.Read(ref _disposed) == 0 && Volatile.Read(ref _current) is null
+            && recovery.Intent == Volatile.Read(ref _intent) && !recovery.OwnerCancellationToken.IsCancellationRequested)
+            Volatile.Write(ref _recovery, recovery);
+    }
+
+    private static bool IsRecoverableFailure(Exception exception) => exception switch
+    {
+        TimeoutException or EmbyTransportException => true,
+        PlaybackException { ErrorCode: "NetworkFailure" or "Timeout" or "ServerUnavailable" } => true,
+        EmbyApiException { StatusCode: System.Net.HttpStatusCode.InternalServerError
+            or System.Net.HttpStatusCode.BadGateway or System.Net.HttpStatusCode.ServiceUnavailable
+            or System.Net.HttpStatusCode.GatewayTimeout } => true,
+        _ => false
+    };
 
     private static void CancelSession(Session session)
     {
@@ -856,12 +957,13 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         // Do not dispose the gate while an already-issued public call may still be awaiting it.
     }
 
-    private sealed class Session(PlaybackSelection selection, CancellationTokenSource lifetime, CancellationToken ownerCancellationToken)
+    private sealed class Session(PlaybackSelection selection, CancellationTokenSource lifetime, CancellationToken ownerCancellationToken, long intent)
     {
         internal Guid Id { get; } = Guid.NewGuid();
         internal PlaybackSelection Selection = selection;
         internal CancellationTokenSource Lifetime { get; } = lifetime;
         internal CancellationToken OwnerCancellationToken { get; } = ownerCancellationToken;
+        internal long Intent { get; } = intent;
         internal CancellationTokenRegistration CancellationRegistration;
         internal string? PlaySessionId;
         internal MediaSourceInfo? Source;
@@ -880,6 +982,8 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         internal bool Retired;
         internal long FinalPositionTicks;
     }
+
+    private sealed record RecoveryTarget(PlaybackRecovery State, long Intent, CancellationToken OwnerCancellationToken);
 
     private readonly record struct WorkItem(Guid PlaybackId, PlaybackEngineEventArgs? EngineEvent, bool IsTimer);
 }

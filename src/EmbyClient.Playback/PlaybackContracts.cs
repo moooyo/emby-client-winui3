@@ -111,11 +111,23 @@ public sealed record PlaybackContext
     public override string ToString() => $"{nameof(PlaybackContext)} {{ PlaybackId = {PlaybackId}, DeliveryMethod = {DeliveryMethod} }}";
 }
 
-public sealed class PlaybackStatusChangedEventArgs(PlaybackStatus status, PlaybackContext? context, string? errorCode = null) : EventArgs
+/// <summary>A one-use, immutable target for an explicit retry after a recoverable playback failure.</summary>
+public sealed record PlaybackRecovery
+{
+    public required Guid RecoveryId { get; init; }
+    public required Guid FailedPlaybackId { get; init; }
+    public required PlaybackSelection Selection { get; init; }
+    public required bool IsPaused { get; init; }
+    public required string ErrorCode { get; init; }
+}
+
+public sealed class PlaybackStatusChangedEventArgs(PlaybackStatus status, PlaybackContext? context, string? errorCode = null,
+    PlaybackRecovery? recovery = null) : EventArgs
 {
     public PlaybackStatus Status { get; } = status;
     public PlaybackContext? Context { get; } = context;
     public string? ErrorCode { get; } = errorCode;
+    public PlaybackRecovery? Recovery { get; } = recovery;
 }
 
 /// <summary>Codes contain no server URLs, credentials, or raw exception messages.</summary>
