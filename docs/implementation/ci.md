@@ -1,6 +1,8 @@
 # Windows continuous integration
 
-The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, and uploads its complete unsigned development folder. It runs for pushes to `main`, pull requests, and explicit manual dispatches. The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`; hosted execution is still being verified.
+The [Windows CI workflow](../../.github/workflows/ci.yml) builds the repository, runs the four test projects, publishes the Windows x64 Native AOT app, and uploads its complete unsigned development folder. It runs for pushes to `main`, pull requests, and explicit manual dispatches. [Hosted run 34296241270](https://github.com/moooyo/emby-client-winui3/actions/runs/34296241270) passed every step for commit `b0de51940416e0bb07fe41cb19e37478f80998d7`: locked restore, Release build, 253 tests, Native AOT publication, SBOM generation, and both artifact uploads.
+
+The first hosted run rejected the workflow before allocating a job because `runner.temp` was referenced in job-level environment definitions. The corrected workflow initializes these paths in a step through `GITHUB_ENV`, where runner environment variables are available.
 
 ## Execution and dependency policy
 
@@ -37,6 +39,8 @@ The official [Windows 2025 image inventory at commit a0faebe84ce88a79331aebb1874
 - Several .NET SDKs, including newer patches than the repository's `10.0.301`.
 
 Microsoft's [Native AOT prerequisites](https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/) require Visual Studio 2022 or later with the C++ desktop workload for Windows. The workflow checks that the x64 linker and the target Windows SDK library exist, records their paths, and logs the actual SDK and image version. The hosted image label is rolling; pinning action commits does not make the entire hosted machine immutable. A later image change can require an explicit repository update or a dedicated runner.
+
+The successful run's actual image was `win25-vs2026 20260824.214.3`, with Visual Studio 2026 Enterprise, .NET SDK `10.0.301`, and Windows SDK `10.0.26100.0`. This is the executed toolchain, distinct from the earlier published inventory snapshot above. Its downloaded logs confirm test totals of 47, 65, 33, and 108 and an 18-component SBOM. The uploaded AOT archive was 75,138,199 bytes with GitHub artifact digest `sha256:393c3f9cf0860518d078dfe6844eeddfae585b9056020222391d977be367a2de`. Later revisions need their own successful run.
 
 ## Pinned official actions
 
