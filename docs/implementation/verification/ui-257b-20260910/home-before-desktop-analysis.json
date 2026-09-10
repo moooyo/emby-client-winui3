@@ -1,0 +1,575 @@
+{
+  "SchemaVersion": 1,
+  "EvidenceKind": "FrozenInitialHomeTwoItemNumericWindowAnalysis",
+  "GeneratedAtUtc": "2026-09-10T00:02:44.3465352+00:00",
+  "SourceFileName": "home-before-desktop.jsonl",
+  "SourceSha256": "CC35E5F68455721D18C3BCF4FE202A41FB3E36F500865D4D8A1700163AAE5B89",
+  "SourceRows": 61,
+  "MetadataFileName": "home-before-desktop.json",
+  "MetadataSha256": "B343074C8DB70B270F8A1A0ECD9B9D05410316288B6137C1C3E126DB45A50500",
+  "MetadataFrozenHashMatchesSource": true,
+  "MetadataRowCountMatchesSource": true,
+  "Identity": {
+    "ProcessIds": [
+      20760
+    ],
+    "ExecutableSha256": "257B0F462E2B0D45C34EB6632E2C29EDF184310047905FC48BC069D5E3212CBE",
+    "ProcessStartedAtUtcFromMetadata": "2026-09-09T23:55:23.9396934Z",
+    "ObserverSchemaVersions": [
+      3
+    ],
+    "StartTriggerValues": [
+      1
+    ],
+    "StartTriggerMeaning": "First LibraryView.SetSessionAsync call after authentication; this elapsed clock is not process-start time."
+  },
+  "Scope": "A frozen 61-row instrumented Home sample captured after manual sign-in and before the desktop-validation batch. No screenshot covers this measurement interval, and this analysis does not establish whether the user interacted with the app.",
+  "WholeFileWindow": {
+    "FirstElapsedMilliseconds": 0,
+    "LastElapsedMilliseconds": 300460,
+    "ElapsedSpanSeconds": 300.46,
+    "FirstUtc": "2026-09-09T23:55:29.4990000+00:00",
+    "LastUtc": "2026-09-10T00:00:29.9600000+00:00",
+    "UtcSpanSeconds": 300.461,
+    "Note": "UTC and elapsed readings are sequential rather than atomic; the whole-file spans differ by one millisecond."
+  },
+  "InitialHomeObservation": {
+    "RowOneBased": 2,
+    "ElapsedMilliseconds": 5016,
+    "Utc": "2026-09-09T23:55:34.5160000+00:00",
+    "ItemsCount": 2,
+    "LibraryIsHome": 1,
+    "LoadedTotal": 2,
+    "AssignedTotal": 2,
+    "ClearedTotal": 6,
+    "PosterLoadRequestedTotal": 4,
+    "PosterLoadDeduplicatedTotal": 2,
+    "DecodeStartedTotal": 2,
+    "DecodeCompletedTotal": 2,
+    "DecodeCanceledTotal": 0,
+    "DecodeFailedTotal": 0,
+    "DecodePeak": 2,
+    "Note": "This is the first sampled Home/two-item state, not the exact moment the request or image rendering completed."
+  },
+  "StartupExclusion": {
+    "ThresholdElapsedMilliseconds": 30000,
+    "Rows": 55,
+    "FirstElapsedMilliseconds": 30064,
+    "LastElapsedMilliseconds": 300460,
+    "SampledSpanSeconds": 270.396,
+    "FirstUtc": "2026-09-09T23:55:59.5640000+00:00",
+    "LastUtc": "2026-09-10T00:00:29.9600000+00:00",
+    "UtcSpanSeconds": 270.396,
+    "ByteMetrics": [
+      {
+        "Field": "ManagedBytes",
+        "FirstBytes": 6434064,
+        "LastBytes": 7570384,
+        "FirstMiB": 6.1360015869140625,
+        "LastMiB": 7.2196807861328125,
+        "DeltaBytes": 1136320,
+        "DeltaMiB": 1.08367919921875,
+        "SampledMinimumBytes": 6434064.0,
+        "SampledMaximumBytes": 7570384.0
+      },
+      {
+        "Field": "ManagedAllocatedBytesApproximate",
+        "FirstBytes": 6416616,
+        "LastBytes": 7534496,
+        "FirstMiB": 6.119361877441406,
+        "LastMiB": 7.185455322265625,
+        "DeltaBytes": 1117880,
+        "DeltaMiB": 1.0660934448242188,
+        "SampledMinimumBytes": 6416616.0,
+        "SampledMaximumBytes": 7534496.0
+      },
+      {
+        "Field": "ProcessPrivateBytes",
+        "FirstBytes": 119967744,
+        "LastBytes": 121188352,
+        "FirstMiB": 114.41015625,
+        "LastMiB": 115.57421875,
+        "DeltaBytes": 1220608,
+        "DeltaMiB": 1.1640625,
+        "SampledMinimumBytes": 119967744.0,
+        "SampledMaximumBytes": 121987072.0
+      },
+      {
+        "Field": "ProcessWorkingSetBytes",
+        "FirstBytes": 144084992,
+        "LastBytes": 146153472,
+        "FirstMiB": 137.41015625,
+        "LastMiB": 139.3828125,
+        "DeltaBytes": 2068480,
+        "DeltaMiB": 1.97265625,
+        "SampledMinimumBytes": 144084992.0,
+        "SampledMaximumBytes": 146939904.0
+      },
+      {
+        "Field": "ObserverCompletedSampleAllocatedBytes",
+        "FirstBytes": 94128,
+        "LastBytes": 782304,
+        "FirstMiB": 0.0897674560546875,
+        "LastMiB": 0.746063232421875,
+        "DeltaBytes": 688176,
+        "DeltaMiB": 0.6562957763671875,
+        "SampledMinimumBytes": 94128.0,
+        "SampledMaximumBytes": 782304.0
+      }
+    ],
+    "CpuMillisecondsFirst": 3609,
+    "CpuMillisecondsLast": 4656,
+    "CpuSecondsDelta": 1.047,
+    "AverageCpuPercentOfOneLogicalCore": 0.38720986996849066,
+    "HandleCountFirst": 1160,
+    "HandleCountLast": 1138,
+    "HandleCountDelta": -22,
+    "HandleCountMinimum": 1129.0,
+    "HandleCountMaximum": 1164.0,
+    "ObserverCompletedSamplesFirst": 6,
+    "ObserverCompletedSamplesLast": 60,
+    "ObserverCompletedSamplesDelta": 54
+  },
+  "GcObservations": {
+    "RowsChecked": 61,
+    "Fields": [
+      {
+        "Field": "Gen0Collections",
+        "DistinctValues": [
+          0
+        ]
+      },
+      {
+        "Field": "Gen1Collections",
+        "DistinctValues": [
+          0
+        ]
+      },
+      {
+        "Field": "Gen2Collections",
+        "DistinctValues": [
+          0
+        ]
+      },
+      {
+        "Field": "LastGcIndex",
+        "DistinctValues": [
+          0
+        ]
+      },
+      {
+        "Field": "LastGcHeapSizeBytes",
+        "DistinctValues": [
+          0
+        ]
+      },
+      {
+        "Field": "LastGcFragmentedBytes",
+        "DistinctValues": [
+          0
+        ]
+      },
+      {
+        "Field": "LastGcCommittedBytes",
+        "DistinctValues": [
+          0
+        ]
+      }
+    ],
+    "ObservedGcTransitions": 0,
+    "Interpretation": "All generation counts and LastGcIndex are zero throughout the source. There is no natural-GC boundary or post-collection retained-heap result in this finite window. The zero last-GC heap/committed fields are unavailable last-GC information, not measurements of an empty live heap."
+  },
+  "ActivityCounterObservations": [
+    {
+      "Field": "LoadedTotal",
+      "FirstValue": 2,
+      "LastValue": 2,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        2
+      ]
+    },
+    {
+      "Field": "UnloadedTotal",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    },
+    {
+      "Field": "TagChangedTotal",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    },
+    {
+      "Field": "AssignedTotal",
+      "FirstValue": 2,
+      "LastValue": 2,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        2
+      ]
+    },
+    {
+      "Field": "ClearedTotal",
+      "FirstValue": 6,
+      "LastValue": 6,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        6
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        6
+      ]
+    },
+    {
+      "Field": "PosterLoadRequestedTotal",
+      "FirstValue": 4,
+      "LastValue": 4,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        4
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        4
+      ]
+    },
+    {
+      "Field": "PosterLoadRejectedTotal",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    },
+    {
+      "Field": "PosterLoadDeduplicatedTotal",
+      "FirstValue": 2,
+      "LastValue": 2,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        2
+      ]
+    },
+    {
+      "Field": "DecodeStartedTotal",
+      "FirstValue": 2,
+      "LastValue": 2,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        2
+      ]
+    },
+    {
+      "Field": "DecodeCompletedTotal",
+      "FirstValue": 2,
+      "LastValue": 2,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        2
+      ]
+    },
+    {
+      "Field": "DecodeCanceledTotal",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    },
+    {
+      "Field": "DecodeFailedTotal",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    },
+    {
+      "Field": "DecodePeak",
+      "FirstValue": 2,
+      "LastValue": 2,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        2
+      ]
+    },
+    {
+      "Field": "PresentationClockTicks",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    },
+    {
+      "Field": "PositionUpdateCalls",
+      "FirstValue": 0,
+      "LastValue": 0,
+      "Delta": 0,
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctValuesFromFirstHomeTwoItemSample": [
+        0
+      ]
+    }
+  ],
+  "StateAndPendingWorkObservations": [
+    {
+      "Field": "ItemsCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "LibraryIsHome",
+      "DistinctPostThirtySecondValues": [
+        1
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        1
+      ]
+    },
+    {
+      "Field": "LibraryHasDetails",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "LibraryIsBusy",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "LibraryVisibility",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "PosterSubscriptionsCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "PosterRequestsCount",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "BoundPosterSourcesCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "LoadedPosterControlsCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "AttachedPosterControlsCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "RealizedPosterControlsCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "DetailPosterBound",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "DecodeActive",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "PresentationClockEnabled",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    }
+  ],
+  "WeakTargetObservations": [
+    {
+      "Field": "WeakImageTrackedCount",
+      "DistinctPostThirtySecondValues": [
+        3
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        3
+      ]
+    },
+    {
+      "Field": "WeakImageAliveCount",
+      "DistinctPostThirtySecondValues": [
+        3
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        3
+      ]
+    },
+    {
+      "Field": "WeakImageEvictions",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    },
+    {
+      "Field": "WeakBitmapTrackedCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "WeakBitmapAliveCount",
+      "DistinctPostThirtySecondValues": [
+        2
+      ],
+      "DistinctWholeFileValues": [
+        0,
+        2
+      ]
+    },
+    {
+      "Field": "WeakBitmapEvictions",
+      "DistinctPostThirtySecondValues": [
+        0
+      ],
+      "DistinctWholeFileValues": [
+        0
+      ]
+    }
+  ],
+  "InterpretationAndLimits": [
+    "After the first thirty seconds, all recorded poster callback/decode totals remain unchanged. The first Home sample already has two Loaded events, four load-method requests, two deduplication returns, two completed decoder-helper calls, and two assignments. No additional work in those instrumented cumulative paths is recorded during the analyzed window.",
+    "PresentationClockEnabled, PresentationClockTicks, and PositionUpdateCalls remain zero across all 61 rows. This establishes the recorded presentation polling state/activity only; it is not a count of every dispatcher callback, media resource, or allocation.",
+    "PosterRequestsCount and DecodeActive are zero at every sampled instant, but DecodePeak reaches two and two decodes completed between the initial rows. Sparse zero-active snapshots must not be interpreted as no historical in-flight work.",
+    "The post-thirty-second state has two subscriptions, two bound Sources, and two loaded/attached/realized controls in the observed subscription subset. These are ownership/state measurements, not screenshots, pixel correctness, or a census of every native XAML object.",
+    "The weak cohort contains three live Image wrappers and two live BitmapImage wrappers with no evictions in the analyzed window. A live weak target may remain uncollected, and an unchanged callback counter says nothing by itself about object reachability or native texture release. These fields cannot establish a leak or successful native deallocation.",
+    "ManagedBytes rises by 1,136,320 bytes and approximate total managed allocation by 1,117,880 bytes without a GC. GC.GetTotalMemory(false) includes unreachable allocations awaiting collection, so this growth is not evidence that retained live objects increased by the same amount.",
+    "Private bytes rise by 1,220,608 between the selected endpoints, but the sampled maximum is 121,987,072 bytes, above the final 121,188,352. This is a finite fluctuating process-memory window, not a monotonic-growth claim or a demonstrated plateau.",
+    "Prior completed synchronous observer-sample allocation rises by 688,176 bytes over 54 completed-sample increments. It measures only current-thread sampling work and omits async/callback, other-thread, and native observation costs; do not subtract it as the complete observer overhead.",
+    "CPU is whole-process CPU including observation overhead, expressed relative to one logical core. Process private memory, working set, managed bytes, and cumulative allocation have different meanings and are read sequentially.",
+    "No screenshot was provided for this interval. Numeric Home state, unchanged counters, and the local Visibility value do not prove visual correctness, foreground/ancestor visibility, or an absence of user interaction.",
+    "The analyzed start is the schema 3 authenticated-session trigger. Cumulative process metrics include activity before that trigger, so deltas use explicit recorded baselines rather than assumed zero or a schema 2 constructor-based clock.",
+    "This two-item Home observation does not certify large-library scrolling/recycling, playback, memory after collection, or the earlier uninstrumented 779B acceptance. Later samples from the still-running log were not read and cannot extend this frozen window."
+  ],
+  "SupportedNextStep": "Retain this authenticated Home baseline and compare later explicitly frozen library/return-Home stages using the same process identity, cumulative callback counters, and any observed natural-GC boundaries. Obtain separate visual evidence for desktop behavior; do not infer a memory fix or a need to force collection from this window.",
+  "AnalysisActions": "Only the two named frozen files were read and this English analysis JSON was created. No product code, prior evidence, live log, app/build/test process, network, desktop control, or forced GC was used or changed."
+}

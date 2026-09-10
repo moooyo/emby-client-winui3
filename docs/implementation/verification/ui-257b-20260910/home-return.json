@@ -1,0 +1,5 @@
+{
+  "RecordedAtUtc": "2026-09-10T00:04:24.1514515Z",
+  "Phase": "Returned to Home after large-library navigation; no video playback opened",
+  "ReadFailure": "An earlier stats GET used an incorrect double-underscore path and returned HTTP 404; corrected after reading the fixture route."
+}

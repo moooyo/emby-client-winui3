@@ -1,0 +1,2735 @@
+{
+  "SchemaVersion": 1,
+  "EvidenceKind": "FrozenLibraryAndReturnedHomeAttributionAnalysis",
+  "GeneratedAtUtc": "2026-09-10T00:12:50.2366960+00:00",
+  "SourceFileName": "library-home-snapshot.jsonl",
+  "SourceSha256": "72B564891D249B134E2ACD51002DC2A154472B57A6E41EFF142B3BF679A0EEFD",
+  "SourceRows": 154,
+  "SourceBytes": 218155,
+  "SourceMatchesMetadata": true,
+  "Identity": {
+    "ProcessIds": [
+      20760
+    ],
+    "ExecutableSha256": "257B0F462E2B0D45C34EB6632E2C29EDF184310047905FC48BC069D5E3212CBE",
+    "ObserverSchemaValues": [
+      3
+    ],
+    "StartTriggerValues": [
+      1
+    ]
+  },
+  "Reproduction": {
+    "ScriptFileName": "Analyze-LibraryHome.ps1",
+    "ScriptSha256": "19F23EBF37866C54588A5B73FDAAE6A094264FA85A1AD68B9658FC3F26C56E53",
+    "Command": "./Analyze-LibraryHome.ps1 -OutputFileName library-home-analysis-reproduced.json",
+    "Note": "This script reads only named frozen evidence files and creates a new analysis. Generation time and the selected output filename may differ; product, runtime, and live logs are not accessed."
+  },
+  "InitialHomePrefix": {
+    "FileName": "home-before-desktop.jsonl",
+    "Rows": 61,
+    "Sha256": "CC35E5F68455721D18C3BCF4FE202A41FB3E36F500865D4D8A1700163AAE5B89",
+    "ExactLineContentPrefixMatches": true,
+    "ExistingAnalysisFileName": "home-before-desktop-analysis.json",
+    "Interpretation": "The first 61 lines are compared in order without treating newline encoding as content. The earlier initial-Home report is retained separately and was not rewritten or extended into a different baseline."
+  },
+  "Segmentation": {
+    "LibraryRule": "First non-Home row with ItemsCount greater than two through the last row matching that condition.",
+    "LibraryFirstRowOneBased": 73,
+    "LibraryLastRowOneBased": 105,
+    "AllLibraryRowsMatchRule": true,
+    "ReturnedHomeRule": "Rows after the last library row with LibraryIsHome equal to one.",
+    "ReturnedHomeFirstElapsedMilliseconds": 525948,
+    "ReturnedHomeExclusionThresholdMilliseconds": 555948,
+    "ActualFirstPostExclusionElapsedMilliseconds": 556003,
+    "Scope": "Boundaries are observed sample states, not exact navigation timestamps. The first library row already contains 48 items and ongoing poster requests; it is not a cold app or pre-request baseline. Overlapping returned-Home windows must not have their durations or deltas added."
+  },
+  "Phases": [
+    {
+      "Name": "Library",
+      "Rows": 33,
+      "FirstElapsedMilliseconds": 360554,
+      "LastElapsedMilliseconds": 520945,
+      "SampledSpanSeconds": 160.391,
+      "FirstUtc": "2026-09-10T00:01:30.0540000+00:00",
+      "LastUtc": "2026-09-10T00:04:10.4450000+00:00",
+      "UtcSpanSeconds": 160.391,
+      "ByteMetrics": [
+        {
+          "Field": "ProcessPrivateBytes",
+          "FirstBytes": 145014784,
+          "LastBytes": 261246976,
+          "FirstMiB": 138.296875,
+          "LastMiB": 249.14453125,
+          "DeltaBytes": 116232192,
+          "DeltaMiB": 110.84765625,
+          "SampledMinimumBytes": 145014784.0,
+          "SampledMaximumBytes": 261246976.0
+        },
+        {
+          "Field": "ManagedBytes",
+          "FirstBytes": 5316472,
+          "LastBytes": 11075112,
+          "FirstMiB": 5.070182800292969,
+          "LastMiB": 10.562049865722656,
+          "DeltaBytes": 5758640,
+          "DeltaMiB": 5.4918670654296875,
+          "SampledMinimumBytes": 4121472.0,
+          "SampledMaximumBytes": 17471224.0
+        },
+        {
+          "Field": "ManagedAllocatedBytesApproximate",
+          "FirstBytes": 10938552,
+          "LastBytes": 40515208,
+          "FirstMiB": 10.431816101074219,
+          "LastMiB": 38.63831329345703,
+          "DeltaBytes": 29576656,
+          "DeltaMiB": 28.206497192382812,
+          "SampledMinimumBytes": 10938552.0,
+          "SampledMaximumBytes": 40515208.0
+        },
+        {
+          "Field": "ProcessWorkingSetBytes",
+          "FirstBytes": 169914368,
+          "LastBytes": 283537408,
+          "FirstMiB": 162.04296875,
+          "LastMiB": 270.40234375,
+          "DeltaBytes": 113623040,
+          "DeltaMiB": 108.359375,
+          "SampledMinimumBytes": 169914368.0,
+          "SampledMaximumBytes": 283537408.0
+        },
+        {
+          "Field": "ObserverCompletedSampleAllocatedBytes",
+          "FirstBytes": 956176,
+          "LastBytes": 1658976,
+          "FirstMiB": 0.9118804931640625,
+          "LastMiB": 1.582122802734375,
+          "DeltaBytes": 702800,
+          "DeltaMiB": 0.6702423095703125,
+          "SampledMinimumBytes": 956176.0,
+          "SampledMaximumBytes": 1658976.0
+        }
+      ],
+      "HandleCountFirst": 1191,
+      "HandleCountLast": 1328,
+      "HandleCountDelta": 137,
+      "HandleCountMinimum": 1189.0,
+      "HandleCountMaximum": 1328.0,
+      "CpuSecondsDelta": 84.11,
+      "AverageCpuPercentOfOneLogicalCore": 52.44059828793386,
+      "ObserverCompletedSamplesDelta": 32,
+      "StateAndCounterMetrics": [
+        {
+          "Field": "ItemsCount",
+          "FirstValue": 48,
+          "LastValue": 336,
+          "Delta": 288,
+          "SampledMinimum": 48.0,
+          "SampledMaximum": 336.0,
+          "DistinctValues": [
+            48,
+            96,
+            144,
+            192,
+            240,
+            288,
+            336
+          ]
+        },
+        {
+          "Field": "LibraryIsHome",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryHasDetails",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryIsBusy",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryVisibility",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PosterSubscriptionsCount",
+          "FirstValue": 40,
+          "LastValue": 46,
+          "Delta": 6,
+          "SampledMinimum": 40.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            40,
+            45,
+            46
+          ]
+        },
+        {
+          "Field": "PosterRequestsCount",
+          "FirstValue": 30,
+          "LastValue": 0,
+          "Delta": -30,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 30.0,
+          "DistinctValues": [
+            0,
+            30
+          ]
+        },
+        {
+          "Field": "BoundPosterSourcesCount",
+          "FirstValue": 10,
+          "LastValue": 40,
+          "Delta": 30,
+          "SampledMinimum": 10.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            10,
+            40,
+            41,
+            45,
+            46
+          ]
+        },
+        {
+          "Field": "LoadedPosterControlsCount",
+          "FirstValue": 40,
+          "LastValue": 46,
+          "Delta": 6,
+          "SampledMinimum": 40.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            40,
+            45,
+            46
+          ]
+        },
+        {
+          "Field": "AttachedPosterControlsCount",
+          "FirstValue": 40,
+          "LastValue": 46,
+          "Delta": 6,
+          "SampledMinimum": 40.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            40,
+            45,
+            46
+          ]
+        },
+        {
+          "Field": "RealizedPosterControlsCount",
+          "FirstValue": 40,
+          "LastValue": 39,
+          "Delta": -1,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 45.0,
+          "DistinctValues": [
+            0,
+            10,
+            39,
+            40,
+            45
+          ]
+        },
+        {
+          "Field": "DetailPosterBound",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "WeakImageTrackedCount",
+          "FirstValue": 41,
+          "LastValue": 47,
+          "Delta": 6,
+          "SampledMinimum": 41.0,
+          "SampledMaximum": 47.0,
+          "DistinctValues": [
+            41,
+            46,
+            47
+          ]
+        },
+        {
+          "Field": "WeakImageAliveCount",
+          "FirstValue": 41,
+          "LastValue": 47,
+          "Delta": 6,
+          "SampledMinimum": 41.0,
+          "SampledMaximum": 47.0,
+          "DistinctValues": [
+            41,
+            46,
+            47
+          ]
+        },
+        {
+          "Field": "WeakImageEvictions",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "WeakBitmapTrackedCount",
+          "FirstValue": 12,
+          "LastValue": 374,
+          "Delta": 362,
+          "SampledMinimum": 12.0,
+          "SampledMaximum": 374.0,
+          "DistinctValues": [
+            12,
+            42,
+            47,
+            97,
+            142,
+            181,
+            236,
+            290,
+            335,
+            374
+          ]
+        },
+        {
+          "Field": "WeakBitmapAliveCount",
+          "FirstValue": 12,
+          "LastValue": 124,
+          "Delta": 112,
+          "SampledMinimum": 12.0,
+          "SampledMaximum": 179.0,
+          "DistinctValues": [
+            12,
+            40,
+            42,
+            45,
+            47,
+            51,
+            85,
+            95,
+            124,
+            140,
+            179
+          ]
+        },
+        {
+          "Field": "WeakBitmapEvictions",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodeStartedTotal",
+          "FirstValue": 12,
+          "LastValue": 438,
+          "Delta": 426,
+          "SampledMinimum": 12.0,
+          "SampledMaximum": 438.0,
+          "DistinctValues": [
+            12,
+            42,
+            47,
+            97,
+            146,
+            235,
+            290,
+            349,
+            399,
+            438
+          ]
+        },
+        {
+          "Field": "DecodeCompletedTotal",
+          "FirstValue": 12,
+          "LastValue": 374,
+          "Delta": 362,
+          "SampledMinimum": 12.0,
+          "SampledMaximum": 374.0,
+          "DistinctValues": [
+            12,
+            42,
+            47,
+            97,
+            142,
+            181,
+            236,
+            290,
+            335,
+            374
+          ]
+        },
+        {
+          "Field": "DecodeCanceledTotal",
+          "FirstValue": 0,
+          "LastValue": 64,
+          "Delta": 64,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 64.0,
+          "DistinctValues": [
+            0,
+            4,
+            54,
+            59,
+            64
+          ]
+        },
+        {
+          "Field": "DecodeFailedTotal",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodeActive",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodePeak",
+          "FirstValue": 2,
+          "LastValue": 40,
+          "Delta": 38,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 40.0,
+          "DistinctValues": [
+            2,
+            4,
+            40
+          ]
+        },
+        {
+          "Field": "AssignedTotal",
+          "FirstValue": 12,
+          "LastValue": 374,
+          "Delta": 362,
+          "SampledMinimum": 12.0,
+          "SampledMaximum": 374.0,
+          "DistinctValues": [
+            12,
+            42,
+            47,
+            97,
+            142,
+            181,
+            236,
+            290,
+            335,
+            374
+          ]
+        },
+        {
+          "Field": "ClearedTotal",
+          "FirstValue": 51,
+          "LastValue": 2683,
+          "Delta": 2632,
+          "SampledMinimum": 51.0,
+          "SampledMaximum": 2683.0,
+          "DistinctValues": [
+            51,
+            56,
+            460,
+            685,
+            1144,
+            1536,
+            1920,
+            2324,
+            2683
+          ]
+        },
+        {
+          "Field": "PosterLoadRequestedTotal",
+          "FirstValue": 84,
+          "LastValue": 1587,
+          "Delta": 1503,
+          "SampledMinimum": 84.0,
+          "SampledMaximum": 1587.0,
+          "DistinctValues": [
+            84,
+            94,
+            344,
+            494,
+            742,
+            966,
+            1164,
+            1404,
+            1587
+          ]
+        },
+        {
+          "Field": "PosterLoadRejectedTotal",
+          "FirstValue": 0,
+          "LastValue": 1,
+          "Delta": 1,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 1.0,
+          "DistinctValues": [
+            0,
+            1
+          ]
+        },
+        {
+          "Field": "PosterLoadDeduplicatedTotal",
+          "FirstValue": 42,
+          "LastValue": 643,
+          "Delta": 601,
+          "SampledMinimum": 42.0,
+          "SampledMaximum": 643.0,
+          "DistinctValues": [
+            42,
+            47,
+            147,
+            222,
+            321,
+            410,
+            484,
+            579,
+            643
+          ]
+        },
+        {
+          "Field": "LoadedTotal",
+          "FirstValue": 40,
+          "LastValue": 46,
+          "Delta": 6,
+          "SampledMinimum": 40.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            40,
+            45,
+            46
+          ]
+        },
+        {
+          "Field": "UnloadedTotal",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "TagChangedTotal",
+          "FirstValue": 2,
+          "LastValue": 898,
+          "Delta": 896,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 898.0,
+          "DistinctValues": [
+            2,
+            151,
+            226,
+            375,
+            510,
+            634,
+            779,
+            898
+          ]
+        },
+        {
+          "Field": "PresentationClockEnabled",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PresentationClockTicks",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PositionUpdateCalls",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "Gen0Collections",
+          "FirstValue": 1,
+          "LastValue": 4,
+          "Delta": 3,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 4.0,
+          "DistinctValues": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "Field": "Gen1Collections",
+          "FirstValue": 1,
+          "LastValue": 3,
+          "Delta": 2,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 3.0,
+          "DistinctValues": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "Field": "Gen2Collections",
+          "FirstValue": 1,
+          "LastValue": 3,
+          "Delta": 2,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 3.0,
+          "DistinctValues": [
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "Field": "LastGcIndex",
+          "FirstValue": 1,
+          "LastValue": 4,
+          "Delta": 3,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 4.0,
+          "DistinctValues": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        {
+          "Field": "LastGcHeapSizeBytes",
+          "FirstValue": 2591648,
+          "LastValue": 5553912,
+          "Delta": 2962264,
+          "SampledMinimum": 2591648.0,
+          "SampledMaximum": 6815192.0,
+          "DistinctValues": [
+            2591648,
+            4067944,
+            5553912,
+            6815192
+          ]
+        },
+        {
+          "Field": "LastGcFragmentedBytes",
+          "FirstValue": 31712,
+          "LastValue": 9216,
+          "Delta": -22496,
+          "SampledMinimum": 9216.0,
+          "SampledMaximum": 47584.0,
+          "DistinctValues": [
+            9216,
+            28712,
+            31712,
+            47584
+          ]
+        },
+        {
+          "Field": "LastGcCommittedBytes",
+          "FirstValue": 10670080,
+          "LastValue": 24821760,
+          "Delta": 14151680,
+          "SampledMinimum": 10670080.0,
+          "SampledMaximum": 24821760.0,
+          "DistinctValues": [
+            10670080,
+            11718656,
+            22790144,
+            24821760
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "ReturnedHome",
+      "Rows": 49,
+      "FirstElapsedMilliseconds": 525948,
+      "LastElapsedMilliseconds": 766276,
+      "SampledSpanSeconds": 240.328,
+      "FirstUtc": "2026-09-10T00:04:15.4480000+00:00",
+      "LastUtc": "2026-09-10T00:08:15.7770000+00:00",
+      "UtcSpanSeconds": 240.329,
+      "ByteMetrics": [
+        {
+          "Field": "ProcessPrivateBytes",
+          "FirstBytes": 264855552,
+          "LastBytes": 264261632,
+          "FirstMiB": 252.5859375,
+          "LastMiB": 252.01953125,
+          "DeltaBytes": -593920,
+          "DeltaMiB": -0.56640625,
+          "SampledMinimumBytes": 264261632.0,
+          "SampledMaximumBytes": 265678848.0
+        },
+        {
+          "Field": "ManagedBytes",
+          "FirstBytes": 11358368,
+          "LastBytes": 12639680,
+          "FirstMiB": 10.832183837890625,
+          "LastMiB": 12.05413818359375,
+          "DeltaBytes": 1281312,
+          "DeltaMiB": 1.221954345703125,
+          "SampledMinimumBytes": 11358368.0,
+          "SampledMaximumBytes": 12639680.0
+        },
+        {
+          "Field": "ManagedAllocatedBytesApproximate",
+          "FirstBytes": 40797840,
+          "LastBytes": 42027448,
+          "FirstMiB": 38.90785217285156,
+          "LastMiB": 40.08049774169922,
+          "DeltaBytes": 1229608,
+          "DeltaMiB": 1.1726455688476562,
+          "SampledMinimumBytes": 40797840.0,
+          "SampledMaximumBytes": 42027448.0
+        },
+        {
+          "Field": "ProcessWorkingSetBytes",
+          "FirstBytes": 287186944,
+          "LastBytes": 286576640,
+          "FirstMiB": 273.8828125,
+          "LastMiB": 273.30078125,
+          "DeltaBytes": -610304,
+          "DeltaMiB": -0.58203125,
+          "SampledMinimumBytes": 286568448.0,
+          "SampledMaximumBytes": 287899648.0
+        },
+        {
+          "Field": "ObserverCompletedSampleAllocatedBytes",
+          "FirstBytes": 1673064,
+          "LastBytes": 2306376,
+          "FirstMiB": 1.5955581665039062,
+          "LastMiB": 2.1995315551757812,
+          "DeltaBytes": 633312,
+          "DeltaMiB": 0.603973388671875,
+          "SampledMinimumBytes": 1673064.0,
+          "SampledMaximumBytes": 2306376.0
+        }
+      ],
+      "HandleCountFirst": 1410,
+      "HandleCountLast": 1259,
+      "HandleCountDelta": -151,
+      "HandleCountMinimum": 1257.0,
+      "HandleCountMaximum": 1410.0,
+      "CpuSecondsDelta": 3.015,
+      "AverageCpuPercentOfOneLogicalCore": 1.2545354681934688,
+      "ObserverCompletedSamplesDelta": 48,
+      "StateAndCounterMetrics": [
+        {
+          "Field": "ItemsCount",
+          "FirstValue": 2,
+          "LastValue": 2,
+          "Delta": 0,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 2.0,
+          "DistinctValues": [
+            2
+          ]
+        },
+        {
+          "Field": "LibraryIsHome",
+          "FirstValue": 1,
+          "LastValue": 1,
+          "Delta": 0,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 1.0,
+          "DistinctValues": [
+            1
+          ]
+        },
+        {
+          "Field": "LibraryHasDetails",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryIsBusy",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryVisibility",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PosterSubscriptionsCount",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "PosterRequestsCount",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "BoundPosterSourcesCount",
+          "FirstValue": 2,
+          "LastValue": 2,
+          "Delta": 0,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 2.0,
+          "DistinctValues": [
+            2
+          ]
+        },
+        {
+          "Field": "LoadedPosterControlsCount",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "AttachedPosterControlsCount",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "RealizedPosterControlsCount",
+          "FirstValue": 2,
+          "LastValue": 2,
+          "Delta": 0,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 2.0,
+          "DistinctValues": [
+            2
+          ]
+        },
+        {
+          "Field": "DetailPosterBound",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "WeakImageTrackedCount",
+          "FirstValue": 47,
+          "LastValue": 47,
+          "Delta": 0,
+          "SampledMinimum": 47.0,
+          "SampledMaximum": 47.0,
+          "DistinctValues": [
+            47
+          ]
+        },
+        {
+          "Field": "WeakImageAliveCount",
+          "FirstValue": 47,
+          "LastValue": 47,
+          "Delta": 0,
+          "SampledMinimum": 47.0,
+          "SampledMaximum": 47.0,
+          "DistinctValues": [
+            47
+          ]
+        },
+        {
+          "Field": "WeakImageEvictions",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "WeakBitmapTrackedCount",
+          "FirstValue": 376,
+          "LastValue": 376,
+          "Delta": 0,
+          "SampledMinimum": 376.0,
+          "SampledMaximum": 376.0,
+          "DistinctValues": [
+            376
+          ]
+        },
+        {
+          "Field": "WeakBitmapAliveCount",
+          "FirstValue": 126,
+          "LastValue": 126,
+          "Delta": 0,
+          "SampledMinimum": 126.0,
+          "SampledMaximum": 126.0,
+          "DistinctValues": [
+            126
+          ]
+        },
+        {
+          "Field": "WeakBitmapEvictions",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodeStartedTotal",
+          "FirstValue": 440,
+          "LastValue": 440,
+          "Delta": 0,
+          "SampledMinimum": 440.0,
+          "SampledMaximum": 440.0,
+          "DistinctValues": [
+            440
+          ]
+        },
+        {
+          "Field": "DecodeCompletedTotal",
+          "FirstValue": 376,
+          "LastValue": 376,
+          "Delta": 0,
+          "SampledMinimum": 376.0,
+          "SampledMaximum": 376.0,
+          "DistinctValues": [
+            376
+          ]
+        },
+        {
+          "Field": "DecodeCanceledTotal",
+          "FirstValue": 64,
+          "LastValue": 64,
+          "Delta": 0,
+          "SampledMinimum": 64.0,
+          "SampledMaximum": 64.0,
+          "DistinctValues": [
+            64
+          ]
+        },
+        {
+          "Field": "DecodeFailedTotal",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodeActive",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodePeak",
+          "FirstValue": 40,
+          "LastValue": 40,
+          "Delta": 0,
+          "SampledMinimum": 40.0,
+          "SampledMaximum": 40.0,
+          "DistinctValues": [
+            40
+          ]
+        },
+        {
+          "Field": "AssignedTotal",
+          "FirstValue": 376,
+          "LastValue": 376,
+          "Delta": 0,
+          "SampledMinimum": 376.0,
+          "SampledMaximum": 376.0,
+          "DistinctValues": [
+            376
+          ]
+        },
+        {
+          "Field": "ClearedTotal",
+          "FirstValue": 2772,
+          "LastValue": 2772,
+          "Delta": 0,
+          "SampledMinimum": 2772.0,
+          "SampledMaximum": 2772.0,
+          "DistinctValues": [
+            2772
+          ]
+        },
+        {
+          "Field": "PosterLoadRequestedTotal",
+          "FirstValue": 1591,
+          "LastValue": 1591,
+          "Delta": 0,
+          "SampledMinimum": 1591.0,
+          "SampledMaximum": 1591.0,
+          "DistinctValues": [
+            1591
+          ]
+        },
+        {
+          "Field": "PosterLoadRejectedTotal",
+          "FirstValue": 1,
+          "LastValue": 1,
+          "Delta": 0,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 1.0,
+          "DistinctValues": [
+            1
+          ]
+        },
+        {
+          "Field": "PosterLoadDeduplicatedTotal",
+          "FirstValue": 645,
+          "LastValue": 645,
+          "Delta": 0,
+          "SampledMinimum": 645.0,
+          "SampledMaximum": 645.0,
+          "DistinctValues": [
+            645
+          ]
+        },
+        {
+          "Field": "LoadedTotal",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "UnloadedTotal",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "TagChangedTotal",
+          "FirstValue": 900,
+          "LastValue": 900,
+          "Delta": 0,
+          "SampledMinimum": 900.0,
+          "SampledMaximum": 900.0,
+          "DistinctValues": [
+            900
+          ]
+        },
+        {
+          "Field": "PresentationClockEnabled",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PresentationClockTicks",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PositionUpdateCalls",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "Gen0Collections",
+          "FirstValue": 4,
+          "LastValue": 4,
+          "Delta": 0,
+          "SampledMinimum": 4.0,
+          "SampledMaximum": 4.0,
+          "DistinctValues": [
+            4
+          ]
+        },
+        {
+          "Field": "Gen1Collections",
+          "FirstValue": 3,
+          "LastValue": 3,
+          "Delta": 0,
+          "SampledMinimum": 3.0,
+          "SampledMaximum": 3.0,
+          "DistinctValues": [
+            3
+          ]
+        },
+        {
+          "Field": "Gen2Collections",
+          "FirstValue": 3,
+          "LastValue": 3,
+          "Delta": 0,
+          "SampledMinimum": 3.0,
+          "SampledMaximum": 3.0,
+          "DistinctValues": [
+            3
+          ]
+        },
+        {
+          "Field": "LastGcIndex",
+          "FirstValue": 4,
+          "LastValue": 4,
+          "Delta": 0,
+          "SampledMinimum": 4.0,
+          "SampledMaximum": 4.0,
+          "DistinctValues": [
+            4
+          ]
+        },
+        {
+          "Field": "LastGcHeapSizeBytes",
+          "FirstValue": 5553912,
+          "LastValue": 5553912,
+          "Delta": 0,
+          "SampledMinimum": 5553912.0,
+          "SampledMaximum": 5553912.0,
+          "DistinctValues": [
+            5553912
+          ]
+        },
+        {
+          "Field": "LastGcFragmentedBytes",
+          "FirstValue": 9216,
+          "LastValue": 9216,
+          "Delta": 0,
+          "SampledMinimum": 9216.0,
+          "SampledMaximum": 9216.0,
+          "DistinctValues": [
+            9216
+          ]
+        },
+        {
+          "Field": "LastGcCommittedBytes",
+          "FirstValue": 24821760,
+          "LastValue": 24821760,
+          "Delta": 0,
+          "SampledMinimum": 24821760.0,
+          "SampledMaximum": 24821760.0,
+          "DistinctValues": [
+            24821760
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "ReturnedHomeAfterThirtySeconds",
+      "Rows": 43,
+      "FirstElapsedMilliseconds": 556003,
+      "LastElapsedMilliseconds": 766276,
+      "SampledSpanSeconds": 210.273,
+      "FirstUtc": "2026-09-10T00:04:45.5040000+00:00",
+      "LastUtc": "2026-09-10T00:08:15.7770000+00:00",
+      "UtcSpanSeconds": 210.273,
+      "ByteMetrics": [
+        {
+          "Field": "ProcessPrivateBytes",
+          "FirstBytes": 265576448,
+          "LastBytes": 264261632,
+          "FirstMiB": 253.2734375,
+          "LastMiB": 252.01953125,
+          "DeltaBytes": -1314816,
+          "DeltaMiB": -1.25390625,
+          "SampledMinimumBytes": 264261632.0,
+          "SampledMaximumBytes": 265609216.0
+        },
+        {
+          "Field": "ManagedBytes",
+          "FirstBytes": 11917424,
+          "LastBytes": 12639680,
+          "FirstMiB": 11.365341186523438,
+          "LastMiB": 12.05413818359375,
+          "DeltaBytes": 722256,
+          "DeltaMiB": 0.6887969970703125,
+          "SampledMinimumBytes": 11917424.0,
+          "SampledMaximumBytes": 12639680.0
+        },
+        {
+          "Field": "ManagedAllocatedBytesApproximate",
+          "FirstBytes": 41355312,
+          "LastBytes": 42027448,
+          "FirstMiB": 39.43949890136719,
+          "LastMiB": 40.08049774169922,
+          "DeltaBytes": 672136,
+          "DeltaMiB": 0.6409988403320312,
+          "SampledMinimumBytes": 41355312.0,
+          "SampledMaximumBytes": 42027448.0
+        },
+        {
+          "Field": "ProcessWorkingSetBytes",
+          "FirstBytes": 287846400,
+          "LastBytes": 286576640,
+          "FirstMiB": 274.51171875,
+          "LastMiB": 273.30078125,
+          "DeltaBytes": -1269760,
+          "DeltaMiB": -1.2109375,
+          "SampledMinimumBytes": 286568448.0,
+          "SampledMaximumBytes": 287846400.0
+        },
+        {
+          "Field": "ObserverCompletedSampleAllocatedBytes",
+          "FirstBytes": 1757496,
+          "LastBytes": 2306376,
+          "FirstMiB": 1.6760787963867188,
+          "LastMiB": 2.1995315551757812,
+          "DeltaBytes": 548880,
+          "DeltaMiB": 0.5234527587890625,
+          "SampledMinimumBytes": 1757496.0,
+          "SampledMaximumBytes": 2306376.0
+        }
+      ],
+      "HandleCountFirst": 1385,
+      "HandleCountLast": 1259,
+      "HandleCountDelta": -126,
+      "HandleCountMinimum": 1257.0,
+      "HandleCountMaximum": 1385.0,
+      "CpuSecondsDelta": 0.734,
+      "AverageCpuPercentOfOneLogicalCore": 0.3490700184997598,
+      "ObserverCompletedSamplesDelta": 42,
+      "StateAndCounterMetrics": [
+        {
+          "Field": "ItemsCount",
+          "FirstValue": 2,
+          "LastValue": 2,
+          "Delta": 0,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 2.0,
+          "DistinctValues": [
+            2
+          ]
+        },
+        {
+          "Field": "LibraryIsHome",
+          "FirstValue": 1,
+          "LastValue": 1,
+          "Delta": 0,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 1.0,
+          "DistinctValues": [
+            1
+          ]
+        },
+        {
+          "Field": "LibraryHasDetails",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryIsBusy",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "LibraryVisibility",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PosterSubscriptionsCount",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "PosterRequestsCount",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "BoundPosterSourcesCount",
+          "FirstValue": 2,
+          "LastValue": 2,
+          "Delta": 0,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 2.0,
+          "DistinctValues": [
+            2
+          ]
+        },
+        {
+          "Field": "LoadedPosterControlsCount",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "AttachedPosterControlsCount",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "RealizedPosterControlsCount",
+          "FirstValue": 2,
+          "LastValue": 2,
+          "Delta": 0,
+          "SampledMinimum": 2.0,
+          "SampledMaximum": 2.0,
+          "DistinctValues": [
+            2
+          ]
+        },
+        {
+          "Field": "DetailPosterBound",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "WeakImageTrackedCount",
+          "FirstValue": 47,
+          "LastValue": 47,
+          "Delta": 0,
+          "SampledMinimum": 47.0,
+          "SampledMaximum": 47.0,
+          "DistinctValues": [
+            47
+          ]
+        },
+        {
+          "Field": "WeakImageAliveCount",
+          "FirstValue": 47,
+          "LastValue": 47,
+          "Delta": 0,
+          "SampledMinimum": 47.0,
+          "SampledMaximum": 47.0,
+          "DistinctValues": [
+            47
+          ]
+        },
+        {
+          "Field": "WeakImageEvictions",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "WeakBitmapTrackedCount",
+          "FirstValue": 376,
+          "LastValue": 376,
+          "Delta": 0,
+          "SampledMinimum": 376.0,
+          "SampledMaximum": 376.0,
+          "DistinctValues": [
+            376
+          ]
+        },
+        {
+          "Field": "WeakBitmapAliveCount",
+          "FirstValue": 126,
+          "LastValue": 126,
+          "Delta": 0,
+          "SampledMinimum": 126.0,
+          "SampledMaximum": 126.0,
+          "DistinctValues": [
+            126
+          ]
+        },
+        {
+          "Field": "WeakBitmapEvictions",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodeStartedTotal",
+          "FirstValue": 440,
+          "LastValue": 440,
+          "Delta": 0,
+          "SampledMinimum": 440.0,
+          "SampledMaximum": 440.0,
+          "DistinctValues": [
+            440
+          ]
+        },
+        {
+          "Field": "DecodeCompletedTotal",
+          "FirstValue": 376,
+          "LastValue": 376,
+          "Delta": 0,
+          "SampledMinimum": 376.0,
+          "SampledMaximum": 376.0,
+          "DistinctValues": [
+            376
+          ]
+        },
+        {
+          "Field": "DecodeCanceledTotal",
+          "FirstValue": 64,
+          "LastValue": 64,
+          "Delta": 0,
+          "SampledMinimum": 64.0,
+          "SampledMaximum": 64.0,
+          "DistinctValues": [
+            64
+          ]
+        },
+        {
+          "Field": "DecodeFailedTotal",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodeActive",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "DecodePeak",
+          "FirstValue": 40,
+          "LastValue": 40,
+          "Delta": 0,
+          "SampledMinimum": 40.0,
+          "SampledMaximum": 40.0,
+          "DistinctValues": [
+            40
+          ]
+        },
+        {
+          "Field": "AssignedTotal",
+          "FirstValue": 376,
+          "LastValue": 376,
+          "Delta": 0,
+          "SampledMinimum": 376.0,
+          "SampledMaximum": 376.0,
+          "DistinctValues": [
+            376
+          ]
+        },
+        {
+          "Field": "ClearedTotal",
+          "FirstValue": 2772,
+          "LastValue": 2772,
+          "Delta": 0,
+          "SampledMinimum": 2772.0,
+          "SampledMaximum": 2772.0,
+          "DistinctValues": [
+            2772
+          ]
+        },
+        {
+          "Field": "PosterLoadRequestedTotal",
+          "FirstValue": 1591,
+          "LastValue": 1591,
+          "Delta": 0,
+          "SampledMinimum": 1591.0,
+          "SampledMaximum": 1591.0,
+          "DistinctValues": [
+            1591
+          ]
+        },
+        {
+          "Field": "PosterLoadRejectedTotal",
+          "FirstValue": 1,
+          "LastValue": 1,
+          "Delta": 0,
+          "SampledMinimum": 1.0,
+          "SampledMaximum": 1.0,
+          "DistinctValues": [
+            1
+          ]
+        },
+        {
+          "Field": "PosterLoadDeduplicatedTotal",
+          "FirstValue": 645,
+          "LastValue": 645,
+          "Delta": 0,
+          "SampledMinimum": 645.0,
+          "SampledMaximum": 645.0,
+          "DistinctValues": [
+            645
+          ]
+        },
+        {
+          "Field": "LoadedTotal",
+          "FirstValue": 46,
+          "LastValue": 46,
+          "Delta": 0,
+          "SampledMinimum": 46.0,
+          "SampledMaximum": 46.0,
+          "DistinctValues": [
+            46
+          ]
+        },
+        {
+          "Field": "UnloadedTotal",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "TagChangedTotal",
+          "FirstValue": 900,
+          "LastValue": 900,
+          "Delta": 0,
+          "SampledMinimum": 900.0,
+          "SampledMaximum": 900.0,
+          "DistinctValues": [
+            900
+          ]
+        },
+        {
+          "Field": "PresentationClockEnabled",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PresentationClockTicks",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "PositionUpdateCalls",
+          "FirstValue": 0,
+          "LastValue": 0,
+          "Delta": 0,
+          "SampledMinimum": 0.0,
+          "SampledMaximum": 0.0,
+          "DistinctValues": [
+            0
+          ]
+        },
+        {
+          "Field": "Gen0Collections",
+          "FirstValue": 4,
+          "LastValue": 4,
+          "Delta": 0,
+          "SampledMinimum": 4.0,
+          "SampledMaximum": 4.0,
+          "DistinctValues": [
+            4
+          ]
+        },
+        {
+          "Field": "Gen1Collections",
+          "FirstValue": 3,
+          "LastValue": 3,
+          "Delta": 0,
+          "SampledMinimum": 3.0,
+          "SampledMaximum": 3.0,
+          "DistinctValues": [
+            3
+          ]
+        },
+        {
+          "Field": "Gen2Collections",
+          "FirstValue": 3,
+          "LastValue": 3,
+          "Delta": 0,
+          "SampledMinimum": 3.0,
+          "SampledMaximum": 3.0,
+          "DistinctValues": [
+            3
+          ]
+        },
+        {
+          "Field": "LastGcIndex",
+          "FirstValue": 4,
+          "LastValue": 4,
+          "Delta": 0,
+          "SampledMinimum": 4.0,
+          "SampledMaximum": 4.0,
+          "DistinctValues": [
+            4
+          ]
+        },
+        {
+          "Field": "LastGcHeapSizeBytes",
+          "FirstValue": 5553912,
+          "LastValue": 5553912,
+          "Delta": 0,
+          "SampledMinimum": 5553912.0,
+          "SampledMaximum": 5553912.0,
+          "DistinctValues": [
+            5553912
+          ]
+        },
+        {
+          "Field": "LastGcFragmentedBytes",
+          "FirstValue": 9216,
+          "LastValue": 9216,
+          "Delta": 0,
+          "SampledMinimum": 9216.0,
+          "SampledMaximum": 9216.0,
+          "DistinctValues": [
+            9216
+          ]
+        },
+        {
+          "Field": "LastGcCommittedBytes",
+          "FirstValue": 24821760,
+          "LastValue": 24821760,
+          "Delta": 0,
+          "SampledMinimum": 24821760.0,
+          "SampledMaximum": 24821760.0,
+          "DistinctValues": [
+            24821760
+          ]
+        }
+      ]
+    }
+  ],
+  "GcObservations": {
+    "SampledCounterTransitions": [
+      {
+        "BeforeRowOneBased": 66,
+        "AfterRowOneBased": 67,
+        "SampledBoundarySpanSeconds": 5.006,
+        "BeforeUtc": "2026-09-10T00:00:55.0110000+00:00",
+        "AfterUtc": "2026-09-10T00:01:00.0170000+00:00",
+        "Before": {
+          "ElapsedMilliseconds": 325511,
+          "UtcUnixTimeMilliseconds": 1788998455011,
+          "ItemsCount": 2,
+          "LibraryIsHome": 1,
+          "Gen0Collections": 0,
+          "Gen1Collections": 0,
+          "Gen2Collections": 0,
+          "LastGcIndex": 0,
+          "LastGcHeapSizeBytes": 0,
+          "LastGcCommittedBytes": 0,
+          "LastGcFragmentedBytes": 0,
+          "ManagedBytes": 7904640,
+          "ManagedAllocatedBytesApproximate": 7867792,
+          "ProcessPrivateBytes": 123527168,
+          "ProcessWorkingSetBytes": 148828160,
+          "WeakBitmapTrackedCount": 2,
+          "WeakBitmapAliveCount": 2,
+          "DecodeStartedTotal": 2,
+          "DecodeCompletedTotal": 2,
+          "DecodeCanceledTotal": 0,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "After": {
+          "ElapsedMilliseconds": 330517,
+          "UtcUnixTimeMilliseconds": 1788998460017,
+          "ItemsCount": 2,
+          "LibraryIsHome": 1,
+          "Gen0Collections": 1,
+          "Gen1Collections": 1,
+          "Gen2Collections": 1,
+          "LastGcIndex": 1,
+          "LastGcHeapSizeBytes": 2591648,
+          "LastGcCommittedBytes": 10670080,
+          "LastGcFragmentedBytes": 31712,
+          "ManagedBytes": 2592832,
+          "ManagedAllocatedBytesApproximate": 8221584,
+          "ProcessPrivateBytes": 127012864,
+          "ProcessWorkingSetBytes": 152428544,
+          "WeakBitmapTrackedCount": 2,
+          "WeakBitmapAliveCount": 2,
+          "DecodeStartedTotal": 2,
+          "DecodeCompletedTotal": 2,
+          "DecodeCanceledTotal": 0,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "GenerationCountDeltas": {
+          "Gen0": 1,
+          "Gen1": 1,
+          "Gen2": 1,
+          "LastGcIndex": 1
+        },
+        "ByteMetricDeltas": [
+          {
+            "Field": "ProcessPrivateBytes",
+            "DeltaBytes": 3485696,
+            "DeltaMiB": 3.32421875
+          },
+          {
+            "Field": "ManagedBytes",
+            "DeltaBytes": -5311808,
+            "DeltaMiB": -5.06573486328125
+          },
+          {
+            "Field": "ManagedAllocatedBytesApproximate",
+            "DeltaBytes": 353792,
+            "DeltaMiB": 0.33740234375
+          },
+          {
+            "Field": "ProcessWorkingSetBytes",
+            "DeltaBytes": 3600384,
+            "DeltaMiB": 3.43359375
+          },
+          {
+            "Field": "ObserverCompletedSampleAllocatedBytes",
+            "DeltaBytes": 12744,
+            "DeltaMiB": 0.01215362548828125
+          }
+        ],
+        "Interpretation": "These are adjacent sequentially sampled counter states, not the timestamp or isolated before/after state of an exact single GC event. Allocations, decoder callbacks, and native work can also occur between the rows."
+      },
+      {
+        "BeforeRowOneBased": 84,
+        "AfterRowOneBased": 85,
+        "SampledBoundarySpanSeconds": 5.009,
+        "BeforeUtc": "2026-09-10T00:02:25.1700000+00:00",
+        "AfterUtc": "2026-09-10T00:02:30.1790000+00:00",
+        "Before": {
+          "ElapsedMilliseconds": 415670,
+          "UtcUnixTimeMilliseconds": 1788998545170,
+          "ItemsCount": 288,
+          "LibraryIsHome": 0,
+          "Gen0Collections": 1,
+          "Gen1Collections": 1,
+          "Gen2Collections": 1,
+          "LastGcIndex": 1,
+          "LastGcHeapSizeBytes": 2591648,
+          "LastGcCommittedBytes": 10670080,
+          "LastGcFragmentedBytes": 31712,
+          "ManagedBytes": 9386048,
+          "ManagedAllocatedBytesApproximate": 15000016,
+          "ProcessPrivateBytes": 182169600,
+          "ProcessWorkingSetBytes": 204832768,
+          "WeakBitmapTrackedCount": 47,
+          "WeakBitmapAliveCount": 47,
+          "DecodeStartedTotal": 47,
+          "DecodeCompletedTotal": 47,
+          "DecodeCanceledTotal": 0,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "After": {
+          "ElapsedMilliseconds": 420679,
+          "UtcUnixTimeMilliseconds": 1788998550179,
+          "ItemsCount": 288,
+          "LibraryIsHome": 0,
+          "Gen0Collections": 2,
+          "Gen1Collections": 2,
+          "Gen2Collections": 2,
+          "LastGcIndex": 2,
+          "LastGcHeapSizeBytes": 4067944,
+          "LastGcCommittedBytes": 11718656,
+          "LastGcFragmentedBytes": 28712,
+          "ManagedBytes": 4121472,
+          "ManagedAllocatedBytesApproximate": 15063888,
+          "ProcessPrivateBytes": 182697984,
+          "ProcessWorkingSetBytes": 205377536,
+          "WeakBitmapTrackedCount": 47,
+          "WeakBitmapAliveCount": 45,
+          "DecodeStartedTotal": 47,
+          "DecodeCompletedTotal": 47,
+          "DecodeCanceledTotal": 0,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "GenerationCountDeltas": {
+          "Gen0": 1,
+          "Gen1": 1,
+          "Gen2": 1,
+          "LastGcIndex": 1
+        },
+        "ByteMetricDeltas": [
+          {
+            "Field": "ProcessPrivateBytes",
+            "DeltaBytes": 528384,
+            "DeltaMiB": 0.50390625
+          },
+          {
+            "Field": "ManagedBytes",
+            "DeltaBytes": -5264576,
+            "DeltaMiB": -5.02069091796875
+          },
+          {
+            "Field": "ManagedAllocatedBytesApproximate",
+            "DeltaBytes": 63872,
+            "DeltaMiB": 0.0609130859375
+          },
+          {
+            "Field": "ProcessWorkingSetBytes",
+            "DeltaBytes": 544768,
+            "DeltaMiB": 0.51953125
+          },
+          {
+            "Field": "ObserverCompletedSampleAllocatedBytes",
+            "DeltaBytes": 13176,
+            "DeltaMiB": 0.01256561279296875
+          }
+        ],
+        "Interpretation": "These are adjacent sequentially sampled counter states, not the timestamp or isolated before/after state of an exact single GC event. Allocations, decoder callbacks, and native work can also occur between the rows."
+      },
+      {
+        "BeforeRowOneBased": 98,
+        "AfterRowOneBased": 99,
+        "SampledBoundarySpanSeconds": 5.01,
+        "BeforeUtc": "2026-09-10T00:03:35.3490000+00:00",
+        "AfterUtc": "2026-09-10T00:03:40.3600000+00:00",
+        "Before": {
+          "ElapsedMilliseconds": 485849,
+          "UtcUnixTimeMilliseconds": 1788998615349,
+          "ItemsCount": 336,
+          "LibraryIsHome": 0,
+          "Gen0Collections": 2,
+          "Gen1Collections": 2,
+          "Gen2Collections": 2,
+          "LastGcIndex": 2,
+          "LastGcHeapSizeBytes": 4067944,
+          "LastGcCommittedBytes": 11718656,
+          "LastGcFragmentedBytes": 28712,
+          "ManagedBytes": 17471224,
+          "ManagedAllocatedBytesApproximate": 28393144,
+          "ProcessPrivateBytes": 236208128,
+          "ProcessWorkingSetBytes": 257794048,
+          "WeakBitmapTrackedCount": 181,
+          "WeakBitmapAliveCount": 179,
+          "DecodeStartedTotal": 235,
+          "DecodeCompletedTotal": 181,
+          "DecodeCanceledTotal": 54,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "After": {
+          "ElapsedMilliseconds": 490859,
+          "UtcUnixTimeMilliseconds": 1788998620360,
+          "ItemsCount": 336,
+          "LibraryIsHome": 0,
+          "Gen0Collections": 3,
+          "Gen1Collections": 2,
+          "Gen2Collections": 2,
+          "LastGcIndex": 3,
+          "LastGcHeapSizeBytes": 6815192,
+          "LastGcCommittedBytes": 22790144,
+          "LastGcFragmentedBytes": 47584,
+          "ManagedBytes": 9523264,
+          "ManagedAllocatedBytesApproximate": 32976584,
+          "ProcessPrivateBytes": 241696768,
+          "ProcessWorkingSetBytes": 264032256,
+          "WeakBitmapTrackedCount": 236,
+          "WeakBitmapAliveCount": 51,
+          "DecodeStartedTotal": 290,
+          "DecodeCompletedTotal": 236,
+          "DecodeCanceledTotal": 54,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "GenerationCountDeltas": {
+          "Gen0": 1,
+          "Gen1": 0,
+          "Gen2": 0,
+          "LastGcIndex": 1
+        },
+        "ByteMetricDeltas": [
+          {
+            "Field": "ProcessPrivateBytes",
+            "DeltaBytes": 5488640,
+            "DeltaMiB": 5.234375
+          },
+          {
+            "Field": "ManagedBytes",
+            "DeltaBytes": -7947960,
+            "DeltaMiB": -7.579765319824219
+          },
+          {
+            "Field": "ManagedAllocatedBytesApproximate",
+            "DeltaBytes": 4583440,
+            "DeltaMiB": 4.3711090087890625
+          },
+          {
+            "Field": "ProcessWorkingSetBytes",
+            "DeltaBytes": 6238208,
+            "DeltaMiB": 5.94921875
+          },
+          {
+            "Field": "ObserverCompletedSampleAllocatedBytes",
+            "DeltaBytes": 14152,
+            "DeltaMiB": 0.01349639892578125
+          }
+        ],
+        "Interpretation": "These are adjacent sequentially sampled counter states, not the timestamp or isolated before/after state of an exact single GC event. Allocations, decoder callbacks, and native work can also occur between the rows."
+      },
+      {
+        "BeforeRowOneBased": 100,
+        "AfterRowOneBased": 101,
+        "SampledBoundarySpanSeconds": 5.016,
+        "BeforeUtc": "2026-09-10T00:03:45.3920000+00:00",
+        "AfterUtc": "2026-09-10T00:03:50.4070000+00:00",
+        "Before": {
+          "ElapsedMilliseconds": 495891,
+          "UtcUnixTimeMilliseconds": 1788998625392,
+          "ItemsCount": 336,
+          "LibraryIsHome": 0,
+          "Gen0Collections": 3,
+          "Gen1Collections": 2,
+          "Gen2Collections": 2,
+          "LastGcIndex": 3,
+          "LastGcHeapSizeBytes": 6815192,
+          "LastGcCommittedBytes": 22790144,
+          "LastGcFragmentedBytes": 47584,
+          "ManagedBytes": 9597280,
+          "ManagedAllocatedBytesApproximate": 33050384,
+          "ProcessPrivateBytes": 242831360,
+          "ProcessWorkingSetBytes": 265039872,
+          "WeakBitmapTrackedCount": 236,
+          "WeakBitmapAliveCount": 51,
+          "DecodeStartedTotal": 290,
+          "DecodeCompletedTotal": 236,
+          "DecodeCanceledTotal": 54,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "After": {
+          "ElapsedMilliseconds": 500907,
+          "UtcUnixTimeMilliseconds": 1788998630407,
+          "ItemsCount": 336,
+          "LibraryIsHome": 0,
+          "Gen0Collections": 4,
+          "Gen1Collections": 3,
+          "Gen2Collections": 3,
+          "LastGcIndex": 4,
+          "LastGcHeapSizeBytes": 5553912,
+          "LastGcCommittedBytes": 24821760,
+          "LastGcFragmentedBytes": 9216,
+          "ManagedBytes": 5824248,
+          "ManagedAllocatedBytesApproximate": 35273704,
+          "ProcessPrivateBytes": 249872384,
+          "ProcessWorkingSetBytes": 272125952,
+          "WeakBitmapTrackedCount": 290,
+          "WeakBitmapAliveCount": 40,
+          "DecodeStartedTotal": 349,
+          "DecodeCompletedTotal": 290,
+          "DecodeCanceledTotal": 59,
+          "DecodeFailedTotal": 0,
+          "DecodeActive": 0
+        },
+        "GenerationCountDeltas": {
+          "Gen0": 1,
+          "Gen1": 1,
+          "Gen2": 1,
+          "LastGcIndex": 1
+        },
+        "ByteMetricDeltas": [
+          {
+            "Field": "ProcessPrivateBytes",
+            "DeltaBytes": 7041024,
+            "DeltaMiB": 6.71484375
+          },
+          {
+            "Field": "ManagedBytes",
+            "DeltaBytes": -3773032,
+            "DeltaMiB": -3.5982437133789062
+          },
+          {
+            "Field": "ManagedAllocatedBytesApproximate",
+            "DeltaBytes": 2223320,
+            "DeltaMiB": 2.1203231811523438
+          },
+          {
+            "Field": "ProcessWorkingSetBytes",
+            "DeltaBytes": 7086080,
+            "DeltaMiB": 6.7578125
+          },
+          {
+            "Field": "ObserverCompletedSampleAllocatedBytes",
+            "DeltaBytes": 14144,
+            "DeltaMiB": 0.01348876953125
+          }
+        ],
+        "Interpretation": "These are adjacent sequentially sampled counter states, not the timestamp or isolated before/after state of an exact single GC event. Allocations, decoder callbacks, and native work can also occur between the rows."
+      }
+    ],
+    "FinalCounts": {
+      "Gen0Collections": 4,
+      "Gen1Collections": 3,
+      "Gen2Collections": 3,
+      "LastGcIndex": 4
+    },
+    "Interpretation": "Four sampled LastGcIndex advances are present: a Gen 2-inclusive collection before library sampling, then Gen 2-inclusive, Gen 0-only, and Gen 2-inclusive changes. Inclusive generation counts must not be summed as ten separate collections. No additional GC is recorded after returning Home.",
+    "LastGcWarning": "LastGcHeapSizeBytes, LastGcFragmentedBytes, and LastGcCommittedBytes describe the most recently reported GC. They are not current live heap, current native memory, or GPU memory. Zero values before index one mean no last-GC data, not an empty heap."
+  },
+  "DecoderAccounting": {
+    "RowsChecked": 154,
+    "UnbalancedRows": 0,
+    "Final": {
+      "DecodeStartedTotal": 440,
+      "DecodeCompletedTotal": 376,
+      "DecodeCanceledTotal": 64,
+      "DecodeFailedTotal": 0,
+      "DecodeActive": 0,
+      "DecodePeak": 40
+    },
+    "Interpretation": "Started equals completed plus canceled plus failed plus active in every row. Active is a sampled managed wrapper-call count; cancellation is managed cancellation handling, not confirmation that native resources were released. Peak 40 is decode-wrapper concurrency, not HTTP permit count."
+  },
+  "NoVideoObservations": {
+    "PresentationClockEnabledValues": [
+      0
+    ],
+    "PresentationClockTicksValues": [
+      0
+    ],
+    "PositionUpdateCallsValues": [
+      0
+    ],
+    "Interpretation": "All presentation-clock and position-update fields remain zero. The fixture playback/media totals are historical and unchanged in the supplied snapshots; there is no new playback activity in these recorded paths."
+  },
+  "FixtureEvidence": {
+    "Snapshots": [
+      {
+        "FileName": "fixture-before.json",
+        "Sha256": "4C9AD354A222BC41E8B2E803D1BB14E019FD4954F73028E5865E25DAE83E755D",
+        "Counters": {
+          "LoginCount": 2,
+          "PlaybackInfoCount": 3,
+          "StartCount": 3,
+          "ProgressCount": 58,
+          "StopCount": 3,
+          "MediaRequests": 30,
+          "RangeRequests": 30,
+          "PartialResponses": 30,
+          "EncodingCleanups": 0,
+          "AuthenticationFailures": 0,
+          "QueryCount": 19,
+          "ImageRequests": 261,
+          "ActiveImages": 0,
+          "PeakActiveImages": 5,
+          "CompletedImages": 247,
+          "CanceledImages": 14,
+          "ImageBytesServed": 2143072
+        },
+        "ImageAccountingResidual": 0
+      },
+      {
+        "FileName": "fixture-after-six-pages.json",
+        "Sha256": "C215B4C629585E82A484C2416A0B3CD6341037AAB606AFD2A65AF04608A9384E",
+        "Counters": {
+          "LoginCount": 2,
+          "PlaybackInfoCount": 3,
+          "StartCount": 3,
+          "ProgressCount": 58,
+          "StopCount": 3,
+          "MediaRequests": 30,
+          "RangeRequests": 30,
+          "PartialResponses": 30,
+          "EncodingCleanups": 0,
+          "AuthenticationFailures": 0,
+          "QueryCount": 26,
+          "ImageRequests": 374,
+          "ActiveImages": 4,
+          "PeakActiveImages": 5,
+          "CompletedImages": 314,
+          "CanceledImages": 56,
+          "ImageBytesServed": 2733392
+        },
+        "ImageAccountingResidual": 0
+      },
+      {
+        "FileName": "fixture-home-return.json",
+        "Sha256": "E7DD3812DF5D81D65838EC072D2A201BB8330A976318A387EE5CB67897011E5B",
+        "Counters": {
+          "LoginCount": 2,
+          "PlaybackInfoCount": 3,
+          "StartCount": 3,
+          "ProgressCount": 58,
+          "StopCount": 3,
+          "MediaRequests": 30,
+          "RangeRequests": 30,
+          "PartialResponses": 30,
+          "EncodingCleanups": 0,
+          "AuthenticationFailures": 0,
+          "QueryCount": 28,
+          "ImageRequests": 666,
+          "ActiveImages": 0,
+          "PeakActiveImages": 5,
+          "CompletedImages": 435,
+          "CanceledImages": 231,
+          "ImageBytesServed": 3809971
+        },
+        "ImageAccountingResidual": 0
+      },
+      {
+        "FileName": "fixture-after-passive-home.json",
+        "Sha256": "E7DD3812DF5D81D65838EC072D2A201BB8330A976318A387EE5CB67897011E5B",
+        "Counters": {
+          "LoginCount": 2,
+          "PlaybackInfoCount": 3,
+          "StartCount": 3,
+          "ProgressCount": 58,
+          "StopCount": 3,
+          "MediaRequests": 30,
+          "RangeRequests": 30,
+          "PartialResponses": 30,
+          "EncodingCleanups": 0,
+          "AuthenticationFailures": 0,
+          "QueryCount": 28,
+          "ImageRequests": 666,
+          "ActiveImages": 0,
+          "PeakActiveImages": 5,
+          "CompletedImages": 435,
+          "CanceledImages": 231,
+          "ImageBytesServed": 3809971
+        },
+        "ImageAccountingResidual": 0
+      }
+    ],
+    "NewQueriesAfterBeforeSnapshot": [
+      {
+        "Sequence": 20,
+        "Operation": "Resume",
+        "StartIndex": 0,
+        "Limit": 48,
+        "ReturnedItems": 2,
+        "TotalRecordCount": 2,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T07:55:29.5145185+08:00"
+      },
+      {
+        "Sequence": 21,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 0,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:01:29.7020517+08:00"
+      },
+      {
+        "Sequence": 22,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 48,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:01:42.8123675+08:00"
+      },
+      {
+        "Sequence": 23,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 96,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:01:50.3420452+08:00"
+      },
+      {
+        "Sequence": 24,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 144,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:01:57.0239712+08:00"
+      },
+      {
+        "Sequence": 25,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 192,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:02:02.7607473+08:00"
+      },
+      {
+        "Sequence": 26,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 240,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:02:10.8713128+08:00"
+      },
+      {
+        "Sequence": 27,
+        "Operation": "Items",
+        "ParentId": "large-movies",
+        "StartIndex": 288,
+        "Limit": 48,
+        "ReturnedItems": 48,
+        "TotalRecordCount": 5000,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:02:48.3600017+08:00"
+      },
+      {
+        "Sequence": 28,
+        "Operation": "Resume",
+        "StartIndex": 0,
+        "Limit": 48,
+        "ReturnedItems": 2,
+        "TotalRecordCount": 2,
+        "HasSearch": false,
+        "Timestamp": "2026-09-10T08:04:12.5745675+08:00"
+      }
+    ],
+    "SixPageOffsets": [
+      0,
+      48,
+      96,
+      144,
+      192,
+      240
+    ],
+    "SixPageReturnedRecords": 288.0,
+    "ActualLargeLibraryOffsets": [
+      0,
+      48,
+      96,
+      144,
+      192,
+      240,
+      288
+    ],
+    "ActualPageCount": 7,
+    "ActualReturnedRecords": 336.0,
+    "TotalServerLibraryRecords": [
+      5000
+    ],
+    "HomeSnapshotCounterComparisons": [
+      {
+        "Field": "LoginCount",
+        "ReturnValue": 2,
+        "LaterValue": 2,
+        "Delta": 0
+      },
+      {
+        "Field": "PlaybackInfoCount",
+        "ReturnValue": 3,
+        "LaterValue": 3,
+        "Delta": 0
+      },
+      {
+        "Field": "StartCount",
+        "ReturnValue": 3,
+        "LaterValue": 3,
+        "Delta": 0
+      },
+      {
+        "Field": "ProgressCount",
+        "ReturnValue": 58,
+        "LaterValue": 58,
+        "Delta": 0
+      },
+      {
+        "Field": "StopCount",
+        "ReturnValue": 3,
+        "LaterValue": 3,
+        "Delta": 0
+      },
+      {
+        "Field": "MediaRequests",
+        "ReturnValue": 30,
+        "LaterValue": 30,
+        "Delta": 0
+      },
+      {
+        "Field": "RangeRequests",
+        "ReturnValue": 30,
+        "LaterValue": 30,
+        "Delta": 0
+      },
+      {
+        "Field": "PartialResponses",
+        "ReturnValue": 30,
+        "LaterValue": 30,
+        "Delta": 0
+      },
+      {
+        "Field": "EncodingCleanups",
+        "ReturnValue": 0,
+        "LaterValue": 0,
+        "Delta": 0
+      },
+      {
+        "Field": "AuthenticationFailures",
+        "ReturnValue": 0,
+        "LaterValue": 0,
+        "Delta": 0
+      },
+      {
+        "Field": "QueryCount",
+        "ReturnValue": 28,
+        "LaterValue": 28,
+        "Delta": 0
+      },
+      {
+        "Field": "ImageRequests",
+        "ReturnValue": 666,
+        "LaterValue": 666,
+        "Delta": 0
+      },
+      {
+        "Field": "ActiveImages",
+        "ReturnValue": 0,
+        "LaterValue": 0,
+        "Delta": 0
+      },
+      {
+        "Field": "PeakActiveImages",
+        "ReturnValue": 5,
+        "LaterValue": 5,
+        "Delta": 0
+      },
+      {
+        "Field": "CompletedImages",
+        "ReturnValue": 435,
+        "LaterValue": 435,
+        "Delta": 0
+      },
+      {
+        "Field": "CanceledImages",
+        "ReturnValue": 231,
+        "LaterValue": 231,
+        "Delta": 0
+      },
+      {
+        "Field": "ImageBytesServed",
+        "ReturnValue": 3809971,
+        "LaterValue": 3809971,
+        "Delta": 0
+      }
+    ],
+    "BeforeToFinalCounterDeltas": [
+      {
+        "Field": "LoginCount",
+        "Delta": 0
+      },
+      {
+        "Field": "PlaybackInfoCount",
+        "Delta": 0
+      },
+      {
+        "Field": "StartCount",
+        "Delta": 0
+      },
+      {
+        "Field": "ProgressCount",
+        "Delta": 0
+      },
+      {
+        "Field": "StopCount",
+        "Delta": 0
+      },
+      {
+        "Field": "MediaRequests",
+        "Delta": 0
+      },
+      {
+        "Field": "RangeRequests",
+        "Delta": 0
+      },
+      {
+        "Field": "PartialResponses",
+        "Delta": 0
+      },
+      {
+        "Field": "EncodingCleanups",
+        "Delta": 0
+      },
+      {
+        "Field": "AuthenticationFailures",
+        "Delta": 0
+      },
+      {
+        "Field": "QueryCount",
+        "Delta": 9
+      },
+      {
+        "Field": "ImageRequests",
+        "Delta": 405
+      },
+      {
+        "Field": "ActiveImages",
+        "Delta": 0
+      },
+      {
+        "Field": "PeakActiveImages",
+        "Delta": 0
+      },
+      {
+        "Field": "CompletedImages",
+        "Delta": 188
+      },
+      {
+        "Field": "CanceledImages",
+        "Delta": 217
+      },
+      {
+        "Field": "ImageBytesServed",
+        "Delta": 1666899
+      }
+    ],
+    "Interpretation": "The six-page snapshot records offsets 0 through 240 and 288 returned records. The later query at offset 288 adds a seventh page, for 336 records. Operator observation attributes it to automatic incremental loading at the prior list end. Before-to-final query delta nine includes the initial Home Resume query, seven library pages, and the returned-Home Resume query. Fixture snapshot baselines are not the exact process-sample boundaries.",
+    "HomeScope": "Both Home fixture snapshots record QueryCount 28, ImageRequests 666, CompletedImages 435, CanceledImages 231, ActiveImages zero, and historical PeakActiveImages five. The unchanged cumulative image/query counters bound new activity in those routes between the snapshots; they do not describe every HTTP route or native allocation. The earlier six-page snapshot has four active images and is not a settled HTTP baseline."
+  },
+  "ScreenshotMetadata": {
+    "FileName": "observations.json",
+    "Sha256": "0FEE721925C26747AA95B12BA581AC2DA1D8E3849B9F56FCB12E3D6DDDC0925A",
+    "Entries": 11,
+    "RequestedTextValues": [
+      false
+    ],
+    "Observations": [
+      {
+        "Name": "01-home-before-library",
+        "ArchivedAtUtc": "2026-09-10T00:01:00.742Z",
+        "FileName": "01-home-before-library.jpg",
+        "Sha256": "2b10fd66bdbd5ecac11e12f8cfdc64ceb4e9462f133389b69c4f2d96ff7b11bd",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Connected Home with two synthetic continue-watching posters; no playback is open."
+      },
+      {
+        "Name": "02-six-pages-top",
+        "ArchivedAtUtc": "2026-09-10T00:02:23.628Z",
+        "FileName": "02-six-pages-top.jpg",
+        "Sha256": "714ef548c8c44c74b493a4ef801202351772b2cbec621da808108ffe12bc534b",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Top of the large library after five Load more actions; subsequent numeric log confirms the loaded item count."
+      },
+      {
+        "Name": "03-scroll-items-21",
+        "ArchivedAtUtc": "2026-09-10T00:02:33.189Z",
+        "FileName": "03-scroll-items-21.jpg",
+        "Sha256": "9a95f96d035cb2d2c0188edcf324f489d1ba84b81722e72b38a4c321ce9d8173",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "The first downward scroll displays synthetic items 21 through 30 with posters."
+      },
+      {
+        "Name": "04-items-206-settled",
+        "ArchivedAtUtc": "2026-09-10T00:02:48.08Z",
+        "FileName": "04-items-206-settled.jpg",
+        "Sha256": "befa86eab381389227888d5425fcd0ceeaf21dd61ee11b034cfab25d86c82fff",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Items 206 through 210 show decoded synthetic posters after the initially visible placeholders."
+      },
+      {
+        "Name": "05-bottom-triggered-more",
+        "ArchivedAtUtc": "2026-09-10T00:03:17.343Z",
+        "FileName": "05-bottom-triggered-more.jpg",
+        "Sha256": "0f96433b2a53e42b9ddb84b4105339d803ec5bd0e6c5522c8acb38c88698293c",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Posters near item 288 recovered; reaching the prior end also triggered automatic incremental loading, bringing the later numeric sample to 336 items."
+      },
+      {
+        "Name": "06-revisit-top-1",
+        "ArchivedAtUtc": "2026-09-10T00:03:38.602Z",
+        "FileName": "06-revisit-top-1.jpg",
+        "Sha256": "3387f4138e042eaca337577d4e6e14fd312c127e2b54a644d437aa83fba5c54b",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "First top revisit restored all visible posters."
+      },
+      {
+        "Name": "07-revisit-middle-1",
+        "ArchivedAtUtc": "2026-09-10T00:03:47.59Z",
+        "FileName": "07-revisit-middle-1.jpg",
+        "Sha256": "4b41e79a4f310a8a891c9f73a7131ec2c50392ff269869ef25f4baeeff3723b5",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Items 181 through 190 show posters on the first middle revisit."
+      },
+      {
+        "Name": "08-revisit-top-2",
+        "ArchivedAtUtc": "2026-09-10T00:03:55.62Z",
+        "FileName": "08-revisit-top-2.jpg",
+        "Sha256": "d604354fb8eea5b3b2d879ea50ec61cd059ca81eee50e892ca49ae593722a47b",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Second top revisit shows the expected visible posters."
+      },
+      {
+        "Name": "09-revisit-middle-2",
+        "ArchivedAtUtc": "2026-09-10T00:04:02.654Z",
+        "FileName": "09-revisit-middle-2.jpg",
+        "Sha256": "df21033ae34f4b9e6000431adc03a6c3706635c783ff78bfede75ff91825c939",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Second middle revisit shows the expected visible posters around items 181 through 190."
+      },
+      {
+        "Name": "10-revisit-top-3",
+        "ArchivedAtUtc": "2026-09-10T00:04:12.476Z",
+        "FileName": "10-revisit-top-3.jpg",
+        "Sha256": "3db681875a19dd22e80bc049874cb3cf8589d9cc0f449eaae845ba232fa0d740",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Third top revisit shows the expected visible posters before leaving the large library."
+      },
+      {
+        "Name": "11-home-after-library",
+        "ArchivedAtUtc": "2026-09-10T00:04:32.835Z",
+        "FileName": "11-home-after-library.jpg",
+        "Sha256": "efa91bd94c4c4b43bc7a757ea479beb6edced34734668cc9e5c3d086b2d5f6d4",
+        "WindowId": 1837968,
+        "Width": 1268,
+        "Height": 834,
+        "TextRequested": false,
+        "EnglishObservation": "Home shows both synthetic continue-watching posters after leaving the large library; no player was opened during this segment."
+      }
+    ],
+    "Interpretation": "ArchivedAtUtc is evidence save time, not screenshot capture time or exact action time. Operator descriptions provide separate visual context; this numeric analysis did not inspect or recapture the JPG pixels and does not align screenshots to individual process samples."
+  },
+  "InterpretationAndLimits": [
+    "The library phase spans 33 actual rows over 160.391 seconds and grows from 48 to 336 loaded records. Its private-memory delta is 116,232,192 bytes, while cumulative managed allocation grows by 29,576,656 bytes. These different scopes do not identify a managed/native allocation split or a leak root cause.",
+    "After the returned-Home thirty-second exclusion, 43 rows span 210.273 seconds. Private bytes decrease by 1,314,816 and working set by 1,269,760, while ManagedBytes increases by 722,256 and approximate cumulative managed allocation by 672,136. This short decline is an observation, not a long-term plateau or a completed memory acceptance gate.",
+    "All returned-Home poster callback/decode totals remain unchanged. There are 440 started decoder-helper calls, 376 completions, 64 cancellations, zero failures, and zero sampled active calls. The lack of new callback work is distinct from the lifetime of objects previously created.",
+    "The final library sample has 40 bound Sources; every returned-Home row has two. Forty-six images remain subscribed and loaded, so 44 subscribed images have null Source in those Home rows. This supports the scoped old-source cleanup path; it does not prove native texture destruction or a full object census.",
+    "AttachedPosterControlsCount only means a GridViewItem ancestor was found. RealizedPosterControlsCount only means that ancestor remains in the application realization table. The Home values 46 attached and two tracked realizations do not establish viewport visibility, attachment to the current MediaGrid/XamlRoot, or an independent native container count.",
+    "Forty-seven weakly tracked Image wrappers persist for 336 loaded records, compatible with container reuse rather than one control per record. The weak BitmapImage cohort has 376 tracked entries and 126 resolving targets, with no evictions. The 250 non-resolving targets do not identify native deallocations, and the remaining 126 cannot be classified as leaks or as survivors of the latest Gen 2 collection: new decodes occurred after that collection.",
+    "The last reported GC at index four has heap size 5,553,912 bytes, fragmented bytes 9,216, and committed bytes 24,821,760. These remain unchanged during Home because there is no newer GC. The later ManagedBytes values include allocations since that GC and potentially unreachable objects awaiting collection.",
+    "During some GC-adjacent sample intervals, new bitmaps are decoded while weak target counts fall. Adjacent sample deltas therefore combine collection, new allocations, asynchronous callbacks, and other process work; they are not isolated per-GC release measurements.",
+    "The post-exclusion Home observer allocation estimate rises by 548,880 bytes. It counts prior completed synchronous sampling on the current thread and omits other observer callbacks, asynchronous tasks, native work, and other threads. It must not be subtracted as complete observation overhead.",
+    "CPU is whole-process cumulative CPU, reported relative to one logical core. The library phase includes navigation, scrolling, image work, and the observer; it is not a decoder benchmark. Process memory and GC fields are read sequentially and are not atomic snapshots.",
+    "The finite source ends at elapsed 766.276 seconds. Later live records were not read. Initial Home, library, and returned Home differ in cached content and prior activity; no strict performance A/B against earlier executables is established.",
+    "Only seven pages and the recorded revisit sequence are covered. No claim is made that all 5,000 records were rendered, that five complete revisit cycles were performed, or that playback was exercised. The visual metadata records three top revisits and two middle revisits.",
+    "No app, build, test suite, desktop control, network request, or forced GC was run by this frozen-file analysis, and no product or previous evidence file was changed."
+  ],
+  "SupportedConclusion": "The observed Home return stops new poster/decode work and reduces bound Sources to the two Home posters. Its short process-memory tail falls while managed allocation continues without a new GC. This strengthens scoped cleanup evidence but leaves long-term memory stability and native allocation ownership unproven."
+}

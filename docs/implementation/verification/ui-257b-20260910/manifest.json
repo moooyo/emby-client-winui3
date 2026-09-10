@@ -1,0 +1,156 @@
+{
+  "Scope": "Immutable 257B synthetic-library visual and numeric prefixes; no completed app exit or long-term memory acceptance",
+  "BytePreservation": "Directory attributes preserve evidence bytes without text conversion; JSONL and JPEG are binary",
+  "Files": [
+    {
+      "File": ".gitattributes",
+      "Bytes": 48,
+      "Sha256": "0d8e87d86c7b3d8727873ebd575b5a35e0b38a92fc0a1f0710c817d53e3d27db"
+    },
+    {
+      "File": "01-home-before-library.jpg",
+      "Bytes": 63428,
+      "Sha256": "2b10fd66bdbd5ecac11e12f8cfdc64ceb4e9462f133389b69c4f2d96ff7b11bd"
+    },
+    {
+      "File": "02-six-pages-top.jpg",
+      "Bytes": 100265,
+      "Sha256": "714ef548c8c44c74b493a4ef801202351772b2cbec621da808108ffe12bc534b"
+    },
+    {
+      "File": "03-scroll-items-21.jpg",
+      "Bytes": 103883,
+      "Sha256": "9a95f96d035cb2d2c0188edcf324f489d1ba84b81722e72b38a4c321ce9d8173"
+    },
+    {
+      "File": "04-items-206-settled.jpg",
+      "Bytes": 103951,
+      "Sha256": "befa86eab381389227888d5425fcd0ceeaf21dd61ee11b034cfab25d86c82fff"
+    },
+    {
+      "File": "05-bottom-triggered-more.jpg",
+      "Bytes": 104770,
+      "Sha256": "0f96433b2a53e42b9ddb84b4105339d803ec5bd0e6c5522c8acb38c88698293c"
+    },
+    {
+      "File": "06-revisit-top-1.jpg",
+      "Bytes": 100587,
+      "Sha256": "3387f4138e042eaca337577d4e6e14fd312c127e2b54a644d437aa83fba5c54b"
+    },
+    {
+      "File": "07-revisit-middle-1.jpg",
+      "Bytes": 105653,
+      "Sha256": "4b41e79a4f310a8a891c9f73a7131ec2c50392ff269869ef25f4baeeff3723b5"
+    },
+    {
+      "File": "08-revisit-top-2.jpg",
+      "Bytes": 100670,
+      "Sha256": "d604354fb8eea5b3b2d879ea50ec61cd059ca81eee50e892ca49ae593722a47b"
+    },
+    {
+      "File": "09-revisit-middle-2.jpg",
+      "Bytes": 105679,
+      "Sha256": "df21033ae34f4b9e6000431adc03a6c3706635c783ff78bfede75ff91825c939"
+    },
+    {
+      "File": "10-revisit-top-3.jpg",
+      "Bytes": 100632,
+      "Sha256": "3db681875a19dd22e80bc049874cb3cf8589d9cc0f449eaae845ba232fa0d740"
+    },
+    {
+      "File": "11-home-after-library.jpg",
+      "Bytes": 65063,
+      "Sha256": "efa91bd94c4c4b43bc7a757ea479beb6edced34734668cc9e5c3d086b2d5f6d4"
+    },
+    {
+      "File": "Analyze-LibraryHome.ps1",
+      "Bytes": 22542,
+      "Sha256": "19f23ebf37866c54588a5b73fdaae6a094264fa85a1ad68b9658fc3f26c56e53"
+    },
+    {
+      "File": "desktop-release.json",
+      "Bytes": 269,
+      "Sha256": "5f8a629b43dbe509e5a2652b2e2e70f82e0e1c1f796e9c420ca7c8e9a6494346"
+    },
+    {
+      "File": "fixture-after-passive-home.json",
+      "Bytes": 25405,
+      "Sha256": "e7dd3812df5d81d65838ec072d2a201bb8330a976318a387ee5cb67897011e5b"
+    },
+    {
+      "File": "fixture-after-six-pages.json",
+      "Bytes": 24860,
+      "Sha256": "c215b4c629585e82a484c2416a0b3cd6341037aab606afd2a65af04608a9384e"
+    },
+    {
+      "File": "fixture-before.json",
+      "Bytes": 22860,
+      "Sha256": "4c9ad354a222bc41e8b2e803d1bb14e019fd4954f73028e5865e25dae83e755d"
+    },
+    {
+      "File": "fixture-home-return.json",
+      "Bytes": 25405,
+      "Sha256": "e7dd3812df5d81d65838ec072d2a201bb8330a976318a387ee5cb67897011e5b"
+    },
+    {
+      "File": "home-before-desktop-analysis.json",
+      "Bytes": 17024,
+      "Sha256": "a82c23f08670842c7b5b5121676683862eea1c3cde22183c761897745c174fcb"
+    },
+    {
+      "File": "home-before-desktop.json",
+      "Bytes": 4044,
+      "Sha256": "b343074c8db70b270f8a1a0ecd9b9d05410316288b6137c1c3e126db45a50500"
+    },
+    {
+      "File": "home-before-desktop.jsonl",
+      "Bytes": 84866,
+      "Sha256": "cc35e5f68455721d18c3bcf4fe202a41fb3e36f500865d4d8a1700163aae5b89"
+    },
+    {
+      "File": "home-return.json",
+      "Bytes": 295,
+      "Sha256": "ba78521d3f976343a656863950689f475e33e548bf53c7d7f250b5b063ffd8a4"
+    },
+    {
+      "File": "home-tail-crosscheck.json",
+      "Bytes": 2930,
+      "Sha256": "7e3814bbcd68e0383c10cc2bb7f57ddaee4b25299c18dff1eaf4f2f16983440a"
+    },
+    {
+      "File": "input-identity-after-desktop.json",
+      "Bytes": 255,
+      "Sha256": "481b72a4dcbf1157f7b2c92a75505995dabf81cc43a93c37f70b395328529802"
+    },
+    {
+      "File": "library-home-analysis.json",
+      "Bytes": 80487,
+      "Sha256": "2a8c5c7936060fee0f78af11221ffd9d9e2fb05fb161675cb33a175e990ee71b"
+    },
+    {
+      "File": "library-home-snapshot.json",
+      "Bytes": 4031,
+      "Sha256": "0b12e7a9249cabf24f7e321249ba20c3e44ac2a9b161dbddc0730dec7e993d46"
+    },
+    {
+      "File": "library-home-snapshot.jsonl",
+      "Bytes": 218155,
+      "Sha256": "72b564891d249b134e2acd51002dc2a154472b57a6e41eff142b3bf679a0eefd"
+    },
+    {
+      "File": "observations.json",
+      "Bytes": 4690,
+      "Sha256": "0fee721925c26747aa95b12ba581ac2da1d8e3849b9f56fcb12e3d6dddc0925a"
+    },
+    {
+      "File": "source-interpretation.md",
+      "Bytes": 2537,
+      "Sha256": "2dd0be5dba92992e76cccd6654915e556de0382c001783f7dcd6bf0765557141"
+    },
+    {
+      "File": "summary.json",
+      "Bytes": 4419,
+      "Sha256": "480c4f24b52c98c440eb02f554fe060678ca4a5756315403fefa4b6c7c04b620"
+    }
+  ]
+}

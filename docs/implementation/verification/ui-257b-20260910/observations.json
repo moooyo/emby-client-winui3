@@ -1,0 +1,123 @@
+[
+  {
+    "Name": "01-home-before-library",
+    "ArchivedAtUtc": "2026-09-10T00:01:00.742Z",
+    "FileName": "01-home-before-library.jpg",
+    "Sha256": "2b10fd66bdbd5ecac11e12f8cfdc64ceb4e9462f133389b69c4f2d96ff7b11bd",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Connected Home with two synthetic continue-watching posters; no playback is open."
+  },
+  {
+    "Name": "02-six-pages-top",
+    "ArchivedAtUtc": "2026-09-10T00:02:23.628Z",
+    "FileName": "02-six-pages-top.jpg",
+    "Sha256": "714ef548c8c44c74b493a4ef801202351772b2cbec621da808108ffe12bc534b",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Top of the large library after five Load more actions; subsequent numeric log confirms the loaded item count."
+  },
+  {
+    "Name": "03-scroll-items-21",
+    "ArchivedAtUtc": "2026-09-10T00:02:33.189Z",
+    "FileName": "03-scroll-items-21.jpg",
+    "Sha256": "9a95f96d035cb2d2c0188edcf324f489d1ba84b81722e72b38a4c321ce9d8173",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "The first downward scroll displays synthetic items 21 through 30 with posters."
+  },
+  {
+    "Name": "04-items-206-settled",
+    "ArchivedAtUtc": "2026-09-10T00:02:48.080Z",
+    "FileName": "04-items-206-settled.jpg",
+    "Sha256": "befa86eab381389227888d5425fcd0ceeaf21dd61ee11b034cfab25d86c82fff",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Items 206 through 210 show decoded synthetic posters after the initially visible placeholders."
+  },
+  {
+    "Name": "05-bottom-triggered-more",
+    "ArchivedAtUtc": "2026-09-10T00:03:17.343Z",
+    "FileName": "05-bottom-triggered-more.jpg",
+    "Sha256": "0f96433b2a53e42b9ddb84b4105339d803ec5bd0e6c5522c8acb38c88698293c",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Posters near item 288 recovered; reaching the prior end also triggered automatic incremental loading, bringing the later numeric sample to 336 items."
+  },
+  {
+    "Name": "06-revisit-top-1",
+    "ArchivedAtUtc": "2026-09-10T00:03:38.602Z",
+    "FileName": "06-revisit-top-1.jpg",
+    "Sha256": "3387f4138e042eaca337577d4e6e14fd312c127e2b54a644d437aa83fba5c54b",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "First top revisit restored all visible posters."
+  },
+  {
+    "Name": "07-revisit-middle-1",
+    "ArchivedAtUtc": "2026-09-10T00:03:47.590Z",
+    "FileName": "07-revisit-middle-1.jpg",
+    "Sha256": "4b41e79a4f310a8a891c9f73a7131ec2c50392ff269869ef25f4baeeff3723b5",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Items 181 through 190 show posters on the first middle revisit."
+  },
+  {
+    "Name": "08-revisit-top-2",
+    "ArchivedAtUtc": "2026-09-10T00:03:55.620Z",
+    "FileName": "08-revisit-top-2.jpg",
+    "Sha256": "d604354fb8eea5b3b2d879ea50ec61cd059ca81eee50e892ca49ae593722a47b",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Second top revisit shows the expected visible posters."
+  },
+  {
+    "Name": "09-revisit-middle-2",
+    "ArchivedAtUtc": "2026-09-10T00:04:02.654Z",
+    "FileName": "09-revisit-middle-2.jpg",
+    "Sha256": "df21033ae34f4b9e6000431adc03a6c3706635c783ff78bfede75ff91825c939",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Second middle revisit shows the expected visible posters around items 181 through 190."
+  },
+  {
+    "Name": "10-revisit-top-3",
+    "ArchivedAtUtc": "2026-09-10T00:04:12.476Z",
+    "FileName": "10-revisit-top-3.jpg",
+    "Sha256": "3db681875a19dd22e80bc049874cb3cf8589d9cc0f449eaae845ba232fa0d740",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Third top revisit shows the expected visible posters before leaving the large library."
+  },
+  {
+    "Name": "11-home-after-library",
+    "ArchivedAtUtc": "2026-09-10T00:04:32.835Z",
+    "FileName": "11-home-after-library.jpg",
+    "Sha256": "efa91bd94c4c4b43bc7a757ea479beb6edced34734668cc9e5c3d086b2d5f6d4",
+    "WindowId": 1837968,
+    "Width": 1268,
+    "Height": 834,
+    "TextRequested": false,
+    "EnglishObservation": "Home shows both synthetic continue-watching posters after leaving the large library; no player was opened during this segment."
+  }
+]

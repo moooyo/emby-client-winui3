@@ -1,0 +1,138 @@
+{
+  "Rows": 43,
+  "StartElapsed": 556003,
+  "EndElapsed": 766276,
+  "SpanSeconds": 210.273,
+  "Metrics": [
+    {
+      "Field": "ProcessPrivateBytes",
+      "First": 265576448,
+      "Last": 264261632,
+      "Delta": -1314816,
+      "Min": 264261632.0,
+      "Max": 265609216.0
+    },
+    {
+      "Field": "ManagedBytes",
+      "First": 11917424,
+      "Last": 12639680,
+      "Delta": 722256,
+      "Min": 11917424.0,
+      "Max": 12639680.0
+    },
+    {
+      "Field": "ManagedAllocatedBytesApproximate",
+      "First": 41355312,
+      "Last": 42027448,
+      "Delta": 672136,
+      "Min": 41355312.0,
+      "Max": 42027448.0
+    },
+    {
+      "Field": "ProcessWorkingSetBytes",
+      "First": 287846400,
+      "Last": 286576640,
+      "Delta": -1269760,
+      "Min": 286568448.0,
+      "Max": 287846400.0
+    },
+    {
+      "Field": "ProcessHandleCount",
+      "First": 1385,
+      "Last": 1259,
+      "Delta": -126,
+      "Min": 1257.0,
+      "Max": 1385.0
+    },
+    {
+      "Field": "ProcessCpuMilliseconds",
+      "First": 99531,
+      "Last": 100265,
+      "Delta": 734,
+      "Min": 99531.0,
+      "Max": 100265.0
+    },
+    {
+      "Field": "PosterSubscriptionsCount",
+      "First": 46,
+      "Last": 46,
+      "Delta": 0,
+      "Min": 46.0,
+      "Max": 46.0
+    },
+    {
+      "Field": "BoundPosterSourcesCount",
+      "First": 2,
+      "Last": 2,
+      "Delta": 0,
+      "Min": 2.0,
+      "Max": 2.0
+    },
+    {
+      "Field": "WeakImageAliveCount",
+      "First": 47,
+      "Last": 47,
+      "Delta": 0,
+      "Min": 47.0,
+      "Max": 47.0
+    },
+    {
+      "Field": "WeakBitmapAliveCount",
+      "First": 126,
+      "Last": 126,
+      "Delta": 0,
+      "Min": 126.0,
+      "Max": 126.0
+    },
+    {
+      "Field": "Gen0Collections",
+      "First": 4,
+      "Last": 4,
+      "Delta": 0,
+      "Min": 4.0,
+      "Max": 4.0
+    },
+    {
+      "Field": "Gen1Collections",
+      "First": 3,
+      "Last": 3,
+      "Delta": 0,
+      "Min": 3.0,
+      "Max": 3.0
+    },
+    {
+      "Field": "Gen2Collections",
+      "First": 3,
+      "Last": 3,
+      "Delta": 0,
+      "Min": 3.0,
+      "Max": 3.0
+    },
+    {
+      "Field": "DecodeStartedTotal",
+      "First": 440,
+      "Last": 440,
+      "Delta": 0,
+      "Min": 440.0,
+      "Max": 440.0
+    },
+    {
+      "Field": "DecodeCompletedTotal",
+      "First": 376,
+      "Last": 376,
+      "Delta": 0,
+      "Min": 376.0,
+      "Max": 376.0
+    },
+    {
+      "Field": "DecodeCanceledTotal",
+      "First": 64,
+      "Last": 64,
+      "Delta": 0,
+      "Min": 64.0,
+      "Max": 64.0
+    }
+  ],
+  "Method": "Independent PowerShell calculation over the immutable prefix",
+  "DiscardedAttempt": "The prior console-only calculation used a reserved PowerShell variable and failed; none of its empty output is treated as evidence"
+}

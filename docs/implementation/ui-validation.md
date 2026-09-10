@@ -149,6 +149,14 @@ The tool rejected one stale screenshot ID after leaving fullscreen; fresh observ
 
 Actual late pointer release after capture loss/replacement, failed detail loading and Retry loading item, queue-head edits while details load, whole-app closure during a proven Opening interval, and slow-cleanup sign-out/close overlap remain unverified here. The fixture has no media-opening delay, failed-detail mode, or slow-cleanup control; ordinary successful paths cannot certify those boundaries. No new HLS, audio/version, ASS/font, PGS, external-subtitle, progressive native-failure, or concurrent-disposal fault result was obtained. Their existing automated and historical native evidence retains its original scope.
 
+## Session-triggered library observation: 257B0F46
+
+The separately instrumented schema 3 Native AOT executable `257B0F462E2B0D45C34EB6632E2C29EDF184310047905FC48BC069D5E3212CBE`, PID 20760, has a [retained receipt](verification/ui-257b-20260910/summary.json), eleven original screenshots, and an immutable 154-row numeric prefix. It was connected to the existing port 18962 synthetic fixture when desktop work resumed. Authentication controls were not automated. The first capture shows Home with both continue-watching posters.
+
+Five Load more actions followed the initial page. Scrolling to the loaded end triggered one further page, for seven offsets from 0 through 288 and 336 total loaded records. The sampled late-list placeholders recovered to posters. Three top revisits, two middle revisits, and return to Home all showed the expected synthetic posters. This finite sequence does not certify all 5,000 records. No video, account change, sign-out, or window close was performed; the playback repetition proposed before this batch was deferred to preserve the library-only sample.
+
+After saving the final Home capture, desktop release was recorded at 2026-09-10 00:04:32 UTC and Computer Use was immediately reset. No further automated desktop calls were issued; user activity after release was not observed. The already-running logger supplied the subsequent passive tail. [Memory analysis](large-library-validation.md#session-triggered-257b-library-and-home-observation) records a 1.2539 MiB private-byte decline over the settled 210.273-second Home tail, with no new decodes or GC. That finite decrease does not resolve the previous memory gate or identify retained bitmap/native owners. The application remained open; this receipt makes no process-exit assertion.
+
 ## Remaining final-build acceptance
 
 An earlier relay/SMTC application checkpoint, executable SHA-256 `2ED8644A666DBDA41178171B802E15D1856F680D23C99EBBA2D19C68501FDA4C`, displayed real original video and closed its playing window without an observed crash dialog. The native probe independently checked SMTC Playing, Paused, and retired state. The automation tool did not support the physical media-key input, so that input path has not been established.
