@@ -1,0 +1,38 @@
+{
+  "dateUtc": "2026-09-10T02:55:19Z",
+  "scope": "Transactional browse filters and season selection",
+  "environment": {
+    "host": "test-env",
+    "os": "Debian Linux x64",
+    "sdk": "10.0.301",
+    "workspace": "/tmp/emby-ui-fluent2-20260910",
+    "localVerificationPerformedByThisAgent": false
+  },
+  "temporaryLibraryFlowHarness": {
+    "status": "passed",
+    "total": 12,
+    "newTransactionalCases": 6,
+    "existingLibraryFlowCases": 4,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "Actual LibraryViewModel, MediaCardViewModel, MediaShelfViewModel, ImageCache, API and CommunityToolkit.Mvvm in a temporary net10.0 xUnit harness with only the WinUI Visibility enum stubbed. Synthetic HttpMessageHandler responses; no real Emby server or Windows UI was contacted.",
+    "cases": [
+      "Pending filters retain Items, Subtitle and CollectionRevision; identical IDs commit without Reset and preserve card references",
+      "The latest filter wins when an older server response arrives after it",
+      "Failed filters restore public options and subsequent paging uses the committed query",
+      "Returning to committed options rejects an older pending result and preserves card references",
+      "Pending and failed season changes preserve episode and playback objects and restore the committed selected season",
+      "Successful season selection publishes CollectionRevision only after episodes, selected season and playback target are committed",
+      "Initial season loading disables season selection, ignores another-season selection without making a request, then enables selection after success; a later failed selection retains committed episodes and playback",
+      "Initial season failure restores selection availability and selecting another season successfully recovers"
+    ],
+    "warnings": "Existing temporary tests emit xUnit1051 suggestions for calls using the default CancellationToken. The six transactional tests and two initial-season tests use the test cancellation token.",
+    "initialSeasonGuardCases": 2
+  },
+  "sourceSha256": {
+    "LibraryViewModel.cs": "11ebbe6a4a57a1c0d4c4fb6d011bb3525ff3ad41169d6932459750348d9ab943",
+    "LibraryTransactionalFlowTests.cs": "0088ab1295b0a9c2a379481de911e72c8b73114109ec04e960719951a3a90074",
+    "LibraryFlowTests.cs": "b21f51f46306761151b54dd978aaaf6be41412bbd96372b8226876456dfab7bf"
+  },
+  "limitations": "This receipt verifies managed ViewModel behavior only. It does not establish native XAML compilation, visual stability or scrollbar behavior."
+}

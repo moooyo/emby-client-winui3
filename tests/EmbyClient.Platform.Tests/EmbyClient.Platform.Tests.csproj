@@ -20,6 +20,7 @@
     <Compile Include="../../src/EmbyClient.App/Services/WindowPlacementStore.cs" Link="Product/WindowPlacementStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PosterBindingLifetime.cs" Link="Product/PosterBindingLifetime.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PosterWallLayout.cs" Link="Product/PosterWallLayout.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackNotificationOwner.cs" Link="Product/PlaybackNotificationOwner.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackItemPreparation.cs" Link="Product/PlaybackItemPreparation.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackTimelineDrag.cs" Link="Product/PlaybackTimelineDrag.cs" />

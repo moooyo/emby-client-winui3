@@ -1,0 +1,41 @@
+{
+  "dateUtc": "2026-09-10T02:07:40Z",
+  "scope": "Adaptive poster wall and automatic collection pagination follow-up",
+  "environment": {
+    "host": "test-env",
+    "os": "Debian Linux x64",
+    "sdk": "10.0.301",
+    "workspace": "/tmp/emby-ui-fluent2-20260910",
+    "localVerificationPerformedByThisAgent": false
+  },
+  "checks": {
+    "temporaryLayoutAndArtworkHarness": {
+      "status": "passed",
+      "total": 55,
+      "newPosterWallLayoutCases": 28,
+      "existingArtworkCacheAndPosterLifecycleCases": 27,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Actual PosterWallLayout, ImageCache and PosterBindingLifetime source and repository test files linked into the existing temporary net10.0 xUnit harness. No Windows UI was executed."
+    },
+    "uiSemanticCompilation": {
+      "status": "passed",
+      "bindingPropertyAndEventChecks": 448,
+      "errors": 0,
+      "warnings": "One CS0414 warning for the temporary generated HomeScroller field.",
+      "scope": "All App C# source with real WinUI and WinRT references plus temporary XAML fields and binding/property/event-signature checks. Repeated successfully after the pagination ownership correction. This is not native XAML compilation."
+    },
+    "paginationReview": {
+      "status": "completed",
+      "finding": "A shared loading flag could block a newly navigated collection until a canceled old-page request completed, without scheduling another viewport check.",
+      "resolution": "The loading owner is now the collection layout version. Only a request for that same version blocks another request, and an older completion cannot clear the new owner's flag.",
+      "loopGuards": "Loading requires a visible loaded collection, valid viewport, available next page and no active error. A response that adds no items stalls automatic requests until collection reset."
+    }
+  },
+  "sourceSha256": {
+    "LibraryView.Browsing.cs": "6cea0a303d647f44a31f365a7c35b0c0b19f7142acb49c085015c1fc949d5efa",
+    "PosterWallLayout.cs": "7f1e4a148ecacc325a4ba12bb08ffce035f9f58862c6612a796115bd7699de4d",
+    "PosterWallLayoutTests.cs": "bfb622c05f3715b361b1b2faa6106afac392301de3dba9b2875799b83377733f"
+  },
+  "limitations": "This receipt records remote managed verification only. Any separately authorized Windows build, application launch or visual review is recorded by the integrating agent."
+}

@@ -1,0 +1,34 @@
+{
+  "dateUtc": "2026-09-10T02:57:56.9199348Z",
+  "scope": "Native build of the broader WinUI guidance audit",
+  "environment": "Windows x64 local preview build authorized in the ongoing UI task",
+  "command": "dotnet build src/EmbyClient.App/EmbyClient.App.csproj -c Debug -p:Platform=x64 -o artifacts/previews/ui-guidelines-20260910/ --no-restore --nologo",
+  "result": "passed",
+  "errors": 0,
+  "warnings": [
+    "Existing generated WinUIEx Icon CS0618 warning"
+  ],
+  "outputDirectory": "artifacts/previews/ui-guidelines-20260910/",
+  "nativeXamlCompilation": "passed",
+  "visualVerification": "Not performed for this build",
+  "remoteVerification": "ui-guidelines-remote-20260910.json",
+  "sourceSha256": {
+    "src/EmbyClient.App/MainPage.xaml": "e131f208f7289f8d584d42d477e26c23742e6bb10127f2f1c36a2cd47cdd2893",
+    "src/EmbyClient.App/MainPage.xaml.cs": "a9a7ba768284adb03817ed7bedc62c2cc5ad958cd523ae49bc20fcc535d43288",
+    "src/EmbyClient.App/MainWindow.xaml": "70eefda6edab301e5b202e251f0dc1fadab87a5b54c775d6ac05c860754234ce",
+    "src/EmbyClient.App/MainWindow.xaml.cs": "1cdd686cedc9383a43ac160adb0b634a6a5a3260cb052cadf5fe61d631a7b94d",
+    "src/EmbyClient.App/Views/LibraryView.xaml": "feece27ad5298e102551264f8406fafd86b9b2527cc40218b20198a378be1cd1",
+    "src/EmbyClient.App/Views/LibraryView.xaml.cs": "3d6008b261fa8248218882178432297340819e44957b7803090f43c7d177c462",
+    "src/EmbyClient.App/Views/LibraryView.Accessibility.cs": "325918b9167aa7f8e9036549992f0a186c13b8a9df9502bb3b30a5fff4664478",
+    "src/EmbyClient.App/Views/LibraryView.Browsing.cs": "690e3d74e64186c972dc0512972462520ce9336c7215a6e2ade1fe1a58b06eb0",
+    "src/EmbyClient.App/Services/PosterWallLayout.cs": "d4b59a459e5674399d8be397b6ab546c0cae6e132a24403545adf5f769fcd9d6",
+    "src/EmbyClient.App/ViewModels/LibraryViewModel.cs": "11ebbe6a4a57a1c0d4c4fb6d011bb3525ff3ad41169d6932459750348d9ab943",
+    "src/EmbyClient.App/Views/PlayerView.xaml": "49d4b908055fc5bd791fc470015e70e70e9a562f4619ab8479a2b4a62ebe4441",
+    "src/EmbyClient.App/Views/PlayerView.xaml.cs": "370d5e98efeba7a25eff01819a839077bb65a65b2bb784eaf3bc9e8835d4fd17",
+    "src/EmbyClient.App/Views/PlaybackTimeConverter.cs": "d92ed13e77eff15dd93f1766ce8000d1faf3412d58a383032c748d9944355c85",
+    "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml": "6abd983788f47ce20a91982c41bfdc4b06d0304e713d1184f1fd86efae5fd28f",
+    "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml.cs": "f37bca31628e63f3b76ec63842cddb753c1855a451dd4d24636e7ca9c7062a8b",
+    "src/EmbyClient.App/Views/PlaybackDiagnosticsDialog.xaml": "5cfda9dc146cba383b2e4a68cf3d3a936328f5bc61c3a4fb62a7550eb7a62b96",
+    "src/EmbyClient.App/Views/PlaybackDiagnosticsDialog.xaml.cs": "7f39568c8b392d6285eb56302441942344b232fba2a3b4aaac849b9ae025104b"
+  }
+}

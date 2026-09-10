@@ -1,0 +1,51 @@
+{
+  "dateUtc": "2026-09-10T02:55:19Z",
+  "scope": "Full UI guideline review: text scaling, playback settings and adaptive dialogs",
+  "environment": {
+    "host": "test-env",
+    "os": "Debian Linux x64",
+    "sdk": "10.0.301",
+    "workspace": "/tmp/emby-ui-fluent2-20260910",
+    "localVerificationPerformedByThisAgent": false
+  },
+  "tests": {
+    "temporaryLayoutAndArtworkHarness": {
+      "status": "passed",
+      "total": 58,
+      "posterWallLayoutCases": 31,
+      "newTextScaleCases": 3,
+      "artworkCacheAndPosterLifecycleCases": 27,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "Actual PosterWallLayout, ImageCache and PosterBindingLifetime source with repository test files in a temporary net10.0 xUnit project. No Windows UI was executed.",
+      "finalIncrement": "The 58 passing cases remain applicable because PosterWallLayout, ImageCache, PosterBindingLifetime and their test sources are unchanged by the final navigation/UI increment. They were not rerun."
+    },
+    "libraryFlowHarness": {
+      "status": "passed",
+      "total": 12,
+      "failed": 0,
+      "skipped": 0,
+      "reason": "Rerun after final read-only navigation properties IsDetailLocation, IsHomeSection and Latest-library selection were added to LibraryViewModel."
+    },
+    "playbackCoreSuite": {
+      "status": "not_rerun_unchanged_source",
+      "reason": "No diff exists in src/EmbyClient.Playback. This follow-up changes playback UI controls and presentation, which the existing core suite does not directly exercise."
+    }
+  },
+  "readOnlyBehaviorReview": {
+    "status": "completed_no_confirmed_regressions",
+    "player": "Reviewed autoplay ToggleSwitch mapping, queue and next commands, source/audio/subtitle/quality event handlers after moving them into a settings Flyout, mute state and dynamic labels, timeline presentation, and the MainPage settings-open keyboard guard.",
+    "dialogs": "Reviewed queue move/remove/clear and selected-item handling, diagnostics copy/save/refresh and failure feedback, native ContentDialog action cancellation, and focus restoration changes.",
+    "limitation": "Static review does not establish visual layout, runtime keyboard focus or native accessibility behavior."
+  },
+  "sourceSha256": {
+    "archive": "98397aa7e5db4c4acc4b70c7bbb1f610af923fa6bfabc8b161560db322758d80",
+    "PosterWallLayout.cs": "d4b59a459e5674399d8be397b6ab546c0cae6e132a24403545adf5f769fcd9d6",
+    "PosterWallLayoutTests.cs": "c859440670624541f257b6345a9afa16e2e1c02691ec009524f20219dc12d8fc",
+    "LibraryViewModel.cs": "11ebbe6a4a57a1c0d4c4fb6d011bb3525ff3ad41169d6932459750348d9ab943",
+    "ImageCache.cs": "941be66059f45bda0875b71c5880542c08d06a1d3ca04e15d83334084322347e",
+    "PosterBindingLifetime.cs": "46dd0373911781738966a5b11f777d39d6ceb19df81d0b4267050f69cd97d3da"
+  },
+  "nativeVerification": "Native WinUI compilation and preview are handled separately by the integrating agent; no simulated XAML build was run for this follow-up.",
+  "archiveScope": "The archive hash identifies the 58-case test snapshot. The final LibraryViewModel was synchronized separately and its current hash is recorded above."
+}

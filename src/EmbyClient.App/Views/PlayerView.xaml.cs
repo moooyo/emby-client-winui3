@@ -3,6 +3,7 @@ using EmbyClient.App.Playback;
 using EmbyClient.App.Services;
 using EmbyClient.Playback;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -43,6 +44,7 @@ public sealed partial class PlayerView : UserControl
     public event EventHandler? QueueChanged;
     public int QueueCount => _queue.Count;
     public bool IsQueueOpen => _queueDialog is not null;
+    public bool IsSettingsOpen { get; private set; }
 
     partial void ObservationClockTick();
     partial void ObservationPositionUpdate();
@@ -51,6 +53,7 @@ public sealed partial class PlayerView : UserControl
     public PlayerView()
     {
         InitializeComponent();
+        Timeline.ThumbToolTipValueConverter = new PlaybackTimeConverter();
         _queue.Changed += (_, _) => UpdateQueueControls();
         Timeline.AddHandler(PointerPressedEvent, new PointerEventHandler(TimelinePressed), true);
         Timeline.AddHandler(PointerReleasedEvent, new PointerEventHandler(TimelineReleased), true);
@@ -93,7 +96,7 @@ public sealed partial class PlayerView : UserControl
         _coordinator.StatusChanged += CoordinatorStatusChanged;
         _coordinator.Diagnostic += CoordinatorDiagnosticReceived;
         BeginDiagnosticPlayback(_playIntent);
-        AutoPlayNext.IsChecked = session.User.Configuration?.EnableNextEpisodeAutoPlay != false;
+        AutoPlayNext.IsOn = session.User.Configuration?.EnableNextEpisodeAutoPlay != false;
         _bitrate = QualitySelector.SelectedItem is ComboBoxItem { Tag: long desiredBitrate } ? desiredBitrate : 20_000_000;
         if (session.User.Policy?.RemoteClientBitrateLimit is long limit && limit > 0)
             _bitrate = Math.Min(_bitrate, limit);
@@ -166,12 +169,27 @@ public sealed partial class PlayerView : UserControl
 
     private void UpdateQueueControls()
     {
-        QueueButton.Content = $"Queue ({_queue.Count})";
+        QueueCountText.Text = _queue.Count.ToString();
+        SetControlLabel(QueueButton, $"Open play queue, {_queue.Count} items", $"Play queue ({_queue.Count})");
         QueueButton.IsEnabled = _session is not null && !IsModalOpen;
         DiagnosticsButton.IsEnabled = !IsModalOpen;
         NextButton.IsEnabled = _session is not null && _queue.Count > 0 && !_advancing;
-        NextButton.Content = _queue.Count > 0 ? $"Next in queue ({_queue.Count})" : "Next in queue";
+        var nextLabel = _queue.Count > 0 ? $"Next in queue ({_queue.Count})" : "Next in queue";
+        SetControlLabel(NextButton, nextLabel);
         QueueChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static void SetControlLabel(Control control, string name, string? tooltip = null)
+    {
+        AutomationProperties.SetName(control, name);
+        ToolTipService.SetToolTip(control, tooltip ?? name);
+    }
+
+    public void SetFullscreenState(bool fullscreen)
+    {
+        FullscreenButton.Content = new SymbolIcon(fullscreen ? Symbol.BackToWindow : Symbol.FullScreen);
+        var label = fullscreen ? "Exit fullscreen" : "Enter fullscreen";
+        SetControlLabel(FullscreenButton, label, $"{label} (F11)");
     }
 
     public Task PlayItemAsync(BaseItemDto item, long startPositionTicks = 0) => PlayItemCoreAsync(item, startPositionTicks);
@@ -229,10 +247,10 @@ public sealed partial class PlayerView : UserControl
                 Timeline.IsEnabled = false;
                 SetTransportAvailability(false);
                 var failed = outcome.PreparationFailed || outcome.CleanupFailed || coordinator.Status == PlaybackStatus.Failed;
-                StateText.Text = failed ? "Failed" : "Idle";
+                StateText.Text = failed ? "Unable to play" : "Ready to play";
                 PauseButton.Content = new SymbolIcon(Symbol.Play);
                 PauseButton.IsEnabled = _preparationRetry is not null || _item is not null;
-                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(PauseButton,
+                SetControlLabel(PauseButton,
                     _preparationRetry is not null ? "Retry loading item" : "Play again");
                 if (failed) PlaybackNotice.Severity = InfoBarSeverity.Error;
                 if (outcome.CleanupFailed || coordinator.Status == PlaybackStatus.Failed)
@@ -255,15 +273,24 @@ public sealed partial class PlayerView : UserControl
             if (!ReferenceEquals(sender, _coordinator) || !_notificationOwner.IsCurrent(ticket)) return;
             if (_preparationIntent == ticket.Intent) _preparationIntent = null;
             UpdateDisplayRequest(args.Context?.PlaybackId);
-            StateText.Text = args.Status.ToString();
+            StateText.Text = args.Status switch
+            {
+                PlaybackStatus.Negotiating or PlaybackStatus.Opening => "Preparing playback",
+                PlaybackStatus.Playing => "Playing",
+                PlaybackStatus.Paused => "Paused",
+                PlaybackStatus.Buffering => "Buffering",
+                PlaybackStatus.Seeking => "Seeking",
+                PlaybackStatus.Ended => "Playback finished",
+                PlaybackStatus.Failed => "Unable to play",
+                _ => "Ready to play"
+            };
             BufferingRing.IsActive = args.Status is PlaybackStatus.Negotiating or PlaybackStatus.Opening or PlaybackStatus.Buffering;
             var canStart = args.Status is PlaybackStatus.Paused or PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle;
             PauseButton.Content = new SymbolIcon(canStart ? Symbol.Play : Symbol.Pause);
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(PauseButton,
+            SetControlLabel(PauseButton,
                 args.Status == PlaybackStatus.Paused ? "Resume" : canStart ? "Play again" : "Pause");
             if (args.Context is { } context)
             {
-                StateText.Text = $"{args.Status} · {context.DeliveryMethod}";
                 if (_displayedPlayback != context.PlaybackId) PopulateTracks(context);
             }
             if (args.Status == PlaybackStatus.Failed)
@@ -280,7 +307,7 @@ public sealed partial class PlayerView : UserControl
                 or PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle;
             UpdateRecoveryControls();
             UpdatePresentationClock();
-            if (args.Status == PlaybackStatus.Ended && AutoPlayNext.IsChecked == true)
+            if (args.Status == PlaybackStatus.Ended && AutoPlayNext.IsOn)
                 _ = AdvanceAsync(ticket);
         });
     }
@@ -380,7 +407,11 @@ public sealed partial class PlayerView : UserControl
         _updating = true;
         SourceSelector.Items.Clear();
         foreach (var source in _item?.MediaSources ?? [])
-            SourceSelector.Items.Add(new ComboBoxItem { Content = source.Name ?? source.Container ?? "Original", Tag = source.Id });
+        {
+            var option = new ComboBoxItem { Content = source.Name ?? source.Container ?? "Original", Tag = source.Id };
+            ToolTipService.SetToolTip(option, option.Content);
+            SourceSelector.Items.Add(option);
+        }
         SourceSelector.IsEnabled = SourceSelector.Items.Count > 1;
         _updating = false;
     }
@@ -405,6 +436,7 @@ public sealed partial class PlayerView : UserControl
                 Content = stream.DisplayTitle ?? stream.Title ?? $"{stream.Language ?? "Unknown"} · {stream.Codec}",
                 Tag = stream.Index
             };
+            ToolTipService.SetToolTip(option, option.Content);
             if (string.Equals(stream.Type, "Audio", StringComparison.OrdinalIgnoreCase))
             {
                 AudioSelector.Items.Add(option);
@@ -603,10 +635,16 @@ public sealed partial class PlayerView : UserControl
         await RunAsync(() => _coordinator.SetVolumeAsync((int)args.NewValue, MuteButton.IsChecked == true));
     }
 
-    private async void MuteClicked(object sender, RoutedEventArgs args) => await RunAsync(async () =>
+    private async void MuteClicked(object sender, RoutedEventArgs args)
     {
-        if (_coordinator is not null) await _coordinator.SetVolumeAsync((int)Volume.Value, MuteButton.IsChecked == true);
-    });
+        var muted = MuteButton.IsChecked == true;
+        MuteButton.Content = new SymbolIcon(muted ? Symbol.Mute : Symbol.Volume);
+        SetControlLabel(MuteButton, muted ? "Unmute" : "Mute");
+        await RunAsync(async () =>
+        {
+            if (_coordinator is not null) await _coordinator.SetVolumeAsync((int)Volume.Value, muted);
+        });
+    }
 
     private async void SourceChanged(object sender, SelectionChangedEventArgs args)
     {
@@ -644,6 +682,8 @@ public sealed partial class PlayerView : UserControl
         await RunAsync(() => ShowQueueAsync(XamlRoot, RequestedTheme, sender as Control));
     private async void DiagnosticsClicked(object sender, RoutedEventArgs args) =>
         await RunAsync(() => ShowDiagnosticsAsync(XamlRoot, RequestedTheme, sender as Control));
+    private void PlaybackSettingsOpening(object sender, object args) => IsSettingsOpen = true;
+    private void PlaybackSettingsClosed(object sender, object args) => IsSettingsOpen = false;
     private void FullscreenClicked(object sender, RoutedEventArgs args) => FullscreenRequested?.Invoke(this, EventArgs.Empty);
     private void BackClicked(object sender, RoutedEventArgs args) => BackRequested?.Invoke(this, EventArgs.Empty);
 

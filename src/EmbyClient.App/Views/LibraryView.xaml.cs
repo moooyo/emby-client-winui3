@@ -27,7 +27,8 @@ public sealed partial class LibraryView : UserControl
     private readonly ConditionalWeakTable<Image, PosterLoadState<MediaCardViewModel>> _posterLoads = new();
     private ScrollViewer? _gridScroller;
     private bool _updatingNavigation;
-    private bool _updatingHomeSection;
+    private bool _updatingBrowseOptions;
+    private string? _navigationLibraryId;
 
     partial void ObservationSessionStarted();
     partial void ObservationPosterLoaded(Image image);
@@ -43,12 +44,32 @@ public sealed partial class LibraryView : UserControl
     public LibraryView()
     {
         InitializeComponent();
+        Loaded += LibraryAccessibility_Loaded;
+        Unloaded += LibraryAccessibility_Unloaded;
+        LibraryNavigation.RegisterPropertyChangedCallback(NavigationView.IsPaneOpenProperty, (_, _) => UpdateFooterWidth());
+        LibraryNavigation.Loaded += (_, _) => UpdateFooterWidth();
         ViewModel.Items.CollectionChanged += Items_CollectionChanged;
+        ViewModel.Libraries.CollectionChanged += (_, _) => RebuildLibraries();
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.SessionExpired += ViewModel_SessionExpired;
     }
 
     public LibraryViewModel ViewModel { get; } = new();
+    public UIElement? Footer
+    {
+        get => LibraryNavigation.PaneFooter as UIElement;
+        set
+        {
+            LibraryNavigation.PaneFooter = value;
+            UpdateFooterWidth();
+        }
+    }
+
+    private void UpdateFooterWidth()
+    {
+        if (Footer is FrameworkElement footer)
+            footer.Width = LibraryNavigation.IsPaneOpen ? LibraryNavigation.OpenPaneLength : LibraryNavigation.CompactPaneLength;
+    }
     public event EventHandler<PlayItemRequestedEventArgs>? PlayRequested;
     public event EventHandler? SessionExpired;
 
@@ -57,7 +78,19 @@ public sealed partial class LibraryView : UserControl
     private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs args)
     {
         // Cached containers can stay loaded after navigation removes their items.
-        if (args.Action == NotifyCollectionChangedAction.Reset) CancelPosterRequests();
+        if (args.Action != NotifyCollectionChangedAction.Reset) return;
+        ResetCollectionScroll();
+        foreach (var image in _posterSubscriptions.Keys.ToArray())
+        {
+            var grid = FindAncestor<GridView>(image);
+            if (!ReferenceEquals(grid, MediaGrid) && !ReferenceEquals(grid, DetailItemsGrid)) continue;
+            if (FindPosterContainer(image) is { } container)
+            {
+                if (_posterContainers.TryGetValue(container, out var state)) state.Realization.Retire();
+                _posterContainers.Remove(container);
+            }
+            CancelPosterRequest(image);
+        }
     }
 
     public async Task SetSessionAsync(EmbyApiClient api, string serverId, UserDto user, CancellationToken cancellationToken = default)
@@ -86,6 +119,13 @@ public sealed partial class LibraryView : UserControl
         UpdateNavigation();
     }
 
+    public void FocusCurrentDetails()
+    {
+        if (!ViewModel.HasDetails || Visibility != Visibility.Visible) return;
+        if (ViewModel.PrimaryPlayVisibility == Visibility.Visible) PrimaryPlayButton.Focus(FocusState.Programmatic);
+        else DetailScroller.Focus(FocusState.Programmatic);
+    }
+
     private void RebuildLibraries()
     {
         _updatingNavigation = true;
@@ -101,6 +141,9 @@ public sealed partial class LibraryView : UserControl
                     Icon = new SymbolIcon(library.Item.CollectionType == "tvshows" ? Symbol.Video : Symbol.Library)
                 });
             }
+            if (ViewModel.IsDetailLocation && _navigationLibraryId is not null)
+                LibraryNavigation.SelectedItem = LibraryNavigation.MenuItems.OfType<NavigationViewItem>()
+                    .FirstOrDefault(item => item.Tag is MediaCardViewModel card && card.Id == _navigationLibraryId);
         }
         finally { _updatingNavigation = false; }
     }
@@ -108,20 +151,36 @@ public sealed partial class LibraryView : UserControl
     private void UpdateNavigation(bool updateSearch = true)
     {
         _updatingNavigation = true;
-        _updatingHomeSection = true;
+        _updatingBrowseOptions = true;
         try
         {
-            LibraryNavigation.SelectedItem = ViewModel.IsHome ? HomeNavigationItem
-                : ViewModel.IsFavorites ? FavoritesNavigationItem
-                : LibraryNavigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag is MediaCardViewModel card && card.Id == ViewModel.SelectedLibraryId);
-            HomeSections.SelectedIndex = (int)ViewModel.SelectedHomeSection;
+            if (!ViewModel.IsDetailLocation)
+            {
+                _navigationLibraryId = ViewModel.SelectedLibraryId;
+                LibraryNavigation.SelectedItem = ViewModel.IsHome || ViewModel.IsHomeSection ? HomeNavigationItem
+                    : ViewModel.IsFavorites ? FavoritesNavigationItem
+                    : LibraryNavigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => item.Tag is MediaCardViewModel card && card.Id == ViewModel.SelectedLibraryId);
+            }
+            SortBox.SelectedIndex = ViewModel.BrowseSortKey switch
+            {
+                "ProductionYear" => 1,
+                "DateCreated" => 2,
+                _ => 0
+            };
+            DescendingButton.IsChecked = ViewModel.BrowseSortDescending;
+            SortDirectionIcon.Glyph = ViewModel.BrowseSortDescending ? "\uE74B" : "\uE74A";
+            var direction = ViewModel.BrowseSortDescending ? "Descending" : "Ascending";
+            var nextDirection = ViewModel.BrowseSortDescending ? "ascending" : "descending";
+            ToolTipService.SetToolTip(DescendingButton, $"{direction}. Click to sort {nextDirection}.");
+            AutomationProperties.SetName(DescendingButton, $"{direction}. Activate to sort {nextDirection}.");
+            UnplayedFilter.IsChecked = ViewModel.BrowseUnplayedOnly;
             if (updateSearch && !ViewModel.HasPendingSearch && SearchBox.Text != ViewModel.SearchText)
                 SearchBox.Text = ViewModel.SearchText;
         }
         finally
         {
             _updatingNavigation = false;
-            _updatingHomeSection = false;
+            _updatingBrowseOptions = false;
         }
     }
 
@@ -138,14 +197,65 @@ public sealed partial class LibraryView : UserControl
     {
         await ViewModel.GoBackAsync();
         UpdateNavigation();
+        FocusBrowseDestination();
     }
 
-    private async void HomeSections_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    private async void LibraryCard_ItemClick(object sender, ItemClickEventArgs args)
     {
-        if (_updatingHomeSection || HomeSections.SelectedIndex is < 0 or > 2 || !ViewModel.IsHome) return;
-        var section = (HomeSection)HomeSections.SelectedIndex;
-        if (section != ViewModel.SelectedHomeSection) await ViewModel.ShowHomeAsync(section);
+        if (args.ClickedItem is not MediaCardViewModel library) return;
+        await ViewModel.ShowLibraryAsync(library);
         UpdateNavigation();
+    }
+
+    private async void ShelfSeeAll_Click(object sender, RoutedEventArgs args)
+    {
+        if (sender is not FrameworkElement { Tag: MediaShelfViewModel shelf }) return;
+        await ViewModel.ShowShelfAsync(shelf);
+        UpdateNavigation();
+    }
+
+    private void HomeShelf_Loaded(object sender, RoutedEventArgs args)
+    {
+        if (sender is not GridView { Tag: MediaShelfViewModel shelf } grid) return;
+        grid.ItemTemplate = (DataTemplate)Resources[shelf.IsLandscape ? "LandscapeCardTemplate" : "MediaCardTemplate"];
+        if (_loadedShelves.Add(grid)) grid.Unloaded += HomeShelf_Unloaded;
+        SizeHomeShelf(grid, shelf.IsLandscape);
+    }
+
+    private async void BrowseOptions_Changed(object sender, SelectionChangedEventArgs args) => await ApplyBrowseOptionsAsync();
+    private async void BrowseDirection_Click(object sender, RoutedEventArgs args) => await ApplyBrowseOptionsAsync();
+
+    private async Task ApplyBrowseOptionsAsync()
+    {
+        if (_updatingBrowseOptions || SortBox?.SelectedItem is not ComboBoxItem { Tag: string sort }
+            || DescendingButton is null || UnplayedFilter is null) return;
+        await ViewModel.SetBrowseOptionsAsync(sort, DescendingButton.IsChecked == true, UnplayedFilter.IsChecked == true);
+        UpdateNavigation();
+    }
+
+    private async void SeasonBox_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (SeasonBox.SelectedItem is MediaCardViewModel season) await ViewModel.SelectSeasonAsync(season);
+    }
+
+    private void DetailHero_SizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        DetailBackdrop.Width = args.NewSize.Width;
+        DetailBackdrop.Height = args.NewSize.Height;
+        DetailHero.Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, args.NewSize.Width, args.NewSize.Height) };
+        var narrow = args.NewSize.Width < 760;
+        DetailPosterColumn.Width = new GridLength(narrow ? 0 : 216);
+        DetailPosterFrame.Visibility = narrow ? Visibility.Collapsed : Visibility.Visible;
+        Grid.SetColumn(DetailInformation, narrow ? 0 : 1);
+        Grid.SetColumnSpan(DetailInformation, narrow ? 2 : 1);
+        DetailLayout.ColumnSpacing = narrow ? 0 : 28;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject element) where T : DependencyObject
+    {
+        for (var parent = VisualTreeHelper.GetParent(element); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+            if (parent is T result) return result;
+        return null;
     }
 
     private async void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -166,11 +276,14 @@ public sealed partial class LibraryView : UserControl
         if (args.ClickedItem is not MediaCardViewModel item) return;
         await ViewModel.ShowItemAsync(item);
         UpdateNavigation();
+        if (ViewModel.Detail.Id == item.Id) FocusCurrentDetails();
     }
 
     private void MediaGrid_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
     {
-        var name = !args.InRecycleQueue && args.Item is MediaCardViewModel item ? item.Title : string.Empty;
+        var name = !args.InRecycleQueue && args.Item is MediaCardViewModel item
+            ? string.Join(", ", new[] { item.DisplayTitle, item.CardSubtitle, item.StateLabel }.Where(value => !string.IsNullOrWhiteSpace(value)))
+            : string.Empty;
         AutomationProperties.SetName(args.ItemContainer, name);
         if (args.ItemContainer is not GridViewItem container) return;
         if (args.InRecycleQueue)
@@ -226,7 +339,7 @@ public sealed partial class LibraryView : UserControl
         owner = this;
         version = 0;
         if (!image.IsLoaded) return false;
-        if (ReferenceEquals(image, DetailPoster))
+        if (ReferenceEquals(image, DetailPoster) || ReferenceEquals(image, DetailBackdrop))
             return ViewModel.HasDetails && ReferenceEquals(item, ViewModel.Detail);
         if (FindPosterContainer(image) is not { } container || !_posterContainers.TryGetValue(container, out var state)
             || !state.Realization.TryGetVersion(item, out version)) return false;
@@ -244,43 +357,49 @@ public sealed partial class LibraryView : UserControl
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs args) => await RefreshAsync();
-    private async void LoadMore_Click(object sender, RoutedEventArgs args) => await ViewModel.LoadMoreAsync();
-    private async void Favorite_Click(object sender, RoutedEventArgs args) => await ViewModel.ToggleFavoriteAsync();
-    private async void Played_Click(object sender, RoutedEventArgs args) => await ViewModel.TogglePlayedAsync();
+    private async void Favorite_Click(object sender, RoutedEventArgs args)
+    {
+        await ViewModel.ToggleFavoriteAsync();
+        if (sender is Microsoft.UI.Xaml.Controls.Primitives.ToggleButton toggle) toggle.IsChecked = ViewModel.Detail.IsFavorite;
+    }
+
+    private async void Played_Click(object sender, RoutedEventArgs args)
+    {
+        await ViewModel.TogglePlayedAsync();
+        if (sender is Microsoft.UI.Xaml.Controls.Primitives.ToggleButton toggle) toggle.IsChecked = ViewModel.Detail.IsPlayed;
+    }
     private void Play_Click(object sender, RoutedEventArgs args) => RequestPlay(0, false);
-    private void Resume_Click(object sender, RoutedEventArgs args) => RequestPlay(ViewModel.Detail.ResumeTicks, false);
+    private void PrimaryPlay_Click(object sender, RoutedEventArgs args) => RequestPlay(
+        ViewModel.PlayableDetail.CanResume ? ViewModel.PlayableDetail.ResumeTicks : 0, false);
     private void Queue_Click(object sender, RoutedEventArgs args) => RequestPlay(0, true);
 
     private void RequestPlay(long position, bool addToQueue)
     {
-        if (!ViewModel.Detail.CanPlay) return;
+        if (!ViewModel.PlayableDetail.CanPlay) return;
         if (!ViewModel.IsPlaybackAllowed)
         {
             ViewModel.ErrorMessage = "Playback is disabled for this account. Contact your server administrator.";
             ViewModel.HasError = true;
             return;
         }
-        PlayRequested?.Invoke(this, new(ViewModel.Detail.Item, position, addToQueue));
+        PlayRequested?.Invoke(this, new(ViewModel.PlayableDetail.Item, position, addToQueue));
     }
 
     private void MediaGrid_Loaded(object sender, RoutedEventArgs args)
     {
+        DetachCollectionScroller(_gridScroller);
         _gridScroller = FindScrollViewer(MediaGrid);
-        if (_gridScroller is not null) _gridScroller.ViewChanged += GridScroller_ViewChanged;
+        AttachCollectionScroller(_gridScroller);
+        QueueViewportUpdate();
     }
 
     private void MediaGrid_Unloaded(object sender, RoutedEventArgs args)
     {
-        if (_gridScroller is not null) _gridScroller.ViewChanged -= GridScroller_ViewChanged;
+        DetachCollectionScroller(_gridScroller);
         _gridScroller = null;
     }
 
-    private async void GridScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs args)
-    {
-        if (!args.IsIntermediate && _gridScroller is { ScrollableHeight: > 0 } scroller
-            && scroller.VerticalOffset >= scroller.ScrollableHeight - 500 && ViewModel.CanLoadMore)
-            await ViewModel.LoadMoreAsync();
-    }
+    private void GridScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs args) => QueueViewportUpdate();
 
     private static ScrollViewer? FindScrollViewer(DependencyObject element)
     {
@@ -315,7 +434,8 @@ public sealed partial class LibraryView : UserControl
     private async void PosterTagChanged(DependencyObject sender, DependencyProperty property)
     {
         ObservationPosterTagChanged(sender);
-        if (sender is Image { IsLoaded: true } image && !ReferenceEquals(image, DetailPoster)) await LoadPosterAsync(image);
+        if (sender is Image { IsLoaded: true } image && !ReferenceEquals(image, DetailPoster)
+            && !ReferenceEquals(image, DetailBackdrop)) await LoadPosterAsync(image);
     }
 
     private async Task LoadPosterAsync(Image image)
@@ -328,8 +448,18 @@ public sealed partial class LibraryView : UserControl
             return;
         }
         var scale = XamlRoot?.RasterizationScale ?? 1;
-        var width = (int)Math.Clamp(176 * scale, 176, 704);
-        var height = width * 3 / 2;
+        var kind = AutomationProperties.GetAutomationId(image) switch
+        {
+            "BackdropArtwork" => ArtworkKind.Backdrop,
+            "LandscapeArtwork" => ArtworkKind.Landscape,
+            _ => ArtworkKind.Poster
+        };
+        var logicalWidth = kind == ArtworkKind.Backdrop ? 1280 : kind == ArtworkKind.Landscape ? 272
+            : ReferenceEquals(image, DetailPoster) ? 216 : 156;
+        if (kind == ArtworkKind.Poster && ReferenceEquals(FindAncestor<GridView>(image), MediaGrid) && _wallMetrics.PosterWidth > 0)
+            logicalWidth = (int)(Math.Ceiling(_wallMetrics.PosterWidth / 32) * 32);
+        var width = (int)Math.Clamp(logicalWidth * scale, logicalWidth, kind == ArtworkKind.Backdrop ? 1920 : 864);
+        var height = kind == ArtworkKind.Poster ? width * 3 / 2 : width * 9 / 16;
         var load = _posterLoads.GetValue(image, static _ => new PosterLoadState<MediaCardViewModel>());
         if (!load.TryBegin(item, owner, ownerVersion, width, height, image.Source is not null, out var version))
         {
@@ -345,7 +475,7 @@ public sealed partial class LibraryView : UserControl
         var assigned = false;
         try
         {
-            var bytes = await ViewModel.LoadPosterAsync(item, width, height, token);
+            var bytes = await ViewModel.LoadPosterAsync(item, width, height, kind, token);
             if (bytes is not { Length: > 0 } || token.IsCancellationRequested) return;
             void ApplyPoster(BitmapImage bitmap)
             {
@@ -406,6 +536,7 @@ public sealed partial class LibraryView : UserControl
         _posterContainers.Clear();
         foreach (var image in _posterSubscriptions.Keys.Concat(_posterRequests.Keys).Distinct().ToArray()) CancelPosterRequest(image);
         CancelPosterRequest(DetailPoster);
+        CancelPosterRequest(DetailBackdrop);
     }
 
     private sealed class PosterContainer
@@ -416,20 +547,39 @@ public sealed partial class LibraryView : UserControl
 
     private async void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
+        if (args.PropertyName == nameof(LibraryViewModel.CollectionRevision)) ResetCollectionScroll();
+        if (args.PropertyName is nameof(LibraryViewModel.IsBusy) or nameof(LibraryViewModel.HasMore)
+            or nameof(LibraryViewModel.BrowseVisibility) or nameof(LibraryViewModel.DetailItemsVisibility))
+            QueueViewportUpdate();
+        if (args.PropertyName is nameof(LibraryViewModel.BrowseSortKey) or nameof(LibraryViewModel.BrowseSortDescending)
+            or nameof(LibraryViewModel.BrowseUnplayedOnly)) UpdateNavigation(false);
         if (args.PropertyName == nameof(LibraryViewModel.Detail))
         {
+            DetailScroller.ChangeView(null, 0, null, true);
             DetailPoster.Tag = ViewModel.Detail;
+            DetailBackdrop.Tag = ViewModel.Detail;
             CancelPosterRequest(DetailPoster);
-            if (ViewModel.HasDetails) await LoadPosterAsync(DetailPoster);
+            CancelPosterRequest(DetailBackdrop);
+            if (ViewModel.HasDetails) await Task.WhenAll(LoadPosterAsync(DetailPoster), LoadPosterAsync(DetailBackdrop));
         }
         else if (args.PropertyName == nameof(LibraryViewModel.HasDetails))
         {
             if (ViewModel.HasDetails)
             {
                 DetailPoster.Tag = ViewModel.Detail;
-                await LoadPosterAsync(DetailPoster);
+                DetailBackdrop.Tag = ViewModel.Detail;
+                await Task.WhenAll(LoadPosterAsync(DetailPoster), LoadPosterAsync(DetailBackdrop));
             }
-            else CancelPosterRequest(DetailPoster);
+            else
+            {
+                CancelPosterRequest(DetailPoster);
+                CancelPosterRequest(DetailBackdrop);
+            }
+        }
+        else if (args.PropertyName == nameof(LibraryViewModel.DetailItemsAreEpisodes))
+        {
+            DetailItemsGrid.ItemTemplate = (DataTemplate)Resources[ViewModel.DetailItemsAreEpisodes ? "EpisodeCardTemplate" : "MediaCardTemplate"];
+            UpdateDetailShelfSize();
         }
     }
 }

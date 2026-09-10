@@ -2,6 +2,8 @@ using EmbyClient.Api;
 
 namespace EmbyClient.App.Services;
 
+public enum ArtworkKind { Poster, Landscape, Backdrop }
+
 /// <summary>Caches authenticated image bytes without creating thread-affine UI objects.</summary>
 public sealed class ImageCache
 {
@@ -17,8 +19,14 @@ public sealed class ImageCache
 
     /// <summary>Returns image bytes, or null when the item has no usable image reference.</summary>
     /// <remarks>The returned array is shared by the cache and must not be modified.</remarks>
+    public Task<byte[]?> GetAsync(EmbyApiClient api, string serverId, string userId,
+        BaseItemDto item, int width, int height, CancellationToken cancellationToken = default) =>
+        GetAsync(api, serverId, userId, item, width, height, ArtworkKind.Poster, cancellationToken);
+
+    /// <summary>Returns artwork bytes selected for the requested presentation, or null when none is available.</summary>
+    /// <remarks>The returned array is shared by the cache and must not be modified.</remarks>
     public async Task<byte[]?> GetAsync(EmbyApiClient api, string serverId, string userId,
-        BaseItemDto item, int width, int height, CancellationToken cancellationToken = default)
+        BaseItemDto item, int width, int height, ArtworkKind artworkKind, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(item);
@@ -32,7 +40,7 @@ public sealed class ImageCache
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var reference = SelectImage(item);
+        var reference = SelectImage(item, artworkKind);
         if (reference is null)
         {
             return null;
@@ -165,19 +173,50 @@ public sealed class ImageCache
         return false;
     }
 
-    private static ImageReference? SelectImage(BaseItemDto item)
+    private static ImageReference? SelectImage(BaseItemDto item, ArtworkKind artworkKind)
+    {
+        return artworkKind switch
+        {
+            ArtworkKind.Poster => SelectTaggedImage(item, "Primary") ?? SelectParentThumb(item),
+            ArtworkKind.Landscape =>
+                (item.Type == "Episode" || item.PrimaryImageAspectRatio is > 1
+                    ? SelectTaggedImage(item, "Primary") : null)
+                ?? SelectTaggedImage(item, "Thumb")
+                ?? SelectBackdrop(item.Id, item.BackdropImageTags)
+                ?? SelectParentThumb(item)
+                ?? SelectBackdrop(item.ParentBackdropItemId, item.ParentBackdropImageTags)
+                ?? SelectTaggedImage(item, "Primary"),
+            ArtworkKind.Backdrop => SelectBackdrop(item.Id, item.BackdropImageTags)
+                ?? SelectBackdrop(item.ParentBackdropItemId, item.ParentBackdropImageTags)
+                ?? SelectTaggedImage(item, "Thumb")
+                ?? SelectParentThumb(item),
+            _ => throw new ArgumentOutOfRangeException(nameof(artworkKind))
+        };
+    }
+
+    private static ImageReference? SelectTaggedImage(BaseItemDto item, string type)
     {
         if (!string.IsNullOrWhiteSpace(item.Id) && item.ImageTags is not null &&
-            item.ImageTags.TryGetValue("Primary", out var primaryTag) && !string.IsNullOrWhiteSpace(primaryTag))
+            item.ImageTags.TryGetValue(type, out var tag) && !string.IsNullOrWhiteSpace(tag))
         {
-            return new ImageReference(item.Id, "Primary", null, primaryTag);
+            return new ImageReference(item.Id, type, null, tag);
         }
 
-        if (!string.IsNullOrWhiteSpace(item.ParentThumbItemId) && !string.IsNullOrWhiteSpace(item.ParentThumbImageTag))
-        {
-            return new ImageReference(item.ParentThumbItemId, "Thumb", null, item.ParentThumbImageTag);
-        }
+        return null;
+    }
 
+    private static ImageReference? SelectParentThumb(BaseItemDto item) =>
+        !string.IsNullOrWhiteSpace(item.ParentThumbItemId) && !string.IsNullOrWhiteSpace(item.ParentThumbImageTag)
+            ? new ImageReference(item.ParentThumbItemId, "Thumb", null, item.ParentThumbImageTag)
+            : null;
+
+    private static ImageReference? SelectBackdrop(string? itemId, string[]? tags)
+    {
+        if (string.IsNullOrWhiteSpace(itemId) || tags is null) return null;
+        for (var index = 0; index < tags.Length; index++)
+        {
+            if (!string.IsNullOrWhiteSpace(tags[index])) return new ImageReference(itemId, "Backdrop", index, tags[index]);
+        }
         return null;
     }
 

@@ -12,44 +12,95 @@
         <Grid x:Name="ConnectionPane" Grid.Row="1">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel MaxWidth="440" Padding="24,40" Spacing="16" HorizontalAlignment="Center">
-                    <FontIcon Glyph="&#xE8B2;" FontSize="40" HorizontalAlignment="Left" />
-                    <TextBlock Text="Connect to your library" Style="{ThemeResource TitleTextBlockStyle}" TextWrapping="Wrap" />
+                    <FontIcon Glyph="&#xE8B2;" FontSize="40" HorizontalAlignment="Left" IsTextScaleFactorEnabled="False" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Text="Connect to your library" Style="{ThemeResource TitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.HeadingLevel="Level1" />
                     <TextBlock Text="Sign in to your Emby server. Your media stays on your server, ready to play on Windows." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <ComboBox x:Name="SavedAccounts" Header="Saved accounts" HorizontalAlignment="Stretch" SelectionChanged="SavedAccountChanged" PlaceholderText="Choose an account" />
-                    <Button x:Name="RestoreButton" Content="Use saved sign-in" Click="RestoreClicked" HorizontalAlignment="Stretch" IsEnabled="False" />
+                    <StackPanel x:Name="SavedAccountSection" Visibility="Collapsed" Spacing="12">
+                        <ComboBox x:Name="SavedAccounts" Header="Saved accounts" HorizontalAlignment="Stretch" SelectionChanged="SavedAccountChanged" PlaceholderText="Choose an account" />
+                        <Button x:Name="RestoreButton" Content="Use saved sign-in" Click="RestoreClicked" HorizontalAlignment="Stretch" IsEnabled="False" />
+                    </StackPanel>
                     <TextBox x:Name="ServerAddress" Header="Server address" PlaceholderText="https://media.example.com" InputScope="Url" TextChanged="CredentialsChanged" />
+                    <TextBlock x:Name="ServerInputError" TextWrapping="Wrap" Visibility="Collapsed"
+                               Foreground="{ThemeResource SystemFillColorCriticalBrush}" AutomationProperties.LiveSetting="Polite" />
                     <TextBox x:Name="UserName" Header="Username" PlaceholderText="Your Emby username" TextChanged="CredentialsChanged" />
+                    <TextBlock x:Name="UserInputError" TextWrapping="Wrap" Visibility="Collapsed"
+                               Foreground="{ThemeResource SystemFillColorCriticalBrush}" AutomationProperties.LiveSetting="Polite" />
                     <PasswordBox x:Name="Password" Header="Password" KeyDown="PasswordKeyDown" />
-                    <CheckBox x:Name="RememberAccount" Content="Remember my sign-in on this Windows account" IsChecked="True" />
+                    <CheckBox x:Name="RememberAccount" IsChecked="True">
+                        <TextBlock Text="Remember my sign-in on this Windows account" TextWrapping="Wrap" />
+                    </CheckBox>
                     <Grid ColumnSpacing="12">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                         <Button x:Name="SignInButton" Content="Sign in" Style="{ThemeResource AccentButtonStyle}" HorizontalAlignment="Stretch" IsEnabled="False" Click="SignInClicked" />
                         <Button x:Name="CancelConnection" Grid.Column="1" Content="Cancel" Visibility="Collapsed" Click="CancelConnectionClicked" />
                     </Grid>
-                    <ProgressBar x:Name="ConnectingProgress" IsIndeterminate="True" Visibility="Collapsed" />
+                    <Grid Height="4">
+                        <ProgressBar x:Name="ConnectingProgress" IsIndeterminate="False" Visibility="Collapsed" AutomationProperties.Name="Connecting to your server" />
+                    </Grid>
                     <TextBlock Text="This is an independent client for Emby Server." Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>
         <Grid x:Name="ConnectedPane" Grid.Row="1" Visibility="Collapsed">
-            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-            <Grid x:Name="AccountToolbar" Padding="20,4,20,12" ColumnSpacing="12">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <TextBlock x:Name="AccountLabel" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                <Button Grid.Column="1" x:Name="LibraryQueueButton" Content="Queue (0)" AutomationProperties.Name="Open play queue" Click="QueueClicked" />
-                <Button Grid.Column="2" x:Name="LibraryDiagnosticsButton" Content="Diagnostics" AutomationProperties.Name="Open playback diagnostics" Click="DiagnosticsClicked" />
-                <Button Grid.Column="3" Content="Appearance">
-                    <Button.Flyout><MenuFlyout>
-                        <MenuFlyoutItem Text="Use system theme" Tag="System" Click="ThemeClicked" />
-                        <MenuFlyoutItem Text="Light" Tag="Light" Click="ThemeClicked" />
-                        <MenuFlyoutItem Text="Dark" Tag="Dark" Click="ThemeClicked" />
-                    </MenuFlyout></Button.Flyout>
-                </Button>
-                <Button Grid.Column="4" Content="Switch account" Click="SwitchAccountClicked" />
-                <Button Grid.Column="5" Content="Sign out" Click="SignOutClicked" />
-            </Grid>
-            <views:LibraryView x:Name="Library" Grid.Row="1" PlayRequested="LibraryPlayRequested" SessionExpired="SessionExpired" />
-            <views:PlayerView x:Name="Player" Grid.RowSpan="2" Visibility="Collapsed" BackRequested="PlayerBackRequested" FullscreenRequested="PlayerFullscreenRequested" SessionExpired="SessionExpired" />
+            <views:LibraryView x:Name="Library" PlayRequested="LibraryPlayRequested" SessionExpired="SessionExpired">
+                <views:LibraryView.Footer>
+                    <Grid x:Name="AccountToolbar" Padding="4,8,4,8" RowSpacing="4" HorizontalAlignment="Stretch"
+                          SizeChanged="AccountToolbar_SizeChanged">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <Border Height="1" Margin="8,0,8,4" Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
+                        <Button Grid.Row="1" x:Name="LibraryQueueButton" Height="40" Padding="0" BorderThickness="0"
+                                Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                AutomationProperties.Name="Open play queue" AutomationProperties.LiveSetting="Polite"
+                                ToolTipService.ToolTip="Play queue" Click="QueueClicked">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="40" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <FontIcon Glyph="&#xE90B;" FontSize="18" />
+                                <TextBlock x:Name="QueueLabel" Grid.Column="1" Text="Play queue" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                <Border x:Name="QueueCountBadge" Grid.Column="2" MinWidth="24" Height="22" Margin="8,0,8,0" Padding="6,0"
+                                        VerticalAlignment="Center" CornerRadius="11" Background="{ThemeResource ControlFillColorSecondaryBrush}">
+                                    <TextBlock x:Name="QueueCountLabel" Text="0" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                        <Button Grid.Row="2" x:Name="AccountButton" MinHeight="52" Padding="0" BorderThickness="0"
+                                Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                AutomationProperties.Name="Account and settings" ToolTipService.ToolTip="Account and settings">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="40" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <PersonPicture x:Name="AccountAvatar" Width="28" Height="28" IsHitTestVisible="False" />
+                                <StackPanel x:Name="AccountLabels" Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock x:Name="AccountLabel" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="ServerLabel" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <FontIcon x:Name="AccountChevron" Grid.Column="2" Glyph="&#xE70E;" FontSize="12" Margin="8,0,8,0"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <Button.Flyout>
+                                <MenuFlyout x:Name="AccountMenu" Placement="Top">
+                                    <MenuFlyoutSubItem Text="Appearance">
+                                        <MenuFlyoutSubItem.Icon><FontIcon Glyph="&#xE790;" /></MenuFlyoutSubItem.Icon>
+                                        <RadioMenuFlyoutItem x:Name="SystemThemeItem" Text="Use system theme" Tag="System" GroupName="AppearanceTheme" Click="ThemeClicked" />
+                                        <RadioMenuFlyoutItem x:Name="LightThemeItem" Text="Light" Tag="Light" GroupName="AppearanceTheme" Click="ThemeClicked" />
+                                        <RadioMenuFlyoutItem x:Name="DarkThemeItem" Text="Dark" Tag="Dark" GroupName="AppearanceTheme" Click="ThemeClicked" />
+                                    </MenuFlyoutSubItem>
+                                    <MenuFlyoutItem x:Name="LibraryDiagnosticsButton" Text="Playback diagnostics"
+                                                    AutomationProperties.Name="Open playback diagnostics" Click="DiagnosticsClicked">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE9D9;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutSeparator />
+                                    <MenuFlyoutItem Text="Switch account" Click="SwitchAccountClicked">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE748;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                    <MenuFlyoutItem Text="Sign out" Click="SignOutClicked">
+                                        <MenuFlyoutItem.Icon><FontIcon Glyph="&#xF3B1;" /></MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </Grid>
+                </views:LibraryView.Footer>
+            </views:LibraryView>
+            <views:PlayerView x:Name="Player" Visibility="Collapsed" BackRequested="PlayerBackRequested" FullscreenRequested="PlayerFullscreenRequested" SessionExpired="SessionExpired" />
         </Grid>
     </Grid>
 </Page>

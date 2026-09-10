@@ -1,0 +1,77 @@
+{
+  "dateUtc": "2026-09-10T01:52:55Z",
+  "environment": {
+    "host": "test-env",
+    "os": "Debian Linux x64",
+    "sdk": "10.0.301",
+    "workspace": "/tmp/emby-ui-fluent2-20260910",
+    "localVerificationPerformed": false
+  },
+  "source": {
+    "testSnapshotArchiveSha256": "faa0709403abd08a66325dc92b71a5334cfb8799f8a30d54cfe0453c6415f467",
+    "finalIncrement": "MediaShelfViewModel.cs was made partial and LibraryView.xaml.cs deferred scroll reset through DispatcherQueue after the test snapshot; semantic compilation was rerun successfully.",
+    "finalMediaShelfViewModelSha256": "7e2cae3b802b8015308120656672291a9fbfea7bf7d8d8cac3692593872ba0e1",
+    "finalLibraryViewCodeBehindSha256": "2fdca8596360760ac146529bb1f0dddd5a7af9d594b5316adf122fa4016c0915",
+    "finalLibraryViewModelSha256": "49057afebe6afaaca71ee99fd761e2d2e5c33c6ef37b8bd950c3cc9d884b0bcd"
+  },
+  "checks": {
+    "xamlXmlAndEventNames": {
+      "status": "passed",
+      "files": 7,
+      "errors": 0
+    },
+    "csharpRoslynSyntax": {
+      "status": "passed",
+      "files": 41,
+      "errors": 0
+    },
+    "originalTestSuites": {
+      "status": "passed",
+      "api": 47,
+      "playback": 136,
+      "mediaTransport": 125,
+      "total": 308,
+      "failed": 0,
+      "skipped": 0,
+      "command": "dotnet test --project tests/EmbyClient.<Suite>.Tests/EmbyClient.<Suite>.Tests.csproj --configuration Release"
+    },
+    "temporaryArtworkHarness": {
+      "status": "passed",
+      "total": 27,
+      "newArtworkSelectionCases": 8,
+      "existingImageCacheAndPosterLifecycleCases": 19,
+      "failed": 0,
+      "scope": "Actual ImageCache and PosterBindingLifetime source and repository tests linked into a temporary net10.0 xUnit project. The original Windows-targeted Platform.Tests project was not run."
+    },
+    "viewModelSemanticCompilation": {
+      "status": "passed",
+      "errors": 0,
+      "scope": "Actual ViewModels, ImageCache, API and CommunityToolkit.Mvvm 8.4.2; only Microsoft.UI.Xaml.Visibility was stubbed."
+    },
+    "uiSemanticCompilation": {
+      "status": "passed",
+      "bindingPropertyAndEventChecks": 446,
+      "errors": 0,
+      "warnings": "One CS0414 warning for the temporary generated HomeScroller field.",
+      "scope": "All actual App C# source, real WinUI 2.3.6 (WindowsAppSDK 2.4.0 dependency), WinUIEx 2.9.3, WinRT and Windows SDK .NET 10.0.19041.57 references; temporary XAML field, InitializeComponent, binding/property and event-signature stubs. No application code was executed."
+    },
+    "temporaryLibraryFlowHarness": {
+      "status": "passed",
+      "total": 5,
+      "failed": 0,
+      "scope": "Actual ViewModels, ImageCache and API in a temporary net10.0 xUnit harness with a Visibility enum stub. Synthetic HttpMessageHandler responses; no Emby server or Windows UI was contacted.",
+      "cases": [
+        "Search preserves sort/filter and no-op options keep paging available",
+        "A late failed first-season request cannot replace a newer empty-season selection",
+        "Cross-season resume excludes another series and manual season preference survives refresh",
+        "Home keeps successful shelves when another shelf fails",
+        "Home waits for pending library refresh before calculating its empty state"
+      ],
+      "warnings": "xUnit1051 analyzer suggestions in temporary harness calls that use the default CancellationToken."
+    }
+  },
+  "blocked": {
+    "nativeWinUiBuild": "The remote Debug build with EnableWindowsTargeting=true failed during Windows package restore with No space left on device on the test-env root filesystem. The task workspace was moved to /tmp to finish managed checks. Native restore was not retried.",
+    "xamlCompilationAndVisualVerification": "No native WinUI XAML compilation, Windows application startup, layout rendering, accessibility inspection or visual review was performed. Managed semantic checks do not establish success of these steps."
+  }
+}

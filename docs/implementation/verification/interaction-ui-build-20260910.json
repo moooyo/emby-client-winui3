@@ -1,0 +1,23 @@
+{
+  "dateUtc": "2026-09-10T02:27:26.3909851Z",
+  "scope": "Native build of interaction consistency and stable filtering changes",
+  "environment": "Windows x64 local preview build authorized by the user in the ongoing UI task",
+  "command": "dotnet build src/EmbyClient.App/EmbyClient.App.csproj -c Debug -p:Platform=x64 -o artifacts/previews/interaction-20260910/ --no-restore --nologo",
+  "result": "passed",
+  "errors": 0,
+  "warnings": [
+    "Existing generated WinUIEx Icon CS0618 warning"
+  ],
+  "outputDirectory": "artifacts/previews/interaction-20260910/",
+  "nativeXamlCompilation": "passed",
+  "visualVerification": "Not performed for this build",
+  "resourcePackaging": "App, MainWindow, MainPage and Views XBF resources are present inside the output directory",
+  "sourceSha256": {
+    "src/EmbyClient.App/Views/LibraryView.xaml": "6319b788ebd6be4f075ba9c6546864b94698e12d16f6f93c206f890a0c08da95",
+    "src/EmbyClient.App/Views/LibraryView.xaml.cs": "99275fb0fc303f3db0e5350a63f33491ca35e798f870107ba708452805b4c84a",
+    "src/EmbyClient.App/Views/LibraryView.Browsing.cs": "e94a71dca669d21ff99ccf0f42b09e45e80a629add6ba4497a8135195cb35797",
+    "src/EmbyClient.App/ViewModels/LibraryViewModel.cs": "ee660ab41e73f4eea64656e28cc19e40d524135408146ff6f4db0230a6798b65",
+    "src/EmbyClient.App/MainPage.xaml": "11b1cf567001ed0b29c35f1b41573f0eb82e267c0e55faa855d2595402c9ee8a",
+    "src/EmbyClient.App/MainPage.xaml.cs": "9ec0d358e67ec4abc2e13468875cd82a74b287db7db9ed9b77a3f5930b64f8ce"
+  }
+}

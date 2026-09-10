@@ -9,46 +9,72 @@
         </Grid.RowDefinitions>
         <Grid Padding="20,8" ColumnSpacing="16">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-            <Button Click="BackClicked" AutomationProperties.Name="Back to library"><SymbolIcon Symbol="Back" /></Button>
+            <Button Click="BackClicked" VerticalAlignment="Center" AutomationProperties.Name="Back to library" ToolTipService.ToolTip="Back to library"><SymbolIcon Symbol="Back" /></Button>
             <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                <TextBlock x:Name="TitleText" Text="Now playing" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                <TextBlock x:Name="StateText" Text="Choose something to play" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock x:Name="TitleText" Text="Now playing" Style="{StaticResource SubtitleTextBlockStyle}" TextTrimming="CharacterEllipsis"
+                           AutomationProperties.HeadingLevel="Level1" ToolTipService.ToolTip="{Binding Text, ElementName=TitleText}" />
+                <TextBlock x:Name="StateText" Text="Choose something to play" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                <Button Click="QueueClicked" Content="Queue (0)" x:Name="QueueButton" IsEnabled="False" AutomationProperties.Name="Open play queue" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <Button Click="QueueClicked" x:Name="QueueButton" IsEnabled="False" AutomationProperties.Name="Open play queue" ToolTipService.ToolTip="Play queue (0)">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <SymbolIcon Symbol="List" />
+                        <TextBlock x:Name="QueueCountText" Text="0" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular" />
+                    </StackPanel>
+                </Button>
                 <Button Click="DiagnosticsClicked" Content="Diagnostics" x:Name="DiagnosticsButton" AutomationProperties.Name="Open playback diagnostics" />
-                <Button Click="NextClicked" Content="Next in queue" x:Name="NextButton" IsEnabled="False" />
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Background="Black" MinHeight="160">
             <MediaPlayerElement x:Name="VideoSurface" AreTransportControlsEnabled="False" IsHitTestVisible="False" Stretch="Uniform" />
-            <ProgressRing x:Name="BufferingRing" Width="48" Height="48" IsActive="False" />
+            <ProgressRing x:Name="BufferingRing" Width="48" Height="48" IsActive="False" AutomationProperties.Name="Loading playback" />
             <InfoBar x:Name="PlaybackNotice" VerticalAlignment="Top" Margin="24" IsOpen="False" Severity="Error" />
+            <Button x:Name="RetryButton" Content="Retry from last position" Click="RetryClicked" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24"
+                    Visibility="Collapsed" IsEnabled="False" AutomationProperties.Name="Retry playback from last position" />
         </Grid>
         <StackPanel Grid.Row="2" Padding="24,12,24,20" Spacing="12">
-            <Button x:Name="RetryButton" Content="Retry from last position" Click="RetryClicked" HorizontalAlignment="Left"
-                    Visibility="Collapsed" IsEnabled="False" AutomationProperties.Name="Retry playback from last position" />
             <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <TextBlock x:Name="PositionText" Text="0:00" VerticalAlignment="Center" />
+                <!-- Reserve a time sample that scales with system text size so elapsed time never shifts the slider. -->
+                <Grid MinWidth="60">
+                    <TextBlock Text="00:00:00" Opacity="0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" Typography.NumeralAlignment="Tabular" />
+                    <TextBlock x:Name="PositionText" Text="0:00" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular" />
+                </Grid>
                 <Slider x:Name="Timeline" Grid.Column="1" Minimum="0" Maximum="1" IsEnabled="False" AutomationProperties.Name="Playback position" LostFocus="TimelineLostFocus" />
-                <TextBlock x:Name="DurationText" Text="--:--" Grid.Column="2" VerticalAlignment="Center" />
-            </Grid>
-            <Grid ColumnSpacing="16">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="180" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <Button x:Name="PauseButton" Click="PauseClicked" AutomationProperties.Name="Pause"><SymbolIcon Symbol="Pause" /></Button>
-                <Button Grid.Column="1" Click="ReplayClicked" AutomationProperties.Name="Restart from beginning" ToolTipService.ToolTip="Restart from beginning"><SymbolIcon Symbol="Refresh" /></Button>
-                <ToggleButton x:Name="MuteButton" Grid.Column="2" Click="MuteClicked" AutomationProperties.Name="Mute"><SymbolIcon Symbol="Volume" /></ToggleButton>
-                <Slider x:Name="Volume" Grid.Column="3" Minimum="0" Maximum="100" Value="100" VerticalAlignment="Center" ValueChanged="VolumeChanged" AutomationProperties.Name="Volume" />
-                <CheckBox x:Name="AutoPlayNext" Grid.Column="4" Content="Play next automatically" IsChecked="True" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                <Button Grid.Column="5" Click="FullscreenClicked" AutomationProperties.Name="Toggle fullscreen"><SymbolIcon Symbol="FullScreen" /></Button>
+                <Grid Grid.Column="2" MinWidth="60">
+                    <TextBlock Text="00:00:00" Opacity="0" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" Typography.NumeralAlignment="Tabular" />
+                    <TextBlock x:Name="DurationText" Text="--:--" VerticalAlignment="Center" HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular" />
+                </Grid>
             </Grid>
             <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                <ComboBox x:Name="SourceSelector" Header="Version" HorizontalAlignment="Stretch" SelectionChanged="SourceChanged" />
-                <ComboBox x:Name="AudioSelector" Grid.Column="1" Header="Audio" HorizontalAlignment="Stretch" SelectionChanged="AudioChanged" />
-                <ComboBox x:Name="SubtitleSelector" Grid.Column="2" Header="Subtitles" HorizontalAlignment="Stretch" SelectionChanged="SubtitleChanged" />
-                <ComboBox x:Name="QualitySelector" Grid.Column="3" Header="Quality limit" HorizontalAlignment="Stretch" SelectionChanged="QualityChanged" />
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Button x:Name="PauseButton" Click="PauseClicked" AutomationProperties.Name="Pause" ToolTipService.ToolTip="Pause"><SymbolIcon Symbol="Pause" /></Button>
+                <Button x:Name="NextButton" Grid.Column="1" Click="NextClicked" IsEnabled="False" AutomationProperties.Name="Next in queue" ToolTipService.ToolTip="Next in queue"><SymbolIcon Symbol="Next" /></Button>
+                <Button Grid.Column="2" Click="ReplayClicked" AutomationProperties.Name="Restart from beginning" ToolTipService.ToolTip="Restart from beginning"><SymbolIcon Symbol="Refresh" /></Button>
+                <ToggleButton x:Name="MuteButton" Grid.Column="3" Click="MuteClicked" AutomationProperties.Name="Mute" ToolTipService.ToolTip="Mute"><SymbolIcon Symbol="Volume" /></ToggleButton>
+                <Slider x:Name="Volume" Grid.Column="4" MinWidth="80" MaxWidth="180" HorizontalAlignment="Left" Minimum="0" Maximum="100" Value="100" VerticalAlignment="Center" ValueChanged="VolumeChanged" AutomationProperties.Name="Volume" />
+                <Button x:Name="PlaybackSettingsButton" Grid.Column="5" AutomationProperties.Name="Playback settings" ToolTipService.ToolTip="Playback settings">
+                    <SymbolIcon Symbol="Setting" />
+                    <Button.Flyout>
+                        <Flyout Placement="TopEdgeAlignedRight" Opening="PlaybackSettingsOpening" Closed="PlaybackSettingsClosed">
+                            <ScrollViewer MaxHeight="480" VerticalScrollMode="Auto" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Width="288" Spacing="16">
+                                    <TextBlock Text="Playback settings" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" AutomationProperties.HeadingLevel="Level2" />
+                                    <ComboBox x:Name="SourceSelector" Header="Version" HorizontalAlignment="Stretch" SelectionChanged="SourceChanged" AutomationProperties.Name="Playback version" />
+                                    <ComboBox x:Name="AudioSelector" Header="Audio" HorizontalAlignment="Stretch" SelectionChanged="AudioChanged" AutomationProperties.Name="Audio track" />
+                                    <ComboBox x:Name="SubtitleSelector" Header="Subtitles" HorizontalAlignment="Stretch" SelectionChanged="SubtitleChanged" AutomationProperties.Name="Subtitle track" />
+                                    <ComboBox x:Name="QualitySelector" HorizontalAlignment="Stretch" SelectionChanged="QualityChanged" AutomationProperties.Name="Streaming quality">
+                                        <ComboBox.Header><TextBlock Text="Streaming quality" TextWrapping="Wrap" /></ComboBox.Header>
+                                    </ComboBox>
+                                    <ToggleSwitch x:Name="AutoPlayNext" IsOn="True" AutomationProperties.Name="Play next automatically">
+                                        <ToggleSwitch.Header><TextBlock Text="Play next automatically" TextWrapping="Wrap" /></ToggleSwitch.Header>
+                                    </ToggleSwitch>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <Button x:Name="FullscreenButton" Grid.Column="6" Click="FullscreenClicked" AutomationProperties.Name="Enter fullscreen" ToolTipService.ToolTip="Enter fullscreen (F11)"><SymbolIcon Symbol="FullScreen" /></Button>
             </Grid>
         </StackPanel>
     </Grid>

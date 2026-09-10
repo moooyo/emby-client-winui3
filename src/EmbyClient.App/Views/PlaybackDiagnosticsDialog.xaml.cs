@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using EmbyClient.App.Services;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
 
@@ -22,6 +23,7 @@ public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
 
     private void RefreshSnapshot()
     {
+        StatusText.Text = string.Empty;
         try
         {
             _snapshot = _diagnostics.CreateSnapshot();
@@ -43,18 +45,21 @@ public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
             SummaryText.Text = summary.Length == 0 ? "No playback events have been recorded." : summary.ToString();
             ResultNotice.IsOpen = false;
             if (_diagnostics.LastIssue != PlaybackDiagnosticStorageIssue.None)
-                ShowResult("Some local diagnostic records could not be read or saved. The safe in-memory snapshot is still available.", InfoBarSeverity.Warning);
+                ShowIssue("Some local diagnostic records could not be read or saved. The safe in-memory snapshot is still available.");
         }
         catch (Exception)
         {
             _snapshot = [];
-            ShowResult("The diagnostic snapshot is unavailable. Try refreshing it.", InfoBarSeverity.Warning);
+            SummaryText.Text = "The diagnostic snapshot is unavailable.";
+            CountText.Text = "No snapshot available";
+            ShowIssue("The diagnostic snapshot is unavailable. Try refreshing it.");
         }
         UpdateActions();
     }
 
-    private void CopyClicked(object sender, RoutedEventArgs args)
+    private void CopyClicked(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        args.Cancel = true;
         if (_snapshot.Length == 0) return;
         try
         {
@@ -65,14 +70,15 @@ public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
                 IsAllowedInHistory = false,
                 IsRoamable = false
             });
-            ShowResult(copied ? "Safe snapshot copied. Clipboard history and roaming are disabled for this copy."
-                : "The clipboard is unavailable. Try again.", copied ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+            ShowStatus(copied ? "Safe snapshot copied. Clipboard history and roaming are disabled for this copy."
+                : "The clipboard is unavailable. Try again.");
         }
-        catch (Exception) { ShowResult("The clipboard is unavailable. Try again.", InfoBarSeverity.Warning); }
+        catch (Exception) { ShowStatus("The clipboard is unavailable. Try again."); }
     }
 
-    private async void SaveClicked(object sender, RoutedEventArgs args)
+    private async void SaveClicked(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
+        args.Cancel = true;
         if (_saving || _snapshot.Length == 0) return;
         _saving = true;
         UpdateActions();
@@ -80,25 +86,38 @@ public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
         {
             Directory.CreateDirectory(_diagnostics.DirectoryPath);
             await File.WriteAllBytesAsync(Path.Combine(_diagnostics.DirectoryPath, "snapshot.json"), _snapshot);
-            ShowResult("Saved snapshot.json in %LOCALAPPDATA%\\EmbyClient.Windows\\diagnostics. This replaces the previous snapshot.", InfoBarSeverity.Success);
+            ShowStatus("Saved snapshot.json in %LOCALAPPDATA%\\EmbyClient.Windows\\diagnostics. This replaces the previous snapshot.");
         }
-        catch (Exception) { ShowResult("The local snapshot could not be saved. Check available storage and try again.", InfoBarSeverity.Warning); }
+        catch (Exception) { ShowStatus("The local snapshot could not be saved. Check available storage and try again."); }
         finally { _saving = false; UpdateActions(); }
     }
 
-    private void RefreshClicked(object sender, RoutedEventArgs args) => RefreshSnapshot();
+    private void RefreshClicked(object sender, RoutedEventArgs args)
+    {
+        RefreshSnapshot();
+        if (_snapshot.Length > 0) ShowStatus($"Refreshed. {CountText.Text}.");
+    }
 
     private void UpdateActions()
     {
-        CopyButton.IsEnabled = !_saving && _snapshot.Length > 0;
-        SaveButton.IsEnabled = !_saving && _snapshot.Length > 0;
+        IsPrimaryButtonEnabled = !_saving && _snapshot.Length > 0;
+        IsSecondaryButtonEnabled = !_saving && _snapshot.Length > 0;
         RefreshButton.IsEnabled = !_saving;
     }
 
-    private void ShowResult(string message, InfoBarSeverity severity)
+    private void ShowIssue(string message)
     {
+        ResultNotice.IsOpen = false;
         ResultNotice.Message = message;
-        ResultNotice.Severity = severity;
+        ResultNotice.Severity = InfoBarSeverity.Warning;
         ResultNotice.IsOpen = true;
+    }
+
+    private void ShowStatus(string message)
+    {
+        StatusText.Text = message;
+        (FrameworkElementAutomationPeer.FromElement(StatusText)
+            ?? FrameworkElementAutomationPeer.CreatePeerForElement(StatusText))
+            ?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
 }

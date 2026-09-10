@@ -1,6 +1,7 @@
 using EmbyClient.App.Services;
 using EmbyClient.App.Views;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
@@ -12,6 +13,7 @@ public sealed partial class MainPage : Page
 {
     public event EventHandler? FullscreenRequested;
     public event EventHandler? ExitFullscreenRequested;
+    public event EventHandler? ThemePreferenceChanged;
     private readonly ConnectionService _connections = new();
     private ConnectedSession? _session;
     private CancellationTokenSource? _connectionRequest;
@@ -19,6 +21,7 @@ public sealed partial class MainPage : Page
     private bool _settingsReady;
     private bool _shuttingDown;
     private bool _sessionTransition;
+    private bool _themeSavePending;
     private TaskCompletionSource? _sessionExitCompletion;
 
     public MainPage()
@@ -59,6 +62,7 @@ public sealed partial class MainPage : Page
             SavedAccounts.Items.Add(option);
             if (account.Key == _connections.Settings.LastAccountKey) SavedAccounts.SelectedItem = option;
         }
+        SavedAccountSection.Visibility = SavedAccounts.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void SavedAccountChanged(object sender, SelectionChangedEventArgs args)
@@ -73,6 +77,16 @@ public sealed partial class MainPage : Page
     private void CredentialsChanged(object sender, TextChangedEventArgs args)
     {
         if (RestoreButton is not null) RestoreButton.IsEnabled = CanRestoreSelectedAccount();
+        if (ReferenceEquals(sender, ServerAddress) && ServerInputError is not null)
+        {
+            ServerInputError.Visibility = Visibility.Collapsed;
+            AutomationProperties.SetHelpText(ServerAddress, string.Empty);
+        }
+        if (ReferenceEquals(sender, UserName) && UserInputError is not null)
+        {
+            UserInputError.Visibility = Visibility.Collapsed;
+            AutomationProperties.SetHelpText(UserName, string.Empty);
+        }
     }
 
     private bool CanRestoreSelectedAccount() => _settingsReady && !_sessionTransition && !_shuttingDown && _connectionRequest is null
@@ -93,9 +107,8 @@ public sealed partial class MainPage : Page
     private async Task ConnectAsync(bool restore)
     {
         if (!_settingsReady || _connectionRequest is not null || _sessionTransition || _shuttingDown) return;
-        if (!restore && (string.IsNullOrWhiteSpace(ServerAddress.Text) || string.IsNullOrWhiteSpace(UserName.Text)))
+        if (!restore && !ValidateCredentials())
         {
-            ShowNotice("Enter a server address and username.", InfoBarSeverity.Warning);
             return;
         }
         var request = new CancellationTokenSource();
@@ -112,7 +125,11 @@ public sealed partial class MainPage : Page
             cancellationToken.ThrowIfCancellationRequested();
             _session = session;
             Password.Password = "";
-            AccountLabel.Text = $"{session.Server.ServerName}  /  {session.User.Name}";
+            AccountLabel.Text = session.User.Name ?? "Your account";
+            ServerLabel.Text = session.Server.ServerName ?? "Emby Server";
+            AccountAvatar.DisplayName = AccountLabel.Text;
+            AutomationProperties.SetName(AccountButton, $"Account and settings for {AccountLabel.Text} on {ServerLabel.Text}");
+            ToolTipService.SetToolTip(AccountButton, $"{AccountLabel.Text} · {ServerLabel.Text}");
             ConnectedPane.Visibility = Visibility.Visible;
             ConnectionPane.Visibility = Visibility.Collapsed;
             await Player.SetSessionAsync(session);
@@ -121,6 +138,7 @@ public sealed partial class MainPage : Page
             await Library.SetSessionAsync(session.Api, session.Server.Id!, session.User, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (!ReferenceEquals(_session, session) || _sessionTransition || _shuttingDown) return;
+            Library.FocusNavigation();
             if (session.PersistenceWarning is not null) ShowNotice(session.PersistenceWarning, InfoBarSeverity.Warning);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
@@ -151,10 +169,30 @@ public sealed partial class MainPage : Page
             button.IsEnabled = !_sessionTransition && !_shuttingDown;
         UpdateQueueButton();
         ConnectingProgress.Visibility = connecting || _sessionTransition ? Visibility.Visible : Visibility.Collapsed;
+        ConnectingProgress.IsIndeterminate = connecting || _sessionTransition;
         CancelConnection.Visibility = connecting && !_sessionTransition && !_shuttingDown ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void CancelConnectionClicked(object sender, RoutedEventArgs args) => _connectionRequest?.Cancel();
+
+    private bool ValidateCredentials()
+    {
+        var validServer = Uri.TryCreate(ServerAddress.Text.Trim(), UriKind.Absolute, out var server)
+            && (server.Scheme == Uri.UriSchemeHttp || server.Scheme == Uri.UriSchemeHttps)
+            && !string.IsNullOrWhiteSpace(server.Host);
+        var validUser = !string.IsNullOrWhiteSpace(UserName.Text);
+        ServerInputError.Text = validServer ? string.Empty : "Enter a complete server address beginning with http:// or https://.";
+        UserInputError.Text = validUser ? string.Empty : "Enter your Emby username.";
+        ServerInputError.Visibility = validServer ? Visibility.Collapsed : Visibility.Visible;
+        UserInputError.Visibility = validUser ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetHelpText(ServerAddress, ServerInputError.Text);
+        AutomationProperties.SetHelpText(UserName, UserInputError.Text);
+        if (!validServer) ServerAddress.Focus(FocusState.Programmatic);
+        else if (!validUser) UserName.Focus(FocusState.Programmatic);
+        return validServer && validUser;
+    }
+
+    public void SetFullscreenState(bool fullscreen) => Player.SetFullscreenState(fullscreen);
 
     private async void LibraryPlayRequested(object? sender, PlayItemRequestedEventArgs args)
     {
@@ -167,12 +205,17 @@ public sealed partial class MainPage : Page
         if (args.AddToQueue)
         {
             var result = Player.Enqueue(args.Item);
+            if (result == QueueAddResult.Added)
+            {
+                Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.FromElement(LibraryQueueButton)?
+                    .RaiseAutomationEvent(Microsoft.UI.Xaml.Automation.Peers.AutomationEvents.LiveRegionChanged);
+                return;
+            }
             ShowNotice(result switch
             {
-                QueueAddResult.Added => "Added to the play queue.",
                 QueueAddResult.Full => $"The queue is full ({TransientPlaybackQueue.MaximumItems} items). Remove an item or clear the queue before adding more.",
                 _ => "This item cannot be added to the play queue."
-            }, result == QueueAddResult.Added ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+            }, InfoBarSeverity.Warning);
             return;
         }
         Notice.IsOpen = false;
@@ -190,7 +233,11 @@ public sealed partial class MainPage : Page
         Player.Visibility = Visibility.Collapsed;
         Library.Visibility = Visibility.Visible;
         AccountToolbar.Visibility = Visibility.Visible;
-        try { await Library.RefreshAsync(); }
+        try
+        {
+            await Library.RefreshAsync();
+            Library.FocusCurrentDetails();
+        }
         catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error); }
     }
 
@@ -198,28 +245,40 @@ public sealed partial class MainPage : Page
 
     private void UpdateQueueButton()
     {
-        LibraryQueueButton.Content = $"Queue ({Player.QueueCount})";
+        QueueCountLabel.Text = Player.QueueCount.ToString();
+        AutomationProperties.SetName(LibraryQueueButton, $"Open play queue, {Player.QueueCount} items");
+        ToolTipService.SetToolTip(LibraryQueueButton, $"Play queue ({Player.QueueCount})");
         LibraryQueueButton.IsEnabled = _session is not null && !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
+        AccountButton.IsEnabled = _session is not null && !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
         LibraryDiagnosticsButton.IsEnabled = !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
+    }
+
+    private void AccountToolbar_SizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        var labelVisibility = args.NewSize.Width >= 120 ? Visibility.Visible : Visibility.Collapsed;
+        QueueLabel.Visibility = labelVisibility;
+        QueueCountBadge.Visibility = labelVisibility;
+        AccountLabels.Visibility = labelVisibility;
+        AccountChevron.Visibility = labelVisibility;
     }
 
     private async void QueueClicked(object sender, RoutedEventArgs args)
     {
-        if (_session is null || _sessionTransition || _shuttingDown) return;
+        if (_session is null || _sessionTransition || _shuttingDown || Player.IsModalOpen) return;
         try { await Player.ShowQueueAsync(XamlRoot, RequestedTheme, sender as Control); }
         catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error); }
     }
 
     private async void DiagnosticsClicked(object sender, RoutedEventArgs args)
     {
-        if (_sessionTransition || _shuttingDown) return;
-        try { await Player.ShowDiagnosticsAsync(XamlRoot, RequestedTheme, sender as Control); }
+        if (_sessionTransition || _shuttingDown || Player.IsModalOpen) return;
+        try { await Player.ShowDiagnosticsAsync(XamlRoot, RequestedTheme, AccountButton); }
         catch (Exception) { ShowNotice("Playback diagnostics could not be opened. Try again.", InfoBarSeverity.Warning); }
     }
 
     private async void OnPageKeyDown(object sender, KeyRoutedEventArgs args)
     {
-        if (Player.IsModalOpen) return;
+        if (args.Handled || Player.IsModalOpen || Player.IsSettingsOpen) return;
         if (Player.Visibility != Visibility.Visible) return;
         if (args.Key == VirtualKey.F11)
         {
@@ -231,7 +290,7 @@ public sealed partial class MainPage : Page
             args.Handled = true;
             ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
         }
-        else if (FocusManager.GetFocusedElement(XamlRoot) is not (TextBox or PasswordBox or ComboBox or Slider or Button or ToggleButton))
+        else if (FocusManager.GetFocusedElement(XamlRoot) is not (TextBox or PasswordBox or ComboBox or Slider or Button or ToggleButton or ToggleSwitch))
         {
             if (args.Key == VirtualKey.Space) { args.Handled = true; await Player.TogglePauseAsync(); }
             else if (args.Key is VirtualKey.Left or VirtualKey.Right)
@@ -253,6 +312,7 @@ public sealed partial class MainPage : Page
         try
         {
             _session = null;
+            AccountMenu.Hide();
             _connectionRequest?.Cancel();
             SetConnecting(_connectionRequest is not null);
             ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
@@ -323,17 +383,57 @@ public sealed partial class MainPage : Page
 
     private async void ThemeClicked(object sender, RoutedEventArgs args)
     {
-        if (sender is not MenuFlyoutItem { Tag: string theme }) return;
-        try { await _connections.SetThemeAsync(theme); ApplyTheme(); }
-        catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Warning); }
+        if (_themeSavePending || sender is not MenuFlyoutItem { Tag: string theme }) return;
+        var previousSetting = _connections.Settings.Theme;
+        var previousAppliedTheme = RequestedTheme;
+        _themeSavePending = true;
+        SetThemeOptionsEnabled(false);
+        UpdateThemeSelection();
+        try
+        {
+            await _connections.SetThemeAsync(theme);
+            ApplyTheme();
+        }
+        catch (Exception ex)
+        {
+            _connections.Settings.Theme = previousSetting;
+            RequestedTheme = previousAppliedTheme;
+            UpdateThemeSelection();
+            ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Warning);
+        }
+        finally
+        {
+            _themeSavePending = false;
+            SetThemeOptionsEnabled(true);
+        }
     }
 
-    private void ApplyTheme() => RequestedTheme = _connections.Settings.Theme switch
+    private void ApplyTheme()
     {
-        "Dark" => ElementTheme.Dark,
-        "Light" => ElementTheme.Light,
-        _ => ElementTheme.Default
-    };
+        var theme = _connections.Settings.Theme;
+        RequestedTheme = theme switch
+        {
+            "Dark" => ElementTheme.Dark,
+            "Light" => ElementTheme.Light,
+            _ => ElementTheme.Default
+        };
+        UpdateThemeSelection();
+        ThemePreferenceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void UpdateThemeSelection()
+    {
+        SystemThemeItem.IsChecked = RequestedTheme == ElementTheme.Default;
+        LightThemeItem.IsChecked = RequestedTheme == ElementTheme.Light;
+        DarkThemeItem.IsChecked = RequestedTheme == ElementTheme.Dark;
+    }
+
+    private void SetThemeOptionsEnabled(bool enabled)
+    {
+        SystemThemeItem.IsEnabled = enabled;
+        LightThemeItem.IsEnabled = enabled;
+        DarkThemeItem.IsEnabled = enabled;
+    }
 
     private void ShowNotice(string message, InfoBarSeverity severity)
     {

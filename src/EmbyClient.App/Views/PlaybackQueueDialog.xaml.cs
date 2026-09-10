@@ -1,6 +1,7 @@
 using EmbyClient.App.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
@@ -10,10 +11,12 @@ namespace EmbyClient.App.Views;
 public sealed partial class PlaybackQueueDialog : ContentDialog
 {
     private readonly TransientPlaybackQueue _queue;
+    private int _lastAnnouncedCount;
 
     internal PlaybackQueueDialog(TransientPlaybackQueue queue)
     {
         _queue = queue;
+        _lastAnnouncedCount = queue.Count;
         InitializeComponent();
         QueueList.ItemsSource = queue.Items;
         _queue.Changed += QueueChanged;
@@ -27,7 +30,15 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
 
     internal void Detach() => _queue.Changed -= QueueChanged;
 
-    private void QueueChanged(object? sender, EventArgs args) => UpdateControls();
+    private void QueueChanged(object? sender, EventArgs args)
+    {
+        UpdateControls();
+        if (_lastAnnouncedCount == _queue.Count) return;
+        _lastAnnouncedCount = _queue.Count;
+        (FrameworkElementAutomationPeer.FromElement(CountText)
+            ?? FrameworkElementAutomationPeer.CreatePeerForElement(CountText))
+            ?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+    }
     private void QueueSelectionChanged(object sender, SelectionChangedEventArgs args) => UpdateControls();
 
     private void UpdateControls()
@@ -48,10 +59,13 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
     private void MoveSelected(bool up)
     {
         if (QueueList.SelectedItem is not PlaybackQueueEntry entry) return;
+        var button = up ? MoveUpButton : MoveDownButton;
+        var buttonHadFocus = button.FocusState != FocusState.Unfocused;
         if (!(up ? _queue.MoveUp(entry.EntryId) : _queue.MoveDown(entry.EntryId))) return;
         QueueList.SelectedItem = entry;
         QueueList.ScrollIntoView(entry);
         UpdateControls();
+        if (buttonHadFocus && !button.IsEnabled) FocusSelection();
     }
 
     private void RemoveClicked(object sender, RoutedEventArgs args) => RemoveSelected();
@@ -63,6 +77,7 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
         if (!_queue.Remove(entry.EntryId)) return false;
         QueueList.SelectedIndex = Math.Min(index, _queue.Count - 1);
         UpdateControls();
+        FocusSelection();
         return true;
     }
 
@@ -71,6 +86,25 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
         _queue.Clear();
         QueueList.SelectedItem = null;
         UpdateControls();
+        FocusSelection();
+    }
+
+    private void FocusSelection()
+    {
+        // Restore focus after a selected row or its last available action disappears.
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (QueueList.SelectedItem is PlaybackQueueEntry entry)
+            {
+                QueueList.ScrollIntoView(entry);
+                if (QueueList.ContainerFromItem(entry) is Control container)
+                    container.Focus(FocusState.Programmatic);
+            }
+            else if (GetTemplateChild("CloseButton") is Control closeButton)
+            {
+                closeButton.Focus(FocusState.Programmatic);
+            }
+        });
     }
 
     private void QueueKeyDown(object sender, KeyRoutedEventArgs args)

@@ -138,12 +138,17 @@ public sealed class EmbyApiClient
     public Task<QueryResult<BaseItemDto>> GetSeasonsAsync(string seriesId,
         CancellationToken cancellationToken = default) =>
         GetItemsResultAsync($"Shows/{Segment(seriesId)}/Seasons",
-            new Query().Add("UserId", RequireUserId()).Add("EnableUserData", true), cancellationToken);
+            new Query().Add("UserId", RequireUserId()).Add("EnableUserData", true)
+                .AddList("Fields", ["Overview", "PrimaryImageAspectRatio"])
+                .Add("EnableImages", true).AddList("EnableImageTypes", ["Primary", "Thumb", "Backdrop"]),
+            cancellationToken);
 
     public Task<QueryResult<BaseItemDto>> GetEpisodesAsync(string seriesId, string? seasonId = null,
         CancellationToken cancellationToken = default) =>
         GetItemsResultAsync($"Shows/{Segment(seriesId)}/Episodes",
-            new Query().Add("UserId", RequireUserId()).Add("SeasonId", seasonId).Add("EnableUserData", true),
+            new Query().Add("UserId", RequireUserId()).Add("SeasonId", seasonId).Add("EnableUserData", true)
+                .AddList("Fields", ["Overview", "PrimaryImageAspectRatio"])
+                .Add("EnableImages", true).AddList("EnableImageTypes", ["Primary", "Thumb", "Backdrop"]),
             cancellationToken);
 
     public Task<UserItemDataDto> SetFavoriteAsync(string itemId, bool isFavorite,

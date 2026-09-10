@@ -6,35 +6,55 @@
     Title="Play queue"
     CloseButtonText="Close"
     DefaultButton="Close">
-    <Grid Width="480" MaxHeight="480" RowSpacing="12">
+    <Grid MaxWidth="480" RowSpacing="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
             <RowDefinition Height="*" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock x:Name="CountText" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <TextBlock x:Name="CountText" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
         <TextBlock Grid.Row="1" Text="Queued items play before automatic episode suggestions. The queue is cleared when you disconnect."
                    TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
         <Grid Grid.Row="2" MinHeight="120">
             <TextBlock x:Name="EmptyText" Text="Your queue is empty. Add a movie or episode from the library."
                        TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="340" />
             <ListView x:Name="QueueList" SelectionMode="Single" MaxHeight="300"
-                      AutomationProperties.Name="Queued media" SelectionChanged="QueueSelectionChanged"
+                      AutomationProperties.Name="Queued media" AutomationProperties.HelpText="Select an item to move or remove it. Press Delete to remove the selected item."
+                      SelectionChanged="QueueSelectionChanged"
                       ContainerContentChanging="QueueContainerContentChanging" KeyDown="QueueKeyDown">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="services:PlaybackQueueEntry">
                         <StackPanel Padding="0,6" Spacing="2">
-                            <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{x:Bind Detail}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.AccessibilityView="Raw" />
+                            <TextBlock Text="{x:Bind Detail}" TextWrapping="Wrap"
+                                       AutomationProperties.AccessibilityView="Raw" />
                         </StackPanel>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
         </Grid>
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="8">
-            <Button x:Name="MoveUpButton" Content="Move up" AutomationProperties.Name="Move selected queue item up" Click="MoveUpClicked" IsEnabled="False" />
-            <Button x:Name="MoveDownButton" Content="Move down" AutomationProperties.Name="Move selected queue item down" Click="MoveDownClicked" IsEnabled="False" />
-            <Button x:Name="RemoveButton" Content="Remove" AutomationProperties.Name="Remove selected queue item" Click="RemoveClicked" IsEnabled="False" />
-            <Button x:Name="ClearButton" Content="Clear queue" AutomationProperties.Name="Clear all queued items" Click="ClearClicked" IsEnabled="False" />
-        </StackPanel>
+        <CommandBar Grid.Row="3" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True"
+                    Background="Transparent" AutomationProperties.Name="Queue actions">
+            <AppBarButton x:Name="MoveUpButton" Label="Move up" Icon="Up" AutomationProperties.Name="Move up"
+                          AutomationProperties.HelpText="Move the selected queue item earlier."
+                          Click="MoveUpClicked" IsEnabled="False" />
+            <AppBarButton x:Name="MoveDownButton" Label="Move down" Icon="Down" AutomationProperties.Name="Move down"
+                          AutomationProperties.HelpText="Move the selected queue item later."
+                          Click="MoveDownClicked" IsEnabled="False" />
+            <AppBarButton x:Name="RemoveButton" Label="Remove" Icon="Remove" AutomationProperties.Name="Remove"
+                          AutomationProperties.HelpText="Remove the selected item from the queue. The media file is kept."
+                          Click="RemoveClicked" IsEnabled="False" />
+            <CommandBar.SecondaryCommands>
+                <AppBarButton x:Name="ClearButton" Label="Clear queue" Icon="Clear" AutomationProperties.Name="Clear queue"
+                              AutomationProperties.HelpText="Remove all queued items. The media files are kept."
+                              Click="ClearClicked" IsEnabled="False" />
+            </CommandBar.SecondaryCommands>
+        </CommandBar>
     </Grid>
 </ContentDialog>

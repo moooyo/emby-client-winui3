@@ -5,12 +5,12 @@
     xmlns:wex="using:WinUIEx"
     Title="Emby for Windows">
     <wex:WindowEx.SystemBackdrop><MicaBackdrop /></wex:WindowEx.SystemBackdrop>
-    <Grid>
+    <Grid x:Name="WindowRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TitleBar x:Name="AppTitleBar" Title="Emby for Windows" />
+        <TitleBar x:Name="AppTitleBar" Title="Emby for Windows" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
         <Frame x:Name="RootFrame" Grid.Row="1" />
     </Grid>
 </wex:WindowEx>
