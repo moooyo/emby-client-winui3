@@ -5,7 +5,6 @@ namespace EmbyClient.App;
 public sealed partial class MainWindow : WindowEx
 {
     private readonly MainPage _page;
-    private readonly Windows.UI.ViewManagement.AccessibilitySettings _accessibility = new();
     private bool _closing;
     private bool _allowClose;
 
@@ -34,7 +33,8 @@ public sealed partial class MainWindow : WindowEx
         };
         _page.ThemePreferenceChanged += (_, _) => WindowRoot.RequestedTheme = _page.RequestedTheme;
         WindowRoot.ActualThemeChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateCaptionColors);
-        _accessibility.HighContrastChanged += HighContrastChanged;
+        AppTitleBar.RegisterPropertyChangedCallback(Microsoft.UI.Xaml.Controls.Control.ForegroundProperty,
+            (_, _) => DispatcherQueue.TryEnqueue(UpdateCaptionColors));
         AppWindow.Changed += (_, args) => { if (args.DidPresenterChange) UpdatePresentation(); };
         RootFrame.Content = _page;
         PersistenceId = "MainWindow";
@@ -50,9 +50,6 @@ public sealed partial class MainWindow : WindowEx
         _page.SetFullscreenState(fullscreen);
     }
 
-    private void HighContrastChanged(Windows.UI.ViewManagement.AccessibilitySettings sender, object args) =>
-        DispatcherQueue.TryEnqueue(UpdateCaptionColors);
-
     private void UpdateCaptionColors()
     {
         AppWindow.TitleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
@@ -66,7 +63,6 @@ public sealed partial class MainWindow : WindowEx
         args.Cancel = true;
         if (_closing) return;
         _closing = true;
-        _accessibility.HighContrastChanged -= HighContrastChanged;
         try { await _page.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(8)); }
         catch (Exception) { /* Shutdown is bounded even when the server is unavailable. */ }
         _allowClose = true;

@@ -1,0 +1,31 @@
+{
+  "dateUtc": "2026-09-10T07:01:08.1475785Z",
+  "scope": "Desktop accessibility notification startup fix",
+  "failure": {
+    "hresult": "0x80070490",
+    "operation": "Windows.UI.ViewManagement.AccessibilitySettings.add_HighContrastChanged",
+    "location": "MainWindow constructor",
+    "attribution": "Managed exception captured during OnLaunched; not a missing XAML resource"
+  },
+  "changes": [
+    "Follow the WinUI title-bar Foreground dependency property and ActualThemeChanged instead of subscribing to AccessibilitySettings.HighContrastChanged",
+    "Treat UISettings text-scale notifications as optional; retain the current scale when COM access is unavailable and refresh through layout callbacks"
+  ],
+  "validation": {
+    "nativeDebugBuild": "passed",
+    "errors": 0,
+    "warning": "Existing generated WinUIEx Icon CS0618",
+    "launch": "passed",
+    "windowTitle": "Emby for Windows",
+    "processId": 47708,
+    "responding": true,
+    "observation": "Window remained open and responsive after six seconds",
+    "limitation": "No sign-in, playback, live text-scale or high-contrast transition acceptance was performed",
+    "temporaryExceptionLogging": "Removed before final build"
+  },
+  "sourceSha256": {
+    "src/EmbyClient.App/MainWindow.xaml.cs": "9e05126d5e66d342c253fb6b64d310ad58b9f68ef4b82d270411e2a0f9f486eb",
+    "src/EmbyClient.App/Views/LibraryView.Accessibility.cs": "9b701802d1f6ebde3513ef6fffca3379a98b170256414b53340fd3c0e69604ce",
+    "src/EmbyClient.App/Views/LibraryView.Browsing.cs": "9bad53c3c2231e50e27fee18076792f256c2a0c0746439ef4648bc08f66abc2b"
+  }
+}

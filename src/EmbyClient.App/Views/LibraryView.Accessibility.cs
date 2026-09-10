@@ -17,8 +17,16 @@ public sealed partial class LibraryView
     {
         if (!_textScaleSubscribed)
         {
-            _displaySettings.TextScaleFactorChanged += TextScaleFactorChanged;
-            _textScaleSubscribed = true;
+            try
+            {
+                _displaySettings.TextScaleFactorChanged += TextScaleFactorChanged;
+                _textScaleSubscribed = true;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                // Desktop hosts may not expose this optional WinRT notification source.
+                // Normal layout callbacks also refresh the current text scale.
+            }
         }
         UpdateTextScale();
     }
@@ -26,7 +34,8 @@ public sealed partial class LibraryView
     private void LibraryAccessibility_Unloaded(object sender, RoutedEventArgs args)
     {
         if (!_textScaleSubscribed) return;
-        _displaySettings.TextScaleFactorChanged -= TextScaleFactorChanged;
+        try { _displaySettings.TextScaleFactorChanged -= TextScaleFactorChanged; }
+        catch (System.Runtime.InteropServices.COMException) { }
         _textScaleSubscribed = false;
     }
 
@@ -35,7 +44,7 @@ public sealed partial class LibraryView
 
     private void UpdateTextScale()
     {
-        _textScaleFactor = Math.Max(1, _displaySettings.TextScaleFactor);
+        _textScaleFactor = ReadTextScale();
         foreach (var shelf in _loadedShelves)
             if (shelf.Tag is MediaShelfViewModel model) SizeHomeShelf(shelf, model.IsLandscape);
         foreach (var tile in _loadedLibraryTiles) SizeLibraryTile(tile);
@@ -44,6 +53,18 @@ public sealed partial class LibraryView
         CastGrid.MinHeight = 248 + 38 * (_textScaleFactor - 1);
         UpdateDetailShelfSize();
         QueueViewportUpdate();
+    }
+
+    private void RefreshTextScaleIfNeeded()
+    {
+        if (IsLoaded && Math.Abs(_textScaleFactor - ReadTextScale()) > 0.001)
+            UpdateTextScale();
+    }
+
+    private double ReadTextScale()
+    {
+        try { return Math.Max(1, _displaySettings.TextScaleFactor); }
+        catch (System.Runtime.InteropServices.COMException) { return _textScaleFactor; }
     }
 
     private void SizeHomeShelf(GridView shelf, bool landscape)

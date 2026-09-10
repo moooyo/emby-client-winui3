@@ -38,6 +38,7 @@ public sealed partial class LibraryView
 
     private async void MediaPosterCard_SizeChanged(object sender, SizeChangedEventArgs args)
     {
+        RefreshTextScaleIfNeeded();
         if (sender is not Grid card || !ReferenceEquals(FindAncestor<GridView>(card), MediaGrid)
             || args.NewSize.Width <= 0) return;
         var height = args.NewSize.Width * 1.5;
@@ -74,7 +75,11 @@ public sealed partial class LibraryView
         scroller.SizeChanged -= CollectionViewport_SizeChanged;
     }
 
-    private void CollectionViewport_SizeChanged(object sender, SizeChangedEventArgs args) => QueueViewportUpdate();
+    private void CollectionViewport_SizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        RefreshTextScaleIfNeeded();
+        QueueViewportUpdate();
+    }
 
     private void QueueViewportUpdate()
     {
