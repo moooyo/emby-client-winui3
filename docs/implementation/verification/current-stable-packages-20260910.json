@@ -1,0 +1,30 @@
+{
+  "Purpose": "Revalidate the requested current stable Windows UI dependencies against NuGet's primary package index",
+  "SourceRevision": "7a9355879440ad58f4185d713f2a2ef0025ea321",
+  "Method": "Read each NuGet flat-container version index over HTTPS, exclude versions containing a prerelease suffix, and select the greatest numeric version",
+  "Packages": [
+    {
+      "Package": "Microsoft.WindowsAppSDK",
+      "LockedVersion": "2.4.0",
+      "LatestStable": "2.4.0",
+      "CheckedAtUtc": "2026-09-10T00:17:27.4244205Z",
+      "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windowsappsdk/index.json"
+    },
+    {
+      "Package": "WinUIEx",
+      "LockedVersion": "2.9.3",
+      "LatestStable": "2.9.3",
+      "CheckedAtUtc": "2026-09-10T00:17:27.8139881Z",
+      "Source": "https://api.nuget.org/v3-flatcontainer/winuiex/index.json"
+    },
+    {
+      "Package": "CommunityToolkit.Mvvm",
+      "LockedVersion": "8.4.2",
+      "LatestStable": "8.4.2",
+      "CheckedAtUtc": "2026-09-10T00:17:28.1893875Z",
+      "Source": "https://api.nuget.org/v3-flatcontainer/communitytoolkit.mvvm/index.json"
+    }
+  ],
+  "ChangesRequired": false,
+  "Limits": "Point-in-time stable-package metadata; no new build, runtime compatibility, or release acceptance is implied"
+}
