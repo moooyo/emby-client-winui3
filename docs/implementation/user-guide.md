@@ -39,8 +39,9 @@ The initial playback profile targets SDR H.264/AAC MP4 and server-generated HLS.
 | Space | Pause/resume when focus is on the player background |
 | Left / Right | Seek by ten seconds when focus is on the player background |
 | Timeline keyboard controls | Move the timeline with arrows, Home, End, Page Up, or Page Down |
+| Volume slider Home / End | Set the focused volume slider to 0 / 100 |
 
-Focused buttons, selectors, and sliders retain their normal Windows keyboard behavior. Return to the library to stop playback and refresh server-backed information.
+Use Tab and Shift+Tab to move between controls. Focused buttons, selectors, and sliders retain their normal Windows keyboard behavior: Space activates the focused button, including Back when that button is focused. Focus Pause/Resume before using Space to control playback. Return to the library to stop playback and refresh server-backed information.
 
 While video is actually playing, the client requests that Windows keep the display on. Pausing, buffering, stopping, or disconnecting releases that request. Display-request availability does not prevent playback, and the client does not change the user's Windows power settings.
 

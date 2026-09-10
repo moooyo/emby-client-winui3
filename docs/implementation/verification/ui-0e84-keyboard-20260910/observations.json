@@ -1,0 +1,137 @@
+[
+  {
+    "Name": "02-connected-home",
+    "ArchivedAtUtc": "2026-09-10T00:42:51.740Z",
+    "FileName": "02-connected-home.jpg",
+    "Sha256": "0a273bef985c91ef0902e8844fb4a9139741faf035d87f63c8e0e61e7c31c782",
+    "WindowId": 200830,
+    "FocusedElement": "32 edit Search your media ID: TextBox",
+    "Observation": "Manual saved sign-in completed; Home has two synthetic items and the search edit holds focus."
+  },
+  {
+    "Name": "03-input-not-visible",
+    "ArchivedAtUtc": "2026-09-10T00:43:57.376Z",
+    "FileName": "03-input-not-visible.jpg",
+    "Sha256": "9e44a362acdbd49b21af2b0951a54e2b0f553f138643b49cfe2ff4530405edd4",
+    "WindowId": 200830,
+    "FocusedElement": "32 edit Search your media ID: TextBox",
+    "Observation": "A text-input call and one Tab call returned, but the search text and reported focus did not change; not counted as successful keyboard input."
+  },
+  {
+    "Name": "04-keyboard-search-result",
+    "ArchivedAtUtc": "2026-09-10T00:44:33.131Z",
+    "FileName": "04-keyboard-search-result.jpg",
+    "Sha256": "b4e938d3297f5f3907a9e522c24096f2e0fad7a20c574977e4347cef952a18f8",
+    "WindowId": 200830,
+    "FocusedElement": "32 edit Search your media ID: TextBox",
+    "Observation": "After explicit search-focus setup, typing and Enter produced one matching Synthetic Color Study result."
+  },
+  {
+    "Name": "05-keyboard-card-focus",
+    "ArchivedAtUtc": "2026-09-10T00:44:51.827Z",
+    "FileName": "05-keyboard-card-focus.jpg",
+    "Sha256": "096457f85ef46afca866dae2624e3d1f2c25179bcfbf66906601bfcdd515582d",
+    "WindowId": 200830,
+    "FocusedElement": "32 edit Search your media ID: TextBox",
+    "Observation": "Two Tab presses visibly move the focus outline through Refresh to the sole media card; the tool still reports the search edit as focused, so that field is not trusted as an actual focus assertion."
+  },
+  {
+    "Name": "06-keyboard-opened-details",
+    "ArchivedAtUtc": "2026-09-10T00:45:02.185Z",
+    "FileName": "06-keyboard-opened-details.jpg",
+    "Sha256": "0e4c9308ef03bae96209a40acaccc0c095dadb8dbd80722adf2ff8f3b5dc79a7",
+    "WindowId": 200830,
+    "FocusedElement": "32 edit Search your media ID: TextBox",
+    "Observation": "Enter on the focused result opens Synthetic Color Study details; focus restoration is not inferred from the reported accessibility focus field."
+  },
+  {
+    "Name": "07-keyboard-play-focus",
+    "ArchivedAtUtc": "2026-09-10T00:46:30.928Z",
+    "FileName": "07-keyboard-play-focus.jpg",
+    "Sha256": "0a09ce8dfde20f34101797f3499bd0d904b3fc5329d32db30db0e713ee8e3f13",
+    "WindowId": 200830,
+    "FocusedElement": "32 edit Search your media ID: TextBox",
+    "Observation": "Reverse Tab navigation reaches the visible Play focus outline; no account or library-state action was activated."
+  },
+  {
+    "Name": "08-keyboard-started-playing",
+    "ArchivedAtUtc": "2026-09-10T00:46:53.577Z",
+    "FileName": "08-keyboard-started-playing.jpg",
+    "Sha256": "2509d1f686b70899bf62c90ea12c50fd23e9dd0d94eef1d205ccad4c841850a6",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "Keyboard activation starts DirectStream playback; an actual blue frame is visible at about ten seconds."
+  },
+  {
+    "Name": "09-keyboard-returned-details",
+    "ArchivedAtUtc": "2026-09-10T00:47:47.719Z",
+    "FileName": "09-keyboard-returned-details.jpg",
+    "Sha256": "56fbe28d901102002ed387af04e74ea0b5f0c3281342ffec60ae08c8af9e9227",
+    "WindowId": 200830,
+    "FocusedElement": "121 edit Search your media ID: TextBox",
+    "Observation": "Space activated the focused Back control, stopped playback, and returned to the original detail with Resume at 0:22. This was a keyboard navigation result, not a pause result."
+  },
+  {
+    "Name": "10-keyboard-pause-focus",
+    "ArchivedAtUtc": "2026-09-10T00:49:29.560Z",
+    "FileName": "10-keyboard-pause-focus.jpg",
+    "Sha256": "023f6d654b1ce98a12875e9bd8ebbf40947e5a79e1f0bb4f8537997694e2be97",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "Four forward Tab presses from Back visibly focus Queue, Diagnostics, the timeline, and Pause while the second playback is running."
+  },
+  {
+    "Name": "11-keyboard-paused",
+    "ArchivedAtUtc": "2026-09-10T00:49:55.094Z",
+    "FileName": "11-keyboard-paused.jpg",
+    "Sha256": "0dbed288f7ea8c9b936c8c4d002949929b6e1f39d5d394e4858d2acbba39b4b3",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "Space on the visibly focused Pause control changes state to Paused at about 47 seconds while preserving the orange frame."
+  },
+  {
+    "Name": "12-keyboard-mute-selected",
+    "ArchivedAtUtc": "2026-09-10T00:50:39.865Z",
+    "FileName": "12-keyboard-mute-selected.jpg",
+    "Sha256": "d29356a543d562635712e4b1d8295b3065a7f95ee5e7730a0c15ffd3f8a54665",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "Space on the focused Mute toggle selects it while playback remains paused at 47 seconds; audible output was not assessed."
+  },
+  {
+    "Name": "13-keyboard-volume-zero",
+    "ArchivedAtUtc": "2026-09-10T00:51:22.317Z",
+    "FileName": "13-keyboard-volume-zero.jpg",
+    "Sha256": "5e3c78aae39216175d5569d748004dc971e3547c8fbb29f5c1fc136a845c3de9",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "Home on the visually focused Volume slider changes its tooltip to 0 and thumb to the minimum; the playback timeline remains paused at 47 seconds."
+  },
+  {
+    "Name": "14-keyboard-volume-restored",
+    "ArchivedAtUtc": "2026-09-10T00:51:49.455Z",
+    "FileName": "14-keyboard-volume-restored.jpg",
+    "Sha256": "470d11f9cdd43278a55184645e18be0fb313c9f16d9080170d08b97f8e4706b2",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "End restores the Volume tooltip to 100 and the thumb to its original maximum; playback remains paused at 47 seconds."
+  },
+  {
+    "Name": "15-keyboard-back-focus",
+    "ArchivedAtUtc": "2026-09-10T00:52:38.721Z",
+    "FileName": "15-keyboard-back-focus.jpg",
+    "Sha256": "6e7dea738341e1847deafe77cebfc706548503baacecfdeab22e461ad15df1b0",
+    "WindowId": 200830,
+    "FocusedElement": "7 pane",
+    "Observation": "Forward Tab navigation from Volume visibly reaches AutoPlay, Fullscreen, Quality, and after one outline-free stop returns to Back; no settings were changed on the intervening controls."
+  },
+  {
+    "Name": "16-keyboard-returned-final",
+    "ArchivedAtUtc": "2026-09-10T00:52:55.172Z",
+    "FileName": "16-keyboard-returned-final.jpg",
+    "Sha256": "b699096969da3aee8131ded8e1845f6ca5181265cf2762b40ec4def1c12b63c1",
+    "WindowId": 200830,
+    "FocusedElement": "190 edit Search your media ID: TextBox",
+    "Observation": "Enter on the visibly focused Back button returns to Synthetic Color Study details with Resume at 0:47. Playback is no longer displayed."
+  }
+]

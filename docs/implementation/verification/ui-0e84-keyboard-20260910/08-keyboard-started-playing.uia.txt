@@ -1,0 +1,38 @@
+Window: "Emby for Windows", App: EmbyClient.App.exe.
+	0 window Emby for Windows Secondary Actions: Raise
+		1 pane Non Client Input Sink Window
+		2 pane AppWindow Custom Title Bar
+			3 button Minimize ID: Minimize
+			4 button Maximize ID: Maximize
+			5 button Close ID: Close
+		6 pane
+			7 pane
+				8 title bar Emby for Windows ID: AppTitleBar
+					9 text Emby for Windows ID: PART_TitleText
+				78 button Back to library
+				79 text Synthetic Color Study ID: TitleText
+				80 text Playing · DirectStream ID: StateText
+				81 button Open play queue ID: QueueButton
+				82 button Open playback diagnostics ID: DiagnosticsButton
+				83 button (disabled) Next in queue ID: NextButton
+				86 text 0:10 ID: PositionText
+				87 slider Playback position ID: Timeline
+				88 text 1:00 ID: DurationText
+				89 button Pause ID: PauseButton
+				90 button Restart from beginning
+				91 button Mute ID: MuteButton
+				92 slider Volume ID: Volume
+				93 check box Play next automatically ID: AutoPlayNext
+				94 button Toggle fullscreen
+				95 combo box (disabled) Version ID: SourceSelector
+				96 combo box (disabled) Audio ID: AudioSelector
+				97 combo box (disabled) Subtitles ID: SubtitleSelector
+				98 combo box Quality limit ID: QualitySelector
+		54 title bar
+			55 menu bar System ID: MenuBar
+				56 menu item System
+			57 button Minimize
+			58 button Maximize
+			59 button Close
+
+The focused UI element is 7 pane.

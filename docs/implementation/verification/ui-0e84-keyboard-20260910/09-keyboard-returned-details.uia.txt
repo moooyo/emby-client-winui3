@@ -1,0 +1,82 @@
+Window: "Emby for Windows", App: EmbyClient.App.exe.
+	0 window Emby for Windows Secondary Actions: Raise
+		1 pane Non Client Input Sink Window
+		2 pane AppWindow Custom Title Bar
+			3 button Minimize ID: Minimize
+			4 button Maximize ID: Maximize
+			5 button Close ID: Close
+		6 pane
+			7 pane
+				8 title bar Emby for Windows ID: AppTitleBar
+					9 text Emby for Windows ID: PART_TitleText
+				99 text SYNTHETIC Large Library (5000) / demo (synthetic) ID: AccountLabel
+				100 button Open play queue ID: LibraryQueueButton
+				101 button Open playback diagnostics ID: LibraryDiagnosticsButton
+				102 button Appearance
+				103 button Switch account
+				104 button Sign out
+				105 custom ID: LibraryNavigation
+					106 button Back ID: NavigationViewBackButton
+					107 button Close Navigation ID: TogglePaneButton
+						108 text Library ID: PaneTitleTextBlock
+					109 window Secondary Actions: Raise ID: PaneRoot
+						110 pane ID: MenuItemsScrollViewer
+							111 group ID: MenuItemsHost
+								112 list item (selectable) Home ID: HomeNavigationItem
+								113 list item (selectable) Favorites ID: FavoritesNavigationItem
+								114 text Media libraries ID: HeaderText
+								115 list item (selectable) Synthetic Movies
+								116 list item (selectable) Synthetic Television
+								117 list item (selectable) Synthetic Large Movies (5000)
+						118 pane ID: FooterItemsScrollViewer
+							119 group ID: FooterMenuItemsHost
+					120 group Search your media ID: SearchBox
+						121 edit Search your media ID: TextBox
+							122 text Search your media
+					123 button Refresh library
+					124 text Synthetic Color Study
+					125 text Item details
+					126 pane
+						127 image ID: DetailPoster
+						128 text 2026 · 1:00 · Movie
+						129 text Synthetic
+						130 text SYNTHETIC DEVELOPMENT DATA. This locally generated color-and-tone fixture is not real library content or evidence of Emby compatibility.
+						131 button Play
+						132 button Resume at 0:22
+						133 button Add to queue
+						134 button Add favorite
+						135 button Mark played
+						136 text Resume at 0:22
+		54 title bar
+			55 menu bar System ID: MenuBar
+				56 menu item System
+			57 button Minimize
+			58 button Maximize
+			59 button Close
+
+Document text: ```
+Library
+
+Home
+
+Favorites
+Media libraries
+
+Synthetic Movies
+
+Synthetic Television
+Synthetic Large Movies (5000)
+Search your media
+
+
+Synthetic Color Study
+Item details
+2026 · 1:00 · Movie
+Synthetic
+SYNTHETIC DEVELOPMENT DATA. This locally generated color-and-tone fixture is not real library content or evidence of Emby compatibility.
+Play
+Resume at 0:22
+Add to queue
+Add favorite
+Mark played
+```

@@ -1,0 +1,88 @@
+Window: "Emby for Windows", App: EmbyClient.App.exe.
+	0 window Emby for Windows Secondary Actions: Raise
+		1 pane Non Client Input Sink Window
+		2 pane AppWindow Custom Title Bar
+			3 button Minimize ID: Minimize
+			4 button Maximize ID: Maximize
+			5 button Close ID: Close
+		6 pane
+			7 pane
+				8 title bar Emby for Windows ID: AppTitleBar
+					9 text Emby for Windows ID: PART_TitleText
+				10 text SYNTHETIC Large Library (5000) / demo (synthetic) ID: AccountLabel
+				11 button Open play queue ID: LibraryQueueButton
+				12 button Open playback diagnostics ID: LibraryDiagnosticsButton
+				13 button Appearance
+				14 button Switch account
+				15 button Sign out
+				16 custom ID: LibraryNavigation
+					17 button (disabled) Back ID: NavigationViewBackButton
+					18 button Close Navigation ID: TogglePaneButton
+						19 text Library ID: PaneTitleTextBlock
+					20 window Secondary Actions: Raise ID: PaneRoot
+						21 pane ID: MenuItemsScrollViewer
+							22 group ID: MenuItemsHost
+								23 list item (selectable) Home ID: HomeNavigationItem
+								24 list item (selectable) Favorites ID: FavoritesNavigationItem
+								25 text Media libraries ID: HeaderText
+								26 list item (selectable) Synthetic Movies
+								27 list item (selectable) Synthetic Television
+								28 list item (selectable) Synthetic Large Movies (5000)
+						29 pane ID: FooterItemsScrollViewer
+							30 group ID: FooterMenuItemsHost
+					31 group Search your media ID: SearchBox
+						32 edit Search your media ID: TextBox
+							33 text Search your media
+					34 button Refresh library
+					35 text Continue watching
+					36 text 2 items
+					37 group ID: HomeSections
+						38 radio button (selectable) Continue watching
+						39 radio button (selectable) Next up
+						40 radio button (selectable) Recently added
+					41 list Media items ID: MediaGrid
+						42 list item Synthetic Episode Two
+							43 image
+							44 progress bar Resume at 0:12
+							45 text Synthetic Episode Two
+							46 text Synthetic Screen Tests · S01 E02
+							47 text Resume at 0:12
+						48 list item Synthetic Motion Sample
+							49 image
+							50 progress bar Resume at 0:17
+							51 text Synthetic Motion Sample
+							52 text 2026 · Movie
+							53 text Resume at 0:17
+		54 title bar
+			55 menu bar System ID: MenuBar
+				56 menu item System
+			57 button Minimize
+			58 button Maximize
+			59 button Close
+
+Document text: ```
+Library
+
+Home
+
+Favorites
+Media libraries
+
+Synthetic Movies
+
+Synthetic Television
+Synthetic Large Movies (5000)
+Search your media
+
+
+Continue watching
+2 items
+Next up
+Recently added
+Synthetic Episode Two
+Synthetic Screen Tests · S01 E02
+Resume at 0:12
+Synthetic Motion Sample
+2026 · Movie
+Resume at 0:17
+```

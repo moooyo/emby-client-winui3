@@ -1,0 +1,14 @@
+{
+  "RecordedAtUtc": "2026-09-10T00:41:48.5597026Z",
+  "ProcessId": 1780,
+  "ProcessStartedAtUtc": "2026-09-10T00:40:20.7330656Z",
+  "ProcessPath": "D:\\code\\emby-client-winui3\\artifacts\\verification\\startup-initialization-20260910\\publish\\embyclient.app.exe",
+  "ExecutableSha256": "0E84F4581A3D2C3BE460DCBD0D936733A3F970B56DD4CE956D04E09932F18034",
+  "BuildReceipt": "docs/implementation/verification/startup-initialization-aot-20260910.json",
+  "RepositoryRevisionAtVerification": "cca1d91f1bdcdbb3248bc572c8a507716adde0c9",
+  "Instrumented": false,
+  "Previous257BProcessWasAbsentBeforeLaunch": true,
+  "FixturePort": 18962,
+  "FixtureBaselineSource": "keyboard-257b-resumed/fixture-before.json was captured before this new normal app started; the directory name is not a candidate identity",
+  "AuthenticationHandoffAtIdentityCapture": "Awaiting user confirmation; no authentication control was automated"
+}

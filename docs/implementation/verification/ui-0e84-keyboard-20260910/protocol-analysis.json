@@ -1,0 +1,195 @@
+{
+  "SchemaVersion": 1,
+  "Scope": "Static analysis of frozen synthetic fixture counters and recorded keyboard observations; no new runtime verification.",
+  "Candidate": {
+    "ExecutableSha256": "0e84f4581a3d2c3be460dcbd0d936733a3f970b56dd4ce956d04e09932f18034",
+    "RepositoryRevision": "cca1d91f1bdcdbb3248bc572c8a507716adde0c9",
+    "Instrumented": false,
+    "ProcessIdFromIdentityFile": 1780,
+    "BuildReceipt": "docs/implementation/verification/startup-initialization-aot-20260910.json",
+    "Previous257BProcessWasAbsentBeforeLaunch": true,
+    "BaselineDirectoryIsNotCandidateIdentity": true
+  },
+  "InputsSha256": {
+    "fixture-before.json": "c7b06996d2fedb4f46d18d01c072a6d51b8fb0e2f4812ef45bdcc80bf047de93",
+    "fixture-after.json": "12988d10085841222b5ff224a0e7eb0b323ac5ba71e646d541ac7ff91d7205c9",
+    "actions.json": "c44a288062a92a37b26b442150fb0126a0e223af24e726059c7c9c4de514b85d",
+    "observations.json": "286ef9b7455ae92b1f6613a9180bc198622c394b635d4ff02a941e3316810f98",
+    "identity.json": "4dae125cfee0114b5e2cb0f70c97816549fa8941dfb2b961501a023109703988"
+  },
+  "Selection": {
+    "Method": "Verify the complete baseline Events prefix is unchanged, then analyze only appended events and new PlaySessionId values.",
+    "BaselineEventsExcluded": 64,
+    "BaselineSessionCountExcluded": 3,
+    "BaselinePrefixPreserved": true,
+    "AppendedEvents": 36,
+    "NewSessionCount": 2,
+    "AppendedEventsForOldSessions": 0
+  },
+  "CounterChanges": {
+    "PlaybackInfoCount": {
+      "Before": 3,
+      "After": 5,
+      "Delta": 2
+    },
+    "StartCount": {
+      "Before": 3,
+      "After": 5,
+      "Delta": 2
+    },
+    "ProgressCount": {
+      "Before": 58,
+      "After": 90,
+      "Delta": 32
+    },
+    "StopCount": {
+      "Before": 3,
+      "After": 5,
+      "Delta": 2
+    },
+    "MediaRequests": {
+      "Before": 30,
+      "After": 48,
+      "Delta": 18
+    },
+    "RangeRequests": {
+      "Before": 30,
+      "After": 48,
+      "Delta": 18
+    },
+    "PartialResponses": {
+      "Before": 30,
+      "After": 48,
+      "Delta": 18
+    },
+    "AuthenticationFailures": {
+      "Before": 0,
+      "After": 0,
+      "Delta": 0
+    },
+    "InjectedPlaybackInfoFailures": {
+      "Before": 0,
+      "After": 0,
+      "Delta": 0
+    },
+    "EncodingCleanups": {
+      "Before": 0,
+      "After": 0,
+      "Delta": 0
+    },
+    "LoginCount": {
+      "Before": 2,
+      "After": 2,
+      "Delta": 0
+    },
+    "CapabilityUpdates": {
+      "Before": 2,
+      "After": 2,
+      "Delta": 0
+    }
+  },
+  "Sessions": [
+    {
+      "PlaySessionId": "synthetic-play-2f9b23f9531043af84206501f13a6436",
+      "ItemIds": [
+        "1001"
+      ],
+      "AbsentFromBaseline": true,
+      "StartCount": 1,
+      "StopCount": 1,
+      "ProgressCount": 2,
+      "StartUtc": "2026-09-10T00:46:31.3288517Z",
+      "StopUtc": "2026-09-10T00:46:53.6854689Z",
+      "StartPositionTicks": 100000,
+      "StopPositionTicks": 223409719,
+      "StopFailed": false,
+      "ProgressEventCounts": {
+        "TimeUpdate": 2
+      },
+      "PausePositionsTicks": [
+        null
+      ],
+      "OrderedStartProgressStop": true,
+      "ObservationInterpretation": "The recorded first Space action activated Back, not Pause; no Pause progress event exists for this session."
+    },
+    {
+      "PlaySessionId": "synthetic-play-a5277eeab8e345e0ad468fb28bc768e3",
+      "ItemIds": [
+        "1001"
+      ],
+      "AbsentFromBaseline": true,
+      "StartCount": 1,
+      "StopCount": 1,
+      "ProgressCount": 30,
+      "StartUtc": "2026-09-10T00:48:42.1558915Z",
+      "StopUtc": "2026-09-10T00:52:38.8082437Z",
+      "StartPositionTicks": 337500,
+      "StopPositionTicks": 475199994,
+      "StopFailed": false,
+      "ProgressEventCounts": {
+        "Pause": 2,
+        "TimeUpdate": 24,
+        "VolumeChange": 4
+      },
+      "PausePositionsTicks": [
+        473429371,
+        475199994
+      ],
+      "OrderedStartProgressStop": true,
+      "ObservationInterpretation": "The recorded second run paused, adjusted mute/volume, and used keyboard Back. These control meanings come from observations.json, not from protocol focus or volume-value fields."
+    }
+  ],
+  "SecondRunPausedInterval": {
+    "PauseEventCount": 2,
+    "PausePositionsTicks": [
+      473429371,
+      475199994
+    ],
+    "StableFromUtc": "2026-09-10T00:49:29.6242527Z",
+    "StableUntilStopUtc": "2026-09-10T00:52:38.8082437Z",
+    "PositionTicks": 475199994,
+    "PositionSeconds": 47.5199994,
+    "SubsequentProgressCount": 23,
+    "SubsequentVolumeChangeCount": 4,
+    "SubsequentPositionsIncludingStop": [
+      475199994
+    ],
+    "AllSubsequentPositionsMatch": true,
+    "TwoPauseReportsAreNotDuplicateSessions": true
+  },
+  "Consistency": {
+    "ExactlyTwoNewItem1001Sessions": true,
+    "OneStartAndOneStopPerNewSession": true,
+    "NoDuplicateOrUnclosedNewSessionObserved": true,
+    "AppendedStartProgressStopCountsMatchCounterDeltas": true,
+    "BothNewStopsExplicitlyFailedFalse": true,
+    "AvailableFailureCounterDeltasZero": true,
+    "MediaRangePartialDeltasEqual": true
+  },
+  "RecordedKeyboardContext": {
+    "ObservationCount": 15,
+    "FirstActionStartedUtc": "2026-09-10T00:42:51.7420000Z",
+    "LastActionRefreshedUtc": "2026-09-10T00:52:39.0430000Z",
+    "FirstReturnObservation": "09-keyboard-returned-details",
+    "PauseObservation": "11-keyboard-paused",
+    "MuteObservation": "12-keyboard-mute-selected",
+    "VolumeObservations": [
+      "13-keyboard-volume-zero",
+      "14-keyboard-volume-restored"
+    ],
+    "FinalReturnObservation": "16-keyboard-returned-final",
+    "RecordedInputCallCount": 40,
+    "InputCallCountIsNotSuccessfulActionCount": true
+  },
+  "Limitations": [
+    "Counter deltas cover the whole fixture snapshot interval and are not per-session media-request attribution. Old baseline activity is excluded only from the appended session-event analysis.",
+    "The second session starts at 0.03375 seconds, not at the first session stop position of 22.3409719 seconds; this evidence must not be described as a resume-position pass.",
+    "Two Pause progress reports record 47.3429371 and 47.5199994 seconds; all subsequent reports through Stop remain at 47.5199994. Repeated TimeUpdate or Pause reports are not duplicate Start/Stop pairs.",
+    "The fixture does not retain mute/volume values in these Progress events. Tooltip 0/100 and mute-state statements come from the supplied observation descriptions; audible output was not assessed.",
+    "StartedAtUtc/RefreshedAtUtc are tool action intervals and ArchivedAtUtc is an archival timestamp, not a precise screenshot capture time. Accessibility focus fields may lag; no focus or latency assertion is inferred from them.",
+    "Both Stop Failed flags are false and available authentication/injected-negotiation failure counters do not increase. These fields do not prove the absence of every native or network failure.",
+    "This analysis did not inspect screenshots, query a process, access the network, or operate the UI. It does not establish official Emby compatibility, a broad native playback pass, resource stability, or exact frame timing.",
+    "The initial observation 02 statement that the search edit holds focus is only a tool-reported focus value. Observation 03 records ineffective text/Tab input; forty recorded input calls must not be counted as forty successful keyboard actions."
+  ],
+  "Conclusion": "Two new item1001 sessions each have one ordered Start/Stop pair, matching +2 negotiations, +2 Starts, +32 Progress reports and +2 Stops. Aggregate Media/Range/Partial counts each increase by 18. The first Space caused Back, while the second run reports pause at about 47.52 seconds, four later VolumeChange reports at the same position, and keyboard Back with Failed=false. No extra or unclosed new session is recorded."
+}

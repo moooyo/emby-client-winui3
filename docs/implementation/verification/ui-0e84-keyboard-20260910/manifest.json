@@ -1,0 +1,216 @@
+{
+  "Scope": "Normal 0E84 Native AOT finite keyboard media-flow evidence after manual sign-in and one mouse focus setup",
+  "BytePreservation": "Archive attributes preserve all evidence bytes without text conversion",
+  "Files": [
+    {
+      "File": ".gitattributes",
+      "Bytes": 33,
+      "Sha256": "c0745b0db82157150a6b9c2282869c603fd49a0239c0f6ad9e9cdace49cc8f24"
+    },
+    {
+      "File": "01-manual-sign-in.jpg",
+      "Bytes": 53107,
+      "Sha256": "e6961bf659da49b71fc9d46ed33583a5a8a97b8d28d52ff570681d9d94fc0188"
+    },
+    {
+      "File": "02-connected-home.jpg",
+      "Bytes": 65166,
+      "Sha256": "0a273bef985c91ef0902e8844fb4a9139741faf035d87f63c8e0e61e7c31c782"
+    },
+    {
+      "File": "02-connected-home.uia.txt",
+      "Bytes": 2732,
+      "Sha256": "6d619b68f1b3d2ef7559bf19b55ff3c93f68b7e2cf81c61f050b5a8b3c90bae1"
+    },
+    {
+      "File": "03-input-not-visible.jpg",
+      "Bytes": 64437,
+      "Sha256": "9e44a362acdbd49b21af2b0951a54e2b0f553f138643b49cfe2ff4530405edd4"
+    },
+    {
+      "File": "03-input-not-visible.uia.txt",
+      "Bytes": 2732,
+      "Sha256": "6d619b68f1b3d2ef7559bf19b55ff3c93f68b7e2cf81c61f050b5a8b3c90bae1"
+    },
+    {
+      "File": "04-keyboard-search-result.jpg",
+      "Bytes": 54253,
+      "Sha256": "b4e938d3297f5f3907a9e522c24096f2e0fad7a20c574977e4347cef952a18f8"
+    },
+    {
+      "File": "04-keyboard-search-result.uia.txt",
+      "Bytes": 1954,
+      "Sha256": "63a92dccdcad1b3e99dfa0bc7393708f1e43631a6637f439ceecdb7399bf18d5"
+    },
+    {
+      "File": "05-keyboard-card-focus.jpg",
+      "Bytes": 56142,
+      "Sha256": "096457f85ef46afca866dae2624e3d1f2c25179bcfbf66906601bfcdd515582d"
+    },
+    {
+      "File": "05-keyboard-card-focus.uia.txt",
+      "Bytes": 2200,
+      "Sha256": "c80ffc1b8551288a605e5b09e65c8c8ac66784b3d6cbc8c22697e8168345c0b9"
+    },
+    {
+      "File": "06-keyboard-opened-details.jpg",
+      "Bytes": 63975,
+      "Sha256": "0e4c9308ef03bae96209a40acaccc0c095dadb8dbd80722adf2ff8f3b5dc79a7"
+    },
+    {
+      "File": "06-keyboard-opened-details.uia.txt",
+      "Bytes": 2201,
+      "Sha256": "8318c761911dc9713984a686a3ae928cedc404328435d38e2ae2eed581e91183"
+    },
+    {
+      "File": "07-keyboard-play-focus.jpg",
+      "Bytes": 64422,
+      "Sha256": "0a09ce8dfde20f34101797f3499bd0d904b3fc5329d32db30db0e713ee8e3f13"
+    },
+    {
+      "File": "07-keyboard-play-focus.uia.txt",
+      "Bytes": 2545,
+      "Sha256": "f0147f0795232f03e322fbfd3397141f0c5bf0ad3f03ad9ba586ebd090beff97"
+    },
+    {
+      "File": "08-keyboard-started-playing.jpg",
+      "Bytes": 52789,
+      "Sha256": "2509d1f686b70899bf62c90ea12c50fd23e9dd0d94eef1d205ccad4c841850a6"
+    },
+    {
+      "File": "08-keyboard-started-playing.uia.txt",
+      "Bytes": 1410,
+      "Sha256": "36045aaa20a989c33d0df32404fb40aad2fbd4033b2a646e837d926351fb40ce"
+    },
+    {
+      "File": "09-keyboard-returned-details.jpg",
+      "Bytes": 66145,
+      "Sha256": "56fbe28d901102002ed387af04e74ea0b5f0c3281342ffec60ae08c8af9e9227"
+    },
+    {
+      "File": "09-keyboard-returned-details.uia.txt",
+      "Bytes": 2657,
+      "Sha256": "60ad65729c9dcf2ee9a4bfa884e57d85396a39fcf7887e638ac2b18ab90f36fc"
+    },
+    {
+      "File": "10-keyboard-pause-focus.jpg",
+      "Bytes": 55280,
+      "Sha256": "023f6d654b1ce98a12875e9bd8ebbf40947e5a79e1f0bb4f8537997694e2be97"
+    },
+    {
+      "File": "10-keyboard-pause-focus.uia.txt",
+      "Bytes": 1665,
+      "Sha256": "06f08e2a6fb1bb16eccca253f379b312b11537872001d8b4cdfc93a78e6e59ad"
+    },
+    {
+      "File": "11-keyboard-paused.jpg",
+      "Bytes": 54990,
+      "Sha256": "0dbed288f7ea8c9b936c8c4d002949929b6e1f39d5d394e4858d2acbba39b4b3"
+    },
+    {
+      "File": "11-keyboard-paused.uia.txt",
+      "Bytes": 1429,
+      "Sha256": "9f230c40ec2181e6bf654e483cbf7faa8ce041a7370f7a15e2b49174657bc9fb"
+    },
+    {
+      "File": "12-keyboard-mute-selected.jpg",
+      "Bytes": 54760,
+      "Sha256": "d29356a543d562635712e4b1d8295b3065a7f95ee5e7730a0c15ffd3f8a54665"
+    },
+    {
+      "File": "12-keyboard-mute-selected.uia.txt",
+      "Bytes": 1429,
+      "Sha256": "bba33c088f556a8981811e875c98d98554794aa2569f12ee9afd2afe77ec207f"
+    },
+    {
+      "File": "13-keyboard-volume-zero.jpg",
+      "Bytes": 55830,
+      "Sha256": "5e3c78aae39216175d5569d748004dc971e3547c8fbb29f5c1fc136a845c3de9"
+    },
+    {
+      "File": "13-keyboard-volume-zero.uia.txt",
+      "Bytes": 1665,
+      "Sha256": "3c8fd6a665a6601d58d67e02e57f7a46dd41771fd3dbc076fd0165609b3c0df4"
+    },
+    {
+      "File": "14-keyboard-volume-restored.jpg",
+      "Bytes": 55671,
+      "Sha256": "470d11f9cdd43278a55184645e18be0fb313c9f16d9080170d08b97f8e4706b2"
+    },
+    {
+      "File": "14-keyboard-volume-restored.uia.txt",
+      "Bytes": 1669,
+      "Sha256": "b535cbe904c341d61bdaefcc4ecdc2a92fd1c2c6f074c4b39310ccd6b4016a47"
+    },
+    {
+      "File": "15-keyboard-back-focus.jpg",
+      "Bytes": 55105,
+      "Sha256": "6e7dea738341e1847deafe77cebfc706548503baacecfdeab22e461ad15df1b0"
+    },
+    {
+      "File": "15-keyboard-back-focus.uia.txt",
+      "Bytes": 1429,
+      "Sha256": "bba33c088f556a8981811e875c98d98554794aa2569f12ee9afd2afe77ec207f"
+    },
+    {
+      "File": "16-keyboard-returned-final.jpg",
+      "Bytes": 66223,
+      "Sha256": "b699096969da3aee8131ded8e1845f6ca5181265cf2762b40ec4def1c12b63c1"
+    },
+    {
+      "File": "16-keyboard-returned-final.uia.txt",
+      "Bytes": 2485,
+      "Sha256": "8b0aeec6550a475a8bdaee0f7033455e7963907595c2451035c9bd2dcdff66fd"
+    },
+    {
+      "File": "actions.json",
+      "Bytes": 9522,
+      "Sha256": "c44a288062a92a37b26b442150fb0126a0e223af24e726059c7c9c4de514b85d"
+    },
+    {
+      "File": "after-desktop.json",
+      "Bytes": 290,
+      "Sha256": "5cf15a714b72e1db621f6c3b7f1534e0a52eb350e5e2dde000f8c4af7973411b"
+    },
+    {
+      "File": "desktop-release.json",
+      "Bytes": 282,
+      "Sha256": "d105a6c7a484e065ed13553b2715d6afee56f1b451d976c2cd89f80a3101c8fb"
+    },
+    {
+      "File": "fixture-after.json",
+      "Bytes": 35652,
+      "Sha256": "12988d10085841222b5ff224a0e7eb0b323ac5ba71e646d541ac7ff91d7205c9"
+    },
+    {
+      "File": "fixture-before.json",
+      "Bytes": 18533,
+      "Sha256": "c7b06996d2fedb4f46d18d01c072a6d51b8fb0e2f4812ef45bdcc80bf047de93"
+    },
+    {
+      "File": "identity.json",
+      "Bytes": 933,
+      "Sha256": "4dae125cfee0114b5e2cb0f70c97816549fa8941dfb2b961501a023109703988"
+    },
+    {
+      "File": "observations.json",
+      "Bytes": 6843,
+      "Sha256": "286ef9b7455ae92b1f6613a9180bc198622c394b635d4ff02a941e3316810f98"
+    },
+    {
+      "File": "protocol-analysis.json",
+      "Bytes": 8015,
+      "Sha256": "6ec63d2ad770a1f9b48570f41854c97127d9884c901c97ef9e35210fb696d86a"
+    },
+    {
+      "File": "startup-observation.json",
+      "Bytes": 413,
+      "Sha256": "1131c3e63187a9c55c64f9ed66a0f8f1ba256e4437c70b44abe4488958960a80"
+    },
+    {
+      "File": "summary.json",
+      "Bytes": 4120,
+      "Sha256": "f8c82ba969022a5969b0ae0f5f0612c2d7d5e2fa3824e670ecf059a883dfa3db"
+    }
+  ]
+}

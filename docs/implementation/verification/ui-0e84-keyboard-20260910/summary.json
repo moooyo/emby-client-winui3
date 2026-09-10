@@ -1,0 +1,91 @@
+{
+  "Scope": "Finite native keyboard media controls after one mouse focus setup; not complete keyboard-only or accessibility acceptance",
+  "Candidate": {
+    "Sha256": "0E84F4581A3D2C3BE460DCBD0D936733A3F970B56DD4CE956D04E09932F18034",
+    "Bytes": 17912320,
+    "ProcessId": 1780,
+    "Instrumented": false,
+    "HashUnchangedAfterDesktop": true,
+    "BuildReceipt": "../startup-initialization-aot-20260910.json",
+    "SourceIdentityMeaning": "The build receipt source manifest identifies this executable; the verification repository HEAD is not its compile revision"
+  },
+  "Authentication": {
+    "UserCompletedSavedSignIn": true,
+    "AuthenticationControlsAutomated": false,
+    "ComputerUseResetDuringHandoff": true
+  },
+  "Input": {
+    "RecordedCalls": 40,
+    "TextCalls": 2,
+    "KeyCalls": 37,
+    "MouseFocusSetupCalls": 1,
+    "InitialTextAndTabReflectedVisibly": false,
+    "AllRecordedCallsAfterMouseSetupWereKeyboardOrText": true,
+    "FailedInitialInputAttributedToProduct": false
+  },
+  "Observed": [
+    "Search typing and Enter produce one Synthetic Color Study result after explicit focus setup",
+    "Tab and Enter open the media detail; reverse Tab reaches Play",
+    "Keyboard Play opens actual DirectStream video",
+    "First Space activates Back and returns to the detail at about 22 seconds; not a pause result",
+    "Second Play starts again from the beginning; Tab reaches Pause and Space pauses near 47 seconds with an orange frame",
+    "Space on Mute selects then clears the toggle while paused",
+    "Home and End on Volume display 0 and 100 while the timeline remains paused near 47 seconds",
+    "Tab reaches Back through the remaining enabled controls; Enter returns to the original detail with Resume at 0:47"
+  ],
+  "Sessions": [
+    {
+      "PlaySessionId": "synthetic-play-2f9b23f9531043af84206501f13a6436",
+      "ItemId": "1001",
+      "StartCount": 1,
+      "StartPositionTicks": 100000,
+      "StopCount": 1,
+      "StopPositionTicks": 223409719,
+      "StopFailed": false
+    },
+    {
+      "PlaySessionId": "synthetic-play-a5277eeab8e345e0ad468fb28bc768e3",
+      "ItemId": "1001",
+      "StartCount": 1,
+      "StartPositionTicks": 337500,
+      "StopCount": 1,
+      "StopPositionTicks": 475199994,
+      "StopFailed": false
+    }
+  ],
+  "ProtocolDelta": {
+    "PlaybackInfo": 2,
+    "Start": 2,
+    "Progress": 32,
+    "Stop": 2,
+    "MediaRequests": 18,
+    "RangeRequests": 18,
+    "PartialResponses": 18,
+    "EncodingCleanups": 0
+  },
+  "Evidence": {
+    "OriginalJpegs": 16,
+    "InputJournal": "actions.json",
+    "VisualObservations": "observations.json",
+    "ProtocolAnalysis": "protocol-analysis.json",
+    "ScreenshotTimestampMeaning": "ArchivedAtUtc records saving, not exact capture time",
+    "ActionTimestampMeaning": "Call start/refresh timestamps, not exact Windows input or display time"
+  },
+  "Desktop": {
+    "ReleaseRecordedAtUtc": "2026-09-10T00:52:55.173Z",
+    "KernelResetImmediatelyAfterFinalSave": true,
+    "FinalVisibleState": "Original synthetic item detail with Resume at 0:47",
+    "ApplicationClosed": false,
+    "SignOutPerformed": false,
+    "AdditionalComputerUseAfterRelease": false
+  },
+  "Limits": [
+    "The initial 02-connected-home note about search focus reflects the tool report only; actual input focus was not established until the later mouse setup",
+    "Tool focused_element values lagged visible focus; raw journal focus fields are not authoritative actual-focus assertions",
+    "The first Space return is not a failed or successful pause test",
+    "One outline-free Tab stop was observed without assigning a control identity",
+    "No audible output, Narrator, physical media keys, sustained key holds, alternate layouts, or precise navigation-focus restoration result",
+    "No new queue failure, delayed cleanup, Opening-close, complex subtitle, memory, sign-out, or installed-runtime result",
+    "Existing fixture history is excluded using new session IDs; server Stop receipts do not prove native resource release"
+  ]
+}
