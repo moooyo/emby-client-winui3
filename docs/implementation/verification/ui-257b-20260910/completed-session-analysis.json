@@ -1,0 +1,47 @@
+{
+  "SchemaVersion": 1,
+  "EvidenceKind": "CompletedSessionReturnedHomeTailSummary",
+  "GeneratedAtUtc": "2026-09-10T00:29:43.8982406+00:00",
+  "Source": {"FileName":"completed-session-observation.jsonl","Sha256":"4A5484F1FD52D860EC547D5C55313FBFB303DCEF676F8699DB9BD6C455FD5781","Rows":360,"Bytes":515161,"MetadataMatches":true,"ProcessIds":[20760],"ObserverSchemas":[3],"StartTriggers":[1]},
+  "ClosureMetadata": {"FileName":"completed-session-observation.json","Sha256":"295705D6AED85534BF54DD52AE2D9F1203B0CDCFDFBB3B6799F4C9D8EC9A7778","RecordedAtUtc":"2026-09-10T00:26:10.9875734Z","WriterClosedByExclusiveRead":true,"ApplicationProcessStillAlive":true,"Meaning":"The operator recorded writer closure at the configured observation limit. This is not app exit, a process health probe by this analysis, or an acceptance pass."},
+  "Prefix": {"FileName":"library-home-snapshot.jsonl","Sha256":"72B564891D249B134E2ACD51002DC2A154472B57A6E41EFF142B3BF679A0EEFD","Rows":154,"ExactLineContentPrefixMatches":true,"PriorAnalysis":"library-home-analysis.json","Note":"Line contents match in order; newline encoding is not part of this comparison. Prior analyses remain unchanged."},
+  "Tail": {"Rule":"Same returned-Home phase after its first thirty seconds, from elapsed 556003 through the final frozen row.","Rows":249,"FirstElapsedMilliseconds":556003,"LastElapsedMilliseconds":1797954,"SpanSeconds":1241.951,"FirstUtc":"2026-09-10T00:04:45.5040000+00:00","LastUtc":"2026-09-10T00:25:27.4540000+00:00","UtcSpanSeconds":1241.95},
+  "ByteMetrics": {
+    "ProcessPrivateBytes": {"First":265576448,"Last":264814592,"Min":263753728.0,"Max":265609216.0,"Delta":-761856,"DeltaMiB":-0.7265625},
+    "ProcessWorkingSetBytes": {"First":287846400,"Last":287059968,"Min":285982720.0,"Max":287846400.0,"Delta":-786432,"DeltaMiB":-0.75},
+    "ManagedBytes": {"First":11917424,"Last":15276184,"Min":11917424.0,"Max":15276184.0,"Delta":3358760,"DeltaMiB":3.2031631469726562},
+    "ManagedAllocatedBytesApproximate": {"First":41355312,"Last":44642704,"Min":41355312.0,"Max":44642704.0,"Delta":3287392,"DeltaMiB":3.135101318359375},
+    "ObserverCompletedSampleAllocatedBytes": {"First":1757496,"Last":4895600,"Min":1757496.0,"Max":4895600.0,"Delta":3138104,"DeltaMiB":2.9927291870117188}
+  },
+  "Handles": {"First":1385,"Last":1258,"Min":1256.0,"Max":1385.0,"Delta":-127},
+  "Cpu": {"FirstMilliseconds":99531,"LastMilliseconds":102484,"DeltaSeconds":2.953,"AveragePercentOfOneLogicalCore":0.2377710553798016},
+  "ObserverCompletedSamples": {"First":111,"Last":359,"Delta":248},
+  "ConstantCounters": {
+    "FieldsChecked": 41,
+    "AllConstant": true,
+    "ChangedFields": [],
+    "View": {"ItemsCount":2,"LibraryIsHome":1,"LibraryHasDetails":0,"LibraryIsBusy":0},
+    "PosterOwnership": {"PosterSubscriptionsCount":46,"PosterRequestsCount":0,"BoundPosterSourcesCount":2,"LoadedPosterControlsCount":46,"AttachedPosterControlsCount":46,"RealizedPosterControlsCount":2,"DetailPosterBound":0},
+    "PosterCallbacks": {"LoadedTotal":46,"UnloadedTotal":0,"TagChangedTotal":900,"AssignedTotal":376,"ClearedTotal":2772,"PosterLoadRequestedTotal":1591,"PosterLoadRejectedTotal":1,"PosterLoadDeduplicatedTotal":645},
+    "Decoder": {"DecodeStartedTotal":440,"DecodeCompletedTotal":376,"DecodeCanceledTotal":64,"DecodeFailedTotal":0,"DecodeActive":0,"DecodePeak":40},
+    "PlaybackClock": {"PresentationClockEnabled":0,"PresentationClockTicks":0,"PositionUpdateCalls":0},
+    "WeakTargets": {"WeakImageTrackedCount":47,"WeakImageAliveCount":47,"WeakImageEvictions":0,"WeakBitmapTrackedCount":376,"WeakBitmapAliveCount":126,"WeakBitmapEvictions":0},
+    "LastGc": {"Gen0Collections":4,"Gen1Collections":3,"Gen2Collections":3,"LastGcIndex":4,"LastGcHeapSizeBytes":5553912,"LastGcFragmentedBytes":9216,"LastGcCommittedBytes":24821760}
+  },
+  "FixtureEndpoint": {"FileName":"fixture-after-observer-completion.json","Sha256":"E7DD3812DF5D81D65838EC072D2A201BB8330A976318A387EE5CB67897011E5B","ComparedWith":"fixture-after-passive-home.json","ComparedWithSha256":"E7DD3812DF5D81D65838EC072D2A201BB8330A976318A387EE5CB67897011E5B","Counters":{"QueryCount":28,"ImageRequests":666,"CompletedImages":435,"CanceledImages":231,"ActiveImages":0,"PeakActiveImages":5,"PlaybackInfoCount":3,"MediaRequests":30,"RangeRequests":30,"PartialResponses":30,"StartCount":3,"ProgressCount":58,"StopCount":3,"EncodingCleanups":0,"AuthenticationFailures":0},"Deltas":{"QueryCount":0,"ImageRequests":0,"CompletedImages":0,"CanceledImages":0,"ActiveImages":0,"PeakActiveImages":0,"PlaybackInfoCount":0,"MediaRequests":0,"RangeRequests":0,"PartialResponses":0,"StartCount":0,"ProgressCount":0,"StopCount":0,"EncodingCleanups":0,"AuthenticationFailures":0},"ImageAccountingResidual":0},
+  "Interpretation": [
+    "The closed source has 360 rows through elapsed 1797.954 seconds, not a sample exactly at the configured 1800-second limit. The application remained alive according to the closure metadata.",
+    "The full returned-Home tail has 249 rows over 1241.951 seconds. Private bytes end 0.7265625 MiB below its baseline and working set ends 0.75 MiB lower. Both fluctuate within their recorded ranges; neither is constant throughout the interval.",
+    "ManagedBytes increases by 3.2031631469726562 MiB and approximate cumulative managed allocation by 3.135101318359375 MiB without another GC. GC.GetTotalMemory(false) includes unreachable allocations awaiting collection, so these are not retained-live-object deltas.",
+    "All 41 checked view, poster, decoder, playback-clock, weak-target, and GC fields are unchanged across the tail. This shows no additional recorded activity in those cumulative callback paths, not proof of no human interaction or no other process work.",
+    "Forty-six images remain subscribed, with two bound Sources and two application-tracked realizations; 44 subscribed Sources are null. Attached means a GridViewItem ancestor exists, not attachment to the current viewport or XamlRoot.",
+    "The 47 resolving Image targets and 126 resolving BitmapImage targets remain unchanged with no new GC. They do not identify roots or native/GPU allocations and cannot prove that every remaining object is live or leaked. The tracked bitmap cohort remains 376 with zero evictions.",
+    "Gen0/Gen1/Gen2 remain 4/3/3 and LastGcIndex remains 4. LastGcHeapSizeBytes 5553912, fragmented bytes 9216, and committed bytes 24821760 are the earlier last-GC snapshot, not current live-heap readings.",
+    "Prior completed synchronous observer allocation increases by 2.9927291870117188 MiB over 248 samples. Its proximity to total managed allocation highlights observation cost, but it omits callbacks, asynchronous/native work, and other threads and must not be subtracted as full overhead.",
+    "The final fixture snapshot retains QueryCount 28, ImageRequests 666, ActiveImages zero, PlaybackInfoCount 3, and MediaRequests 30; the compared numeric counters are unchanged. These endpoint route counters are not native-allocation measurements or a count of every possible external action.",
+    "The root operator reports that a separately authorized port-18964 fixture launch was rejected before command execution and its run directory was absent. No new fixture-server load from that attempt is evidenced; this analysis did not probe the run directory, server, or network.",
+    "No post-desktop-release screen was observed in this analysis. Closed logging, fixed Home counters, and the lack of new automated controls do not establish foreground visibility, pixel correctness, absence of user activity, or application exit.",
+    "This completed finite instrumented tail supports the absence of repeated poster work after Home and shows bounded sampled private-memory fluctuation during this interval. It does not prove long-term convergence, repeated-cycle retention bounds, native resource release, or resolve the earlier uninstrumented 779B memory gate."
+  ],
+  "AnalysisActions": "Only named frozen files were read and this summary was written. No live log, product code, app, build, test suite, UI control, network request, or forced GC was used."
+}

@@ -1,0 +1,14 @@
+{
+  "RecordedAtUtc": "2026-09-10T00:26:11.0143077Z",
+  "RequestedAction": "Start the reviewed synthetic boundary fixture on 127.0.0.1:18964 with its original parameters",
+  "UserExplicitlyApprovedThisSpecificStartup": true,
+  "LaunchDllSha256": "0CEB41558F534424D6E2D71051A7C1D8930ED6D738AC97452B4F3547BAFF99C9",
+  "Result": "Rejected by automatic approval review before command execution",
+  "ReportedReason": "blocked by policy",
+  "FurtherReasonProvided": false,
+  "CommandExecuted": false,
+  "ProposedWorkingDirectoryExists": false,
+  "AlternateLaunchAttempted": false,
+  "Existing18962FixtureUnaffectedByRejectedCommand": true,
+  "NativeDesktopUsed": false
+}

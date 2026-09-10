@@ -113,5 +113,27 @@
     "Home tail was sampled after desktop release; no claim about unobserved visible frames or absence of user activity",
     "No local build, validation suite, other native probe, or forced collection ran during this prefix",
     "All phase timing uses numeric elapsed and UTC-epoch fields; a console-only date-reparsing interval was discarded"
-  ]
+  ],
+  "CompletedObservation": {
+    "Metadata": "completed-session-observation.json",
+    "Analysis": "completed-session-analysis.json",
+    "Rows": 360,
+    "Bytes": 515161,
+    "Sha256": "4A5484F1FD52D860EC547D5C55313FBFB303DCEF676F8699DB9BD6C455FD5781",
+    "LastElapsedMilliseconds": 1797954,
+    "WriterClosedByExclusiveRead": true,
+    "ApplicationProcessStillAlive": true,
+    "SettledHomeRows": 249,
+    "SettledHomeSpanSeconds": 1241.951,
+    "SettledHomePrivateByteDelta": -761856,
+    "AdditionalGcAfterPriorPrefix": false,
+    "Meaning": "Closed bounded logger; finite Home memory observation only, not an application exit or memory acceptance pass"
+  },
+  "SubsequentBoundaryStartup": {
+    "SpecificUserApprovalReceived": true,
+    "Result": "Automatic approval review still rejected execution",
+    "ReportedReason": "blocked by policy",
+    "CommandExecuted": false,
+    "Receipt": "controlled-fixture-rejection-after-specific-approval.json"
+  }
 }

@@ -1,5 +1,5 @@
 {
-  "Scope": "Immutable 257B synthetic-library visual and numeric prefixes; no completed app exit or long-term memory acceptance",
+  "Scope": "Immutable 257B synthetic-library visual prefixes and completed bounded logger; no completed app exit or long-term memory acceptance",
   "BytePreservation": "Directory attributes preserve evidence bytes without text conversion; JSONL and JPEG are binary",
   "Files": [
     {
@@ -68,9 +68,34 @@
       "Sha256": "19f23ebf37866c54588a5b73fdaae6a094264fa85a1ad68b9658fc3f26c56e53"
     },
     {
+      "File": "completed-session-analysis.json",
+      "Bytes": 8115,
+      "Sha256": "aa21467dde21d7acb5ebeeb50cdd7277a390e9b4a7fbd267b861ce99328e1980"
+    },
+    {
+      "File": "completed-session-observation.json",
+      "Bytes": 551,
+      "Sha256": "295705d6aed85534bf54dd52ae2d9f1203b0cdcfdfbb3b6799f4c9d8ec9a7778"
+    },
+    {
+      "File": "completed-session-observation.jsonl",
+      "Bytes": 515161,
+      "Sha256": "4a5484f1fd52d860ec547d5c55313fbfb303dcef676f8699db9bd6c455fd5781"
+    },
+    {
+      "File": "controlled-fixture-rejection-after-specific-approval.json",
+      "Bytes": 678,
+      "Sha256": "0b1a524b2722fcae0fac288bffe951056dbd42ac7c217d0fa0d6ca0dfd53e3ca"
+    },
+    {
       "File": "desktop-release.json",
       "Bytes": 269,
       "Sha256": "5f8a629b43dbe509e5a2652b2e2e70f82e0e1c1f796e9c420ca7c8e9a6494346"
+    },
+    {
+      "File": "fixture-after-observer-completion.json",
+      "Bytes": 25405,
+      "Sha256": "e7dd3812df5d81d65838ec072d2a201bb8330a976318a387ee5cb67897011e5b"
     },
     {
       "File": "fixture-after-passive-home.json",
@@ -149,8 +174,8 @@
     },
     {
       "File": "summary.json",
-      "Bytes": 4419,
-      "Sha256": "480c4f24b52c98c440eb02f554fe060678ca4a5756315403fefa4b6c7c04b620"
+      "Bytes": 5400,
+      "Sha256": "2f5ebe0ccb27776f995de855371a54b8e89bab688b2ec43f95ebf3274b711fd8"
     }
   ]
 }

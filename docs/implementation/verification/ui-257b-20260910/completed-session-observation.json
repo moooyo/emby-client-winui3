@@ -1,0 +1,13 @@
+{
+  "RecordedAtUtc": "2026-09-10T00:26:10.9875734Z",
+  "File": "completed-session-observation.jsonl",
+  "Rows": 360,
+  "Bytes": 515161,
+  "Sha256": "4A5484F1FD52D860EC547D5C55313FBFB303DCEF676F8699DB9BD6C455FD5781",
+  "WriterClosedByExclusiveRead": true,
+  "ApplicationProcessStillAlive": true,
+  "ProcessId": 20760,
+  "LastElapsedMilliseconds": 1797954,
+  "CompletionMeaning": "The bounded observation writer closed at its configured time limit; this is not application exit or a memory-acceptance pass",
+  "DesktopControlUsed": false
+}
