@@ -1,8 +1,8 @@
 # Implementation status
 
-Updated: 2026-09-15. The repository contains a Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. V7 implementation and the current non-UI completion stage have passed their checks. Actual V7 native UI acceptance is paused. Earlier tests, Native AOT publications, packages, and native observations remain scoped to their recorded source and artifact identities.
+Updated: 2026-09-15. The repository contains a Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. The authorized V7 native acceptance batch is complete with scoped UI observations and repaired runtime defects. Final build, 610 product tests, Native AOT, and unsigned MSIX structure checks passed. Accessibility, broader compatibility, and installed distribution retain the explicit gaps below.
 
-## V7 implementation and paused native acceptance
+## V7 implementation and scoped native acceptance
 
 The current source implements the approved V7 design. The [user guide](user-guide.md) describes the product actions, and [Fluent library UI](fluent-library-ui.md) describes the implementation. The following is a source inventory, not an observed native acceptance result.
 
@@ -16,20 +16,21 @@ The current source implements the approved V7 design. The [user guide](user-guid
 
 The [implementation-stage receipt](../../artifacts/ui-v7-implementation-20260915/verification-receipt.json) records **585 passing tests, zero failures**: AppState 46, API 53, playback 142, media transport 125, and Platform 219. Its managed Release application build completed with zero errors and one existing generated WinUIEx `Icon` `CS0618` warning. These are historical results from the V7 implementation stage, before the current non-UI continuation; they are not evidence of a new final build, Native AOT, package, or native runtime run.
 
-On the subsequent isolated native continuation, the recorded managed executable reached its initial sign-in page before the user stopped Computer Use and deferred actual UI acceptance. The application was stopped. Sign-in, connected navigation, playback, account journeys, and the full native checklist were not completed. The [paused native status](../../artifacts/ui-v7-native-20260915/native-acceptance-status.json) and [handoff](../../HANDOFF.md) retain the exact scope. The first fixture launch exposed a PowerShell file-replacement binding issue; its bounded repair result does not establish a complete successful fixture lifecycle.
+The user subsequently resumed native testing. The [native acceptance report](v7-native-acceptance-20260915.md) assigns each screenshot and journey to its actual candidate. Testing exposed and repaired AOT brush projection and runtime binding crashes, delayed grid-scroller discovery, wall-width rounding, container lifetime during poster resizing, clipped collapsed cast, queue ordinal updates, and missing or misleading accessible labels. Failed candidates and diagnostic traces remain separate evidence.
 
 | Current continuation check | Status |
 | --- | --- |
 | Release solution build and all five automated test suites | Passed: zero build errors, one existing generated warning; 610 tests passed, zero failures/skips (API 53, AppState 46, media transport 125, Platform 244, playback 142) |
 | Isolated fixture lifecycle checks | Passed: 8 lifecycle and 56 HTTP checks; owned processes stopped and ports released |
-| Native AOT publication | Passed: executable SHA-256 `EB6936CEA053A6478E55492135F24C9F446DA1818403F2260796BB6D99C8B568`; not launched |
-| Unsigned MSIX structural verification | Passed: package SHA-256 `6D60CFA958CA62DDEDC27B3879D2D8CCB76E655A3D9844F971700DD704D42EF5`; installation and packaged playback remain separate |
-| V7 native UI, accessibility, and playback acceptance | Paused at the user's request; only the initial sign-in page has been observed |
+| Native AOT publication | Passed: final executable SHA-256 `ECC9578458C70D1BCAC6E337DDEC0A16552F5A53040EA95F2E92EA68E5405CA6`; launched and scoped native regression checks passed |
+| Unsigned MSIX structural verification | Passed: package SHA-256 `7FF32711E0C372E4276DFD6912B72BD97EEB1C8670539117C7C2513358CF1A5E`; installation and packaged playback remain separate |
+| V7 native UI and playback | Scoped observations include sign-in/recovery, details/person/back, cast, actual video, retry, queue, episodes/natural continuation, fullscreen, diagnostics export, search, errors, and pagination; see the per-candidate report |
+| Final ownership cleanup | Passed: app exited normally; only the owned fixture processes stopped; loopback ports released |
 | Signed installation, upgrade, clean-machine playback, and broad compatibility | Unfinished release gates |
 
 The [final non-UI receipt](verification/v7-non-ui-20260915.json) records 187 unchanged source/test/script inputs, build and test logs, fixture evidence, and exact AOT/package identities. The 25 added account cases cover cancellation before persistence and after atomic commit, actual protected-token saving, shared-token preservation, bounded cleanup, and concurrent settings changes. The prior fixture file-replacement issue is now covered by a complete successful lifecycle run. Fixture checks are counted separately from the 610 product tests.
 
-The remaining V7 native work includes actual layout/resource activation, theme and effect changes, text scaling, high contrast, focus and Narrator, person/work/back, season and paging outcomes, independent player panels, episode controls, retry, diagnostics, and account cancellation/recovery. These checks must use the final candidate and must not inherit earlier screenshots or UI coverage.
+The [current UI receipt](verification/v7-ui-20260915.json) identifies the final candidate, 188 unchanged inputs, test/package evidence, and cleanup. Remaining native coverage includes high contrast, reduced effects, 200% text, Narrator and comprehensive focus return, late/in-flight account cancellation, stale-response navigation, multiple seasons/tracks/versions, and long-session resources. Signed installation and real-server/device compatibility remain separate release gates. No unobserved scenario is passed from unit tests or another candidate's screenshots.
 
 ## Historical baseline: 2026-09-10
 

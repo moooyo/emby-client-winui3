@@ -353,7 +353,7 @@ public sealed partial class LibraryView : UserControl
             return;
         }
         if (args.Phase != 0 || args.Item is not MediaCardViewModel card) return;
-        var state = _posterContainers.GetValue(container, static _ => new PosterContainer());
+        var state = _posterContainers.GetValue(container, static current => new PosterContainer(current));
         var sameItem = state.Realization.TryGetVersion(card, out _);
         var version = state.Realization.Activate(card);
         if (!sameItem && state.Poster?.TryGetTarget(out var oldPoster) == true) CancelContainerPoster(state, oldPoster);
@@ -369,13 +369,13 @@ public sealed partial class LibraryView : UserControl
             || !ReferenceEquals(current, expected) || !current.Realization.Owns(version, item)) return;
         if (FindPoster(container.ContentTemplateRoot) is not { } image) return;
         if (!ReferenceEquals(image.Tag, item) || !TryGetPosterBinding(image, item, out var owner, out var currentVersion)
-            || !ReferenceEquals(owner, current.Realization) || currentVersion != version) return;
+            || !ReferenceEquals(owner, current) || currentVersion != version) return;
         await LoadPosterAsync(image);
     }
 
     private void CancelContainerPoster(PosterContainer state, Image image)
     {
-        if (_posterLoads.TryGetValue(image, out var load) && load.IsOwnedBy(state.Realization))
+        if (_posterLoads.TryGetValue(image, out var load) && load.IsOwnedBy(state))
             CancelPosterRequest(image);
     }
 
@@ -399,7 +399,7 @@ public sealed partial class LibraryView : UserControl
             || !state.Realization.TryGetVersion(item, out version)) return false;
         if (state.Poster is null || !state.Poster.TryGetTarget(out var previous) || !ReferenceEquals(previous, image))
             state.Poster = new WeakReference<Image>(image);
-        owner = state.Realization;
+        owner = state;
         return true;
     }
 
@@ -445,9 +445,7 @@ public sealed partial class LibraryView : UserControl
 
     private void MediaGrid_Loaded(object sender, RoutedEventArgs args)
     {
-        DetachCollectionScroller(_gridScroller);
-        _gridScroller = FindScrollViewer(MediaGrid);
-        AttachCollectionScroller(_gridScroller);
+        ReconnectMediaGridScroller();
         QueueViewportUpdate();
     }
 
@@ -455,6 +453,8 @@ public sealed partial class LibraryView : UserControl
     {
         DetachCollectionScroller(_gridScroller);
         _gridScroller = null;
+        _wallMetrics = default;
+        _wallPanelRoot = null;
     }
 
     private void GridScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs args) => QueueViewportUpdate();
@@ -651,8 +651,10 @@ public sealed partial class LibraryView : UserControl
         CancelPosterRequest(DetailPoster);
     }
 
-    private sealed class PosterContainer
+    private sealed class PosterContainer(GridViewItem container)
     {
+        // Active image bindings keep the managed container projection alive until their existing cleanup runs.
+        public GridViewItem Container { get; } = container;
         public PosterRealization<MediaCardViewModel> Realization { get; } = new();
         public WeakReference<Image>? Poster { get; set; }
     }

@@ -6,7 +6,7 @@
     xmlns:views="using:EmbyClient.App.Views">
     <UserControl.Resources>
         <ItemsPanelTemplate x:Key="CastRowPanel"><ItemsStackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-        <ItemsPanelTemplate x:Key="CastGridPanel"><ItemsWrapGrid Orientation="Horizontal" ItemWidth="140" ItemHeight="176" /></ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="CastGridPanel"><ItemsWrapGrid Orientation="Horizontal" ItemWidth="140" ItemHeight="176" Loaded="CastGridPanel_Loaded" Unloaded="CastGridPanel_Unloaded" /></ItemsPanelTemplate>
     </UserControl.Resources>
     <StackPanel Spacing="12">
         <Grid ColumnSpacing="12">
@@ -20,7 +20,7 @@
         <GridView x:Name="PeopleGrid" ItemsSource="{x:Bind VisiblePeople}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="People_ItemClick"
                   ContainerContentChanging="People_ContainerContentChanging" Loaded="PeopleGrid_Loaded" SizeChanged="PeopleGrid_SizeChanged"
                   ItemsPanel="{StaticResource CastRowPanel}"
-                  ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ScrollViewer.VerticalScrollMode="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled"
                   AutomationProperties.Name="Cast and crew">
             <GridView.ItemContainerStyle>

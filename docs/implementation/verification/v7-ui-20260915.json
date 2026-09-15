@@ -1,0 +1,111 @@
+{
+  "Schema": "v7-native-acceptance/v1",
+  "Date": "2026-09-15",
+  "Status": "CompletedWithExplicitCoverageLimits",
+  "Report": "docs/implementation/v7-native-acceptance-20260915.md",
+  "ArtifactRoot": "artifacts/ui-v7-acceptance-20260915-072317",
+  "BaselineCommit": "ba85f2aa010e1a33f5ec79fb87dd2917b6c58187",
+  "Authorization": "User explicitly approved local isolated verification and resumed native UI testing in this task.",
+  "Isolation": {
+    "SyntheticOnly": true,
+    "Profile": "candidate-2-data under ArtifactRoot; reused only between this batch's candidates",
+    "Environment": "Process-only EMBY_CLIENT_DATA_ROOT",
+    "NormalUserDataChanged": false,
+    "NativeInteraction": "Computer Use via node_repl and @oai/sky"
+  },
+  "FinalCandidate": {
+    "Path": "candidate-accepted/EmbyClient.App.exe",
+    "Sha256": "ECC9578458C70D1BCAC6E337DDEC0A16552F5A53040EA95F2E92EA68E5405CA6",
+    "Length": 19998720,
+    "NativeAot": true,
+    "Architecture": "x64",
+    "TracingEnabled": false,
+    "ProcessId": 11380,
+    "StartedAtUtc": "2026-09-15T09:14:53.2970582Z",
+    "Evidence": "screens/accepted",
+    "Observed": [
+      "Saved synthetic sign-in and Home",
+      "Dialog queue removal: 1 of 1, visible ordinal 1, and Next in queue",
+      "Player keyboard queue removal: 1 of 1, next marker, pause retained at 0:19",
+      "Last queued item removed: empty state and visible focus on Close queue",
+      "Return to movie detail with Resume at 0:19",
+      "Thirteen-column maximized wall and three-column restored wall with intact visible posters",
+      "Normal application exit"
+    ]
+  },
+  "Build": {
+    "Result": "Passed",
+    "Command": "dotnet build EmbyClient.slnx -c Release -p:Platform=x64 -p:RestoreLockedMode=true --nologo",
+    "Errors": 0,
+    "Warnings": ["Existing generated WinUIEx Icon CS0618"],
+    "Log": "accepted-logs/build.log",
+    "InitialQueueBuildFailure": "Namespace ambiguity for DispatcherQueuePriority; corrected with an explicit alias. Retained in accepted-logs/build-first-namespace-ambiguity.log."
+  },
+  "Tests": {
+    "Result": "Passed",
+    "Api": 53,
+    "AppState": 46,
+    "MediaTransport": 125,
+    "Platform": 244,
+    "Playback": 142,
+    "Total": 610,
+    "Failed": 0,
+    "Skipped": 0,
+    "Logs": "accepted-logs/EmbyClient.*.Tests.log"
+  },
+  "SourceAudit": {
+    "InputCount": 188,
+    "UnchangedThroughFinalVerification": true,
+    "Snapshot": "accepted-source-inputs.json",
+    "Audit": "accepted-source-audit.json"
+  },
+  "Package": {
+    "Result": "StructuralVerificationPassed",
+    "Path": "packages/EmbyClient.Windows_0.1.0.0_x64_unsigned_20260915-091421469-ef32a64f.msix",
+    "Sha256": "7FF32711E0C372E4276DFD6912B72BD97EEB1C8670539117C7C2513358CF1A5E",
+    "Length": 54962942,
+    "PreservedResourceKeys": 295,
+    "Review": "artifacts/packaging/20260915-091421469-ef32a64f/package-review.json",
+    "Checks": ["Native x64 PE", "Self-contained payload", "PRI resource preservation", "MakeAppx semantic validation", "Unpack and file hash round trip", "Unchanged source publish"],
+    "Signed": false,
+    "Installed": false,
+    "PackagedRuntimeVerified": false,
+    "Sbom": "18-component CycloneDX 1.6 inventory; JSON readback passed, schema validation not run"
+  },
+  "EarlierNativeCandidates": [
+    { "Label": "C2", "Sha256": "5D0EBF70911B1B4D6029D919EFB1B6733D625CECF0188B7906D360DEEE85C581", "Evidence": "screens/candidate-2" },
+    { "Label": "C3", "Sha256": "FA6A595F01904CE420891349B55AF821AF39C298FB6EE7A6DF0AFA162CBB4ABA", "Evidence": "screens/candidate-3" },
+    { "Label": "C4", "Sha256": "C561DA46C86E1C8ABD6D9D232B1371D8095FFE7450BF777EE11843E82F012313", "Evidence": "screens/candidate-4" },
+    { "Label": "F", "Sha256": "0A646B16C2DA071F338D0066A696D4D253289C671E5C7DFF261F47EA5284FC3C", "Evidence": "screens/final", "Failure": "Posters became placeholders after maximize and restore" },
+    { "Label": "PF", "Sha256": "50467483EA6DD65EB97257F973C921A2BAB577DB600F0AB5AA7A53FC89DA60ED", "Evidence": "screens/posters-fixed", "Failure": "Queue total changed but row ordinal and accessible position remained stale" }
+  ],
+  "EvidenceBoundary": "The report assigns each observed journey to its actual candidate. Earlier screenshots are not final-executable acceptance. Inferred poster-wrapper lifetime reasoning is distinguished from trace-confirmed startup and layout defects.",
+  "EvidenceManifest": "screen-evidence-manifest.json; 201 screenshot and UIA files",
+  "CoverageLimits": [
+    "Windows high contrast, reduced effects, and 200% system text",
+    "Narrator and comprehensive keyboard/focus return",
+    "Native in-flight and late account transaction cancellation",
+    "Stale-response navigation and injected catalog 401",
+    "Multiple seasons, playable versions, audio tracks, and subtitles",
+    "Complete 200-item traversal and long-session memory/handle acceptance",
+    "HLS/transcoding, real-server/device breadth, and photographic composition",
+    "Signed installation, upgrades, and clean-machine playback"
+  ],
+  "Fixture": {
+    "RunId": "20260915-080117309-2be7ccf9",
+    "OwnershipPath": "artifacts/ui-v7-implementation-20260915/fixture-runs/20260915-080117309-2be7ccf9/processes.json",
+    "FinalCounters": { "Start": 6, "Stop": 6, "Progress": 133, "PartialResponses": 104, "ActiveImages": 0 },
+    "CountersAreCumulativeNotIndependentPasses": true,
+    "Stats": "accepted-fixture-stats.json"
+  },
+  "Cleanup": {
+    "ApplicationExitObserved": true,
+    "ApplicationReceipt": "accepted-app-cleanup.json",
+    "FixtureReceipt": "accepted-cleanup.json",
+    "OnlyVerifiedOwnedProcessesStopped": true,
+    "FixturePortsReleased": true,
+    "CompletedAtUtc": "2026-09-15T09:20:20.6149833Z",
+    "EarlierFixtureReceipt": "fixture-first-run-cleanup.json"
+  },
+  "RemotePushOrDeployment": false
+}

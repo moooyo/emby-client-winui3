@@ -1,6 +1,7 @@
 using EmbyClient.Api;
 using EmbyClient.App.Services;
 using EmbyClient.Playback;
+using DispatcherQueuePriority = Microsoft.UI.Dispatching.DispatcherQueuePriority;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -9,6 +10,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Runtime.InteropServices;
 using Windows.System;
+using WinRT;
 
 namespace EmbyClient.App.Views;
 
@@ -324,7 +326,7 @@ public sealed partial class PlayerView
     {
         if (SourceSelector is null || SourceValue is null) return;
         ShowSelectionOrValue(SourceSelector, SourceReadOnly, SourceValue, "No version available");
-        ShowSelectionOrValue(AudioSelector, AudioReadOnly, AudioValue, "No audio track");
+        ShowSelectionOrValue(AudioSelector, AudioReadOnly, AudioValue, EmptyAudioSelectionText());
         ShowSelectionOrValue(SubtitleSelector, SubtitleReadOnly, SubtitleValue, "Off");
         QualityText.Text = $"{_bitrate / 1_000_000d:0.#} Mbps";
         var limit = _session?.User.Policy?.RemoteClientBitrateLimit;
@@ -334,6 +336,18 @@ public sealed partial class PlayerView
         SetControlLabel(QualityButton, $"Maximum bitrate, {QualityText.Text}");
         SettingsMediaText.Text = _item?.Name ?? "Now playing";
         SettingsIdentityText.Text = PlaybackSubtitle(_item);
+    }
+
+    private string EmptyAudioSelectionText()
+    {
+        var source = _retrySettingsDraft is { } draft
+            ? FindRetrySource(draft.MediaSourceId)
+            : SourceSelector.SelectedItem is ComboBoxItem { Tag: string sourceId }
+                ? FindRetrySource(sourceId)
+                : _lastPlaybackContext is { } context && context.PlaybackId == _displayedPlayback ? context.Source : null;
+        return source?.MediaStreams is { } streams
+            && !streams.Any(stream => string.Equals(stream.Type, "Audio", StringComparison.OrdinalIgnoreCase))
+                ? "No audio track" : "Audio tracks unavailable";
     }
 
     private static void ShowSelectionOrValue(ComboBox selector, FrameworkElement readOnly, TextBlock value, string empty)
@@ -421,7 +435,7 @@ public sealed partial class PlayerView
         QueuePlayNextButton.IsEnabled = _queue.Count > 0 && CanStartQueuedItem();
         QueueNextDescription.Text = _queue.Next is { } head ? $"Starts {head.Title}." : string.Empty;
         UpdateEpisodeControls();
-        DispatcherQueue.TryEnqueue(UpdateQueueRows);
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, UpdateQueueRows);
     }
 
     private void QueueSelectionChanged(object sender, SelectionChangedEventArgs args) => UpdateQueuePanel();
@@ -482,8 +496,12 @@ public sealed partial class PlayerView
 
     private void UpdateQueueRows()
     {
-        for (var index = 0; index < _queue.Count; index++)
-            if (QueueList.ContainerFromIndex(index) is ListViewItem container) UpdateQueueRow(container, _queue.Items[index]);
+        if (!QueueList.IsLoaded) return;
+        QueueList.UpdateLayout();
+        foreach (var entry in _queue.Items)
+            if (QueueList.ContainerFromItem(entry) is { } container)
+                // Native AOT can return the base container projection after a collection change.
+                UpdateQueueRow(container.As<ListViewItem>(), entry);
     }
 
     private void UpdateQueueRow(ContentControl container, PlaybackQueueEntry? entry)
@@ -491,9 +509,10 @@ public sealed partial class PlayerView
         var index = entry is null ? -1 : _queue.IndexOf(entry.EntryId);
         AutomationProperties.SetName(container, index < 0 || entry is null ? string.Empty
             : $"{index + 1} of {_queue.Count}, {entry.AutomationName}{(index == 0 ? ", next in queue" : string.Empty)}");
-        if (container.ContentTemplateRoot is not FrameworkElement template) return;
-        if (template.FindName("OrderText") is TextBlock order) order.Text = index < 0 ? string.Empty : (index + 1).ToString();
-        if (template.FindName("NextText") is TextBlock next) next.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (container.ContentTemplateRoot is not { } templateRoot) return;
+        var template = templateRoot.As<FrameworkElement>();
+        if (template.FindName("OrderText") is { } order) order.As<TextBlock>().Text = index < 0 ? string.Empty : (index + 1).ToString();
+        if (template.FindName("NextText") is { } next) next.As<TextBlock>().Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void AutoPlayNextToggled(object sender, RoutedEventArgs args)

@@ -74,11 +74,7 @@ public sealed partial class LibraryView
             _resetDetailItemsScroll = false;
             var grid = ViewModel.HasDetails ? DetailItemsGrid : MediaGrid;
             grid.UpdateLayout();
-            if (_gridScroller is null)
-            {
-                _gridScroller = FindScrollViewer(MediaGrid);
-                AttachCollectionScroller(_gridScroller);
-            }
+            ReconnectMediaGridScroller();
             ReconnectDetailItemsScroller();
             var anchor = ViewModel.Items.FirstOrDefault(item => item.Id == state.AnchorId)
                 ?? ViewModel.Items.ElementAtOrDefault(Math.Clamp(state.AnchorIndex, 0, Math.Max(0, ViewModel.Items.Count - 1)));

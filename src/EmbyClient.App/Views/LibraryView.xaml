@@ -362,6 +362,7 @@
                                 <TextBlock Text="{x:Bind ViewModel.Detail.Genres, Mode=OneWay}" TextWrapping="Wrap" Visibility="{x:Bind ViewModel.Detail.GenresVisibility, Mode=OneWay}" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button x:Name="PrimaryPlayButton" Style="{ThemeResource AccentButtonStyle}" Click="PrimaryPlay_Click" MinHeight="40"
+                                            AutomationProperties.Name="{x:Bind ViewModel.PrimaryPlayLabel, Mode=OneWay}"
                                             ToolTipService.ToolTip="{x:Bind ViewModel.PrimaryPlayHint, Mode=OneWay}"
                                             IsEnabled="{x:Bind ViewModel.CanUseSeasonActions, Mode=OneWay}"
                                             Visibility="{x:Bind ViewModel.PrimaryPlayVisibility, Mode=OneWay}">

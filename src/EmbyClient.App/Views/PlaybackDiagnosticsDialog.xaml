@@ -43,7 +43,8 @@
                     <TextBlock Text="Use Save as to choose a location for the JSON snapshot."
                                TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          AutomationProperties.Name="Recent playback events">
                     <Expander.Header>
                         <StackPanel Spacing="4">
                             <TextBlock Text="Recent events" />

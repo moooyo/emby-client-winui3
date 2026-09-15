@@ -1,10 +1,12 @@
 using EmbyClient.App.Services;
+using DispatcherQueuePriority = Microsoft.UI.Dispatching.DispatcherQueuePriority;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
+using WinRT;
 
 namespace EmbyClient.App.Views;
 
@@ -55,7 +57,7 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
     {
         UpdateControls();
         // Native collection moves retain selection; refresh position labels after layout catches up.
-        DispatcherQueue.TryEnqueue(UpdateRealizedRows);
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, UpdateRealizedRows);
         if (_lastAnnouncedCount == _queue.Count) return;
         _lastAnnouncedCount = _queue.Count;
         (FrameworkElementAutomationPeer.FromElement(CountText)
@@ -147,9 +149,12 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
 
     private void UpdateRealizedRows()
     {
-        for (var index = 0; index < _queue.Count; index++)
-            if (QueueList.ContainerFromIndex(index) is ListViewItem container)
-                UpdateRow(container, _queue.Items[index]);
+        if (!QueueList.IsLoaded) return;
+        QueueList.UpdateLayout();
+        foreach (var entry in _queue.Items)
+            if (QueueList.ContainerFromItem(entry) is { } container)
+                // Native AOT can return the base container projection after a collection change.
+                UpdateRow(container.As<ListViewItem>(), entry);
     }
 
     private void UpdateRow(ContentControl container, PlaybackQueueEntry? entry)
@@ -158,13 +163,14 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
         var detail = entry?.Detail ?? string.Empty;
         AutomationProperties.SetName(container, entry is null || index < 0 ? string.Empty
             : $"{index + 1} of {_queue.Count}, {entry.Title}, {detail}{(index == 0 ? ", next in queue" : string.Empty)}");
-        if (container.ContentTemplateRoot is not FrameworkElement template) return;
-        if (template.FindName("OrderText") is TextBlock order)
-            order.Text = index < 0 ? string.Empty : (index + 1).ToString(System.Globalization.CultureInfo.CurrentCulture);
-        if (template.FindName("NextText") is TextBlock next)
-            next.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
-        if (template.FindName("DetailText") is TextBlock detailText)
-            detailText.Text = detail;
+        if (container.ContentTemplateRoot is not { } templateRoot) return;
+        var template = templateRoot.As<FrameworkElement>();
+        if (template.FindName("OrderText") is { } order)
+            order.As<TextBlock>().Text = index < 0 ? string.Empty : (index + 1).ToString(System.Globalization.CultureInfo.CurrentCulture);
+        if (template.FindName("NextText") is { } next)
+            next.As<TextBlock>().Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (template.FindName("DetailText") is { } detailText)
+            detailText.As<TextBlock>().Text = detail;
     }
 
 }

@@ -3,6 +3,8 @@ using EmbyClient.App.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using WinRT;
 
 namespace EmbyClient.App.Views;
 
@@ -11,6 +13,7 @@ public sealed partial class LibraryView
     private ScrollViewer? _detailItemsScroller;
     private bool _resetDetailItemsScroll;
     private PosterWallMetrics _wallMetrics;
+    private Panel? _wallPanelRoot;
     private int _collectionLayoutVersion;
     private bool _viewportUpdateQueued;
     private int? _loadingMoreVersion;
@@ -66,6 +69,17 @@ public sealed partial class LibraryView
         AttachCollectionScroller(_detailItemsScroller);
     }
 
+    private void ReconnectMediaGridScroller()
+    {
+        var scroller = FindScrollViewer(MediaGrid);
+        if (ReferenceEquals(_gridScroller, scroller)) return;
+        DetachCollectionScroller(_gridScroller);
+        _gridScroller = scroller;
+        _wallMetrics = default;
+        _wallPanelRoot = null;
+        AttachCollectionScroller(_gridScroller);
+    }
+
     private void DetailItemsGrid_Unloaded(object sender, RoutedEventArgs args)
     {
         DetachCollectionScroller(_detailItemsScroller);
@@ -110,6 +124,8 @@ public sealed partial class LibraryView
                 if (ViewModel.BrowseVisibility == Visibility.Visible)
                 {
                     MediaGrid.UpdateLayout();
+                    // A hidden grid can load before its template creates the scroll viewer.
+                    ReconnectMediaGridScroller();
                     UpdatePosterWallLayout();
                     MediaGrid.UpdateLayout();
                 }
@@ -134,8 +150,26 @@ public sealed partial class LibraryView
 
     private void UpdatePosterWallLayout()
     {
-        if (_gridScroller is null || MediaGrid.ItemsPanelRoot is not ItemsWrapGrid panel) return;
-        var metrics = PosterWallLayout.Calculate(_gridScroller.ViewportWidth, XamlRoot?.RasterizationScale ?? 1, _textScaleFactor);
+        if (_gridScroller is null || MediaGrid.ItemsPanelRoot is not { } panelRoot)
+        {
+            _wallMetrics = default;
+            _wallPanelRoot = null;
+            return;
+        }
+        if (!ReferenceEquals(_wallPanelRoot, panelRoot))
+        {
+            _wallPanelRoot = panelRoot;
+            _wallMetrics = default;
+        }
+        // Native AOT can return the base Panel projection for the known wrap-grid template.
+        var panel = panelRoot.As<ItemsWrapGrid>();
+        var measuredWidth = LayoutInformation.GetAvailableSize(panelRoot).Width;
+        var viewportWidth = _gridScroller.ViewportWidth;
+        if (!double.IsFinite(measuredWidth) || measuredWidth <= 0
+            || !double.IsFinite(viewportWidth) || viewportWidth <= 0) return;
+        // The wrap grid uses its measure constraint, which can be narrower than the arranged viewport.
+        var availableWidth = Math.Min(measuredWidth, viewportWidth) - panel.GroupPadding.Left - panel.GroupPadding.Right;
+        var metrics = PosterWallLayout.Calculate(availableWidth, XamlRoot?.RasterizationScale ?? 1, _textScaleFactor);
         if (metrics.Columns == 0 || metrics == _wallMetrics) return;
         _wallMetrics = metrics;
         panel.MaximumRowsOrColumns = metrics.Columns;

@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI.ViewManagement;
+using WinRT;
 
 namespace EmbyClient.App.Views;
 
@@ -139,8 +140,8 @@ public sealed partial class PersonDetailsView : UserControl
         var textScale = 1d;
         try { textScale = Math.Max(1, _displaySettings.TextScaleFactor); }
         catch (System.Runtime.InteropServices.COMException) { }
-        if (WorksGrid.ItemsPanelRoot is ItemsWrapGrid panel)
-            panel.ItemHeight = 320 + 92 * (textScale - 1);
+        if (WorksGrid.ItemsPanelRoot is { } panelRoot)
+            panelRoot.As<ItemsWrapGrid>().ItemHeight = 320 + 92 * (textScale - 1);
     }
 
     private void ConnectScroller()

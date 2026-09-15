@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Windows.UI.ViewManagement;
+using WinRT;
 
 namespace EmbyClient.App.Views;
 
@@ -74,7 +75,8 @@ public sealed partial class PersonDetailsDialog : ContentDialog
 
     private void UpdateTextScale()
     {
-        if (WorksGrid.ItemsPanelRoot is not ItemsWrapGrid panel) return;
+        if (WorksGrid.ItemsPanelRoot is not { } panelRoot) return;
+        var panel = panelRoot.As<ItemsWrapGrid>();
         try { panel.ItemHeight = 272 + 72 * (Math.Max(1, _displaySettings.TextScaleFactor) - 1); }
         catch (System.Runtime.InteropServices.COMException) { }
     }

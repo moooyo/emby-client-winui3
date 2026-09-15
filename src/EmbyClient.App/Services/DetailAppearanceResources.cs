@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Windows.UI;
 using Windows.UI.ViewManagement;
+using WinRT;
 
 namespace EmbyClient.App.Services;
 
@@ -68,7 +69,7 @@ internal sealed class DetailAppearanceResources
         SetGradient("NavigationViewExpandedPaneBackground", advancedEffects ? chrome : baseColor,
             !advancedEffects ? [1, 1, 1] : hasArtwork ? [.25, .12, 0] : [0, 0, 0], .68);
         Set("DetailTitleBarBackgroundBrush", !advancedEffects ? baseColor : hasArtwork ? WithAlpha(chrome, .20) : Transparent);
-        var overlay = Get<AcrylicBrush>("NavigationViewDefaultPaneBackground");
+        var overlay = _resources["NavigationViewDefaultPaneBackground"].As<AcrylicBrush>();
         overlay.TintColor = hasArtwork ? mask : baseColor;
         overlay.TintOpacity = dark ? .86 : .90;
         overlay.FallbackColor = baseColor;
@@ -89,21 +90,22 @@ internal sealed class DetailAppearanceResources
         Set("DetailChipStrokeBrush", buttonText);
         Set("NavigationViewContentGridBorderBrush", Transparent);
         SetGradient("NavigationViewExpandedPaneBackground", window, [1, 1, 1], .68);
-        var overlay = Get<AcrylicBrush>("NavigationViewDefaultPaneBackground");
+        var overlay = _resources["NavigationViewDefaultPaneBackground"].As<AcrylicBrush>();
         overlay.FallbackColor = window;
         overlay.AlwaysUseFallback = true;
     }
 
-    private void Set(string key, Color value) => Get<SolidColorBrush>(key).Color = value;
+    private void Set(string key, Color value) => _resources[key].As<SolidColorBrush>().Color = value;
 
     private void SetGradient(string key, Color color, double[] opacity, double middleOffset)
     {
-        var stops = Get<LinearGradientBrush>(key).GradientStops;
+        // A native resource can arrive as the base Brush projection in Native AOT.
+        // Query its WinRT interface instead of relying on a managed derived-type cast.
+        var stops = _resources[key].As<LinearGradientBrush>().GradientStops;
         for (var index = 0; index < stops.Count; index++) stops[index].Color = WithAlpha(color, opacity[index]);
         stops[1].Offset = middleOffset;
     }
 
-    private T Get<T>(string key) where T : Brush => (T)_resources[key];
     private static Color Transparent => Color.FromArgb(0, 0, 0, 0);
     private static Color Rgb(byte red, byte green, byte blue, double alpha = 1) =>
         Color.FromArgb((byte)Math.Round(alpha * 255), red, green, blue);
