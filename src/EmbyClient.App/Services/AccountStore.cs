@@ -51,9 +51,7 @@ public sealed class AccountStore
 
     public AccountStore(string? settingsPath = null)
     {
-        SettingsPath = Path.GetFullPath(settingsPath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "EmbyClient.Windows", "settings.json"));
+        SettingsPath = Path.GetFullPath(settingsPath ?? Path.Combine(AppDataPaths.RootDirectory, "settings.json"));
     }
 
     public string SettingsPath { get; }

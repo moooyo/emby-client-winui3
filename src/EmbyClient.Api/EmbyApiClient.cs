@@ -523,7 +523,8 @@ public sealed class EmbyApiClient
             .Add("Limit", query.Limit).Add("Recursive", query.Recursive).Add("SearchTerm", query.SearchTerm)
             .AddList("IncludeItemTypes", query.IncludeItemTypes).AddList("MediaTypes", query.MediaTypes)
             .AddList("SortBy", query.SortBy).AddList("SortOrder", query.SortOrder).AddList("Fields", query.Fields)
-            .AddList("Filters", query.Filters).AddList("Ids", query.Ids).AddList("Genres", query.Genres, '|')
+            .AddList("Filters", query.Filters).AddList("Ids", query.Ids).AddList("PersonIds", query.PersonIds)
+            .AddList("Genres", query.Genres, '|')
             .AddList("Tags", query.Tags, '|').Add("IsPlayed", query.IsPlayed).Add("IsFavorite", query.IsFavorite)
             .Add("EnableUserData", query.EnableUserData).Add("EnableImages", query.EnableImages)
             .AddList("EnableImageTypes", query.EnableImageTypes).Add("ImageTypeLimit", query.ImageTypeLimit);

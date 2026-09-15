@@ -13,12 +13,17 @@ public sealed partial class MainWindow : WindowEx
         InitializeComponent();
         Width = 1280;
         Height = 840;
-        MinWidth = 860;
+        MinWidth = 640;
         MinHeight = 600;
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico"));
         _page = new MainPage();
+        _page.InitializeDetailAppearance(DetailBackdropLayer, DetailBackdropImage, WindowRoot, AppTitleBar);
+        WindowRoot.KeyDown += WindowRootKeyDown;
+        AppTitleBar.PaneToggleRequested += (_, _) => _page.ToggleNavigation();
+        AppTitleBar.BackRequested += async (_, _) => await _page.NavigateBackAsync();
+        _page.ChromeStateChanged += (_, _) => UpdateChrome();
         _page.FullscreenRequested += (_, _) =>
         {
             var fullscreen = AppWindow.Presenter.Kind == Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen;
@@ -39,8 +44,19 @@ public sealed partial class MainWindow : WindowEx
         RootFrame.Content = _page;
         PersistenceId = "MainWindow";
         AppWindow.Closing += OnClosing;
+        Closed += (_, _) => _page.DisposeDetailAppearance();
         UpdatePresentation();
+        UpdateChrome();
         UpdateCaptionColors();
+    }
+
+    private void UpdateChrome()
+    {
+        AppTitleBar.Title = _page.PresentationTitle;
+        AppTitleBar.Subtitle = _page.PresentationSubtitle;
+        AppTitleBar.IsPaneToggleButtonVisible = _page.IsLibraryVisible;
+        AppTitleBar.IsBackButtonVisible = _page.IsBackNavigationVisible;
+        AppTitleBar.IsBackButtonEnabled = _page.CanNavigateBack;
     }
 
     private void UpdatePresentation()
@@ -57,12 +73,18 @@ public sealed partial class MainWindow : WindowEx
         AppWindow.TitleBar.ButtonForegroundColor = (AppTitleBar.Foreground as Microsoft.UI.Xaml.Media.SolidColorBrush)?.Color;
     }
 
+    private void WindowRootKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs args)
+    {
+        if (!args.Handled && args.Key == Windows.System.VirtualKey.F11 && _page.TryToggleFullscreen()) args.Handled = true;
+    }
+
     private async void OnClosing(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
     {
         if (_allowClose) return;
         args.Cancel = true;
         if (_closing) return;
         _closing = true;
+        _page.DisposeDetailAppearance();
         try { await _page.ShutdownAsync().WaitAsync(TimeSpan.FromSeconds(8)); }
         catch (Exception) { /* Shutdown is bounded even when the server is unavailable. */ }
         _allowClose = true;

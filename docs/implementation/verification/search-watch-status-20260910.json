@@ -1,0 +1,36 @@
+{
+  "dateUtc": "2026-09-10T07:13:54Z",
+  "scope": "Dedicated Search navigation and All, Unplayed, Played browse filters",
+  "environment": {
+    "host": "test-env",
+    "os": "Debian Linux x64",
+    "sdk": "10.0.301",
+    "workspace": "/tmp/emby-ui-fluent2-20260910",
+    "localVerificationPerformedByThisAgent": false
+  },
+  "temporaryLibraryFlowHarness": {
+    "status": "passed",
+    "total": 20,
+    "existingTransactionalAndSeasonCases": 12,
+    "newSearchAndWatchStatusCases": 8,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "Actual ViewModels, ImageCache, API and CommunityToolkit.Mvvm in a temporary net10.0 xUnit project with only the WinUI Visibility enum stubbed. Synthetic HttpMessageHandler responses; no real Emby server or Windows UI was contacted.",
+    "newCoverage": [
+      "Entering empty Search, submitting empty text, clearing existing search results and refreshing empty Search make no media requests and remain on Search",
+      "Library to Search to movie details and back restores the query, search filter, results and original library filter without duplicate history; repeated ShowSearch preserves the existing query and cards",
+      "Nonempty searches request all eight supported media types and the subtitle includes the result count and query",
+      "All omits IsPlayed, Unplayed sends false and Played sends true; the legacy Boolean overload remains compatible",
+      "A failed watch-filter change restores committed Played options and subsequent paging uses those options",
+      "Rapid watch-filter changes reject an older response and page the final committed query",
+      "An old pending library filter cannot populate or filter a newly opened Search page"
+    ],
+    "warnings": "Existing temporary harness tests emit xUnit1051 suggestions for default CancellationToken usage. New Search and watch-status tests use the test cancellation token."
+  },
+  "sourceSha256": {
+    "LibraryViewModel.cs": "153a472b0ad08ed88d495016afde5840b1b1bdf4df726039e6a2e91200a1a7b3",
+    "LibraryWatchStatusTests.cs": "64cfb8d338f16f197031a2f89af22f274e9e070366233cf234e208c505b6a522",
+    "LibrarySearchNavigationTests.cs": "3f85b93f6b134275d000a9060b4eeec3c3d9ffe7d3e5ea205fe50fbf1e07b95e"
+  },
+  "limitations": "These results verify managed query, navigation and transaction behavior. Native XAML compilation, keyboard interaction and visual layout are validated separately by the integrating agent."
+}

@@ -2,34 +2,113 @@
     x:Class="EmbyClient.App.Views.PlaybackDiagnosticsDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:EmbyClient.App.Views"
     Title="Playback diagnostics" CloseButtonText="Close" DefaultButton="Close"
     PrimaryButtonText="Copy snapshot" PrimaryButtonClick="CopyClicked"
-    SecondaryButtonText="Save snapshot" SecondaryButtonClick="SaveClicked">
-    <Grid MaxWidth="480" RowSpacing="12">
+    SecondaryButtonText="Save as…" SecondaryButtonClick="SaveClicked">
+    <Grid x:Name="DialogContent" MaxWidth="480" RowSpacing="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
-            <RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+            <RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <TextBlock x:Name="VersionText" TextWrapping="Wrap" />
-        <TextBlock Grid.Row="1" Text="Local events and media categories only. Snapshots exclude addresses, accounts, titles, paths, and tokens."
-                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        <Grid Grid.Row="2" ColumnSpacing="12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock x:Name="CountText" TextWrapping="Wrap" VerticalAlignment="Center"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <Button Grid.Column="1" x:Name="RefreshButton" Content="Refresh" Click="RefreshClicked"
-                    AutomationProperties.Name="Refresh" AutomationProperties.HelpText="Refresh playback diagnostics." />
-        </Grid>
-        <TextBox Grid.Row="3" x:Name="SummaryText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-                 FontFamily="Consolas" MinHeight="100" MaxHeight="240"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
-                 AutomationProperties.Name="Safe playback diagnostic events" />
-        <TextBlock Grid.Row="4" Text="Codec categories describe selected source metadata, not verified decoder output."
-                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        <InfoBar Grid.Row="5" x:Name="ResultNotice" IsOpen="False" IsClosable="True" />
-        <TextBlock Grid.Row="6" x:Name="StatusText" MinHeight="20" TextWrapping="Wrap"
+        <ScrollViewer x:Name="ContentScroller" MaxHeight="520" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Last recorded playback status" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" AutomationProperties.HeadingLevel="Level2" />
+                        <Button Grid.Column="1" x:Name="RefreshButton" Content="Refresh" Click="RefreshClicked"
+                                VerticalAlignment="Center" AutomationProperties.Name="Refresh"
+                                AutomationProperties.HelpText="Refresh playback diagnostics." />
+                    </Grid>
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="PlaybackStatusText" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock x:Name="PlaybackStatusDetailText" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <StackPanel x:Name="RecentFailurePanel" Spacing="4" Visibility="Collapsed">
+                        <TextBlock Text="Recent failure" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   AutomationProperties.HeadingLevel="Level2" />
+                        <TextBlock x:Name="RecentFailureText" TextWrapping="Wrap" />
+                        <TextBlock x:Name="RecentFailureTimeText" TextWrapping="Wrap" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Snapshots contain local events and media categories. No server addresses, accounts, titles, paths, or tokens."
+                               TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="Use Save as to choose a location for the JSON snapshot."
+                               TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Recent events" />
+                            <TextBlock x:Name="CountText" TextWrapping="Wrap" FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Expander.Header>
+                    <StackPanel Spacing="12">
+                        <TextBlock x:Name="EmptyEventsText" Text="No playback events yet. Events appear here when playback starts."
+                                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <ItemsControl x:Name="RecentEventsList" IsTabStop="False" ItemsSource="{x:Bind RecentEvents}"
+                                      AutomationProperties.Name="Recent safe playback events">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="local:PlaybackDiagnosticEventRow">
+                                    <Border Padding="0,12" BorderThickness="0,1,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                            <TextBlock Text="{x:Bind Timestamp}" FontSize="12" TextWrapping="Wrap"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="{x:Bind Media}" FontSize="12" TextWrapping="Wrap"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="{x:Bind Error}" Visibility="{x:Bind ErrorVisibility}" TextWrapping="Wrap"
+                                                       Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Expander>
+                <Expander Header="Environment" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnSpacing="16" RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" /><RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="App" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="ApplicationText" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        <TextBlock Grid.Row="1" Text="Windows" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="OperatingSystemText" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        <TextBlock Grid.Row="2" Text="Runtime" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="RuntimeText" Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        <TextBlock Grid.Row="3" Text="Player" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="Windows MediaPlayer" TextWrapping="Wrap" />
+                    </Grid>
+                </Expander>
+                <Expander Header="Technical details" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="12">
+                        <TextBlock x:Name="EngineVersionText" TextWrapping="Wrap" />
+                        <TextBlock Text="Codec categories describe selected source metadata, not verified decoder output."
+                                   TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="Safe snapshot" FontWeight="SemiBold" />
+                        <TextBox x:Name="SummaryText" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                 FontFamily="Consolas" FontSize="12" MinHeight="100" MaxHeight="240"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 AutomationProperties.Name="Safe playback diagnostic snapshot" />
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+        <InfoBar Grid.Row="1" x:Name="ResultNotice" IsOpen="False" IsClosable="True" SizeChanged="FeedbackSizeChanged" />
+        <TextBlock Grid.Row="2" x:Name="StatusText" Visibility="Collapsed" TextWrapping="Wrap" SizeChanged="FeedbackSizeChanged"
                    AutomationProperties.LiveSetting="Polite" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
     </Grid>
 </ContentDialog>

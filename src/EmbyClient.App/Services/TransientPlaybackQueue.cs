@@ -99,6 +99,26 @@ public sealed partial class PlaybackQueueEntry
     public Guid EntryId { get; } = Guid.NewGuid();
     public BaseItemDto Item { get; }
     public string Title => string.IsNullOrWhiteSpace(Item.Name) ? "Untitled media" : Item.Name;
-    public string Detail => string.IsNullOrWhiteSpace(Item.SeriesName) ? Item.Type ?? "Video" : Item.SeriesName;
+    public string Detail
+    {
+        get
+        {
+            var parts = new List<string>();
+            var episode = string.Equals(Item.Type, "Episode", StringComparison.OrdinalIgnoreCase);
+            if (episode)
+            {
+                if (!string.IsNullOrWhiteSpace(Item.SeriesName)) parts.Add(Item.SeriesName);
+                if (Item.ParentIndexNumber is { } season) parts.Add($"Season {season}");
+                if (Item.IndexNumber is { } number) parts.Add($"Episode {number}");
+                if (parts.Count == 0) parts.Add("Episode");
+            }
+            else
+            {
+                if (Item.ProductionYear is { } year) parts.Add(year.ToString(System.Globalization.CultureInfo.CurrentCulture));
+                parts.Add(string.IsNullOrWhiteSpace(Item.Type) ? "Video" : Item.Type);
+            }
+            return string.Join(" · ", parts);
+        }
+    }
     public string AutomationName => $"{Title}, {Detail}";
 }

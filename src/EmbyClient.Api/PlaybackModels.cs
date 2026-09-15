@@ -68,6 +68,7 @@ public sealed record MediaStream
     public string? Type { get; init; }
     public string? Codec { get; init; }
     public string? Language { get; init; }
+    public string? DisplayLanguage { get; init; }
     public string? DisplayTitle { get; init; }
     public string? Title { get; init; }
     public bool? IsDefault { get; init; }
@@ -77,13 +78,25 @@ public sealed record MediaStream
     public bool? IsTextSubtitleStream { get; init; }
     public int? Channels { get; init; }
     public string? ChannelLayout { get; init; }
+    public int? BitRate { get; init; }
+    public int? SampleRate { get; init; }
     public int? Width { get; init; }
     public int? Height { get; init; }
+    public float? AverageFrameRate { get; init; }
+    public float? RealFrameRate { get; init; }
+    public string? AspectRatio { get; init; }
     public string? Profile { get; init; }
     public double? Level { get; init; }
     public int? BitDepth { get; init; }
     public bool? IsInterlaced { get; init; }
     public string? VideoRange { get; init; }
+    public string? PixelFormat { get; init; }
+    public string? ColorSpace { get; init; }
+    public string? ColorTransfer { get; init; }
+    public string? ColorPrimaries { get; init; }
+    public string? CodecTag { get; init; }
+    public int? RefFrames { get; init; }
+    public string? ExtendedVideoSubTypeDescription { get; init; }
     public string? DeliveryMethod { get; init; }
     public string? DeliveryUrl { get; init; }
 

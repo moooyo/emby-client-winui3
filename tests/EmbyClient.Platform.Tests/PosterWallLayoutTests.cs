@@ -17,7 +17,7 @@ public sealed class PosterWallLayoutTests
         Assert.Equal(normal.Columns, enlarged.Columns);
         Assert.Equal(normal.ItemWidth, enlarged.ItemWidth);
         Assert.Equal(normal.PosterWidth, enlarged.PosterWidth);
-        Assert.Equal(38 * (textScale - 1), enlarged.ItemHeight - normal.ItemHeight, precision: 9);
+        Assert.Equal(58 * (textScale - 1), enlarged.ItemHeight - normal.ItemHeight, precision: 9);
     }
 
     [Fact]
@@ -67,7 +67,7 @@ public sealed class PosterWallLayoutTests
         Assert.InRange(width - metrics.ItemWidth * metrics.Columns, 0, metrics.Columns / scale);
         Assert.Equal(Math.Round(physicalWidth), physicalWidth, precision: 9);
         Assert.Equal(metrics.PosterWidth + 20, metrics.ItemWidth, precision: 9);
-        Assert.Equal(metrics.PosterWidth * 1.5, metrics.ItemHeight - 72, precision: 9);
+        Assert.Equal(metrics.PosterWidth * 1.5, metrics.ItemHeight - 92, precision: 9);
     }
 
     [Fact]

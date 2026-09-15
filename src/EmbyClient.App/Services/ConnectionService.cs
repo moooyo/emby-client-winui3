@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using EmbyClient.Api;
 
 namespace EmbyClient.App.Services;
@@ -6,13 +7,19 @@ public sealed record ConnectedSession(
     EmbyApiClient Api, PublicSystemInfo Server, UserDto User, string AccountKey, string? SessionId,
     string? PersistenceWarning = null, bool CapabilitiesRegistered = false);
 
+public sealed class AccountPolicyException() : Exception("This Emby account is disabled.") { }
+
 public sealed partial class ConnectionService : IDisposable
 {
     private readonly HttpClient _http;
     private readonly AccountStore _store;
     private readonly bool _ownsHttp;
     private readonly SemaphoreSlim _initializationGate = new(1, 1);
+    private readonly SemaphoreSlim _connectionGate = new(1, 1);
+    private readonly SemaphoreSlim _settingsGate = new(1, 1);
+    private readonly HashSet<string> _acceptedTokenFingerprints = new(StringComparer.Ordinal);
     private bool _settingsLoaded;
+    private readonly ConcurrentDictionary<string, string> _accountRestrictions = new(StringComparer.Ordinal);
 
     public ConnectionService(HttpClient? httpClient = null, AccountStore? accountStore = null)
     {
@@ -22,6 +29,23 @@ public sealed partial class ConnectionService : IDisposable
     }
 
     public AppSettings Settings { get; private set; } = new();
+    public bool IsTemporarySession { get; private set; }
+
+    public string? GetAccountRestriction(string accountKey) => _accountRestrictions.GetValueOrDefault(accountKey);
+
+    public async Task UseTemporarySessionAsync(CancellationToken cancellationToken = default)
+    {
+        await _initializationGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_settingsLoaded) return;
+            // A temporary session never reads, repairs, or overwrites the unavailable settings.
+            Settings = new AppSettings();
+            IsTemporarySession = true;
+            Volatile.Write(ref _settingsLoaded, true);
+        }
+        finally { _initializationGate.Release(); }
+    }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -45,59 +69,52 @@ public sealed partial class ConnectionService : IDisposable
         bool remember, CancellationToken cancellationToken)
     {
         await InitializeAsync(cancellationToken);
-        var publicApi = CreatePublicClient(address);
-        var server = await publicApi.GetPublicSystemInfoAsync(cancellationToken);
-        RequireServerIdentity(server);
-        var result = await publicApi.AuthenticateByNameAsync(username.Trim(), password, cancellationToken);
-        if (string.IsNullOrWhiteSpace(result.AccessToken) || string.IsNullOrWhiteSpace(result.User?.Id))
-            throw new EmbyProtocolException("The sign-in response did not contain a user and an access token.");
-        if (result.ServerId is not null && result.ServerId != server.Id)
-            throw new EmbyProtocolException("The server identity changed during sign-in. Check the server address.");
-        var api = publicApi.WithAuthentication(result.AccessToken, result.User.Id);
-        var user = await api.GetCurrentUserAsync(cancellationToken);
-        RequireUser(user);
-        var key = AccountStore.CreateAccountKey(server.Id!, user.Id!);
-        string? warning = null;
+        await _connectionGate.WaitAsync(cancellationToken);
         try
         {
-            var protectedToken = remember ? await _store.ProtectTokenAsync(result.AccessToken, cancellationToken) : "";
-            var account = new SavedAccount
-            {
-                Key = key, ApiRoot = api.ApiRoot.AbsoluteUri, ServerId = server.Id!,
-                ServerName = server.ServerName ?? "Emby server", UserId = user.Id!,
-                UserName = username.Trim(), ProtectedToken = protectedToken
-            };
-            Settings.Accounts.RemoveAll(x => x.Key == key);
-            Settings.Accounts.Add(account);
-            Settings.LastAccountKey = key;
-            await _store.SaveAsync(Settings, cancellationToken);
+            return await SignInCoreAsync(address, username, password, remember, cancellationToken);
         }
-        catch (AccountStoreException)
-        {
-            warning = "Signed in, but Windows could not save this account. You may need to sign in again next time.";
-        }
-        var registered = false;
-        if (result.SessionInfo?.Id is { Length: > 0 } sessionId)
-        {
-            try
-            {
-                await api.SetCapabilitiesAsync(sessionId, new ClientCapabilities
-                {
-                    PlayableMediaTypes = ["Video"], SupportsMediaControl = false, SupportsSync = false
-                }, cancellationToken);
-                registered = true;
-            }
-            catch (Exception ex) when (ex is EmbyApiException or EmbyProtocolException or EmbyTransportException or TimeoutException)
-            {
-                // Playback negotiation remains authoritative if optional capability registration is unavailable.
-            }
-        }
-        return new(api, server, user, key, result.SessionInfo?.Id, warning, registered);
+        finally { _connectionGate.Release(); }
     }
 
     public async Task<ConnectedSession> RestoreAsync(SavedAccount account, CancellationToken cancellationToken)
     {
         await InitializeAsync(cancellationToken);
+        await _connectionGate.WaitAsync(cancellationToken);
+        try
+        {
+            var protectedToken = account.ProtectedToken;
+            try
+            {
+                return await RestoreCoreAsync(account, cancellationToken);
+            }
+            catch (Exception error) when (UiErrors.RequiresPassword(error))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                // Invalidate only the credential actually used by this attempt. A concurrent
+                // local settings operation may already have replaced or removed the record.
+                await _settingsGate.WaitAsync(cancellationToken);
+                try
+                {
+                    if (account.ProtectedToken == protectedToken) account.ProtectedToken = string.Empty;
+                    var saved = Settings.Accounts.Find(value => value.Key == account.Key);
+                    if (saved?.ProtectedToken == protectedToken) saved.ProtectedToken = string.Empty;
+                }
+                finally { _settingsGate.Release(); }
+                throw;
+            }
+            catch (Exception error) when (UiErrors.IsAccountRestriction(error))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                _accountRestrictions[account.Key] = UiErrors.Describe(error);
+                throw;
+            }
+        }
+        finally { _connectionGate.Release(); }
+    }
+
+    private async Task<ConnectedSession> RestoreCoreAsync(SavedAccount account, CancellationToken cancellationToken)
+    {
         var publicApi = CreatePublicClient(account.ApiRoot);
         var server = await publicApi.GetPublicSystemInfoAsync(cancellationToken);
         RequireServerIdentity(server);
@@ -106,12 +123,23 @@ public sealed partial class ConnectionService : IDisposable
         var token = await _store.UnprotectTokenAsync(account.ProtectedToken, cancellationToken);
         var api = publicApi.WithAuthentication(token, account.UserId);
         var user = await api.GetCurrentUserAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         RequireUser(user);
         if (user.Id != account.UserId)
             throw new EmbyProtocolException("The restored user does not match the saved account.");
-        Settings.LastAccountKey = account.Key;
-        await _store.SaveAsync(Settings, cancellationToken);
-        return new(api, server, user, account.Key, null);
+        string? warning = null;
+        try
+        {
+            await CommitAccountAsync(account.Key, null, cancellationToken);
+        }
+        catch (AccountStoreException)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            warning = "Signed in, but the last used account could not be saved on this device.";
+        }
+        _acceptedTokenFingerprints.Add(TokenFingerprint(token));
+        _accountRestrictions.TryRemove(account.Key, out _);
+        return new(api, server, user, account.Key, null, warning);
     }
 
     public async Task<string?> SignOutAsync(ConnectedSession session, CancellationToken cancellationToken)
@@ -135,7 +163,7 @@ public sealed partial class ConnectionService : IDisposable
             await session.Api.LogoutAsync(cancellationToken);
             return null;
         }
-        catch (Exception ex) when (ex is EmbyApiException or EmbyTransportException or TimeoutException
+        catch (Exception ex) when (ex is EmbyApiException or EmbyProtocolException or EmbyTransportException or TimeoutException
             or OperationCanceledException or ObjectDisposedException)
         {
             return "Signed out on this device. The server could not confirm that the previous token was revoked.";
@@ -145,18 +173,57 @@ public sealed partial class ConnectionService : IDisposable
     public async Task SetThemeAsync(string theme)
     {
         await InitializeAsync();
-        Settings.Theme = theme;
-        await _store.SaveAsync(Settings);
+        await _settingsGate.WaitAsync();
+        try
+        {
+            Settings.Theme = theme;
+            if (!IsTemporarySession) await _store.SaveAsync(Settings);
+        }
+        finally { _settingsGate.Release(); }
     }
 
     public async Task ForgetTokenAsync(string accountKey)
     {
         await InitializeAsync();
-        var account = Settings.Accounts.Find(x => x.Key == accountKey);
-        if (account is not null) account.ProtectedToken = "";
-        if (Settings.LastAccountKey == accountKey) Settings.LastAccountKey = null;
-        await _store.SaveAsync(Settings);
+        await _settingsGate.WaitAsync();
+        try
+        {
+            var account = Settings.Accounts.Find(x => x.Key == accountKey);
+            if (account is null) return;
+            account.ProtectedToken = "";
+            if (Settings.LastAccountKey == accountKey) Settings.LastAccountKey = null;
+            if (!IsTemporarySession) await _store.SaveAsync(Settings);
+        }
+        finally { _settingsGate.Release(); }
     }
+
+    public async Task RemoveSavedAccountAsync(string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        await InitializeAsync(cancellationToken);
+        await _settingsGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!Settings.Accounts.Exists(account => account.Key == key)) return;
+            var updated = CopySettings();
+            updated.Accounts.RemoveAll(account => account.Key == key);
+            if (updated.LastAccountKey == key) updated.LastAccountKey = null;
+            // Publish only after the atomic save succeeds, including late cancellation.
+            if (!IsTemporarySession) await _store.SaveAsync(updated, cancellationToken);
+            else cancellationToken.ThrowIfCancellationRequested();
+            Settings = updated;
+            _accountRestrictions.TryRemove(key, out _);
+        }
+        finally { _settingsGate.Release(); }
+    }
+
+    private AppSettings CopySettings() => new()
+    {
+        DeviceId = Settings.DeviceId,
+        Theme = Settings.Theme,
+        LastAccountKey = Settings.LastAccountKey,
+        Accounts = [.. Settings.Accounts]
+    };
 
     private EmbyApiClient CreatePublicClient(string address)
     {
@@ -176,7 +243,7 @@ public sealed partial class ConnectionService : IDisposable
         if (string.IsNullOrWhiteSpace(user.Id))
             throw new EmbyProtocolException("The server did not return a user identity.");
         if (user.Policy?.IsDisabled == true)
-            throw new InvalidOperationException("This Emby account is disabled.");
+            throw new AccountPolicyException();
     }
 
     public void Dispose()
@@ -189,10 +256,21 @@ public sealed partial class ConnectionService : IDisposable
 
 public static class UiErrors
 {
+    public static bool IsAccountRestriction(Exception exception) => exception is AccountPolicyException
+        or EmbyApiException { ApplicationErrorCode: "ParentalControl" };
+
+    public static bool RequiresPassword(Exception exception) => !IsAccountRestriction(exception)
+        && (exception is EmbyApiException { IsAuthenticationFailure: true }
+            or AccountStoreException { Error: AccountStoreError.TokenUnprotectionFailed });
+
+    public static bool IsConnectionFailure(Exception exception) => exception is EmbyTransportException or TimeoutException;
+
     public static string Describe(Exception exception) => exception switch
     {
+        AccountPolicyException =>
+            "This Emby account is disabled. Choose another account or contact your server administrator.",
         EmbyApiException { ApplicationErrorCode: "ParentalControl" } =>
-            "This account is currently restricted by the server's access rules.",
+            "This account is restricted by the server's access rules. Choose another account or check the access schedule with your server administrator.",
         EmbyApiException { IsAuthenticationFailure: true } =>
             "Your sign-in was not accepted or has expired. Check your account and sign in again.",
         EmbyApiException { IsPermissionDenied: true } =>

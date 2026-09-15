@@ -173,7 +173,7 @@ public sealed class ImageCache
         return false;
     }
 
-    private static ImageReference? SelectImage(BaseItemDto item, ArtworkKind artworkKind)
+    internal static ImageReference? SelectImage(BaseItemDto item, ArtworkKind artworkKind)
     {
         return artworkKind switch
         {
@@ -220,7 +220,7 @@ public sealed class ImageCache
         return null;
     }
 
-    private readonly record struct ImageReference(string ItemId, string Type, int? Index, string Tag);
+    internal readonly record struct ImageReference(string ItemId, string Type, int? Index, string Tag);
 
     private readonly record struct CacheKey(string ServerId, string ApiRoot, string UserId, string ItemId,
         string Type, int? Index, string Tag, int Width, int Height);

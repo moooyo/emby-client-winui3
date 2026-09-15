@@ -1,12 +1,47 @@
 # Implementation status
 
-Snapshot: 2026-09-10. The repository contains a functional Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. Native AOT publication succeeds. Default direct/HLS playback, native isolation, and a real cold-range network retry pass their scoped checks. Actual queue, diagnostics, paused transitions, manual recovery, timeline keys, and four dialog focus-return paths have UI evidence. Release acceptance remains incomplete, including large-library memory investigation, wider subtitle coverage, remaining Windows integration, and installed distribution.
+Updated: 2026-09-15. The repository contains a Windows x64 development client built with .NET 10, WinUI 3, WinUIEx, and CommunityToolkit.Mvvm. V7 implementation and the current non-UI completion stage have passed their checks. Actual V7 native UI acceptance is paused. Earlier tests, Native AOT publications, packages, and native observations remain scoped to their recorded source and artifact identities.
+
+## V7 implementation and paused native acceptance
+
+The current source implements the approved V7 design. The [user guide](user-guide.md) describes the product actions, and [Fluent library UI](fluent-library-ui.md) describes the implementation. The following is a source inventory, not an observed native acceptance result.
+
+| Area | V7 implementation |
+| --- | --- |
+| Detail presentation | One window-owned backdrop spans content, navigation, and title bar. Theme masks and shared translucent brushes support high contrast, reduced effects, and animation preferences. Movies use posters; episodes use landscape artwork, full identity, and parent/next routes. |
+| Media information | Real server source and stream fields appear in Video, Audio, and Subtitles cards below cast. Source selection and group/track disclosures retain state by identity; missing fields and groups are omitted. |
+| Browsing and people | History retains loaded windows, filter/sort state, user-data changes, and scroll/focus anchors. Cast uses a responsive row and optional grid. PersonDetailsView is an independent destination that retains works paging and biography state when opening a work and returning. Loading, failure, cancellation, and empty results are distinct. |
+| Player and recovery | Queue and settings have independent entry points and content, with one panel visible at a time. Previous/next episode commands leave the manual queue intact. Failed playback retains its recovery context; settings changes are a draft until Apply and retry. Diagnostics offer native Save as with safe JSON. |
+| Accounts and isolation | Add/Switch retains the current session until the new connection commits. Unfinished requests can be canceled; late cancellation after service commit does not discard the committed session. Recovery distinguishes credentials, network, policy, settings-load, and partial-sign-out failures. `EMBY_CLIENT_DATA_ROOT` supports a process-scoped isolated data directory. |
+
+The [implementation-stage receipt](../../artifacts/ui-v7-implementation-20260915/verification-receipt.json) records **585 passing tests, zero failures**: AppState 46, API 53, playback 142, media transport 125, and Platform 219. Its managed Release application build completed with zero errors and one existing generated WinUIEx `Icon` `CS0618` warning. These are historical results from the V7 implementation stage, before the current non-UI continuation; they are not evidence of a new final build, Native AOT, package, or native runtime run.
+
+On the subsequent isolated native continuation, the recorded managed executable reached its initial sign-in page before the user stopped Computer Use and deferred actual UI acceptance. The application was stopped. Sign-in, connected navigation, playback, account journeys, and the full native checklist were not completed. The [paused native status](../../artifacts/ui-v7-native-20260915/native-acceptance-status.json) and [handoff](../../HANDOFF.md) retain the exact scope. The first fixture launch exposed a PowerShell file-replacement binding issue; its bounded repair result does not establish a complete successful fixture lifecycle.
+
+| Current continuation check | Status |
+| --- | --- |
+| Release solution build and all five automated test suites | Passed: zero build errors, one existing generated warning; 610 tests passed, zero failures/skips (API 53, AppState 46, media transport 125, Platform 244, playback 142) |
+| Isolated fixture lifecycle checks | Passed: 8 lifecycle and 56 HTTP checks; owned processes stopped and ports released |
+| Native AOT publication | Passed: executable SHA-256 `EB6936CEA053A6478E55492135F24C9F446DA1818403F2260796BB6D99C8B568`; not launched |
+| Unsigned MSIX structural verification | Passed: package SHA-256 `6D60CFA958CA62DDEDC27B3879D2D8CCB76E655A3D9844F971700DD704D42EF5`; installation and packaged playback remain separate |
+| V7 native UI, accessibility, and playback acceptance | Paused at the user's request; only the initial sign-in page has been observed |
+| Signed installation, upgrade, clean-machine playback, and broad compatibility | Unfinished release gates |
+
+The [final non-UI receipt](verification/v7-non-ui-20260915.json) records 187 unchanged source/test/script inputs, build and test logs, fixture evidence, and exact AOT/package identities. The 25 added account cases cover cancellation before persistence and after atomic commit, actual protected-token saving, shared-token preservation, bounded cleanup, and concurrent settings changes. The prior fixture file-replacement issue is now covered by a complete successful lifecycle run. Fixture checks are counted separately from the 610 product tests.
+
+The remaining V7 native work includes actual layout/resource activation, theme and effect changes, text scaling, high contrast, focus and Narrator, person/work/back, season and paging outcomes, independent player panels, episode controls, retry, diagnostics, and account cancellation/recovery. These checks must use the final candidate and must not inherit earlier screenshots or UI coverage.
+
+## Historical baseline: 2026-09-10
+
+The remainder preserves the earlier development baseline and its receipts. Terms such as "latest," "current," and "passed" within that historical record are relative to the named checkpoint, not the V7 source above. Historical fixture restrictions and process states likewise do not describe the current V7 environment.
+
+Snapshot: 2026-09-10. Native AOT publication succeeds for the recorded inputs. Default direct/HLS playback, native isolation, and a real cold-range network retry pass their scoped checks. Actual queue, diagnostics, paused transitions, manual recovery, timeline keys, and four dialog focus-return paths have UI evidence. Release acceptance remains incomplete, including large-library memory investigation, wider subtitle coverage, remaining Windows integration, and installed distribution.
 
 The current work mode is [code completion followed by consolidated validation](validation-session.md). The [lifecycle repairs](lifecycle-hardening.md) address local sign-out ordering, overlapping shutdown, failed item preparation, pointer-drag ownership, recycled poster work, duplicate image downloads, progressive failure notification, and shared coordinator disposal. The [779B desktop batch](ui-validation.md#consolidated-normal-app-checkpoint-779b23ed) now confirms ordinary playback, paused mouse drags, episode continuation, poster restoration, diagnostic saving, and ordinary sign-out/exit. Failure and overlapping-cleanup boundaries remain open. Desktop control has ended; all observations retain their exact executable identity.
 
 The subsequent [257B observation batch](verification/ui-257b-20260910/summary.json) captures an authenticated Home baseline, seven library pages totaling 336 records, poster recovery during three top and two middle revisits, and a separate Home tail before any video playback. The observer starts after authentication as intended. Computer Use ended immediately after the final Home screenshot; the remaining samples were read without desktop control. This instrumented sample narrows the memory investigation but is not a normal-build playback or long-term resource acceptance result.
 
-## Implemented scope
+## Historical implemented scope
 
 After the 779B batch, the [attribution and boundary-control stage](verification/attribution-boundaries-20260910.json) prepares the next investigation without desktop activity. An opt-in observer now counts decode/load/timer activity alongside managed allocation, last-GC, process-memory, CPU, and UTC samples. Ordinary Release and the separate B4C41DE8 observation AOT compile successfully; normal IL excludes the observer. The synthetic fixture gains bounded detail/media/Stop/Logout controls and passes 40 independent HTTP harness checks, including corrected query-token logout. These are new tooling results, not a new normal-player acceptance or a memory fix. The existing 779B fixture process was not replaced.
 
@@ -24,7 +59,7 @@ A separate [progressive HTTP receive path](progressive-streaming.md) now handles
 
 For the observed finite Emby VOD HLS route, the engine uses the full source timeline and performs an actual initial seek. A returned `StartTimeTicks` hint is not a reporting offset. In-place native HLS seeking is disabled after observed timeouts: a logical seek negotiates a new session, opens at the requested absolute position, and restores pause after actual playback starts. See the [playback API reference](../api/04-playback-and-sessions.md).
 
-## Current verification
+## Historical verification
 
 The local toolchain is .NET SDK `10.0.301`, Windows SDK `10.0.26100.0`, and Visual Studio Community 2026 `18.7.3`. Product dependencies pin Windows App SDK `2.4.0`, WinUIEx `2.9.3`, and CommunityToolkit.Mvvm `8.4.2`.
 
@@ -69,7 +104,7 @@ The complex-subtitle probe now accepts a separately supplied `--expected-server-
 
 Real-server checks used an isolated official Emby `4.9.5.0` Linux amd64 instance over loopback, dedicated test accounts, and generated media. No production credentials or user media were used. Detailed scopes are in the [server results](../../tools/EmbyClient.ServerValidation/RESULTS.md), [native probe](../../tools/EmbyClient.NativeProbe/README.md), and [capability matrix](capabilities.md).
 
-## Remaining release gates
+## Release gates retained from earlier work
 
 The fixture startup remains unexecuted after a tool-level `blocked by policy` result despite explicit user authorization. Its specific rejecting component is unknown; the earlier automatic-review attribution is [corrected here](tool-execution-restriction.md).
 

@@ -14,55 +14,136 @@ public sealed partial class MainPage : Page
     public event EventHandler? FullscreenRequested;
     public event EventHandler? ExitFullscreenRequested;
     public event EventHandler? ThemePreferenceChanged;
+    public event EventHandler? ChromeStateChanged;
     private readonly ConnectionService _connections = new();
     private ConnectedSession? _session;
     private CancellationTokenSource? _connectionRequest;
     private bool _initialized;
     private bool _settingsReady;
+    private bool _settingsLoading;
+    private bool _settingsLoadFailed;
+    private string? _manualAccountRestriction;
     private bool _shuttingDown;
     private bool _sessionTransition;
     private bool _themeSavePending;
+    private bool _returningToLibrary;
     private TaskCompletionSource? _sessionExitCompletion;
 
     public MainPage()
     {
         InitializeComponent();
-        Player.QueueChanged += (_, _) => UpdateQueueButton();
+        ManualSignIn.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, (_, _) => UpdateConnectionPresentation());
+        Player.PresentationChanged += (_, _) => ChromeStateChanged?.Invoke(this, EventArgs.Empty);
+        Player.SetWindowTitleBarIntegrated(true);
+        Library.NavigationStateChanged += (_, _) =>
+        {
+            ChromeStateChanged?.Invoke(this, EventArgs.Empty);
+            UpdateQueueButton();
+        };
+        Player.QueueChanged += (_, _) =>
+        {
+            UpdateQueueButton();
+            ChromeStateChanged?.Invoke(this, EventArgs.Empty);
+        };
         SetConnecting(false);
         Loaded += OnLoaded;
         KeyDown += OnPageKeyDown;
+    }
+
+    public bool IsLibraryVisible => _session is not null && ConnectedPane.Visibility == Visibility.Visible && Library.Visibility == Visibility.Visible;
+    public bool IsPlayerVisible => _session is not null && Player.Visibility == Visibility.Visible;
+    public bool IsBackNavigationVisible => IsPlayerVisible || IsLibraryVisible && Library.ViewModel.CanGoBack;
+    public bool CanNavigateBack => !_sessionTransition && !_shuttingDown && !_returningToLibrary && !_accountActionPending && !Player.IsModalOpen && !Library.IsPersonDialogOpen
+        && (IsPlayerVisible || IsLibraryVisible && Library.ViewModel.CanGoBack);
+    public string PresentationTitle => IsPlayerVisible ? Player.PresentationTitle : "Emby for Windows";
+    public string PresentationSubtitle => IsPlayerVisible ? Player.PresentationSubtitle : string.Empty;
+
+    public void ToggleNavigation()
+    {
+        if (IsLibraryVisible && !_sessionTransition && !_accountActionPending && !Player.IsModalOpen && !Library.IsPersonDialogOpen) Library.ToggleNavigationPane();
+    }
+
+    public async Task NavigateBackAsync()
+    {
+        if (!CanNavigateBack) return;
+        if (IsPlayerVisible) await ReturnToLibraryAsync();
+        else await Library.NavigateBackAsync();
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs args)
     {
         if (_initialized) return;
         _initialized = true;
+        await LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        if (_settingsLoading || _settingsReady || _shuttingDown) return;
+        _settingsLoading = true;
+        SetConnecting(false);
         try
         {
             await _connections.InitializeAsync();
             if (_shuttingDown) return;
             ApplyTheme();
-            LoadSavedAccounts();
             _settingsReady = true;
+            _settingsLoadFailed = false;
+            ConnectionNotice.IsOpen = false;
+            LoadSavedAccounts();
         }
         catch (Exception ex)
         {
-            if (!_shuttingDown) ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
+            if (!_shuttingDown) ShowConnectionNotice(
+                $"{UiErrors.Describe(ex)} Retry to load the existing settings, or sign in for this session without changing the saved file.",
+                InfoBarSeverity.Error);
             _settingsReady = false;
+            _settingsLoadFailed = true;
         }
-        finally { if (!_shuttingDown) SetConnecting(_connectionRequest is not null); }
+        finally
+        {
+            _settingsLoading = false;
+            if (!_shuttingDown)
+            {
+                SetConnecting(_connectionRequest is not null);
+                if (_settingsLoadFailed) RetrySettingsButton.Focus(FocusState.Programmatic);
+                else FocusSignInAction();
+            }
+        }
     }
 
-    private void LoadSavedAccounts()
+    private async void RetrySettingsClicked(object sender, RoutedEventArgs args) => await LoadSettingsAsync();
+
+    private async void TemporarySessionClicked(object sender, RoutedEventArgs args)
     {
+        if (_settingsLoading || _settingsReady || _shuttingDown) return;
+        await _connections.UseTemporarySessionAsync();
+        if (_shuttingDown) return;
+        _settingsReady = true;
+        _settingsLoadFailed = false;
+        RememberAccount.IsChecked = false;
+        LoadSavedAccounts();
+        ShowConnectionNotice("This session will not save accounts or preferences. Your existing settings file will stay unchanged.", InfoBarSeverity.Informational);
+        SetConnecting(false);
+        ServerAddress.Focus(FocusState.Programmatic);
+    }
+
+    private void LoadSavedAccounts(string? preferredKey = null)
+    {
+        var selectedKey = preferredKey ?? _connections.Settings.LastAccountKey
+            ?? ((SavedAccounts.SelectedItem as ComboBoxItem)?.Tag is SavedAccount selected ? selected.Key : null);
         SavedAccounts.Items.Clear();
         foreach (var account in _connections.Settings.Accounts)
         {
-            var option = new ComboBoxItem { Content = $"{account.UserName} · {account.ServerName}", Tag = account };
+            var option = new ComboBoxItem { Content = $"{account.UserName} · {AccountConnectionDialog.AccountHost(account.ApiRoot)}", Tag = account };
+            ToolTipService.SetToolTip(option, $"{account.ServerName}\n{account.ApiRoot}");
             SavedAccounts.Items.Add(option);
-            if (account.Key == _connections.Settings.LastAccountKey) SavedAccounts.SelectedItem = option;
+            if (account.Key == selectedKey) SavedAccounts.SelectedItem = option;
         }
         SavedAccountSection.Visibility = SavedAccounts.Items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (SavedAccounts.SelectedIndex < 0 && SavedAccounts.Items.Count > 0) SavedAccounts.SelectedIndex = 0;
+        if (SavedAccounts.Items.Count == 0) ManualSignIn.IsExpanded = true;
+        UpdateConnectionPresentation();
     }
 
     private void SavedAccountChanged(object sender, SelectionChangedEventArgs args)
@@ -71,12 +152,25 @@ public sealed partial class MainPage : Page
         ServerAddress.Text = account.ApiRoot;
         UserName.Text = account.UserName;
         Password.Password = "";
+        _manualAccountRestriction = _connections.GetAccountRestriction(account.Key);
+        ManualSignIn.IsExpanded = account.ProtectedToken.Length == 0 && _manualAccountRestriction is null;
+        if (_manualAccountRestriction is not null) ShowConnectionNotice(_manualAccountRestriction, InfoBarSeverity.Warning);
+        else if (account.ProtectedToken.Length == 0)
+            ShowConnectionNotice("This saved account needs a password. Sign in below to continue.", InfoBarSeverity.Informational);
+        else ConnectionNotice.IsOpen = false;
+        UpdateConnectionPresentation();
         RestoreButton.IsEnabled = CanRestoreSelectedAccount();
+        SignInButton.IsEnabled = CanConnect();
     }
 
     private void CredentialsChanged(object sender, TextChangedEventArgs args)
     {
+        if (_manualAccountRestriction is not null && ConnectionNotice is not null) ConnectionNotice.IsOpen = false;
+        _manualAccountRestriction = null;
+        if (Password is not null) Password.Password = string.Empty;
         if (RestoreButton is not null) RestoreButton.IsEnabled = CanRestoreSelectedAccount();
+        if (SignInButton is not null) SignInButton.IsEnabled = CanConnect();
+        if (SavedAccounts is not null) UpdateConnectionPresentation();
         if (ReferenceEquals(sender, ServerAddress) && ServerInputError is not null)
         {
             ServerInputError.Visibility = Visibility.Collapsed;
@@ -89,9 +183,12 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private bool CanRestoreSelectedAccount() => _settingsReady && !_sessionTransition && !_shuttingDown && _connectionRequest is null
+    private bool CanRestoreSelectedAccount() => _settingsReady && !_sessionTransition && !_shuttingDown && !_accountActionPending && _connectionRequest is null
         && SavedAccounts?.SelectedItem is ComboBoxItem { Tag: SavedAccount { ProtectedToken.Length: > 0 } account }
-        && ServerAddress?.Text.Trim() == account.ApiRoot && UserName?.Text.Trim() == account.UserName;
+        && _connections.GetAccountRestriction(account.Key) is null;
+
+    private bool CanConnect() => _settingsReady && !_settingsLoading && !_sessionTransition && !_shuttingDown
+        && !_accountActionPending && !_themeSavePending && _connectionRequest is null && _manualAccountRestriction is null;
 
     private async void SignInClicked(object sender, RoutedEventArgs args) => await ConnectAsync(false);
     private async void RestoreClicked(object sender, RoutedEventArgs args) => await ConnectAsync(true);
@@ -106,7 +203,8 @@ public sealed partial class MainPage : Page
 
     private async Task ConnectAsync(bool restore)
     {
-        if (!_settingsReady || _connectionRequest is not null || _sessionTransition || _shuttingDown) return;
+        if (!CanConnect()) return;
+        if (restore && !CanRestoreSelectedAccount()) return;
         if (!restore && !ValidateCredentials())
         {
             return;
@@ -115,65 +213,127 @@ public sealed partial class MainPage : Page
         _connectionRequest = request;
         var cancellationToken = request.Token;
         SetConnecting(true);
-        Notice.IsOpen = false;
+        if (_pendingSignOut is null) Notice.IsOpen = false;
+        ConnectionNotice.IsOpen = false;
+        CancelConnection.Focus(FocusState.Programmatic);
+        ConnectionStatus.StartBringIntoView();
         try
         {
             var session = restore && SavedAccounts.SelectedItem is ComboBoxItem { Tag: SavedAccount account }
                 ? await _connections.RestoreAsync(account, cancellationToken)
                 : await _connections.SignInAsync(ServerAddress.Text, UserName.Text, Password.Password,
                     RememberAccount.IsChecked == true, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            _session = session;
-            Password.Password = "";
-            AccountLabel.Text = session.User.Name ?? "Your account";
-            ServerLabel.Text = session.Server.ServerName ?? "Emby Server";
-            AccountAvatar.DisplayName = AccountLabel.Text;
-            AutomationProperties.SetName(AccountButton, $"Account and settings for {AccountLabel.Text} on {ServerLabel.Text}");
-            ToolTipService.SetToolTip(AccountButton, $"{AccountLabel.Text} · {ServerLabel.Text}");
-            ConnectedPane.Visibility = Visibility.Visible;
-            ConnectionPane.Visibility = Visibility.Collapsed;
-            await Player.SetSessionAsync(session);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!ReferenceEquals(_session, session) || _sessionTransition || _shuttingDown) return;
-            await Library.SetSessionAsync(session.Api, session.Server.Id!, session.User, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (!ReferenceEquals(_session, session) || _sessionTransition || _shuttingDown) return;
-            Library.FocusNavigation();
-            if (session.PersistenceWarning is not null) ShowNotice(session.PersistenceWarning, InfoBarSeverity.Warning);
+            // ConnectionService owns cancellation through the final account commit.
+            // Once committed, browse loading belongs to the session rather than the sign-in request.
+            if (_shuttingDown || _sessionTransition) return;
+            await ActivateSessionAsync(session, CancellationToken.None);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
         catch (Exception ex)
         {
-            if (!_shuttingDown && !_sessionTransition) ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
+            if (!_shuttingDown && !_sessionTransition)
+            {
+                if (_session is null) ShowConnectionNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
+                else ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
+                if (UiErrors.IsAccountRestriction(ex)) _manualAccountRestriction = UiErrors.Describe(ex);
+                if (UiErrors.RequiresPassword(ex))
+                {
+                    Password.Password = string.Empty;
+                    ManualSignIn.IsExpanded = true;
+                }
+                UpdateConnectionPresentation();
+            }
         }
         finally
         {
-            Password.Password = "";
             request.Dispose();
             if (ReferenceEquals(_connectionRequest, request)) _connectionRequest = null;
             SetConnecting(_connectionRequest is not null);
+            if (!_shuttingDown && _session is null && !_sessionTransition) FocusSignInAction();
         }
+    }
+
+    private async Task ActivateSessionAsync(ConnectedSession session, CancellationToken cancellationToken)
+    {
+        _session = session;
+        _pendingSignOut = null;
+        Notice.ActionButton = null;
+        Notice.IsClosable = true;
+        Notice.IsOpen = false;
+        ConnectionNotice.ActionButton = null;
+        Password.Password = string.Empty;
+        _manualAccountRestriction = null;
+        AccountLabel.Text = session.User.Name ?? "Your account";
+        ServerLabel.Text = AccountConnectionDialog.AccountHost(session.Api.ApiRoot.AbsoluteUri);
+        AccountAvatar.DisplayName = AccountLabel.Text;
+        AccountIdentityItem.Text = $"{AccountLabel.Text} · {ServerLabel.Text}";
+        AutomationProperties.SetName(AccountButton, $"Account and settings for {AccountLabel.Text} on {ServerLabel.Text}");
+        ToolTipService.SetToolTip(AccountButton, $"{AccountLabel.Text} · {session.Server.ServerName}\n{session.Api.ApiRoot}");
+        RemoveCurrentAccountItem.Visibility = _connections.Settings.Accounts.Exists(account => account.Key == session.AccountKey)
+            ? Visibility.Visible : Visibility.Collapsed;
+        ConnectedPane.Visibility = Visibility.Visible;
+        ConnectionPane.Visibility = Visibility.Collapsed;
+        ChromeStateChanged?.Invoke(this, EventArgs.Empty);
+        await Player.SetSessionAsync(session);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(_session, session) || _sessionTransition || _shuttingDown) return;
+        await Library.SetSessionAsync(session.Api, session.Server.Id!, session.User, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!ReferenceEquals(_session, session) || _sessionTransition || _shuttingDown) return;
+        Library.FocusNavigation();
+        if (session.PersistenceWarning is not null) ShowNotice(session.PersistenceWarning, InfoBarSeverity.Warning);
+    }
+
+    private void FocusSignInAction()
+    {
+        if (_pendingSignOut is not null && Notice.IsOpen && Notice.ActionButton is ButtonBase retry)
+            retry.Focus(FocusState.Programmatic);
+        else if (_manualAccountRestriction is not null)
+        {
+            if (SavedAccounts.Items.Count > 0) SavedAccounts.Focus(FocusState.Programmatic);
+            else UserName.Focus(FocusState.Programmatic);
+        }
+        else if (CanRestoreSelectedAccount() && !ManualSignIn.IsExpanded) RestoreButton.Focus(FocusState.Programmatic);
+        else if (string.IsNullOrWhiteSpace(ServerAddress.Text)) ServerAddress.Focus(FocusState.Programmatic);
+        else if (string.IsNullOrWhiteSpace(UserName.Text)) UserName.Focus(FocusState.Programmatic);
+        else Password.Focus(FocusState.Programmatic);
     }
 
     private void SetConnecting(bool connecting)
     {
-        var available = _settingsReady && !connecting && !_sessionTransition && !_shuttingDown;
-        SignInButton.IsEnabled = available;
+        var available = _settingsReady && !connecting && !_sessionTransition && !_shuttingDown && !_accountActionPending && !_themeSavePending;
+        SignInButton.IsEnabled = available && _manualAccountRestriction is null;
         SavedAccounts.IsEnabled = available;
         ServerAddress.IsEnabled = available;
         UserName.IsEnabled = available;
         Password.IsEnabled = available;
-        RememberAccount.IsEnabled = available;
+        RememberAccount.IsEnabled = available && !_connections.IsTemporarySession;
+        ManualSignIn.IsEnabled = available;
+        RemoveSavedButton.IsEnabled = available && SavedAccounts.SelectedItem is not null;
         RestoreButton.IsEnabled = available && CanRestoreSelectedAccount();
+        if (ConnectionNotice.ActionButton is ButtonBase recoveryAction) recoveryAction.IsEnabled = available;
+        if (Notice.ActionButton is ButtonBase signOutRetry) signOutRetry.IsEnabled = available;
         foreach (var button in AccountToolbar.Children.OfType<Button>())
             button.IsEnabled = !_sessionTransition && !_shuttingDown;
         UpdateQueueButton();
-        ConnectingProgress.Visibility = connecting || _sessionTransition ? Visibility.Visible : Visibility.Collapsed;
-        ConnectingProgress.IsIndeterminate = connecting || _sessionTransition;
+        SettingsRecoveryPanel.Visibility = _settingsLoadFailed && !_settingsReady ? Visibility.Visible : Visibility.Collapsed;
+        RetrySettingsButton.IsEnabled = !_settingsLoading && !_shuttingDown;
+        TemporarySessionButton.IsEnabled = !_settingsLoading && !_shuttingDown;
+        ConnectionStatus.Visibility = connecting || _sessionTransition || _settingsLoading ? Visibility.Visible : Visibility.Collapsed;
+        ConnectingProgress.IsActive = connecting || _sessionTransition || _settingsLoading;
+        ConnectionStatusLabel.Text = _sessionTransition ? "Closing the current session…"
+            : _settingsLoading ? "Loading saved accounts…" : "Connecting to your server…";
         CancelConnection.Visibility = connecting && !_sessionTransition && !_shuttingDown ? Visibility.Visible : Visibility.Collapsed;
+        CancelConnection.IsEnabled = _connectionRequest?.IsCancellationRequested != true;
+        ChromeStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void CancelConnectionClicked(object sender, RoutedEventArgs args) => _connectionRequest?.Cancel();
+    private void CancelConnectionClicked(object sender, RoutedEventArgs args)
+    {
+        _connectionRequest?.Cancel();
+        ConnectionStatusLabel.Text = "Cancelling connection…";
+        CancelConnection.IsEnabled = false;
+    }
 
     private bool ValidateCredentials()
     {
@@ -222,23 +382,41 @@ public sealed partial class MainPage : Page
         Player.Visibility = Visibility.Visible;
         Library.Visibility = Visibility.Collapsed;
         AccountToolbar.Visibility = Visibility.Collapsed;
+        ChromeStateChanged?.Invoke(this, EventArgs.Empty);
         Player.Focus(FocusState.Programmatic);
         await Player.PlayItemAsync(args.Item, args.StartPositionTicks);
     }
 
-    private async void PlayerBackRequested(object? sender, EventArgs args)
+    private async void PlayerBackRequested(object? sender, EventArgs args) => await ReturnToLibraryAsync();
+
+    private async Task ReturnToLibraryAsync()
     {
-        ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
-        await Player.StopAsync();
-        Player.Visibility = Visibility.Collapsed;
-        Library.Visibility = Visibility.Visible;
-        AccountToolbar.Visibility = Visibility.Visible;
+        if (_returningToLibrary || _sessionTransition || _shuttingDown || _session is null) return;
+        _returningToLibrary = true;
+        var session = _session;
+        ChromeStateChanged?.Invoke(this, EventArgs.Empty);
         try
         {
+            ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
+            await Player.StopAsync();
+            if (!ReferenceEquals(session, _session) || _sessionTransition || _shuttingDown) return;
+            Player.Visibility = Visibility.Collapsed;
+            Library.Visibility = Visibility.Visible;
+            AccountToolbar.Visibility = Visibility.Visible;
+            ChromeStateChanged?.Invoke(this, EventArgs.Empty);
             await Library.RefreshAsync();
-            Library.FocusCurrentDetails();
+            if (ReferenceEquals(session, _session) && !_sessionTransition && !_shuttingDown)
+                Library.FocusCurrentDetails();
         }
-        catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error); }
+        catch (Exception ex)
+        {
+            if (!_shuttingDown && ReferenceEquals(session, _session)) ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error);
+        }
+        finally
+        {
+            _returningToLibrary = false;
+            ChromeStateChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void PlayerFullscreenRequested(object? sender, EventArgs args) => FullscreenRequested?.Invoke(this, EventArgs.Empty);
@@ -248,9 +426,10 @@ public sealed partial class MainPage : Page
         QueueCountLabel.Text = Player.QueueCount.ToString();
         AutomationProperties.SetName(LibraryQueueButton, $"Open play queue, {Player.QueueCount} items");
         ToolTipService.SetToolTip(LibraryQueueButton, $"Play queue ({Player.QueueCount})");
-        LibraryQueueButton.IsEnabled = _session is not null && !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
-        AccountButton.IsEnabled = _session is not null && !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
-        LibraryDiagnosticsButton.IsEnabled = !_sessionTransition && !_shuttingDown && !Player.IsModalOpen;
+        var available = !_sessionTransition && !_shuttingDown && !_accountActionPending && !_themeSavePending && !Player.IsModalOpen && !Library.IsPersonDialogOpen;
+        LibraryQueueButton.IsEnabled = _session is not null && available;
+        AccountButton.IsEnabled = _session is not null && available;
+        LibraryDiagnosticsButton.IsEnabled = available;
     }
 
     private void AccountToolbar_SizeChanged(object sender, SizeChangedEventArgs args)
@@ -264,14 +443,14 @@ public sealed partial class MainPage : Page
 
     private async void QueueClicked(object sender, RoutedEventArgs args)
     {
-        if (_session is null || _sessionTransition || _shuttingDown || Player.IsModalOpen) return;
+        if (_session is null || _sessionTransition || _shuttingDown || _accountActionPending || Player.IsModalOpen || Library.IsPersonDialogOpen) return;
         try { await Player.ShowQueueAsync(XamlRoot, RequestedTheme, sender as Control); }
-        catch (Exception ex) { ShowNotice(UiErrors.Describe(ex), InfoBarSeverity.Error); }
+        catch (Exception) { ShowNotice("The play queue could not be opened. Try again.", InfoBarSeverity.Error); }
     }
 
     private async void DiagnosticsClicked(object sender, RoutedEventArgs args)
     {
-        if (_sessionTransition || _shuttingDown || Player.IsModalOpen) return;
+        if (_sessionTransition || _shuttingDown || _accountActionPending || Player.IsModalOpen || Library.IsPersonDialogOpen) return;
         try { await Player.ShowDiagnosticsAsync(XamlRoot, RequestedTheme, AccountButton); }
         catch (Exception) { ShowNotice("Playback diagnostics could not be opened. Try again.", InfoBarSeverity.Warning); }
     }
@@ -298,8 +477,10 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private async void SwitchAccountClicked(object sender, RoutedEventArgs args) => await LeaveSessionAsync(false);
-    private async void SignOutClicked(object sender, RoutedEventArgs args) => await LeaveSessionAsync(true);
+    private async void SwitchAccountClicked(object sender, RoutedEventArgs args)
+    {
+        await ShowAccountConnectionAsync(addAccount: false);
+    }
 
     private async Task LeaveSessionAsync(bool signOut, bool sessionExpired = false)
     {
@@ -312,6 +493,7 @@ public sealed partial class MainPage : Page
         try
         {
             _session = null;
+            _accountDialog?.Hide();
             AccountMenu.Hide();
             _connectionRequest?.Cancel();
             SetConnecting(_connectionRequest is not null);
@@ -323,6 +505,8 @@ public sealed partial class MainPage : Page
             ConnectedPane.Visibility = Visibility.Collapsed;
             ConnectionPane.Visibility = Visibility.Visible;
             Notice.IsOpen = false;
+            ConnectionNotice.IsOpen = false;
+            Password.Password = string.Empty;
 
             Exception? localSignOutError = null;
             if (signOut || sessionExpired)
@@ -337,19 +521,20 @@ public sealed partial class MainPage : Page
             try { await Player.DisconnectAsync(); }
             catch (Exception ex) { disconnectError = ex; }
 
+            var serverSignOutFailed = false;
             if (signOut)
             {
                 using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(8));
                 var warning = await ConnectionService.RevokeSessionAsync(session, deadline.Token);
-                if (localSignOutError is null && warning is not null) ShowNotice(warning, InfoBarSeverity.Warning);
+                serverSignOutFailed = warning is not null;
             }
             else if (sessionExpired && localSignOutError is null)
             {
-                ShowNotice("Your sign-in has expired. Sign in again to continue.", InfoBarSeverity.Warning);
+                ShowConnectionNotice("Your sign-in has expired. Sign in again with your password to continue.", InfoBarSeverity.Warning);
             }
-            if (localSignOutError is not null)
-                ShowNotice(UiErrors.Describe(localSignOutError), InfoBarSeverity.Warning);
-            else if (disconnectError is not null && !Notice.IsOpen)
+            if (localSignOutError is not null || serverSignOutFailed)
+                ShowPartialSignOut(session, localSignOutError is not null, serverSignOutFailed);
+            else if (disconnectError is not null && !ConnectionNotice.IsOpen && !Notice.IsOpen)
                 ShowNotice(UiErrors.Describe(disconnectError), InfoBarSeverity.Warning);
         }
         catch (Exception ex)
@@ -363,8 +548,18 @@ public sealed partial class MainPage : Page
                 _sessionTransition = false;
                 if (!_shuttingDown)
                 {
-                    LoadSavedAccounts();
+                    var recoveryMessage = ConnectionNotice.Message;
+                    var recoverySeverity = ConnectionNotice.Severity;
+                    var recoveryAction = ConnectionNotice.ActionButton;
+                    var hadRecoveryMessage = ConnectionNotice.IsOpen;
+                    LoadSavedAccounts(session.AccountKey);
+                    if (hadRecoveryMessage)
+                    {
+                        ShowConnectionNotice(recoveryMessage, recoverySeverity);
+                        ConnectionNotice.ActionButton = recoveryAction;
+                    }
                     SetConnecting(_connectionRequest is not null);
+                    if (sessionExpired) FocusSignInAction();
                 }
             }
             finally
@@ -383,10 +578,11 @@ public sealed partial class MainPage : Page
 
     private async void ThemeClicked(object sender, RoutedEventArgs args)
     {
-        if (_themeSavePending || sender is not MenuFlyoutItem { Tag: string theme }) return;
+        if (_themeSavePending || _accountActionPending || _sessionTransition || _shuttingDown || sender is not MenuFlyoutItem { Tag: string theme }) return;
         var previousSetting = _connections.Settings.Theme;
         var previousAppliedTheme = RequestedTheme;
         _themeSavePending = true;
+        SetConnecting(_connectionRequest is not null);
         SetThemeOptionsEnabled(false);
         UpdateThemeSelection();
         try
@@ -405,6 +601,7 @@ public sealed partial class MainPage : Page
         {
             _themeSavePending = false;
             SetThemeOptionsEnabled(true);
+            SetConnecting(_connectionRequest is not null);
         }
     }
 
@@ -442,9 +639,18 @@ public sealed partial class MainPage : Page
         Notice.IsOpen = true;
     }
 
+    private void ShowConnectionNotice(string message, InfoBarSeverity severity)
+    {
+        ConnectionNotice.ActionButton = null;
+        ConnectionNotice.Message = message;
+        ConnectionNotice.Severity = severity;
+        ConnectionNotice.IsOpen = true;
+    }
+
     public async Task ShutdownAsync()
     {
         _shuttingDown = true;
+        _accountDialog?.Hide();
         _connectionRequest?.Cancel();
         Library.ClearSession();
         var sessionExit = _sessionExitCompletion?.Task;
@@ -454,6 +660,7 @@ public sealed partial class MainPage : Page
             // remote revocation. Do not steal its disconnect while it is still saving.
             if (sessionExit is not null) await sessionExit;
             else await Player.DisconnectAsync();
+            if (_accountActionCompletion is not null) await _accountActionCompletion.Task;
         }
         finally { _connections.Dispose(); }
     }

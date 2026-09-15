@@ -1,0 +1,374 @@
+{
+  "schemaVersion": 1,
+  "verificationDateLocal": "2026-09-14 through 2026-09-15",
+  "timeZone": "Asia/Shanghai",
+  "status": "scoped-passed",
+  "scope": "Implementation and verification of the approved UI refinement: navigation, library loading and browsing, media details and people, account flows, playback controls, queue, settings, and diagnostics.",
+  "authorization": {
+    "localCompilationAndTests": "The user explicitly approved compilation and test execution in the current task before local verification began.",
+    "nativeApplicationAndScreenshots": "The user authorized starting the WinUI preview and necessary synthetic data services locally and capturing native screenshots.",
+    "coordination": "The full Windows Platform suite ran after the application build finished. Native window interaction and screenshots were controlled by the primary agent."
+  },
+  "environment": {
+    "windowsVersion": "10.0.28000",
+    "architecture": "x64",
+    "dotnetSdk": "10.0.301",
+    "dotnetRuntime": "10.0.9",
+    "windowsAppSdkPackage": "2.4.0",
+    "winUIExPackage": "2.9.3",
+    "remoteTestHost": "test-env, Debian 13, Linux x64, .NET SDK 10.0.301"
+  },
+  "source": {
+    "baseCommit": "0f1f73c93a4b34b811b5a1ef09b5e31ad52af2a7",
+    "workingTree": "The verification includes the current uncommitted implementation and preserves pre-existing working-tree edits.",
+    "finalSourceSha256": {
+      "src/EmbyClient.Api/EmbyApiClient.cs": "4896037f9db54f2e7d52fcf8a2e28f86556165a4712df4fcbd4414e52e839bc4",
+      "src/EmbyClient.Api/EmbyApiException.cs": "e6596ddf6516251a8e39f2cd3cf3f45b6d87d29f45c43f9389f29a93d5824942",
+      "src/EmbyClient.Api/EmbyClient.Api.csproj": "acd40234aaa516072266f6ebb527924676dc461e10a0f1b304289a9e83b19198",
+      "src/EmbyClient.Api/EmbyJsonContext.cs": "8b9c9c7ffb1d8079d2d8be99c021ab99ba861a5f50919915b5b118ddc43799ec",
+      "src/EmbyClient.Api/Models.cs": "97307ad35785e1f9b243be22d0dc141fa8ba5ee935ddceec4162eca612a965a1",
+      "src/EmbyClient.Api/PlaybackModels.cs": "84c7445a80866b0985094c94ebfbf190735ee17728a8da640480622460389ee3",
+      "src/EmbyClient.App/app.manifest": "0a644a9c368f4876c41b9abeec0e8287922a39b63888ebee3d5938423538c212",
+      "src/EmbyClient.App/App.xaml": "65294ddefe4dd6975ed3176db7d48956c0d5d0457609c7b5783ca437a46baeb0",
+      "src/EmbyClient.App/App.xaml.cs": "4f69e90f16cf7dec82d8bd749acb49e2920e72ebd21734c34a0018c2c0d80d5a",
+      "src/EmbyClient.App/EmbyClient.App.csproj": "defdab85f67e5e09790c14c92011382c1c4aadce40e4805429952a79b0650a02",
+      "src/EmbyClient.App/MainPage.Accounts.cs": "3cb665874579fbd1ba841d09eadd71a56162a5f2564b4f2f2c6d306324752b3a",
+      "src/EmbyClient.App/MainPage.xaml": "6ba1f835eed83f70c0e93238b1c39bc6faf3ab97e6aa53ec9ee1a83f68f1f144",
+      "src/EmbyClient.App/MainPage.xaml.cs": "93d9a4c47f3f9a81e6ce016b5c552cc8efa1a3232cd59b50e6b96358a73b4612",
+      "src/EmbyClient.App/MainWindow.xaml": "70eefda6edab301e5b202e251f0dc1fadab87a5b54c775d6ac05c860754234ce",
+      "src/EmbyClient.App/MainWindow.xaml.cs": "8d66098f4e9549403644c2eef38f8d6d16d2fa1bf1ab06f5af03b0bc561574de",
+      "src/EmbyClient.App/Playback/HttpRangeStream.cs": "d76a48a650e362c03ee59252b6250a45a84851b1e89d58b434ffec97945f83f9",
+      "src/EmbyClient.App/Playback/MediaDeliveryClassifier.cs": "5be3b1f39e543702da64f50e995fc38f7605f99934545daabd93da12f3539039",
+      "src/EmbyClient.App/Playback/NativePlaybackEngine.cs": "cc0f5eecdef20a2369306d78eff744cc0d8e2f77cc4dcb426282a96c4136534b",
+      "src/EmbyClient.App/Playback/NativePlaybackEngine.MediaControls.cs": "afd1605c82fc8cbd39e929f4077e53c4f00f08dee7849257a895d540df951cef",
+      "src/EmbyClient.App/Playback/ProgressiveHttpRelay.cs": "97635022207acdf751b77346dd80c61ec8213836c354b33c8da12e80072ec8ed",
+      "src/EmbyClient.App/Playback/ScopedAdaptiveHttpFilter.cs": "771274dd22158e364f5e9c6b9f40ca12b69be576e7418b1081fc8148fce7278b",
+      "src/EmbyClient.App/Playback/ScopedMediaTransport.cs": "d44846b43bd1ab9bc895c8a9f782da72d572b08a227ed06b0a36047e243dd502",
+      "src/EmbyClient.App/Playback/SessionHttpRelay.cs": "d8da59bb83591966f24341a26a2bc74a91d2c0127ae48396a43d382d7338d444",
+      "src/EmbyClient.App/Services/AccountStore.cs": "092d0a8089378af06a7b7dd61e9256f60664dd033255f71d88d7435c9bc537cf",
+      "src/EmbyClient.App/Services/ConnectionService.cs": "75960b00b3776e40bd0a95a61b26d134e92dacb8bfbc2130df29b9e7c7576001",
+      "src/EmbyClient.App/Services/ImageCache.cs": "2bcc8924ca72da0d015400c41ca69510f8976eaf2952ae04f0337a46dff9bb07",
+      "src/EmbyClient.App/Services/NativePosterDecoder.cs": "338669d154f6c44369931c3ae376875b0a8331d30a5c57184e8e68a6d8362a5a",
+      "src/EmbyClient.App/Services/PlaybackDiagnostics.cs": "b90b53e75e1e021e3531bfe09aa909fcb0550db3bd3ef7921e0f03648cf5a939",
+      "src/EmbyClient.App/Services/PlaybackDisplayRequest.cs": "c796eaf8c2644deb8193bfe69da328749c5ce62ff3925971925f8b3b80cb26b8",
+      "src/EmbyClient.App/Services/PlaybackItemPreparation.cs": "0d1841ff271270b5379e88b64874e418dc170601da3e6400972648db1baf9f51",
+      "src/EmbyClient.App/Services/PlaybackNotificationOwner.cs": "f7e740ece54494a365bd5a95751fedbfb6a5d954a092f8a194ef4a015a91cca5",
+      "src/EmbyClient.App/Services/PlaybackTimelineDrag.cs": "a99db9daae759b65b0954c4ea742a8a2b7bba15cd4bbd16b2b1987ec5019783e",
+      "src/EmbyClient.App/Services/PosterBindingLifetime.cs": "46dd0373911781738966a5b11f777d39d6ceb19df81d0b4267050f69cd97d3da",
+      "src/EmbyClient.App/Services/PosterWallLayout.cs": "86a692b8658d31f7f6998d5d6f2b116823b6b06591b6821e90b9306a0866b327",
+      "src/EmbyClient.App/Services/SettingsJsonContext.cs": "202e5d414940781ab83f5edd92c0886f3885051e0207d39b4aab3ed2eadd1fde",
+      "src/EmbyClient.App/Services/TransientPlaybackQueue.cs": "4219e88440f94afd0a7051ac55be8fbe625986ce2a670aa327b32b969f30ee01",
+      "src/EmbyClient.App/Services/WindowPlacementStore.cs": "b457715658f9ef9902aed50859d3cc3478d48fa212025c909a614ebad32a86b3",
+      "src/EmbyClient.App/ViewModels/LibraryViewModel.cs": "a4e4044b6b5ec2338ac0ed541f0006f329b43c793c9b317080555784619158b9",
+      "src/EmbyClient.App/ViewModels/LibraryViewModel.People.cs": "0fc9b06073122589b97095d66e1760de0d42bc6fb98c3a3a81d3658641ee634f",
+      "src/EmbyClient.App/ViewModels/LibraryViewModel.Presentation.cs": "750e522fe133232f28d4ae7d6e7b47ccd9dd39661e5240ea3266c078f1416514",
+      "src/EmbyClient.App/ViewModels/MediaCardViewModel.cs": "08c98c59e76fa3e3e2b7226415eaa5d1106d67c655b903a48a71559f3493be87",
+      "src/EmbyClient.App/ViewModels/MediaShelfViewModel.cs": "b61e3ccd267eca7a7e65599b2c3032c9560f599a68219c444a4f049d426b718e",
+      "src/EmbyClient.App/ViewModels/PersonCardViewModel.cs": "045994b01e56249b901567a86ffb8fbc4ea73b9e6ebb77de19a28c23b8860691",
+      "src/EmbyClient.App/ViewModels/PersonDetailsViewModel.cs": "36e2000c9ce7ab49faae5d2d67c6e911eebc2f56fdb1d356292f2054e59724c3",
+      "src/EmbyClient.App/Views/CastSection.xaml": "2c97eff137ee6c898c43fd9300e6fed09b1e2327daf4deb0b39718f04ac522a2",
+      "src/EmbyClient.App/Views/CastSection.xaml.cs": "7cd30005487212d939ba16969d78ca7350abc549bac46385dd2e30ca0b064e4b",
+      "src/EmbyClient.App/Views/LibraryView.Accessibility.cs": "c4b282f0976279f86758004b1ba165c86a80619515b6294755093f68d67f1cc6",
+      "src/EmbyClient.App/Views/LibraryView.Browsing.cs": "c8a9e098409b85122165525ef74dec805a9165d3967e8cd7dabbcac275eafa10",
+      "src/EmbyClient.App/Views/LibraryView.People.cs": "c606adc37718da3a460319c84410b9ccb511cce94025f262cc731ab9b10ff577",
+      "src/EmbyClient.App/Views/LibraryView.Presentation.cs": "7c5c993b45ae8d5cc1f2b5fe7d544ffa70b8aa26fba4e2efc274d44da0b326bd",
+      "src/EmbyClient.App/Views/LibraryView.xaml": "b52e564b7a666037cef4455306c292bc4280fc98077758e52180c5f7a6a87666",
+      "src/EmbyClient.App/Views/LibraryView.xaml.cs": "9b4f01fe5438743d67b61a1a9e1e7bb469d8afcd3b7fe5a36ad16501ac54ddcc",
+      "src/EmbyClient.App/Views/PersonArtwork.xaml": "99444507fcc0a67836ec5fe0dc2d1f59d09d5706bd0ebbe76dc533f9826d5e1d",
+      "src/EmbyClient.App/Views/PersonArtwork.xaml.cs": "27eae29a93730a1383046f2c27b273ab259b51a1e8ce28e321f81392d02c4bc3",
+      "src/EmbyClient.App/Views/PersonDetailsDialog.xaml": "e0d74ccf17b44e47f6dccedc86830cb41eaf407f118fb01cc244949ac61fc151",
+      "src/EmbyClient.App/Views/PersonDetailsDialog.xaml.cs": "9d97d1bad09fa2717f6e215ff9665c1f488b778f2f47813777feeac675d48e51",
+      "src/EmbyClient.App/Views/PlaybackDiagnosticsDialog.xaml": "8c07d569d4708ce18c0f9ca24e0e1cd362042c2a7f4bc3d1da8979633f1fb7a3",
+      "src/EmbyClient.App/Views/PlaybackDiagnosticsDialog.xaml.cs": "164db11d3f5456851c225add171b6d1bc88b6ab3a593fe3b1cf13829e5e58384",
+      "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml": "e26e2c239ae99ffafbb99b44d32c4eceafced397efaade317053f1918979861d",
+      "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml.cs": "a296080a1903f3edcc543251c431edeb540b6a6b470730936e388e62f0c688d8",
+      "src/EmbyClient.App/Views/PlaybackTimeConverter.cs": "d92ed13e77eff15dd93f1766ce8000d1faf3412d58a383032c748d9944355c85",
+      "src/EmbyClient.App/Views/PlayerView.Diagnostics.cs": "1ae5ae96e133f82db677358c8325e5a36a9c2b8c66effb81a4854eaca675a0db",
+      "src/EmbyClient.App/Views/PlayerView.Presentation.cs": "1903048a58bdf4584470049cd943968dd115df0003f6c823cd60e155ca73ebef",
+      "src/EmbyClient.App/Views/PlayerView.xaml": "5f19cee0b093b3c6d4dbc58c9cf4cb47a3103b47c6d2fca992a7c266d4f6c2ec",
+      "src/EmbyClient.App/Views/PlayerView.xaml.cs": "60774a36b358a91f7d88885eaf256c6d9eb58784ebe1aaac2c08309aa8a0fa45",
+      "src/EmbyClient.Playback/ConservativeDeviceProfile.cs": "4aa6d67804e765bd47ab44908f5a3b661ec77ba4d191f50468841e2ff1ec3cff",
+      "src/EmbyClient.Playback/EmbyClient.Playback.csproj": "8589f3a6b4fd297798c8b68c12486abed0085c8d4735ae0d1f86d82fe9c6edce",
+      "src/EmbyClient.Playback/PlaybackContracts.cs": "4d4a84494b5880c25501515e3087ca95b1ce55b664e623a818e9a6465dfb7f1b",
+      "src/EmbyClient.Playback/PlaybackCoordinator.cs": "374d629013248689b5643a8f510c043de80674d98c79a01ed3335749a05ab1d5",
+      "src/EmbyClient.Playback/PlaybackRequestFactory.cs": "98f31c78c8f620edda48ed496a3f336427686dea2591a251efa3a310e94c088c",
+      "Directory.Build.props": "152671a2f256b8953c63fa453a8bd17468b996dd5573b20d51773ab33019cab2",
+      "Directory.Packages.props": "0db6e50291b3aca667f14b7d583b048e383fc027068bd8d3ba6c655cf72a6239",
+      "global.json": "4a5e1b57e81b372b49a3ee4f0b35483d541b45280cf931276828c0920d3f6855"
+    },
+    "finalExecutablePath": "src/EmbyClient.App/bin/x64/Release/net10.0-windows10.0.26100.0/win-x64/EmbyClient.App.exe",
+    "finalExecutableSha256": "51c4c66036042d19ff6aa6c2ff73f0c05f97bd1757b2995a40c62460716e5697",
+    "finalBuildFiles": {
+      "EmbyClient.App.exe": {
+        "sha256": "51c4c66036042d19ff6aa6c2ff73f0c05f97bd1757b2995a40c62460716e5697",
+        "length": 665088,
+        "lastWriteTimeUtc": "2026-09-14T16:22:30.8728806Z"
+      },
+      "EmbyClient.App.dll": {
+        "sha256": "34744bedbbb6c12246f5670878527a6d724b7da249df5d4d306b6dcadc9c73e5",
+        "length": 1296896,
+        "lastWriteTimeUtc": "2026-09-14T16:22:30.8183701Z"
+      },
+      "EmbyClient.App.pri": {
+        "sha256": "f3b7c0ebf75dffd1427022006691719aa974b431888e2cb78ffec722204a99dc",
+        "length": 2279392,
+        "lastWriteTimeUtc": "2026-09-14T16:08:47.5062988Z"
+      }
+    },
+    "finalIdentityStatus": "Final managed Release executable, assembly, resource index, and relevant production source identities are recorded after the successful final build and native startup check.",
+    "finalSourceHashesCapturedUtc": "2026-09-14T16:26:38.5522555Z"
+  },
+  "applicationBuild": {
+    "lastCompletedBuild": "passed",
+    "command": "dotnet build src/EmbyClient.App/EmbyClient.App.csproj -c Release -p:Platform=x64 -p:RestoreLockedMode=true --nologo",
+    "configuration": "Release",
+    "targetFramework": "net10.0-windows10.0.26100.0",
+    "runtimeIdentifier": "win-x64",
+    "errors": 0,
+    "warningCount": 1,
+    "warnings": [
+      {
+        "code": "CS0618",
+        "origin": "Generated XamlTypeInfo.g.cs referencing WinUIEx Icon",
+        "message": "Icon is obsolete; use AppWindow.SetIcon or the IconId class type.",
+        "classification": "Generated dependency API warning; not a build failure."
+      }
+    ],
+    "log": "artifacts/ui-implementation-verification/native-20260914/build-final.txt",
+    "executionKind": "Managed Release build and run; not a Native AOT publication.",
+    "finalCandidate": "passed-with-scoped-native-verification",
+    "linuxAttempt": "A genuine Windows-targeted build on test-env restored dependencies and compiled API/Playback, then failed to execute the Windows XamlCompiler.exe with Exec format error. No substitute XAML compiler or stub application build was accepted. The subsequent authorized Windows build resolved that host limitation.",
+    "elapsedSeconds": 16.41,
+    "logSha256": "af28524cdd3c71e7c032b96e1782546524aa823e29cdc340e9b426f02cd4b29c"
+  },
+  "productTests": {
+    "distinctPassed": 510,
+    "failed": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "EmbyClient.Api.Tests",
+        "passed": 52,
+        "environment": "test-env",
+        "log": "artifacts/ui-implementation-verification/snapshot-20260914-212357-27bd1b75/logs/EmbyClient.Api.Tests.txt"
+      },
+      {
+        "name": "EmbyClient.Playback.Tests",
+        "passed": 136,
+        "environment": "test-env",
+        "log": "artifacts/ui-implementation-verification/snapshot-20260914-212357-27bd1b75/logs/EmbyClient.Playback.Tests.txt"
+      },
+      {
+        "name": "EmbyClient.MediaTransport.Tests",
+        "passed": 125,
+        "environment": "test-env",
+        "log": "artifacts/ui-implementation-verification/snapshot-20260914-212357-27bd1b75/logs/EmbyClient.MediaTransport.Tests.txt"
+      },
+      {
+        "name": "EmbyClient.AppState.Tests",
+        "passed": 12,
+        "environment": "test-env",
+        "log": "artifacts/ui-implementation-verification/snapshot-20260914-213203-5288ef94/logs/appstate-tests.txt",
+        "boundary": "The tests link real product ViewModel and service sources with a data-only Visibility enum. They verify data operations and transitions, not WinUI binding, dispatch, rendering, or layout."
+      },
+      {
+        "name": "EmbyClient.Platform.Tests",
+        "passed": 185,
+        "environment": "Authorized local Windows x64",
+        "command": "dotnet test --project tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj --configuration Release --no-restore",
+        "lockedRestore": "passed",
+        "includesRealWindowsUserTokenProtection": true,
+        "log": "artifacts/ui-implementation-verification/windows-platform-20260914-233541/tests.txt",
+        "receipt": "artifacts/ui-implementation-verification/windows-platform-20260914-233541/verification.json"
+      }
+    ],
+    "countingRule": "The earlier 71-case portable Platform subset is included in the 185-case full Windows suite and is not counted again.",
+    "reusedSuiteEvidence": "artifacts/ui-implementation-verification/snapshot-20260914-213203-5288ef94/logs/reused-suite-inputs.json",
+    "reusedSuiteEvidenceScope": "The 60 API, Playback, and MediaTransport input files matched the preceding passing snapshot when the final remote targeted checks ran. Later native presentation repairs require their own build and interaction regression, not automatic extension of this hash comparison.",
+    "lastChangeBoundary": "The final LibraryViewModel change only initializes a display subtitle to an empty string. It was checked in the final native startup/loading screenshot; unaffected product suites were not repeated for that text-only change."
+  },
+  "staticChecks": {
+    "environment": "test-env",
+    "snapshot": "snapshot-20260914-213203-5288ef94",
+    "xamlFilesParsedAsXml": 10,
+    "xamlXmlErrors": 0,
+    "productionCSharpFilesParsed": 56,
+    "csharpSyntaxErrors": 0,
+    "changedSourceFilesScannedForWhitespaceAndConflictMarkers": 44,
+    "formatIssues": 0,
+    "boundary": "These checks applied to the recorded remote snapshot. XML/C# syntax checks do not validate WinUI types, generated bindings, rendering, or later native presentation repairs."
+  },
+  "nativeFixture": {
+    "synthetic": true,
+    "realEmbyServerCompatibilityClaim": false,
+    "description": "A loopback-only synthetic people proxy over the existing synthetic media fixture supplied six synthetic people, biographies, and known existing fixture works. H.264/AAC MP4 byte ranges were forwarded from the actual generated media fixture.",
+    "people": "Synthetic Actor A through F; no real identities or photographs were supplied.",
+    "portraitCase": "Missing portrait tags exercise the native initials fallback.",
+    "serviceChecksAreNativeUiEvidence": false,
+    "serviceReceipt": "artifacts/ui-implementation-verification/native-fixture-20260914/proxy-checks.json",
+    "fixtureDescription": "artifacts/ui-implementation-verification/native-fixture-20260914/README.md"
+  },
+  "nativeObservations": {
+    "evidenceSource": "Primary agent observations of the actual locally running WinUI application, using the synthetic fixture.",
+    "candidateScope": "The listed scenarios were observed across iterative managed Release repair builds. The final build then started successfully, and the last initial-subtitle-only change was verified in the replacement final-00-library-loading screenshot. This is scoped native verification, not an exhaustive device or accessibility matrix.",
+    "observed": [
+      "Home page and expanded/collapsed navigation were displayed during the repair cycle.",
+      "Movie library and movie detail pages opened with actual fixture data.",
+      "Cast expansion displayed all six synthetic people.",
+      "A person profile displayed biography and known fixture works. Selecting a work navigated back to the corresponding real item in the same synthetic fixture.",
+      "The native player rendered and played the actual generated H.264/AAC color-bar MP4.",
+      "Mute and pause controls were exercised.",
+      "The non-modal playback settings side panel opened.",
+      "The native playback diagnostics dialog displayed five sanitized diagnostic events."
+    ],
+    "finalCandidateObserved": [
+      "The final compiled application started normally after removal of temporary startup tracing.",
+      "The first sign-in in a new window displayed a complete expanded sidebar; no component initialization exception occurred.",
+      "The unwanted automatic Ctrl+F tooltip no longer appeared across the whole page.",
+      "Person portraits display a complete 72-DIP circle and readable initials.",
+      "The light-theme movie detail gray gradient band is no longer visible.",
+      "Adding a movie from details updates the queue count to one. The native queue dialog opens, removes the entry, shows its empty state, and closes.",
+      "With the synthetic catalog response delayed by 5000 milliseconds, a centered ProgressRing appeared inside the library content area.",
+      "After Ctrl+F, typing Screen without clicking entered text directly into the search field.",
+      "Series details initially displayed a vertical two-row episode list. Switching to horizontal episode cards and back to the list worked.",
+      "A narrow native window captured at approximately 634 by 834 pixels displayed the responsive details layout and overlay navigation.",
+      "Switching to the dark theme updated the native series page correctly.",
+      "The player adapted to the narrow native window.",
+      "F11 entered fullscreen with controls visible. After clicking the video and waiting approximately 3.6 seconds, the controls were fully hidden. Esc returned to the narrow window.",
+      "Episode one ended naturally and playback automatically advanced to episode two.",
+      "Returning from playback to series details showed episode one as played and updated episode two resume state to approximately 0:35 with its progress bar.",
+      "The last compiled candidate started successfully. The first connected loading state no longer displayed Connect to server; final-00-library-loading.png was replaced with that final native capture."
+    ],
+    "screenshotDirectory": "artifacts/ui-implementation-verification/native-20260914/screens",
+    "finalRegressionScreenshots": [
+      "final-00-library-loading.png",
+      "final-01-home.png",
+      "final-02-movie-details.png",
+      "final-03-series-details.png",
+      "final-04-search.png",
+      "final-05-queue.png",
+      "final-06-queue-empty.png",
+      "final-07-search-focus.png",
+      "final-08-episode-cards.png",
+      "final-09-narrow-series.png",
+      "final-10-narrow-navigation.png",
+      "final-11-dark-series.png",
+      "final-12-narrow-player.png",
+      "final-13-fullscreen-controls.png",
+      "final-14-fullscreen-hidden.png",
+      "final-15-playback-return-progress.png"
+    ],
+    "finalScreenshotSha256": {
+      "final-00-library-loading.png": "4df70a40be1dde433177891c266e4cb3d60f6232964e53cc5924db6ed897cabe",
+      "final-01-home.png": "12f5a0ad8c8ef6c7cfae78d279bebb24d7ab943f8b3448eaa1225c802aaeaddc",
+      "final-02-movie-details.png": "e2d48b8c8c4d64fa60866204f2ab44c8f4f8244244ef808399d9fb4f0a109726",
+      "final-03-series-details.png": "d1689d28ce5bf7c7af1de02478f363bdaec57057c9da314f7cc0acbf60f91fb1",
+      "final-04-search.png": "57919c67905416bebecee295b2afa38e146ff2df3ea8ada174894e7a3d3ad7ff",
+      "final-05-queue.png": "094b698b2cd028c92f3fd3887c14676e364e7461e3b6be4a41b0ec4f7141f159",
+      "final-06-queue-empty.png": "ac7a6a9402101f41c79dc0673d80960ea8b498bb7e7c9d991fa7a463530c1c99",
+      "final-07-search-focus.png": "75c1f5d0d9c86064b8ce3902359abc7bdf239be735de4c8a9d6b165745b4b4dc",
+      "final-08-episode-cards.png": "a8de5958bdf9ed03ce4b7a0b181918159e7fbcccfe445e46a1eeb5ded07a0dea",
+      "final-09-narrow-series.png": "b27054145404834eb00dca4a3999979ceda1782900ac6e5a4812a2c06264f65f",
+      "final-10-narrow-navigation.png": "4cf2c5c7e77417027d20fe192267a69ce701627705a287c4acf9b0b19016fd6f",
+      "final-11-dark-series.png": "74554c614844d9760662240fd90c2b3a2a7826058381ca4f9a45f37777e75b3e",
+      "final-12-narrow-player.png": "eeb1c876841104a289bcc9027f7892efab3884bd413ec4f5bd3e6e85abc88c4f",
+      "final-13-fullscreen-controls.png": "f633e98312bcdae05fbfc97008ea1ea0469920e9e088db35869a18e2776f1357",
+      "final-14-fullscreen-hidden.png": "f14a277f79c1b9fd7312b0593d7e97930da65e78879f196ba738cdd6510913ad",
+      "final-15-playback-return-progress.png": "72f9f3f978cba05ae46cdb8bb5a05b633e95504813e67e8d26a9599c31b51fc1"
+    },
+    "finalScreenshotCount": 16
+  },
+  "nativeRepairs": [
+    {
+      "issue": "Style BasedOn did not accept the resource form used during native activation.",
+      "repair": "Use StaticResource instead of ThemeResource for Style.BasedOn.",
+      "status": "verified-during-intermediate-native-run"
+    },
+    {
+      "issue": "Reflection-based tooltip binding was unsuitable for the native generated binding path.",
+      "repair": "Use compiled x:Bind for tooltip values.",
+      "status": "verified-during-intermediate-native-run"
+    },
+    {
+      "issue": "Optional HighContrastChanged registration could throw a COM exception.",
+      "repair": "Guard the optional platform event registration.",
+      "status": "verified-during-intermediate-native-run"
+    },
+    {
+      "issue": "Array-backed cast and diagnostics ItemsSource values were incompatible with the native binding path.",
+      "repair": "Use strongly typed ObservableCollection sources.",
+      "status": "verified-during-intermediate-native-run"
+    },
+    {
+      "issue": "Diagnostics row initialization was incompatible with the generated native metadata path.",
+      "repair": "Use read-only properties initialized by a constructor.",
+      "status": "verified-during-intermediate-native-run"
+    },
+    {
+      "issue": "The connection cancellation action was poorly placed in the login flow.",
+      "repair": "Move the cancellation action upward in the login layout.",
+      "status": "verified-during-intermediate-native-run"
+    },
+    {
+      "issue": "PersonPicture's default 100-DIP size clipped the smaller portrait slot.",
+      "repair": "Set the native portrait size from the artwork control's actual dimensions.",
+      "status": "verified-during-native-regression"
+    },
+    {
+      "issue": "The light-theme detail gradient interpolated toward transparent black and showed a gray band.",
+      "repair": "Use a transparent gradient stop whose RGB components match the opaque surface color.",
+      "status": "verified-during-native-regression"
+    },
+    {
+      "issue": "Navigation display-mode callbacks re-entered the pane transition before layout settled.",
+      "repair": "Defer pane preference application at low dispatcher priority and reject stale callbacks.",
+      "status": "verified-in-final-native-first-load"
+    },
+    {
+      "issue": "The first NavigationView callback could run before LibraryView finished InitializeComponent.",
+      "repair": "Guard pane/footer work until component initialization has completed.",
+      "status": "verified-in-final-native-first-load"
+    },
+    {
+      "issue": "The global Ctrl+F keyboard accelerator generated an unwanted automatic tooltip across the whole page.",
+      "repair": "Set KeyboardAcceleratorPlacementMode to Hidden on LibraryView while retaining the explicit search command tooltip.",
+      "status": "verified-in-final-native-run"
+    },
+    {
+      "issue": "The initial series episode list used a horizontal panel orientation.",
+      "repair": "Use explicit panel templates for both episode list and card orientations.",
+      "status": "verified-during-native-regression"
+    },
+    {
+      "issue": "Ctrl+F attempted to focus search before the actual TextBox was rendered, so typing did not reach the search field.",
+      "repair": "Defer focus until the rendered search TextBox is available.",
+      "status": "verified-during-native-regression"
+    },
+    {
+      "issue": "The default library subtitle said Connect to server while the first connected library request was still loading.",
+      "repair": "Initialize the LibraryViewModel subtitle to an empty string.",
+      "status": "verified-in-final-native-startup"
+    }
+  ],
+  "temporaryInstrumentation": {
+    "startupTrace": "The primary agent removed the temporary application startup diagnostic trace from product source.",
+    "finalBuildConfirmation": "The final compiled application started normally. App.xaml.cs has no remaining diff from the temporary trace, and the trace was not retained in product source."
+  },
+  "pendingAcceptance": [],
+  "limits": [
+    "Synthetic fixture results do not establish compatibility with a real Emby installation or real accounts and libraries.",
+    "The fixture does not supply subtitles, HLS, live media, or transcoding; those native media paths are not claimed verified.",
+    "This is a managed Release build and run, not a Native AOT publication, signed package, clean installation, or release certification.",
+    "No complete all-page, large-text, high-contrast, Narrator, GPU/HDR, or multi-monitor acceptance matrix is claimed by this record.",
+    "The screenshot set contains actual native WinUI captures from this verification cycle; prior HTML mockups are not native evidence.",
+    "Product tests, static source checks, and native scenarios have separate recorded scopes. Passing one layer does not imply unexecuted checks in another layer."
+  ],
+  "finalizedUtc": "2026-09-14T16:26:38.5522555Z",
+  "handoffState": {
+    "appearance": "The original System theme preference was restored.",
+    "window": "The original 1280-DIP window width was restored; the native capture is 1268 by 834 pixels, matching the original capture geometry.",
+    "application": "The newly built application remains open on Home for user review.",
+    "fixtureServices": "The task-owned synthetic services remain running for the open review application; they were intentionally not stopped.",
+    "realAccounts": "No real user account or real Emby server was connected during this verification."
+  }
+}

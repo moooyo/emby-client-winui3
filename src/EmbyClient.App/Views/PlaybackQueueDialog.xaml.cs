@@ -12,6 +12,7 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
 {
     private readonly TransientPlaybackQueue _queue;
     private int _lastAnnouncedCount;
+    private XamlRoot? _dialogRoot;
 
     internal PlaybackQueueDialog(TransientPlaybackQueue queue)
     {
@@ -20,19 +21,41 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
         InitializeComponent();
         QueueList.ItemsSource = queue.Items;
         _queue.Changed += QueueChanged;
-        Closed += (_, _) => _queue.Changed -= QueueChanged;
+        Closed += (_, _) => Detach();
         Opened += (_, _) =>
         {
+            _dialogRoot = XamlRoot;
+            if (_dialogRoot is not null)
+            {
+                _dialogRoot.Changed += DialogRootChanged;
+                UpdateDialogSize();
+            }
             if (_queue.Count > 0 && QueueList.SelectedItem is null) QueueList.SelectedIndex = 0;
         };
         UpdateControls();
     }
 
-    internal void Detach() => _queue.Changed -= QueueChanged;
+    internal void Detach()
+    {
+        _queue.Changed -= QueueChanged;
+        if (_dialogRoot is not null) _dialogRoot.Changed -= DialogRootChanged;
+        _dialogRoot = null;
+    }
+
+    private void DialogRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) => UpdateDialogSize();
+
+    private void UpdateDialogSize()
+    {
+        if (_dialogRoot is not { } root) return;
+        DialogContent.Width = Math.Clamp(root.Size.Width - 112, 180, 480);
+        ContentScroller.MaxHeight = Math.Clamp(root.Size.Height - 240, 96, 480);
+    }
 
     private void QueueChanged(object? sender, EventArgs args)
     {
         UpdateControls();
+        // Native collection moves retain selection; refresh position labels after layout catches up.
+        DispatcherQueue.TryEnqueue(UpdateRealizedRows);
         if (_lastAnnouncedCount == _queue.Count) return;
         _lastAnnouncedCount = _queue.Count;
         (FrameworkElementAutomationPeer.FromElement(CountText)
@@ -43,9 +66,10 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
 
     private void UpdateControls()
     {
-        CountText.Text = $"{_queue.Count} of {TransientPlaybackQueue.MaximumItems} items";
-        EmptyText.Visibility = _queue.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        CountText.Text = $"{_queue.Count} {(_queue.Count == 1 ? "item" : "items")} queued · Limit {TransientPlaybackQueue.MaximumItems}";
+        EmptyState.Visibility = _queue.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         QueueList.Visibility = _queue.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        QueueActions.Visibility = _queue.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         var index = QueueList.SelectedItem is PlaybackQueueEntry entry ? _queue.IndexOf(entry.EntryId) : -1;
         MoveUpButton.IsEnabled = index > 0;
         MoveDownButton.IsEnabled = index >= 0 && index < _queue.Count - 1;
@@ -112,7 +136,35 @@ public sealed partial class PlaybackQueueDialog : ContentDialog
         if (args.Key == VirtualKey.Delete && RemoveSelected()) args.Handled = true;
     }
 
-    private void QueueContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args) =>
-        AutomationProperties.SetName(args.ItemContainer,
-            !args.InRecycleQueue && args.Item is PlaybackQueueEntry entry ? entry.AutomationName : string.Empty);
+    private void QueueContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
+    {
+        var entry = args.InRecycleQueue ? null : args.Item as PlaybackQueueEntry;
+        UpdateRow(args.ItemContainer, entry);
+        if (entry is not null && args.Phase == 0)
+            args.RegisterUpdateCallback((_, update) => UpdateRow(update.ItemContainer,
+                update.InRecycleQueue ? null : update.Item as PlaybackQueueEntry));
+    }
+
+    private void UpdateRealizedRows()
+    {
+        for (var index = 0; index < _queue.Count; index++)
+            if (QueueList.ContainerFromIndex(index) is ListViewItem container)
+                UpdateRow(container, _queue.Items[index]);
+    }
+
+    private void UpdateRow(ContentControl container, PlaybackQueueEntry? entry)
+    {
+        var index = entry is null ? -1 : _queue.IndexOf(entry.EntryId);
+        var detail = entry?.Detail ?? string.Empty;
+        AutomationProperties.SetName(container, entry is null || index < 0 ? string.Empty
+            : $"{index + 1} of {_queue.Count}, {entry.Title}, {detail}{(index == 0 ? ", next in queue" : string.Empty)}");
+        if (container.ContentTemplateRoot is not FrameworkElement template) return;
+        if (template.FindName("OrderText") is TextBlock order)
+            order.Text = index < 0 ? string.Empty : (index + 1).ToString(System.Globalization.CultureInfo.CurrentCulture);
+        if (template.FindName("NextText") is TextBlock next)
+            next.Visibility = index == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (template.FindName("DetailText") is TextBlock detailText)
+            detailText.Text = detail;
+    }
+
 }

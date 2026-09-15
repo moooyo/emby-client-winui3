@@ -91,8 +91,7 @@ public sealed class PlaybackDiagnostics
 
     public PlaybackDiagnostics(string? directory = null, Version? applicationVersion = null, Version? engineVersion = null)
     {
-        DirectoryPath = Path.GetFullPath(directory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "EmbyClient.Windows", "diagnostics"));
+        DirectoryPath = Path.GetFullPath(directory ?? Path.Combine(AppDataPaths.RootDirectory, "diagnostics"));
         _versions = new VersionData(
             applicationVersion ?? typeof(PlaybackDiagnostics).Assembly.GetName().Version ?? new Version(0, 0),
             Environment.Version, Environment.OSVersion.Version, engineVersion ?? Environment.OSVersion.Version,

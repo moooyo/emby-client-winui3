@@ -175,6 +175,7 @@ public sealed record ItemQuery
     public string[]? Fields { get; init; }
     public string[]? Filters { get; init; }
     public string[]? Ids { get; init; }
+    public string[]? PersonIds { get; init; }
     public string[]? Genres { get; init; }
     public string[]? Tags { get; init; }
     public bool? IsPlayed { get; init; }

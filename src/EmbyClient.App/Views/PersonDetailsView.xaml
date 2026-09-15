@@ -1,0 +1,96 @@
+<UserControl
+    x:Class="EmbyClient.App.Views.PersonDetailsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:EmbyClient.App.ViewModels"
+    xmlns:views="using:EmbyClient.App.Views"
+    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+    IsTabStop="True" UseSystemFocusVisuals="False">
+    <Grid>
+        <GridView x:Name="WorksGrid" ItemsSource="{x:Bind ViewModel.Works}" SelectionMode="None"
+                  IsItemClickEnabled="True" ItemClick="Work_ItemClick" ContainerContentChanging="Work_ContainerContentChanging"
+                  Loaded="WorksGrid_Loaded" SizeChanged="WorksGrid_SizeChanged" GotFocus="WorksGrid_GotFocus"
+                  Padding="28,24,16,28" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                  ScrollViewer.HorizontalScrollMode="Disabled" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.VerticalScrollMode="Enabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.Name="This person's works in your library">
+            <GridView.Header>
+                <StackPanel x:Name="PageHeader" Spacing="28" Margin="4,0,16,24">
+                    <Grid ColumnSpacing="24" RowSpacing="16">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                        <views:PersonArtwork Item="{x:Bind ViewModel.Portrait, Mode=OneWay}" Width="104" Height="104"
+                                             VerticalAlignment="Top" HorizontalAlignment="Left" Loaded="Artwork_Loaded" />
+                        <StackPanel x:Name="PersonIdentity" Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind ViewModel.SourceLabel}" FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{x:Bind ViewModel.Person.Name}" FontSize="32" FontWeight="SemiBold" TextWrapping="Wrap"
+                                       AutomationProperties.HeadingLevel="Level1" />
+                            <TextBlock Text="{x:Bind ViewModel.Person.Role}" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Spacing="10" MaxWidth="920" HorizontalAlignment="Left">
+                        <TextBlock Text="About" FontSize="18" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level2" />
+                        <ProgressBar Height="2" IsIndeterminate="{x:Bind ViewModel.IsLoadingBiography, Mode=OneWay}"
+                                     Visibility="{x:Bind ViewModel.BiographyLoadingVisibility, Mode=OneWay}" AutomationProperties.Name="Loading biography" />
+                        <TextBlock x:Name="BiographyText" Text="{x:Bind ViewModel.Biography, Mode=OneWay}" TextWrapping="Wrap"
+                                   MaxLines="5" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True"
+                                   IsTextTrimmedChanged="BiographyText_IsTextTrimmedChanged"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <HyperlinkButton x:Name="BiographyToggle" Content="Read more" Click="BiographyToggle_Click" Visibility="Collapsed"
+                                         Padding="0,4" HorizontalAlignment="Left" AutomationProperties.Name="Read more about this person" />
+                        <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.BiographyErrorVisibility, Mode=OneWay}">
+                            <TextBlock Text="{x:Bind ViewModel.BiographyError, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            <Button Content="Retry biography" Click="RetryBiography_Click" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="In your library" FontSize="24" FontWeight="SemiBold" AutomationProperties.HeadingLevel="Level2" />
+                        <TextBlock Text="Movies, series, and videos available to this account." FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </GridView.Header>
+            <GridView.ItemsPanel>
+                <ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal" ItemWidth="176" ItemHeight="320" /></ItemsPanelTemplate>
+            </GridView.ItemsPanel>
+            <GridView.ItemContainerStyle>
+                <Style TargetType="GridViewItem">
+                    <Setter Property="Padding" Value="4" /><Setter Property="Margin" Value="0,0,12,16" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="VerticalContentAlignment" Value="Top" /><Setter Property="CornerRadius" Value="8" />
+                    <Setter Property="UseSystemFocusVisuals" Value="True" />
+                </Style>
+            </GridView.ItemContainerStyle>
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="vm:MediaCardViewModel">
+                    <StackPanel Spacing="6">
+                        <views:PersonArtwork Item="{x:Bind}" IsPerson="False" Width="156" Height="234"
+                                             HorizontalAlignment="Left" Loaded="Artwork_Loaded" />
+                        <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" />
+                        <TextBlock Text="{x:Bind CardSubtitle, Mode=OneWay}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                   ToolTipService.ToolTip="{x:Bind CardSubtitle, Mode=OneWay}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+            <GridView.Footer>
+                <StackPanel x:Name="PageFooter" Spacing="12" Margin="4,8,16,0">
+                    <ProgressRing Width="24" Height="24" HorizontalAlignment="Left"
+                                  IsActive="{x:Bind ViewModel.IsLoadingWorks, Mode=OneWay}"
+                                  Visibility="{x:Bind ViewModel.WorksLoadingVisibility, Mode=OneWay}" AutomationProperties.Name="Loading library works" />
+                    <TextBlock Text="No movies, series, or videos for this person are available in your library."
+                               Visibility="{x:Bind ViewModel.EmptyWorksVisibility, Mode=OneWay}" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" AutomationProperties.LiveSetting="Polite" />
+                    <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.WorksErrorVisibility, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.WorksError, Mode=OneWay}" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                        <Button Content="Retry library works" Click="LoadMore_Click" HorizontalAlignment="Left" />
+                    </StackPanel>
+                    <Button Content="Load more" Click="LoadMore_Click" IsEnabled="{x:Bind ViewModel.CanLoadMore, Mode=OneWay}"
+                            Visibility="{x:Bind ViewModel.LoadMoreVisibility, Mode=OneWay}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </GridView.Footer>
+        </GridView>
+    </Grid>
+</UserControl>

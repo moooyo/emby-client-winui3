@@ -8,11 +8,23 @@ namespace EmbyClient.App.ViewModels;
 
 public sealed partial class MediaCardViewModel(BaseItemDto item, string? personRole = null) : ObservableObject
 {
+    private MediaInformationViewModel? _mediaInformation;
     public BaseItemDto Item { get; private set; } = item;
     public ObservableCollection<MediaCardViewModel> Cast { get; } = new(CreateCast(item));
     public string Id => Item.Id ?? string.Empty;
     public string Title => string.IsNullOrWhiteSpace(Item.Name) ? "Untitled item" : Item.Name;
     public string DisplayTitle => Item.Type == "Episode" && !string.IsNullOrWhiteSpace(Item.SeriesName) ? Item.SeriesName : Title;
+    public string SceneIdentity => Item.Type == "Episode"
+        ? string.Join(" · ", new[] { Item.SeriesName, EpisodeNumber, Title }.Where(value => !string.IsNullOrWhiteSpace(value)))
+        : Item.Type == "Season" ? string.Join(" · ", new[] { Item.SeriesName, Title }.Where(value => !string.IsNullOrWhiteSpace(value))) : Title;
+    public string ParentSeriesLabel => Item.Type is "Episode" or "Season" && !string.IsNullOrWhiteSpace(Item.SeriesId)
+        ? string.IsNullOrWhiteSpace(Item.SeriesName) ? "Open series" : Item.SeriesName : string.Empty;
+    public string DetailIdentity => Item.Type == "Episode"
+        ? string.Join(" · ", new[] { Item.SeriesName, EpisodeNumber }.Where(value => !string.IsNullOrWhiteSpace(value)))
+        : Item.Type == "Season" ? Item.SeriesName ?? string.Empty : string.Empty;
+    public MediaInformationViewModel MediaInformation => _mediaInformation ??= new(Item);
+    public string AutomationLabel => string.Join(", ", new[] { SceneIdentity, Item.Type == "Episode" ? RuntimeLabel : CardSubtitle, StateLabel }
+        .Where(value => !string.IsNullOrWhiteSpace(value)));
     public string PersonRole { get; } = personRole ?? string.Empty;
     public string CardSubtitle => Item.Type switch
     {
@@ -22,7 +34,7 @@ public sealed partial class MediaCardViewModel(BaseItemDto item, string? personR
         _ => Item.ProductionYear?.ToString(CultureInfo.InvariantCulture) ?? string.Empty
     };
     public string Subtitle => CardSubtitle;
-    public string EpisodeTitle => Item.IndexNumber is { } index ? $"{index}. {Title}" : Title;
+    public string EpisodeTitle => Item.Type == "Episode" ? $"{EpisodeNumber} · {Title}" : Title;
     public string EpisodeSummary => Item.Overview ?? string.Empty;
     public string EpisodeMetadata => string.Join(" · ", new[]
     {
@@ -32,11 +44,12 @@ public sealed partial class MediaCardViewModel(BaseItemDto item, string? personR
     public string RuntimeLabel => Item.RunTimeTicks is > 0 ? FormatRuntime(Item.RunTimeTicks.Value) : string.Empty;
     public string Metadata => string.Join(" · ", new[]
     {
+        Item.Type == "Episode" ? Item.SeriesName : null,
+        Item.Type == "Episode" ? EpisodeNumber : null,
         Item.CommunityRating is { } rating ? $"★ {rating.ToString("0.0", CultureInfo.InvariantCulture)}" : null,
         Item.ProductionYear?.ToString(CultureInfo.InvariantCulture),
         Item.OfficialRating,
-        RuntimeLabel,
-        Item.Type == "Episode" ? EpisodeNumber : null
+        RuntimeLabel
     }.Where(value => !string.IsNullOrWhiteSpace(value)));
     public string Overview => string.IsNullOrWhiteSpace(Item.Overview) ? "No description is available for this item." : Item.Overview;
     public string Genres => Item.Genres is { Length: > 0 } ? string.Join(" · ", Item.Genres) : string.Empty;
@@ -68,6 +81,9 @@ public sealed partial class MediaCardViewModel(BaseItemDto item, string? personR
     public bool IsFolder => Item.IsFolder == true || Item.Type is "Series" or "Season" or "BoxSet" or "CollectionFolder" or "Folder" or "MusicAlbum" or "Playlist";
     public bool CanPlay => !IsFolder && Item.LocationType != "Virtual" && !string.IsNullOrWhiteSpace(Id)
         && (Item.MediaType is "Video" or "Audio" || Item.Type is "Movie" or "Episode" or "Video" or "Audio" or "MusicVideo" or "TvChannel");
+    public string PlaybackUnavailableReason => IsFolder ? string.Empty : Item.LocationType == "Virtual"
+        ? "No playable media file is available for this item."
+        : !CanPlay ? "Playback is not available for this item." : string.Empty;
     public bool IsFavorite => Item.UserData?.IsFavorite == true;
     public bool IsPlayed => Item.UserData?.Played == true;
     public long ResumeTicks => Math.Max(0, Item.UserData?.PlaybackPositionTicks ?? 0);
@@ -95,13 +111,66 @@ public sealed partial class MediaCardViewModel(BaseItemDto item, string? personR
     public Visibility CastVisibility => Cast.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility MediaFormatVisibility => MediaFormat.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility UnplayedCountVisibility => UnplayedCountLabel.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility ParentSeriesVisibility => ParentSeriesLabel.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility DetailIdentityVisibility => DetailIdentity.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility PlaybackUnavailableVisibility => PlaybackUnavailableReason.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public override string ToString() => Title;
+
+    public void ApplyItem(BaseItemDto item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (!string.Equals(Id, item.Id, StringComparison.Ordinal))
+            throw new ArgumentException("Refreshed metadata must describe the same media item.", nameof(item));
+        Item = item;
+        _mediaInformation?.ApplyItem(item);
+        Cast.Clear();
+        foreach (var person in CreateCast(item)) Cast.Add(person);
+        OnPropertyChanged(nameof(Item));
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(DisplayTitle));
+        OnPropertyChanged(nameof(AutomationLabel));
+        OnPropertyChanged(nameof(SceneIdentity));
+        OnPropertyChanged(nameof(ParentSeriesLabel));
+        OnPropertyChanged(nameof(ParentSeriesVisibility));
+        OnPropertyChanged(nameof(DetailIdentity));
+        OnPropertyChanged(nameof(DetailIdentityVisibility));
+        OnPropertyChanged(nameof(CardSubtitle));
+        OnPropertyChanged(nameof(Subtitle));
+        OnPropertyChanged(nameof(EpisodeTitle));
+        OnPropertyChanged(nameof(EpisodeSummary));
+        OnPropertyChanged(nameof(EpisodeMetadata));
+        OnPropertyChanged(nameof(RuntimeLabel));
+        OnPropertyChanged(nameof(Metadata));
+        OnPropertyChanged(nameof(Overview));
+        OnPropertyChanged(nameof(Genres));
+        OnPropertyChanged(nameof(People));
+        OnPropertyChanged(nameof(Directors));
+        OnPropertyChanged(nameof(MediaFormat));
+        OnPropertyChanged(nameof(IsFolder));
+        OnPropertyChanged(nameof(CanPlay));
+        OnPropertyChanged(nameof(PlaybackUnavailableReason));
+        OnPropertyChanged(nameof(PlaybackUnavailableVisibility));
+        OnPropertyChanged(nameof(PlayVisibility));
+        OnPropertyChanged(nameof(GenresVisibility));
+        OnPropertyChanged(nameof(PeopleVisibility));
+        OnPropertyChanged(nameof(DirectorsVisibility));
+        OnPropertyChanged(nameof(CastVisibility));
+        OnPropertyChanged(nameof(MediaFormatVisibility));
+        OnPropertyChanged(nameof(EpisodeNumber));
+        NotifyUserData();
+    }
 
     public void ApplyUserData(UserItemDataDto userData)
     {
         Item = Item with { UserData = userData };
         OnPropertyChanged(nameof(Item));
+        NotifyUserData();
+    }
+
+    private void NotifyUserData()
+    {
+        OnPropertyChanged(nameof(AutomationLabel));
         OnPropertyChanged(nameof(IsFavorite));
         OnPropertyChanged(nameof(IsPlayed));
         OnPropertyChanged(nameof(ResumeTicks));

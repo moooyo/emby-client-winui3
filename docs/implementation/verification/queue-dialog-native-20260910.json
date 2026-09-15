@@ -1,0 +1,41 @@
+{
+  "dateUtc": "2026-09-10T07:11:01.7600238Z",
+  "scope": "Native reproduction and repair of the play queue dialog activation failure",
+  "environment": "Isolated Windows x64 WinUI probe under the ongoing authorized local UI debugging task",
+  "probeProject": "artifacts/probes/queue-dialog-20260910/QueueDialogProbe.csproj",
+  "probeSource": "The ignored local probe links the product PlaybackQueueDialog.xaml, its code-behind, and TransientPlaybackQueue.cs. It uses the product API assembly and a minimal XamlControlsResources host. No login or server connection is performed.",
+  "buildCommand": "dotnet build artifacts/probes/queue-dialog-20260910/QueueDialogProbe.csproj -c Debug -p:Platform=x64 --no-restore --nologo",
+  "buildResult": "passed: 0 warnings, 0 errors",
+  "before": {
+    "result": "reproduced",
+    "stage": "Empty queue dialog InitializeComponent",
+    "exceptionType": "Microsoft.UI.Xaml.Markup.XamlParseException",
+    "message": "Failed to create a 'Microsoft.UI.Xaml.Controls.IconElement' from the text 'Down'. [Line: 47 Position: 88]",
+    "log": "artifacts/probes/queue-dialog-20260910/before.txt"
+  },
+  "repair": "Replace string-based Up/Down icon conversions with explicit FontIcon arrow glyphs E74A and E74B. The invalid Down Symbol conversion was the failure; CommandBar content and dialog lifecycle were not the cause.",
+  "after": {
+    "result": "passed",
+    "log": "artifacts/probes/queue-dialog-20260910/after.txt",
+    "checks": [
+      "Empty queue constructs, opens, displays empty content, disables unavailable actions, and closes",
+      "Two-item queue constructs, opens, and selects the first item",
+      "Native AppBarButton automation Invoke moves the selected item down and up, retaining selection and updating boundary action availability",
+      "Native Remove invocation removes the selected item",
+      "Native Clear queue invocation from the expanded command bar empties the queue and displays empty content",
+      "A subsequent empty queue dialog constructs, opens, and closes in the same process"
+    ]
+  },
+  "sourceSha256": {
+    "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml": "c09ea9e09fa0464d411959182e20b4c9cb5895f0a046c0660c2b6b0fa117f68a",
+    "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml.cs": "f37bca31628e63f3b76ec63842cddb753c1855a451dd4d24636e7ca9c7062a8b"
+  },
+  "probeBinarySha256": {
+    "QueueDialogProbe.exe": "8a81077d134175720c2df25c72b85ade8f84e2a611390d7773c7557d14235bba",
+    "QueueDialogProbe.dll": "b5307db69edd313ebe5333f2a3b213ef8097fc7bd3d6d6cc260153516a0e4ae5"
+  },
+  "limits": [
+    "This isolated native dialog run is not a full signed-in application workflow or playback test",
+    "No screenshot-based layout, theme, large-text, or screen-reader acceptance is claimed"
+  ]
+}

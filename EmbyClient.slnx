@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EmbyClient.Api.Tests/EmbyClient.Api.Tests.csproj" />
+    <Project Path="tests/EmbyClient.AppState.Tests/EmbyClient.AppState.Tests.csproj" />
     <Project Path="tests/EmbyClient.MediaTransport.Tests/EmbyClient.MediaTransport.Tests.csproj" />
     <Project Path="tests/EmbyClient.Platform.Tests/EmbyClient.Platform.Tests.csproj" />
     <Project Path="tests/EmbyClient.Playback.Tests/EmbyClient.Playback.Tests.csproj" />

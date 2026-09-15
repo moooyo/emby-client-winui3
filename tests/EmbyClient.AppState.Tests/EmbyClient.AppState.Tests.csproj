@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.cs" Link="Product/LibraryViewModel.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.Presentation.cs" Link="Product/LibraryViewModel.Presentation.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.History.cs" Link="Product/LibraryViewModel.History.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.Context.cs" Link="Product/LibraryViewModel.Context.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.People.cs" Link="Product/LibraryViewModel.People.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/PersonDetailsViewModel.cs" Link="Product/PersonDetailsViewModel.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/PersonCardViewModel.cs" Link="Product/PersonCardViewModel.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/MediaInformationViewModel.cs" Link="Product/MediaInformationViewModel.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/MediaCardViewModel.cs" Link="Product/MediaCardViewModel.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/MediaShelfViewModel.cs" Link="Product/MediaShelfViewModel.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
+    <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
+  </ItemGroup>
+</Project>

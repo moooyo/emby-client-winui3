@@ -70,7 +70,14 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     /// Consumes only the observed recovery target. Stale or duplicate retry commands never cancel newer playback.
     /// Every retry negotiates a new server session after the previous playback's cleanup has finished.
     /// </summary>
-    public async Task RetryAsync(Guid expectedRecoveryId, CancellationToken cancellationToken = default)
+    public Task RetryAsync(Guid expectedRecoveryId, CancellationToken cancellationToken = default) =>
+        RetryAsync(expectedRecoveryId, new PlaybackSelectionChange(), cancellationToken);
+
+    /// <summary>
+    /// Consumes only the observed recovery target with edited settings, retaining its position and pause intent.
+    /// Changing the source resets omitted track indexes to the new source's defaults.
+    /// </summary>
+    public async Task RetryAsync(Guid expectedRecoveryId, PlaybackSelectionChange change, CancellationToken cancellationToken = default)
     {
         if (GetRecoveryTarget() is not { } observed || observed.State.RecoveryId != expectedRecoveryId) return;
         try { await _gate.WaitAsync(cancellationToken).ConfigureAwait(false); }
@@ -79,6 +86,9 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         {
             if (GetRecoveryTarget() != observed || Volatile.Read(ref _current) is not null) return;
             cancellationToken.ThrowIfCancellationRequested();
+            ArgumentNullException.ThrowIfNull(change);
+            var selection = ApplySelectionChange(observed.State.Selection, change);
+            ValidateSelection(selection);
             // Retain the target if a native resource still cannot be released. This uses the existing resource gate.
             await RetryPendingEngineStopsAsync().ConfigureAwait(false);
             if (GetRecoveryTarget() != observed || Volatile.Read(ref _current) is not null) return;
@@ -90,7 +100,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             if (Interlocked.CompareExchange(ref _intent, intent, observed.Intent) != observed.Intent) return;
             var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : observed.OwnerCancellationToken;
             EnsureIntent(intent, ownerToken);
-            await StartCoreAsync(observed.State.Selection, intent, ownerToken,
+            await StartCoreAsync(selection, intent, ownerToken,
                 restorePaused: observed.State.IsPaused).ConfigureAwait(false);
         }
         finally { _gate.Release(); }
@@ -121,19 +131,11 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         var observed = Volatile.Read(ref _current) ?? throw new InvalidOperationException("There is no active playback to change.");
         CaptureEngineSnapshot(observed);
         var restorePaused = ShouldPauseAfterRestart(observed);
-        var currentSourceId = observed.Source?.Id ?? observed.Selection.MediaSourceId;
-        var changesSource = change.MediaSourceId is not null
-            && !string.Equals(change.MediaSourceId, currentSourceId, StringComparison.Ordinal);
-        var selection = observed.Selection with
+        var selection = ApplySelectionChange(observed.Selection with
         {
-            MediaSourceId = change.MediaSourceId ?? currentSourceId,
-            StartPositionTicks = AbsolutePosition(observed),
-            // Stream indexes belong to one source. Null asks Emby to select the new source's defaults.
-            AudioStreamIndex = change.AudioStreamIndex ?? (changesSource ? null : observed.Selection.AudioStreamIndex),
-            SubtitleStreamIndex = change.SubtitleStreamIndex ?? (changesSource ? null : observed.Selection.SubtitleStreamIndex),
-            MaxStreamingBitrate = change.MaxStreamingBitrate ?? observed.Selection.MaxStreamingBitrate,
-            ForceTranscoding = change.ForceTranscoding ?? observed.Selection.ForceTranscoding
-        };
+            MediaSourceId = observed.Source?.Id ?? observed.Selection.MediaSourceId,
+            StartPositionTicks = AbsolutePosition(observed)
+        }, change);
         ValidateSelection(selection);
         var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : observed.OwnerCancellationToken;
         var intent = BeginIntent();
@@ -901,6 +903,21 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
     }
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+
+    private static PlaybackSelection ApplySelectionChange(PlaybackSelection selection, PlaybackSelectionChange change)
+    {
+        var changesSource = change.MediaSourceId is not null
+            && !string.Equals(change.MediaSourceId, selection.MediaSourceId, StringComparison.Ordinal);
+        return selection with
+        {
+            MediaSourceId = change.MediaSourceId ?? selection.MediaSourceId,
+            // Stream indexes belong to one source. Null asks Emby to select the new source's defaults.
+            AudioStreamIndex = change.AudioStreamIndex ?? (changesSource ? null : selection.AudioStreamIndex),
+            SubtitleStreamIndex = change.SubtitleStreamIndex ?? (changesSource ? null : selection.SubtitleStreamIndex),
+            MaxStreamingBitrate = change.MaxStreamingBitrate ?? selection.MaxStreamingBitrate,
+            ForceTranscoding = change.ForceTranscoding ?? selection.ForceTranscoding
+        };
+    }
 
     private static void ValidateSelection(PlaybackSelection selection)
     {

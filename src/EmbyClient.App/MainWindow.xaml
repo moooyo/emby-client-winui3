@@ -10,7 +10,14 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <TitleBar x:Name="AppTitleBar" Title="Emby for Windows" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+        <Grid x:Name="DetailBackdropLayer" Grid.RowSpan="2" IsHitTestVisible="False" Visibility="Collapsed"
+              Background="{ThemeResource DetailBackdropBaseBrush}" AutomationProperties.AccessibilityView="Raw">
+            <Image x:Name="DetailBackdropImage" Stretch="UniformToFill" />
+            <Border Background="{ThemeResource DetailBackdropVerticalMaskBrush}" />
+            <Border Background="{ThemeResource DetailBackdropHorizontalMaskBrush}" />
+        </Grid>
+        <TitleBar x:Name="AppTitleBar" Title="Emby for Windows" Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                  Background="{ThemeResource DetailTitleBarBackgroundBrush}" />
         <Frame x:Name="RootFrame" Grid.Row="1" />
     </Grid>
 </wex:WindowEx>

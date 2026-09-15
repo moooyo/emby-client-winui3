@@ -26,9 +26,7 @@ public sealed partial class WindowPlacementStore : IDictionary<string, object>
 
     public WindowPlacementStore(string? filePath = null)
     {
-        FilePath = Path.GetFullPath(filePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "EmbyClient.Windows", "window-placement.json"));
+        FilePath = Path.GetFullPath(filePath ?? Path.Combine(AppDataPaths.RootDirectory, "window-placement.json"));
         Load();
     }
 

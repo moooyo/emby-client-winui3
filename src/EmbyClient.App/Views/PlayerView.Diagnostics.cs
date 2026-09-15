@@ -14,7 +14,7 @@ public sealed partial class PlayerView
     private DiagnosticBinding? _previousDiagnostic;
     private PlaybackDiagnosticsDialog? _diagnosticsDialog;
 
-    public bool IsModalOpen => IsQueueOpen || _diagnosticsDialog is not null;
+    public bool IsModalOpen => _queueDialog is not null || _diagnosticsDialog is not null;
 
     public async Task ShowDiagnosticsAsync(XamlRoot xamlRoot, ElementTheme theme, Control? trigger = null)
     {
@@ -135,9 +135,14 @@ public sealed partial class PlayerView
         {
             if (!ReferenceEquals(sender, _coordinator) || args.Operation == "Fallback") return;
             if (args.ErrorCode == "AuthenticationExpired") { ReportExpiredSession(); return; }
+            if (_coordinator?.Status == PlaybackStatus.Failed || PlaybackNotice.IsOpen && PlaybackNotice.Severity == InfoBarSeverity.Error) return;
             PlaybackNotice.Message = "A playback update could not be confirmed by the server. Check your connection if your progress is not saved.";
             PlaybackNotice.Severity = InfoBarSeverity.Warning;
+            PlaybackNotice.Title = "Playback update delayed";
+            PlaybackNotice.IsClosable = true;
+            PlaybackNoticeHost.VerticalAlignment = VerticalAlignment.Top;
             PlaybackNotice.IsOpen = true;
+            UpdateRecoveryControls();
         });
     }
 

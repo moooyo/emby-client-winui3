@@ -7,6 +7,38 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- These brushes retain their identity while the window appearance changes. -->
+            <SolidColorBrush x:Key="DetailCardBackgroundBrush" Color="#0DFFFFFF" />
+            <SolidColorBrush x:Key="DetailCardStrokeBrush" Color="#19000000" />
+            <SolidColorBrush x:Key="DetailDividerBrush" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="DetailChipBackgroundBrush" Color="#15FFFFFF" />
+            <SolidColorBrush x:Key="DetailChipStrokeBrush" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="DetailControlBackgroundBrush" Color="#0FFFFFFF" />
+            <SolidColorBrush x:Key="DetailControlHoverBrush" Color="#15FFFFFF" />
+            <SolidColorBrush x:Key="DetailSelectedBackgroundBrush" Color="#15FFFFFF" />
+            <SolidColorBrush x:Key="DetailSecondaryTextBrush" Color="#C5FFFFFF" />
+            <SolidColorBrush x:Key="DetailContentBackgroundBrush" Color="#202020" />
+            <SolidColorBrush x:Key="DetailBackdropBaseBrush" Color="#191D20" />
+            <SolidColorBrush x:Key="DetailTitleBarBackgroundBrush" Color="Transparent" />
+            <LinearGradientBrush x:Key="DetailBackdropHorizontalMaskBrush" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#C9191D20" Offset="0" />
+                <GradientStop Color="#C4191D20" Offset="0.34" />
+                <GradientStop Color="#8F191D20" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="DetailBackdropVerticalMaskBrush" StartPoint="0,1" EndPoint="0,0">
+                <GradientStop Color="#AD191D20" Offset="0" />
+                <GradientStop Color="#1F191D20" Offset="0.74" />
+                <GradientStop Color="#1F191D20" Offset="1" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="NavigationViewExpandedPaneBackground" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="Transparent" Offset="0" />
+                <GradientStop Color="Transparent" Offset="0.68" />
+                <GradientStop Color="Transparent" Offset="1" />
+            </LinearGradientBrush>
+            <AcrylicBrush x:Key="NavigationViewDefaultPaneBackground" TintColor="#202020"
+                          TintOpacity="0.9" FallbackColor="#202020" />
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#202020" />
+            <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="#19000000" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

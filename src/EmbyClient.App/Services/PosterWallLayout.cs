@@ -6,7 +6,7 @@ public static class PosterWallLayout
 {
     private const double MinimumPosterWidth = 156;
     private const double HorizontalContainerSpace = 20;
-    private const double TextLineSpace = 38;
+    private const double TextLineSpace = 58;
     private const double VerticalContainerSpace = 34;
 
     public static PosterWallMetrics Calculate(double viewportWidth, double rasterizationScale = 1, double textScaleFactor = 1)

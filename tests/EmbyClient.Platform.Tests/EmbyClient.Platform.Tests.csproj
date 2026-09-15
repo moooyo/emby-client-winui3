@@ -8,6 +8,7 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../src/EmbyClient.App/Services/AppDataPaths.cs" Link="Product/AppDataPaths.cs" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -16,6 +17,7 @@
     <Compile Include="../../src/EmbyClient.App/Services/AccountStore.cs" Link="Product/AccountStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/SettingsJsonContext.cs" Link="Product/SettingsJsonContext.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.cs" Link="Product/ConnectionService.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.AccountTransactions.cs" Link="Product/ConnectionService.AccountTransactions.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackDisplayRequest.cs" Link="Product/PlaybackDisplayRequest.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/WindowPlacementStore.cs" Link="Product/WindowPlacementStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
@@ -23,6 +25,7 @@
     <Compile Include="../../src/EmbyClient.App/Services/PosterWallLayout.cs" Link="Product/PosterWallLayout.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackNotificationOwner.cs" Link="Product/PlaybackNotificationOwner.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackItemPreparation.cs" Link="Product/PlaybackItemPreparation.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PlaybackEpisodeNeighbors.cs" Link="Product/PlaybackEpisodeNeighbors.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackTimelineDrag.cs" Link="Product/PlaybackTimelineDrag.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/TransientPlaybackQueue.cs" Link="Product/TransientPlaybackQueue.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackDiagnostics.cs" Link="Product/PlaybackDiagnostics.cs" />

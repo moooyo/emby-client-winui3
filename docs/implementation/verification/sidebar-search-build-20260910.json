@@ -1,0 +1,22 @@
+{
+  "dateUtc": "2026-09-10T07:21:40.5814786Z",
+  "scope": "Sidebar search, separate search destination, explicit watch-status filter, compact page commands and play-queue repair",
+  "buildCommand": "dotnet build src/EmbyClient.App/EmbyClient.App.csproj -c Debug -p:Platform=x64 -o artifacts/previews/search-queue-20260910/ --no-restore --nologo",
+  "nativeDebugBuild": "passed",
+  "errors": 0,
+  "warnings": [
+    "Existing generated WinUIEx Icon CS0618 warning"
+  ],
+  "outputDirectory": "artifacts/previews/search-queue-20260910/",
+  "remoteBehaviorReceipt": "search-watch-status-20260910.json",
+  "nativeQueueReceipt": "queue-dialog-native-20260910.json",
+  "visualVerification": "No full signed-in screenshot review was performed for this build",
+  "sourceSha256": {
+    "src/EmbyClient.App/Views/LibraryView.xaml": "ffd4a6e0bdcf4fb4298eceb70da41e08e19a3a2b7bc0be80313b0938411272aa",
+    "src/EmbyClient.App/Views/LibraryView.xaml.cs": "48ee99d01dceb2fae8befa0df5ab3e8d4b90721229606378f78aba833123538a",
+    "src/EmbyClient.App/Views/LibraryView.Accessibility.cs": "ecaf3ebe18029e4670f64fb4c76d2c21688820bf1af19325362729d431bde8bb",
+    "src/EmbyClient.App/ViewModels/LibraryViewModel.cs": "153a472b0ad08ed88d495016afde5840b1b1bdf4df726039e6a2e91200a1a7b3",
+    "src/EmbyClient.App/MainPage.xaml.cs": "15aa1ac28007984e4199fcd1caf5f661e48ed60a0612b48aed19e579b6ba3a8d",
+    "src/EmbyClient.App/Views/PlaybackQueueDialog.xaml": "c09ea9e09fa0464d411959182e20b4c9cb5895f0a046c0660c2b6b0fa117f68a"
+  }
+}

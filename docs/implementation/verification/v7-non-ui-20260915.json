@@ -1,0 +1,91 @@
+{
+  "schema": "v7-non-ui-completion/v1",
+  "date": "2026-09-15",
+  "status": "passed",
+  "branch": "codex/v7-non-ui-completion",
+  "baseCommit": "0f1f73c93a4b34b811b5a1ef09b5e31ad52af2a7",
+  "scope": "V7 implementation, non-UI validation, and unsigned development packaging",
+  "localVerificationAuthorized": true,
+  "source": {
+    "inputCount": 187,
+    "manifest": "artifacts/ui-v7-non-ui-20260915/final-build-inputs.json",
+    "manifestSha256": "750A0E89A2BEA15618FC48353D2E137802C4C9865C049FEFCF482C8420B90D6C",
+    "unchangedThroughBuildTestsPublishAndPackage": true
+  },
+  "build": {
+    "status": "passed",
+    "command": "dotnet build EmbyClient.slnx -c Release -p:Platform=x64 -p:RestoreLockedMode=true --nologo",
+    "errors": 0,
+    "warnings": [
+      "Existing generated WinUIEx Icon CS0618"
+    ],
+    "log": "artifacts/ui-v7-non-ui-20260915/logs/release-build.log"
+  },
+  "tests": {
+    "passed": 610,
+    "failed": 0,
+    "skipped": 0,
+    "newAccountCancellationCases": 25,
+    "projects": {
+      "Api": 53,
+      "AppState": 46,
+      "MediaTransport": 125,
+      "Platform": 244,
+      "Playback": 142
+    },
+    "receipt": "artifacts/ui-v7-non-ui-20260915/final-test-results.json"
+  },
+  "fixture": {
+    "status": "passed",
+    "lifecycleChecks": 8,
+    "httpChecks": 56,
+    "ownedProcessesStopped": true,
+    "portsReleased": true,
+    "receipt": "artifacts/ui-v7-non-ui-20260915/fixture/evidence-inventory.json",
+    "nativePlaybackExecuted": false
+  },
+  "aot": {
+    "status": "passed",
+    "directory": "artifacts/ui-v7-non-ui-20260915/publish",
+    "executableSha256": "EB6936CEA053A6478E55492135F24C9F446DA1818403F2260796BB6D99C8B568",
+    "executableBytes": 19896320,
+    "executed": false,
+    "sbomComponents": 18,
+    "sbomSchemaValidated": false,
+    "log": "artifacts/ui-v7-non-ui-20260915/logs/publish-aot.log"
+  },
+  "package": {
+    "status": "passed",
+    "path": "artifacts/ui-v7-non-ui-20260915/packages/EmbyClient.Windows_0.1.0.0_x64_unsigned_20260915-071740010-fc77e782.msix",
+    "sha256": "6D60CFA958CA62DDEDC27B3879D2D8CCB76E655A3D9844F971700DD704D42EF5",
+    "bytes": 54938163,
+    "payloadFiles": 332,
+    "resourceKeys": 295,
+    "signed": false,
+    "installationVerified": false,
+    "runtimeVerified": false,
+    "review": "artifacts/packaging/20260915-071740010-fc77e782/package-review.json",
+    "validation": [
+      "Native x64 PE shape",
+      "Required self-contained payload files",
+      "Complete PRI resource key preservation",
+      "MakeAppx semantic validation",
+      "MakeAppx unpack",
+      "All staged file SHA256 round trips",
+      "Source snapshot unchanged",
+      "No package signature"
+    ]
+  },
+  "documentation": [
+    "docs/implementation/user-guide.md",
+    "docs/implementation/fluent-library-ui.md",
+    "docs/implementation/status.md",
+    "HANDOFF.md"
+  ],
+  "nativeUiAcceptance": {
+    "status": "paused-by-user",
+    "performedInThisStage": false,
+    "earlierObservation": "Only the prior managed candidate initial sign-in page",
+    "finalCandidateObserved": false
+  }
+}

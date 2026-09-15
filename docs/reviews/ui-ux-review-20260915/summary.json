@@ -1,0 +1,199 @@
+{
+  "date": "2026-09-15",
+  "status": "complete-with-findings",
+  "productSourceModified": false,
+  "reviewedSurfaces": 30,
+  "sourceFilesMatchedAtEntryAndExit": 73,
+  "nativeCorroboratedIssues": [
+    "First-load error dismissed as empty Favorites",
+    "Deep history return resets collection position",
+    "8 Mbps cap with 20 Mbps selected option",
+    "F11 ignored while Settings panel is open"
+  ],
+  "nativeCorroboratedStrength": "Active-session expiry returns to the correct password sign-in form",
+  "paginationRaceNativeReproduced": false,
+  "historicalTestsNotRepeated": 510,
+  "surfaces": [
+    {
+      "number": 1,
+      "surface": "Shell, title bar, expanded and collapsed navigation",
+      "conclusion": "Retain; needs refinement",
+      "evidenceBoundary": "The actual pane toggle, icon rail, narrow overlay, and OS caption controls are sound. Distinguish history Back from the detail's source-library shortcut. Deep history return also needs B1's position correction."
+    },
+    {
+      "number": 2,
+      "surface": "First-run, saved-account, and manual sign-in",
+      "conclusion": "Retain; needs refinement",
+      "evidenceBoundary": "Keep the focused form, native inputs, and saved-account-first action. Show a direct form when there is no alternative account route; expose a host/address to distinguish duplicate account names. Wide layouts are captured; first-run and long identities remain partly source only."
+    },
+    {
+      "number": 3,
+      "surface": "Connecting, validation, cancellation, and failed credential restoration",
+      "conclusion": "Needs correction; source only for failures",
+      "evidenceBoundary": "Retain inline field errors, ProgressRing, and Cancel. Settings failures have no in-app recovery; failed saved credentials can leave Continue available. Distinguish authentication/decryption failures from transient transport failures and give recovery a deliberate focus target. A1, A2, A4."
+    },
+    {
+      "number": 4,
+      "surface": "Account switching, adding, signing out, removal, and session expiry",
+      "conclusion": "Retain with bounded corrections",
+      "evidenceBoundary": "Safe confirmation defaults and local-only removal semantics are appropriate. Correct partial sign-out messaging and the enabled removal action for an unsaved record. Active-session HTTP 401 recovery worked natively; it does not establish initial saved-token failure handling. A5, A6."
+    },
+    {
+      "number": 5,
+      "surface": "Home and My media",
+      "conclusion": "Needs refinement",
+      "evidenceBoundary": "Quiet library tiles are appropriate. Prioritize Continue watching when present, reduce excess shelf reservations, and avoid showing the same in-progress item twice. Do not remove long-title capacity to make the page denser. B5."
+    },
+    {
+      "number": 6,
+      "surface": "Movie library",
+      "conclusion": "Needs correction; retain layout",
+      "evidenceBoundary": "Keep stable poster sizing, two-line titles, native filtering, and virtualization. History return loses the deep item position; failed-first-load and refresh/pagination transitions need correction. Sparse fixture data does not justify stretching posters. B1, B3, B4."
+    },
+    {
+      "number": 7,
+      "surface": "TV library",
+      "conclusion": "Needs correction; source only for dedicated collection acceptance",
+      "evidenceBoundary": "Reuse the coherent collection structure. Apply the same navigation/state corrections, preserve series identity when episode items occur, and review a realistic populated TV library before final density decisions. B1-B4."
+    },
+    {
+      "number": 8,
+      "surface": "Continue watching shelf and full collection",
+      "conclusion": "Retain shelf; needs correction in full collection",
+      "evidenceBoundary": "The landscape shelf conveys series, episode, and progress. Full poster collections lose the visible series name; retain authoritative server ordering. A direct resume card action is optional product scope. B2."
+    },
+    {
+      "number": 9,
+      "surface": "Next up shelf and full collection",
+      "conclusion": "Needs refinement and information correction",
+      "evidenceBoundary": "Preserve server ordering. Clarify its distinction from Continue watching and deduplicate by item identity and viewing state. Fix episode identity in the full collection. B2, B5."
+    },
+    {
+      "number": 10,
+      "surface": "Recently added and See all",
+      "conclusion": "Needs refinement; source only for grouping boundary",
+      "evidenceBoundary": "Per-library headings are useful. Decide whether See all intentionally expands Home groups into individual entries, and make that behavior predictable. One slow shelf delaying all initial shelves is a conditional response-time opportunity. B7, B10."
+    },
+    {
+      "number": 11,
+      "surface": "Favorites",
+      "conclusion": "Needs correction",
+      "evidenceBoundary": "Reuse the collection and actionable empty copy. A failed request followed by InfoBar dismissal prematurely reports no favorites; this was reproduced. A subsequent successful retry returned a confirmed empty collection, captured separately as native/05. Populated Favorites remains source only in this review. B4."
+    },
+    {
+      "number": 12,
+      "surface": "Search: draft, results, and no results",
+      "conclusion": "Needs correction and refinement",
+      "evidenceBoundary": "Keep explicit Enter submission and the separate draft. Align the input with results; fix episode text and false-empty failure semantics. Late search focus ownership is an unverified interaction risk. B2, B4, B6, B8."
+    },
+    {
+      "number": 13,
+      "surface": "Movie detail",
+      "conclusion": "Needs refinement",
+      "evidenceBoundary": "Retain the real poster, title, quiet metadata, one main playback action, selectable overview, and real cast. Limit overview reading width and reduce fixed empty space. Technical disclosure should disappear when it has no content. D6-D9."
+    },
+    {
+      "number": 14,
+      "surface": "Series detail, season selection, list and card views",
+      "conclusion": "Needs correction and refinement",
+      "evidenceBoundary": "Keep the default episode list, alternate cards, progress, and atomic request commits. Make a pending season switch explicit; the current Play label still identifies the old committed episode. Reduce unnecessary viewport height and expose cast more clearly. D3, D4, D7, D8."
+    },
+    {
+      "number": 15,
+      "surface": "Season detail",
+      "conclusion": "Needs correction; source only",
+      "evidenceBoundary": "Add visible parent-series context and a clear route to that series. Avoid empty technical disclosure. No current dedicated season capture establishes its full visual acceptance. D1, D6."
+    },
+    {
+      "number": 16,
+      "surface": "Episode detail",
+      "conclusion": "Needs correction; source only for current geometry",
+      "evidenceBoundary": "Show the parent series alongside S/E identity and a route to it. Review landscape episode artwork in an appropriate frame; the current shared portrait slot creates a cropping risk, not a natively measured crop defect. D1, D10."
+    },
+    {
+      "number": 17,
+      "surface": "Cast preview and expanded cast",
+      "conclusion": "Retain; needs refinement",
+      "evidenceBoundary": "Real people, roles, initials, and optional expansion are good. Preview one complete row according to width; the fixed four-person default is implemented as previously approved but leaves desktop space unused. Expanded scrolling needs real-content acceptance. D7-D9."
+    },
+    {
+      "number": 18,
+      "surface": "Person profile, biography, and works",
+      "conclusion": "Needs refinement and navigation correction; source only for full flow",
+      "evidenceBoundary": "Preserve independent biography/works loading, retries, and real account-scoped works. Opening a work discards person browsing position; Back returns to media detail, not that exploration context. Long biography and 24+ works remain unverified. D2, D7."
+    },
+    {
+      "number": 19,
+      "surface": "Windowed and narrow player",
+      "conclusion": "Retain; needs refinement",
+      "evidenceBoundary": "Keep integrated title bar, centered transport, and adaptive secondary controls. A coherent local dark viewing surface can connect the video and dock in a light shell. Improve ten-second seek legibility and nonplaying state clarity; do not infer a permanent contrast defect from a loading screenshot."
+    },
+    {
+      "number": 20,
+      "surface": "Fullscreen, visible/hidden controls, reserved control space",
+      "conclusion": "Retain; unverified boundaries",
+      "evidenceBoundary": "Recorded automatic hiding and its focus/error/drag protections are valuable. Real subtitle overlap, high contrast, stationary-pointer behavior, and optional control-space readability need dedicated acceptance."
+    },
+    {
+      "number": 21,
+      "surface": "Playback loading, buffering, ended, failure, and retry",
+      "conclusion": "Needs correction",
+      "evidenceBoundary": "Preserve playback ownership and retry-from-position. Failure copy recommends selection controls that the failed state disables; opening read-only diagnostics/queue also clears the visible error. Clarify windowed waiting and ended states. Native failure recovery remains unverified."
+    },
+    {
+      "number": 22,
+      "surface": "Quick choices: volume, version, audio, subtitles, bitrate",
+      "conclusion": "Needs correction; retain native controls",
+      "evidenceBoundary": "Keep compact native flyouts and honest single-choice text. Effective bitrate and selected option disagree under an 8 Mbps policy, reproduced natively. Name the control Maximum bitrate; multiple real streams and subtitle rendering remain unverified."
+    },
+    {
+      "number": 23,
+      "surface": "Playback settings panel",
+      "conclusion": "Needs correction and refinement",
+      "evidenceBoundary": "F11 does not work with Settings open, despite its advertised shortcut; reproduced. Group current media, viewing behavior, and occasional actions. Narrow overlay focus is an unverified boundary rather than a confirmed keyboard trap."
+    },
+    {
+      "number": 24,
+      "surface": "Library queue dialog: populated, empty, editing",
+      "conclusion": "Retain; targeted refinement",
+      "evidenceBoundary": "The captured native dialog has useful order, Up next, metadata, safe Close, and a quiet empty state. Compact-navigation queue additions need visible feedback. Many entries, text scaling, and nested scrolling remain unverified. Q1."
+    },
+    {
+      "number": 25,
+      "surface": "Player queue panel and automatic episode continuation",
+      "conclusion": "Needs refinement; source only for the panel",
+      "evidenceBoundary": "Match episode identity and ordering cues to the library queue. Separate user-queued items from automatic continuation. Manual actions explicitly say Next in queue; their disabled empty-queue state is not proof that automatic playback is broken. Q2, Q3."
+    },
+    {
+      "number": 26,
+      "surface": "Playback diagnostics: events, empty, snapshot, copy/save",
+      "conclusion": "Retain; needs refinement",
+      "evidenceBoundary": "Keep native dialog, safe snapshot, inline result feedback, and technical disclosure. Lead with current status/recent failure and make the saved export easier to find. Copy/save callbacks were inspected, not executed here. Q6."
+    },
+    {
+      "number": 27,
+      "surface": "First load, background refresh, filtering, and pagination",
+      "conclusion": "Retain architecture; needs correction",
+      "evidenceBoundary": "Keep content-area ProgressRing, retained cards, staged refresh, and request ownership. Do not add a decorative loading banner. Refresh cancellation can trip the view's pagination-stall guard; this is source-confirmed, not natively reproduced. B3."
+    },
+    {
+      "number": 28,
+      "surface": "Confirmed empty results, unresolved load errors, and unavailable playback",
+      "conclusion": "Needs correction",
+      "evidenceBoundary": "Distinguish a successful empty query from a dismissed failure. Keep tailored empty copy and Clear watch filter. Explain known playback restrictions/unavailable media in the action region rather than silently removing its purpose. B4, D5."
+    },
+    {
+      "number": 29,
+      "surface": "Responsive layout, light/dark, long metadata, and contrast themes",
+      "conclusion": "Retain captured base; unverified boundary",
+      "evidenceBoundary": "Captured narrow and dark states work structurally. Revisit detail reflow and fixed panel reservations with realistic long content. Dark theme is not a contrast-theme test; no whole-app 200% text or high-contrast acceptance is claimed."
+    },
+    {
+      "number": 30,
+      "surface": "Keyboard, focus continuity, UI Automation, and Narrator",
+      "conclusion": "Unverified boundary; targeted corrections required",
+      "evidenceBoundary": "Native controls, names, Escape, and focus hooks are positive. Deep return loses the item anchor; asynchronous auth/search focus, reused-card names, and narrow overlay traversal need targeted native checks. UIA metadata alone does not certify Narrator usability."
+    }
+  ],
+  "report": "docs/reviews/ui-ux-review-20260915.md"
+}

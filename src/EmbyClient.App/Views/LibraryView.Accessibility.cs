@@ -48,10 +48,9 @@ public sealed partial class LibraryView
         foreach (var shelf in _loadedShelves)
             if (shelf.Tag is MediaShelfViewModel model) SizeHomeShelf(shelf, model.IsLandscape);
         foreach (var tile in _loadedLibraryTiles) SizeLibraryTile(tile);
-        var tileScale = Math.Min(1.5, _textScaleFactor);
-        MyMediaGrid.MinHeight = 124 * tileScale + 28;
-        CastGrid.MinHeight = 248 + 38 * (_textScaleFactor - 1);
+        MyMediaGrid.Height = Math.Max(64, 44 * _textScaleFactor + 20) + 20;
         UpdateDetailShelfSize();
+        UpdateDetailHeroLayout(DetailHero.ActualWidth);
         QueueViewportUpdate();
     }
 
@@ -69,16 +68,35 @@ public sealed partial class LibraryView
 
     private void SizeHomeShelf(GridView shelf, bool landscape)
     {
-        shelf.Height = double.NaN;
-        shelf.MinHeight = (landscape ? 232 : 312) + 38 * (_textScaleFactor - 1);
+        // The outer page scrolls vertically, so the horizontal virtualized viewport must be bounded.
+        shelf.Height = (landscape ? 228 : 324) + 58 * (_textScaleFactor - 1);
     }
 
     private void UpdateDetailShelfSize()
     {
-        DetailItemsGrid.Height = double.NaN;
-        DetailItemsGrid.MinHeight = ViewModel.DetailItemsAreEpisodes
-            ? 328 + 112 * (_textScaleFactor - 1)
-            : 312 + 38 * (_textScaleFactor - 1);
+        EpisodeLayoutButton.Visibility = ViewModel.DetailItemsAreEpisodes ? Visibility.Visible : Visibility.Collapsed;
+        ToolTipService.SetToolTip(EpisodeLayoutButton, UseEpisodeList ? "Switch to episode cards" : "Switch to episode list");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(EpisodeLayoutButton, UseEpisodeList ? "Episode list view" : "Episode card view");
+        var itemTemplate = (DataTemplate)Resources[UseEpisodeList ? "EpisodeRowTemplate" : ViewModel.DetailItemsAreEpisodes ? "EpisodeCardTemplate" : "MediaCardTemplate"];
+        if (!ReferenceEquals(DetailItemsGrid.ItemTemplate, itemTemplate)) DetailItemsGrid.ItemTemplate = itemTemplate;
+        var containerStyle = (Style)Resources[UseEpisodeList ? "EpisodeRowContainerStyle" : "ShelfContainerStyle"];
+        if (!ReferenceEquals(DetailItemsGrid.ItemContainerStyle, containerStyle)) DetailItemsGrid.ItemContainerStyle = containerStyle;
+        var panelTemplate = (ItemsPanelTemplate)Resources[UseEpisodeList ? "DetailVerticalPanelTemplate" : "DetailHorizontalPanelTemplate"];
+        if (!ReferenceEquals(DetailItemsGrid.ItemsPanel, panelTemplate))
+        {
+            // Select the orientation before the native panel is created, including while the shelf is hidden.
+            DetachCollectionScroller(_detailItemsScroller);
+            _detailItemsScroller = null;
+            DetailItemsGrid.ItemsPanel = panelTemplate;
+            _resetDetailItemsScroll = true;
+            QueueViewportUpdate();
+        }
+        ScrollViewer.SetHorizontalScrollMode(DetailItemsGrid, UseEpisodeList ? ScrollMode.Disabled : ScrollMode.Enabled);
+        ScrollViewer.SetHorizontalScrollBarVisibility(DetailItemsGrid, UseEpisodeList ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
+        ScrollViewer.SetVerticalScrollMode(DetailItemsGrid, UseEpisodeList ? ScrollMode.Enabled : ScrollMode.Disabled);
+        ScrollViewer.SetVerticalScrollBarVisibility(DetailItemsGrid, UseEpisodeList ? ScrollBarVisibility.Auto : ScrollBarVisibility.Disabled);
+        DetailItemsGrid.Height = UseEpisodeList ? Math.Clamp(ViewModel.Items.Count, 1, 5) * (136 + 100 * (_textScaleFactor - 1))
+            : ViewModel.DetailItemsAreEpisodes ? 328 + 112 * (_textScaleFactor - 1) : 332 + 58 * (_textScaleFactor - 1);
     }
 
     private void HomeShelf_Unloaded(object sender, RoutedEventArgs args)
@@ -99,7 +117,7 @@ public sealed partial class LibraryView
     {
         var scale = Math.Min(1.5, _textScaleFactor);
         tile.Width = 220 * scale;
-        tile.Height = 124 * scale;
+        tile.Height = Math.Max(64, 44 * _textScaleFactor + 20);
     }
 
     private void LibraryTile_Unloaded(object sender, RoutedEventArgs args)
@@ -109,13 +127,22 @@ public sealed partial class LibraryView
         tile.Unloaded -= LibraryTile_Unloaded;
     }
 
-    public void FocusNavigation() => HomeNavigationItem.Focus(FocusState.Programmatic);
+    public void FocusNavigation()
+    {
+        if ((LibraryNavigation.DisplayMode != NavigationViewDisplayMode.Minimal || LibraryNavigation.IsPaneOpen)
+            && HomeNavigationItem.Focus(FocusState.Programmatic)) return;
+        if (ViewModel.HomeLibrariesVisibility == Visibility.Visible && MyMediaGrid.Focus(FocusState.Programmatic)) return;
+        PageOptionsButton.Focus(FocusState.Programmatic);
+    }
 
     private void FocusBrowseDestination()
     {
+        if (_historyRestorePending) return;
+        if (ViewModel.IsPerson) { FocusPersonDestination(); return; }
         if (ViewModel.HasDetails) FocusCurrentDetails();
         else if (ViewModel.IsHome) FocusNavigation();
-        else if (ViewModel.HasItems) MediaGrid.Focus(FocusState.Programmatic);
-        else SearchBox.Focus(FocusState.Programmatic);
+        else if (ViewModel.HasItems && MediaGrid.Focus(FocusState.Programmatic)) return;
+        else if (ViewModel.IsSearch) FocusSearchInput(FocusState.Programmatic);
+        else PageOptionsButton.Focus(FocusState.Programmatic);
     }
 }
