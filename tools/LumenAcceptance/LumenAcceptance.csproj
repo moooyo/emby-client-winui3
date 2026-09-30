@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RootNamespace>EmbyClient.LumenAcceptance</RootNamespace>
+    <AssemblyName>EmbyClient.LumenAcceptance</AssemblyName>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts/**;bin/**;obj/**;Tests/**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/EmbyClient.App/Services/AccountStore.cs" Link="Product/AccountStore.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/AppDataPaths.cs" Link="Product/AppDataPaths.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/SettingsJsonContext.cs" Link="Product/SettingsJsonContext.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.cs" Link="Product/ConnectionService.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.AccountTransactions.cs" Link="Product/ConnectionService.AccountTransactions.cs" />
+    <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,10 +1,10 @@
 # Third-party source notices
 
-Recorded on 2026-09-09. The upstream files in this directory are retained in their original form. This index and `manifest.json` describe their provenance without changing their license text or selecting a license for the repository's own code.
+The runtime-package notice snapshot was recorded on 2026-09-09; the Lumen font and icon entries were added on 2026-09-30. The upstream files in this directory are retained in their original form. This index and `manifest.json` describe their provenance without changing their license text or selecting a license for the repository's own code.
 
-The files belong to the product's resolved NuGet runtime/deployment graph and its NativeAOT/Windows projection runtime. The corresponding package versions and the distinction between runtime, build, test, and probe dependencies are recorded in [dependency-inventory.md](../../docs/implementation/dependency-inventory.md).
+The runtime notices belong to the product's resolved NuGet runtime/deployment graph and its NativeAOT/Windows projection runtime. The corresponding package versions and the distinction between runtime, build, test, and probe dependencies are recorded in [dependency-inventory.md](../../docs/implementation/dependency-inventory.md). The separate Lumen entries below describe bundled static fonts and recolored Lucide SVG icons; they are not NuGet packages.
 
-`manifest.json` lists every retained file, its upstream package archive or exact source URL, and its SHA-256 hash. Files copied from restored NuGet packages also record the source-file hash. WinUIEx's license is taken from the repository commit in its 2.9.3 nuspec. The C#/WinRT license is taken from the commit encoded in the bundled `WinRT.Runtime.dll` product version. The Windows SDK license is the unmodified RTF returned by the targeting pack's `licenseUrl`, with the final download URL retained in the manifest.
+`manifest.json` lists the retained notice files and the Lumen provenance READMEs, their upstream package archives/exact source URLs or local-document provenance, and their SHA-256 hashes. This index and the manifest itself are not recursively included in that inventory. Files copied from restored NuGet packages also record the source-file hash. WinUIEx's license is taken from the repository commit in its 2.9.3 nuspec. The C#/WinRT license is taken from the commit encoded in the bundled `WinRT.Runtime.dll` product version. The Windows SDK license is the unmodified RTF returned by the targeting pack's `licenseUrl`, with the final download URL retained in the manifest.
 
 Copy this complete directory, preserving the versioned subdirectories, to `licenses/third-party/` in the product publish directory before packaging. Keep the index and manifest with the upstream texts. This directory intentionally contains no LibVLC, SharpDX, test-framework, or SDK-tool payload: those development/probe dependencies are not in the product runtime graph.
 
@@ -45,3 +45,29 @@ See [manifest.json](manifest.json) for the authoritative file list and direct so
 | WinUIEx 2.9.3 | [WinUIEx-2.9.3/LICENSE](WinUIEx-2.9.3/LICENSE) | [Upstream](https://raw.githubusercontent.com/dotMorten/WinUIEx/72f2975d2a237c0d7ad1113fe617d5894e66feb6/LICENSE) |
 | Microsoft.Windows.SDK.NET.Ref 10.0.26100.57 | [Microsoft.Windows.SDK.NET.Ref-10.0.26100.57/sdk_license.rtf](Microsoft.Windows.SDK.NET.Ref-10.0.26100.57/sdk_license.rtf) | [Upstream](https://aka.ms/WinSDKLicenseURL) |
 | CsWinRT 2.2.0.48161 | [CsWinRT-2.2.0.48161/LICENSE](CsWinRT-2.2.0.48161/LICENSE) | [Upstream](https://raw.githubusercontent.com/microsoft/CsWinRT/8649ee3eeb2445ca2a36d80d878ef60b96a6c65d/LICENSE) |
+
+## Lumen Static Assets
+
+The fonts are unmodified variable TrueType files from the pinned Google Fonts
+revision; only their local filenames differ. Their SHA-256 values, family names,
+weight axes, and both font-internal and upstream metadata copyright notices are
+retained in [Lumen-Fonts/README.md](Lumen-Fonts/README.md). Preserve that README
+with both OFL texts instead of dropping the supplementary copyright provenance.
+
+The SVGs are Lucide artwork despite the supplied handoff's Fluent-shaped
+filenames. The handoff changed color, stroke width, and some filled variants and
+did not identify an exact Lucide release. The complete upstream notice includes
+both ISC and the Feather-derived icon list/MIT notice. See
+[Lumen-Lucide/README.md](Lumen-Lucide/README.md); do not omit its MIT portion.
+
+| Component | Retained file | Source |
+| --- | --- | --- |
+| Noto Serif SC | [Lumen-Fonts/NotoSerifSC-OFL.txt](Lumen-Fonts/NotoSerifSC-OFL.txt) | [Pinned Google Fonts OFL](https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/notoserifsc/OFL.txt) |
+| Manrope | [Lumen-Fonts/Manrope-OFL.txt](Lumen-Fonts/Manrope-OFL.txt) | [Pinned Google Fonts OFL](https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/manrope/OFL.txt) |
+| Noto Serif SC and Manrope | [Lumen-Fonts/README.md](Lumen-Fonts/README.md) | Local asset provenance, including the pinned binary/metadata source links |
+| Lucide SVG icons | [Lumen-Lucide/ISC.txt](Lumen-Lucide/ISC.txt) | [Complete pinned Lucide LICENSE](https://raw.githubusercontent.com/lucide-icons/lucide/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE), including Feather/MIT notices |
+| Lucide SVG icons | [Lumen-Lucide/README.md](Lumen-Lucide/README.md) | Local handoff and complete-license provenance |
+
+These entries supplement the package notice inventory, not the NuGet-only
+CycloneDX component graph. The app project copies the whole notice tree and all
+`Assets/Lumen` files to its output; check the actual published payload separately.

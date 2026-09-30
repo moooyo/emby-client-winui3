@@ -26,7 +26,7 @@ public sealed partial class LibraryViewModel
         return new(_location, Items.ToArray(), HomeRows.ToArray(), Seasons.ToArray(), Detail, PlayableDetail,
             NextEpisode, SelectedSeason, Title, Subtitle, EmptyMessage, ErrorMessage, HasError, HasItems,
             HasMore, HasDetails, DetailItemsAreEpisodes, _nextIndex, _loadOutcome, ViewportState, ActivePerson,
-            _searchOriginSnapshot);
+            _searchOriginSnapshot, TotalItemsCount, CaptureLumenSearchPeopleState());
     }
 
     private Task RestoreBrowseStateAsync(BrowseSnapshot state)
@@ -45,6 +45,7 @@ public sealed partial class LibraryViewModel
         ActivePerson = state.Person;
         Title = state.Title;
         Subtitle = state.Subtitle;
+        TotalItemsCount = state.TotalCount;
         EmptyMessage = state.EmptyMessage;
         ErrorMessage = state.ErrorMessage;
         HasError = state.HasError;
@@ -65,6 +66,7 @@ public sealed partial class LibraryViewModel
         HasItems = state.HasItems;
         HasMore = state.HasMore;
         _nextIndex = state.NextIndex;
+        RestoreLumenSearchPeopleState(state.SearchPeople);
         SetLoadOutcome(state.Outcome);
         ViewportState = state.Viewport;
         IsBusy = false;
@@ -73,7 +75,7 @@ public sealed partial class LibraryViewModel
         NotifyDetailContext();
         NotifyPersonState();
         BrowseStateRestored?.Invoke(this, EventArgs.Empty);
-        return Task.CompletedTask;
+        return ResumeLumenRestoredSearchAsync(state.Outcome);
     }
 
     public Task ShowPersonAsync(PersonCardViewModel person, CancellationToken cancellationToken = default)
@@ -103,8 +105,10 @@ public sealed partial class LibraryViewModel
             {
                 yield return current.Detail;
                 yield return current.Playable;
+                if (current.NextEpisode is { } nextEpisode) yield return nextEpisode;
                 foreach (var item in current.Items.Concat(current.Seasons).Concat(current.Rows.SelectMany(row => row.Items)))
                     yield return item;
+                foreach (var person in current.SearchPeople.Items) yield return person;
             }
         }
         foreach (var item in _people.SelectMany(person => person.Works)) yield return item;
@@ -115,5 +119,6 @@ public sealed partial class LibraryViewModel
         MediaCardViewModel Playable, MediaCardViewModel? NextEpisode, MediaCardViewModel? Season,
         string Title, string Subtitle, string EmptyMessage, string ErrorMessage, bool HasError,
         bool HasItems, bool HasMore, bool HasDetails, bool Episodes, int NextIndex, PageLoadOutcome Outcome,
-        BrowseViewportState Viewport, PersonDetailsViewModel? Person, BrowseSnapshot? SearchOrigin);
+        BrowseViewportState Viewport, PersonDetailsViewModel? Person, BrowseSnapshot? SearchOrigin,
+        int? TotalCount, LumenSearchPeopleSnapshot SearchPeople);
 }

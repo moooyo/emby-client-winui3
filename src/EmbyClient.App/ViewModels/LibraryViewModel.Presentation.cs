@@ -180,9 +180,10 @@ public sealed partial class LibraryViewModel
         return await Task.WhenAll(requests.Select((request, index) => LoadShelfAsync(request, index)));
     }
 
-    private void ApplyHomeShelves(IEnumerable<HomeShelfResult> results)
+    private void ApplyHomeShelves(IEnumerable<HomeShelfResult> results, long userDataRevision)
     {
-        var available = results.ToArray();
+        var available = results.Select(result => result.Shelf.Section == HomeSection.ContinueWatching
+            ? result with { Items = PreserveHiddenResumeItems(result.Items, userDataRevision) } : result).ToArray();
         var resumeIds = available.Where(result => result.Shelf.Section == HomeSection.ContinueWatching)
             .SelectMany(result => result.Failure is null ? result.Items : HomeRows
                 .Where(row => row.Section == HomeSection.ContinueWatching).SelectMany(row => row.Items).Select(card => card.Item))
@@ -226,7 +227,7 @@ public sealed partial class LibraryViewModel
             return () =>
             {
                 ApplyHomeShelves(shelves.Select(shelf => shelf with
-                    { Items = PreserveNewerUserData(shelf.Items, userDataRevision) }));
+                    { Items = PreserveNewerUserData(shelf.Items, userDataRevision) }), userDataRevision);
                 if (failures.Length == 0) return;
                 ShowError(failures[0]);
                 ErrorMessage = "Some home sections could not be refreshed. Previously loaded content is still shown.";
@@ -235,7 +236,11 @@ public sealed partial class LibraryViewModel
         if (location.Kind != LocationKind.Item)
         {
             var page = await QueryLoadedWindowAsync(api, location, loadedCount, cancellationToken);
-            return () => ApplyPageWindow(page with { Items = PreserveNewerUserData(page.Items, userDataRevision) });
+            return () =>
+            {
+                var preserved = PreserveHiddenResumeWindow(location, page, userDataRevision);
+                ApplyPageWindow(preserved with { Items = PreserveNewerUserData(preserved.Items, userDataRevision) });
+            };
         }
 
         var item = await api.GetItemAsync(location.ItemId!, cancellationToken);
@@ -284,7 +289,7 @@ public sealed partial class LibraryViewModel
                 EmptyMessage = selected is null ? "No episodes are available for this series." : "No episodes are available in this season.";
                 UpdateCount(episodes.TotalRecordCount);
                 OnPropertyChanged(nameof(SeasonSelectorVisibility));
-                _ = UpdateSeriesRecommendationAsync(resumeTask, nextTask, pageVersion, seasonVersion, cancellationToken);
+                StartSeriesRecommendation(resumeTask, nextTask, pageVersion, seasonVersion, userDataRevision, cancellationToken);
             };
         }
         if (item.Type == "Season" && (item.SeriesId ?? location.SeriesId) is { } seriesId)

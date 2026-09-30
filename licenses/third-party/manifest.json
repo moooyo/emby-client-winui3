@@ -294,5 +294,60 @@
     "Sha256": "9906940F61B1F0B533FA7D99BAF55178B2808FBE113EA51DFBFAD8572CCD5F2B",
     "CopiedVerbatim": true,
     "RetrievedUtc": "2026-09-08T23:00:22.6647806+00:00"
+  },
+  {
+    "ComponentId": "Noto Serif SC",
+    "ComponentKind": "StaticFontAsset",
+    "File": "Lumen-Fonts/NotoSerifSC-OFL.txt",
+    "AssetFile": "src/EmbyClient.App/Assets/Lumen/Fonts/NotoSerifSC-Variable.ttf",
+    "Source": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/notoserifsc/OFL.txt",
+    "SourceCommit": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+    "Sha256": "5E0DA210FB04058A8C0087985D2D456B931C2579811A49655721D3CF0C36B6D6",
+    "SourceSha256": "5E0DA210FB04058A8C0087985D2D456B931C2579811A49655721D3CF0C36B6D6",
+    "CopiedVerbatim": true,
+    "VerifiedOn": "2026-09-30"
+  },
+  {
+    "ComponentId": "Manrope",
+    "ComponentKind": "StaticFontAsset",
+    "File": "Lumen-Fonts/Manrope-OFL.txt",
+    "AssetFile": "src/EmbyClient.App/Assets/Lumen/Fonts/Manrope-Variable.ttf",
+    "Source": "https://raw.githubusercontent.com/google/fonts/23e54b51ddffbc7713c583748e3bd86f62b1fa4a/ofl/manrope/OFL.txt",
+    "SourceCommit": "23e54b51ddffbc7713c583748e3bd86f62b1fa4a",
+    "Sha256": "58172E0C0FAC2CDA8A37B348164BB55E44B0E69051E557E92B1D3F6910141F7B",
+    "SourceSha256": "58172E0C0FAC2CDA8A37B348164BB55E44B0E69051E557E92B1D3F6910141F7B",
+    "CopiedVerbatim": true,
+    "VerifiedOn": "2026-09-30"
+  },
+  {
+    "ComponentId": "Noto Serif SC and Manrope",
+    "ComponentKind": "LocalAssetProvenance",
+    "File": "Lumen-Fonts/README.md",
+    "Source": "Local repository documentation with pinned Google Fonts binary, metadata, and license links.",
+    "Sha256": "8338A84D0FFBA977FBB74F7D5513FC6F52BDD7E4FB1AFE9501D8C8A210432CC0",
+    "CopiedVerbatim": false,
+    "VerifiedOn": "2026-09-30"
+  },
+  {
+    "ComponentId": "Lucide SVG Icons",
+    "ComponentKind": "ModifiedStaticIconAssets",
+    "File": "Lumen-Lucide/ISC.txt",
+    "AssetDirectory": "src/EmbyClient.App/Assets/Lumen/Icons",
+    "Source": "https://raw.githubusercontent.com/lucide-icons/lucide/e715245d62667c800e7f54c94b1b023692e900a3/LICENSE",
+    "SourceCommit": "e715245d62667c800e7f54c94b1b023692e900a3",
+    "Provenance": "Complete official notice including ISC and Feather/MIT. The modified supplied icons do not identify an exact Lucide release.",
+    "Sha256": "B495047BD93A9B06913511076F504DABA17D5BBEB3E0650F3BB53A4220329C57",
+    "SourceSha256": "B495047BD93A9B06913511076F504DABA17D5BBEB3E0650F3BB53A4220329C57",
+    "CopiedVerbatim": true,
+    "VerifiedOn": "2026-09-30"
+  },
+  {
+    "ComponentId": "Lucide SVG Icons",
+    "ComponentKind": "LocalAssetProvenance",
+    "File": "Lumen-Lucide/README.md",
+    "Source": "Local repository documentation describing handoff modifications and complete upstream notice provenance.",
+    "Sha256": "81F887D3F51826636F03D453E43938B3CC83B2F6FB15F37125160FA4F64D2E22",
+    "CopiedVerbatim": false,
+    "VerifiedOn": "2026-09-30"
   }
 ]

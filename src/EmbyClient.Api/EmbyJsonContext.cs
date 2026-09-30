@@ -14,6 +14,7 @@ namespace EmbyClient.Api;
 [JsonSerializable(typeof(AuthenticateByNameRequest))]
 [JsonSerializable(typeof(BaseItemDto))]
 [JsonSerializable(typeof(BaseItemDto[]))]
+[JsonSerializable(typeof(NameLongIdPair[]))]
 [JsonSerializable(typeof(QueryResult<BaseItemDto>))]
 [JsonSerializable(typeof(UserItemDataDto))]
 [JsonSerializable(typeof(PlaybackInfoRequest))]
@@ -24,4 +25,9 @@ namespace EmbyClient.Api;
 [JsonSerializable(typeof(LiveStreamRequest))]
 [JsonSerializable(typeof(LiveStreamResponse))]
 [JsonSerializable(typeof(ClientCapabilities))]
+[JsonSerializable(typeof(CollectionCreationResult))]
+[JsonSerializable(typeof(BaseRefreshRequest))]
+[JsonSerializable(typeof(ItemMetadataUpdate))]
+[JsonSerializable(typeof(UserConfiguration))]
+[JsonSerializable(typeof(System.Text.Json.JsonElement))]
 public partial class EmbyJsonContext : JsonSerializerContext;

@@ -7,7 +7,8 @@ internal sealed class PlaybackTestContext : IAsyncDisposable
 {
     private int negotiationCount;
 
-    public PlaybackTestContext(TimeProvider? timeProvider = null, TimeSpan? progressInterval = null, Uri? apiRoot = null)
+    public PlaybackTestContext(TimeProvider? timeProvider = null, TimeSpan? progressInterval = null, Uri? apiRoot = null,
+        bool enableExternalWebVtt = false)
     {
         Http = new HttpClient(Handler) { Timeout = Timeout.InfiniteTimeSpan };
         Api = new EmbyApiClient(Http, apiRoot ?? new Uri("https://server.example/emby/"),
@@ -15,6 +16,7 @@ internal sealed class PlaybackTestContext : IAsyncDisposable
         Handler.RespondAsync = (request, _) => Task.FromResult(Respond(request));
         Coordinator = new PlaybackCoordinator(Api, Engine, new PlaybackCoordinatorOptions
         {
+            EnableExternalWebVtt = enableExternalWebVtt,
             ProgressInterval = progressInterval ?? TimeSpan.FromMinutes(5),
             CleanupTimeout = TimeSpan.FromSeconds(3),
             ReportTimeout = TimeSpan.FromSeconds(3)

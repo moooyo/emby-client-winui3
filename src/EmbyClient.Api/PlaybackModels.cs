@@ -52,6 +52,7 @@ public sealed record MediaSourceInfo
     public int? DefaultAudioStreamIndex { get; init; }
     public int? DefaultSubtitleStreamIndex { get; init; }
     public MediaStream[] MediaStreams { get; init; } = [];
+    public ChapterInfo[]? Chapters { get; init; }
     public bool? RequiresOpening { get; init; }
     public string? OpenToken { get; init; }
     public bool? RequiresClosing { get; init; }

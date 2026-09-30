@@ -5,16 +5,18 @@ using EmbyClient.Api;
 
 namespace EmbyClient.FixtureServer;
 
-internal sealed class FixtureState
+internal sealed partial class FixtureState
 {
-    public string ServerId => Options.LargeLibraryItems > 0 ? $"synthetic-large-server-{Options.LargeLibraryItems}" : "synthetic-server-0001";
+    public string ServerId => Options.LumenDesignCatalog ? "synthetic-lumen-design-server-0001"
+        : Options.LumenCatalog ? "synthetic-lumen-server-0001"
+        : Options.LargeLibraryItems > 0 ? $"synthetic-large-server-{Options.LargeLibraryItems}" : "synthetic-server-0001";
     public const string UserId = "synthetic-user-demo";
     public long DurationTicks => Options.Media.DurationTicks;
     private readonly object _gate = new();
     private readonly Dictionary<string, BaseItemDto> _items;
     private readonly Dictionary<string, UserItemDataDto> _userData = [];
     private readonly ConcurrentDictionary<string, string> _tokens = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, string> _playSessions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, FixturePlaySession> _playSessions = new(StringComparer.Ordinal);
     private readonly List<FixturePlaybackEvent> _events = [];
     private readonly List<FixtureLibraryQuery> _queries = [];
     private readonly Dictionary<string, byte[]> _posters = [];
@@ -35,12 +37,14 @@ internal sealed class FixtureState
     private int _canceledImages;
     private long _imageBytes;
     private int _injectedPlaybackInfoFailures;
+    private readonly FixtureArtwork? _artwork;
 
     public FixtureState(FixtureOptions options)
     {
         Options = options;
         _mediaLength = new FileInfo(options.MediaPath).Length;
         _items = CreateCatalog().ToDictionary(item => item.Id!, StringComparer.Ordinal);
+        _artwork = options.ArtworkDirectory is null ? null : new FixtureArtwork(options.ArtworkDirectory, _artworkSelections.Values);
         BoundaryControls = new FixtureBoundaryControls(options.BoundaryControls, _items.Keys.ToHashSet(StringComparer.Ordinal));
         byte[][] largePosters = options.LargeLibraryItems == 0 ? [] : Enumerable.Range(0, 24)
             .Select(index => FixturePng.Create(480, 720, (40 + index * 31 % 160, 45 + index * 47 % 155, 60 + index * 23 % 140)))
@@ -60,9 +64,11 @@ internal sealed class FixtureState
             else
             {
                 var color = item.Id == "1001" ? (48, 108, 183) : item.Id == "1002" ? (163, 70, 103) : (39, 137, 111);
-                _posters[item.Id] = FixturePng.Create(240, 360, color);
+                if (!options.LumenCatalog)
+                    _posters[item.Id] = FixturePng.Create(240, item.Type == "Person" ? 240 : 360, color);
             }
         }
+        if (options.LumenCatalog) SeedLumenUserData();
     }
 
     public FixtureOptions Options { get; }
@@ -70,7 +76,8 @@ internal sealed class FixtureState
 
     public PublicSystemInfo PublicInfo => new()
     {
-        Id = ServerId, ServerName = Options.LargeLibraryItems > 0
+        Id = ServerId, ServerName = Options.LumenDesignCatalog ? "SYNTHETIC Lumen Design Catalog"
+            : Options.LumenCatalog ? "SYNTHETIC Lumen Library" : Options.LargeLibraryItems > 0
             ? $"SYNTHETIC Large Library ({Options.LargeLibraryItems})" : "SYNTHETIC Emby Client Fixture", Version = "synthetic-1.0",
         LocalAddress = $"http://127.0.0.1:{Options.Port}", LocalAddresses = [$"http://127.0.0.1:{Options.Port}"]
     };
@@ -84,13 +91,14 @@ internal sealed class FixtureState
     public UserDto User => new()
     {
         Id = UserId, Name = "demo (synthetic)", ServerId = ServerId, HasPassword = true,
-        PrimaryImageTag = "synthetic-poster-v1",
-        Configuration = new UserConfiguration { AudioLanguagePreference = "eng", SubtitleMode = "None" },
+        PrimaryImageTag = Options.LumenCatalog ? "synthetic-user-v1" : "synthetic-poster-v1",
+        Configuration = _configuration,
         Policy = new UserPolicy
         {
             IsDisabled = false, EnableMediaPlayback = true, EnableAudioPlaybackTranscoding = false,
             EnableVideoPlaybackTranscoding = false, EnablePlaybackRemuxing = false,
-            EnableContentDownloading = false, EnableLiveTvAccess = false
+            EnableContentDownloading = false, EnableLiveTvAccess = false, IsAdministrator = Options.LumenCatalog,
+            EnableUserPreferenceAccess = true, EnableSubtitleManagement = false
         }
     };
 
@@ -159,16 +167,17 @@ internal sealed class FixtureState
         }
     }
 
-    public QueryResult<BaseItemDto> Views() => new()
+    public QueryResult<BaseItemDto> Views()
     {
-        Items = Options.LargeLibraryItems > 0
-            ? [Item("movies")!, Item("shows")!, Item("large-movies")!] : [Item("movies")!, Item("shows")!],
-        TotalRecordCount = Options.LargeLibraryItems > 0 ? 3 : 2
-    };
+        var views = Options.LumenCatalog ? new[] { Item("movies")!, Item("shows")!, Item("collections")! }
+            : Options.LargeLibraryItems > 0 ? new[] { Item("movies")!, Item("shows")!, Item("large-movies")! }
+            : [Item("movies")!, Item("shows")!];
+        return new QueryResult<BaseItemDto> { Items = views, TotalRecordCount = views.Length };
+    }
 
     public QueryResult<BaseItemDto> Query(IQueryCollection query, string? parentOverride = null,
         string? typeOverride = null, bool resume = false, bool nextUp = false, bool forceRecursive = false,
-        string operation = "Items")
+        string operation = "Items", IEnumerable<string>? idsOverride = null, bool facet = false)
     {
         lock (_gate)
         {
@@ -176,30 +185,47 @@ internal sealed class FixtureState
             var parent = parentOverride ?? Value(query, "ParentId");
             if (!string.IsNullOrEmpty(parent))
             {
-                items = forceRecursive || Boolean(query, "Recursive") == true
+                items = _collectionMembers.TryGetValue(parent, out var members) ? items.Where(item => members.Contains(item.Id!))
+                    : forceRecursive || Boolean(query, "Recursive") == true
                     ? items.Where(item => IsDescendant(item, parent))
                     : items.Where(item => item.ParentId == parent);
             }
-            var types = typeOverride is null ? Values(query, "IncludeItemTypes") : [typeOverride];
+            var types = typeOverride is null ? Values(query, "IncludeItemTypes") : typeOverride.Split(',');
+            if (Options.LumenCatalog && operation == "Latest")
+                types = types.Select(type => type.Equals("Series", StringComparison.OrdinalIgnoreCase) ? "Episode" : type).ToArray();
             if (types.Length > 0) items = items.Where(item => types.Contains(item.Type, StringComparer.OrdinalIgnoreCase));
+            else if (Options.LumenCatalog) items = items.Where(item => item.Type is not ("Person" or "Genre" or "Trailer"));
+            if (idsOverride is not null)
+            {
+                var selectedIds = idsOverride.ToHashSet(StringComparer.Ordinal);
+                items = items.Where(item => selectedIds.Contains(item.Id!));
+            }
             var mediaTypes = Values(query, "MediaTypes");
-            if (mediaTypes.Length > 0) items = items.Where(item => mediaTypes.Contains(item.MediaType, StringComparer.OrdinalIgnoreCase));
+            if (!facet && mediaTypes.Length > 0) items = items.Where(item => mediaTypes.Contains(item.MediaType, StringComparer.OrdinalIgnoreCase));
             var search = Value(query, "SearchTerm");
-            if (!string.IsNullOrWhiteSpace(search)) items = items.Where(item => item.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) == true);
+            if (!string.IsNullOrWhiteSpace(search)) items = items.Where(item => MatchesSearch(item, search));
             var ids = Values(query, "Ids");
             if (ids.Length > 0) items = items.Where(item => ids.Contains(item.Id, StringComparer.Ordinal));
+            if (!facet) items = ApplyMediaFilters(items, query);
+            items = ApplyNameFilters(items, query);
             var isFavorite = Boolean(query, "IsFavorite");
             if (isFavorite.HasValue) items = items.Where(item => _userData[item.Id!].IsFavorite == isFavorite);
             var isPlayed = Boolean(query, "IsPlayed");
             if (isPlayed.HasValue) items = items.Where(item => _userData[item.Id!].Played == isPlayed);
-            if (resume) items = items.Where(item => item.IsFolder != true && _userData[item.Id!].PlaybackPositionTicks > 0 && _userData[item.Id!].Played != true);
+            if (resume) items = items.Where(item => IsPlayable(item) && !_hiddenResume.Contains(item.Id!)
+                && _userData[item.Id!].PlaybackPositionTicks > 0 && _userData[item.Id!].Played != true);
             if (nextUp) items = items.Where(item => item.Type == "Episode" && _userData[item.Id!].Played != true);
             var seriesId = Value(query, "SeriesId");
             if (!string.IsNullOrWhiteSpace(seriesId)) items = items.Where(item => item.SeriesId == seriesId);
-            if (nextUp) items = items.GroupBy(item => item.SeriesId).Select(group => group.OrderBy(item => item.IndexNumber).First());
-            items = Value(query, "SortOrder")?.StartsWith("Descending", StringComparison.OrdinalIgnoreCase) == true
-                ? items.OrderByDescending(item => item.Name, StringComparer.OrdinalIgnoreCase)
-                : items.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase);
+            if (nextUp) items = items.GroupBy(item => item.SeriesId).Select(group => group
+                .OrderBy(item => item.ParentIndexNumber).ThenBy(item => item.IndexNumber).First());
+            if (Options.LumenCatalog && operation == "Latest")
+            {
+                items = items.Where(item => item.Type is "Movie" or "Episode");
+                if (Boolean(query, "GroupItems") != false)
+                    items = items.Select(item => item.Type == "Episode" ? _items[item.SeriesId!] : item).DistinctBy(item => item.Id);
+            }
+            items = SortItems(items, query, typeOverride, operation);
             var array = items.ToArray();
             var offset = Integer(query, "StartIndex", 0, 0, Math.Max(10000, _items.Count));
             var limit = Integer(query, "Limit", 50, 1, 500);
@@ -219,6 +245,7 @@ internal sealed class FixtureState
 
     public BaseItemDto[] Latest(IQueryCollection query)
     {
+        if (Options.LumenCatalog) return Query(query, forceRecursive: true, operation: "Latest").Items;
         var result = Query(query, forceRecursive: true, operation: "Latest").Items.Where(item => item.Type is "Movie" or "Episode").ToArray();
         if (Boolean(query, "GroupItems") == false) return result;
         return result.Select(item => item.Type == "Episode" ? Item(item.SeriesId!)! : item)
@@ -240,17 +267,23 @@ internal sealed class FixtureState
     public PlaybackInfoResponse? PlaybackInfo(string itemId, PlaybackInfoRequest? request)
     {
         var item = Item(itemId);
-        if (item is null || item.IsFolder == true) return null;
+        if (item is null || !IsPlayable(item)) return null;
         Interlocked.Increment(ref _playbackInfoCount);
         if (request?.EnableDirectStream == false)
             return new PlaybackInfoResponse { ErrorCode = "NoCompatibleStream", MediaSources = [] };
+        var sources = Sources(itemId);
+        if (!string.IsNullOrEmpty(request?.MediaSourceId))
+            sources = sources.Where(source => source.Id == request.MediaSourceId).ToArray();
+        if (sources.Length == 0) return new PlaybackInfoResponse { ErrorCode = "NoCompatibleStream", MediaSources = [] };
         var playSessionId = "synthetic-play-" + Guid.NewGuid().ToString("N");
-        _playSessions[playSessionId] = itemId;
-        return new PlaybackInfoResponse { PlaySessionId = playSessionId, MediaSources = [Source(itemId, playSessionId)] };
+        _playSessions[playSessionId] = new FixturePlaySession(itemId, sources.Select(source => source.Id!).ToArray());
+        return new PlaybackInfoResponse { PlaySessionId = playSessionId,
+            MediaSources = sources.Select(source => Source(itemId, playSessionId, source.Id!, source.Name)).ToArray() };
     }
 
-    public bool OwnsPlayback(string? itemId, string? playSessionId) => itemId is not null && playSessionId is not null
-        && _playSessions.TryGetValue(playSessionId, out var expected) && expected == itemId;
+    public bool OwnsPlayback(string? itemId, string? playSessionId, string? mediaSourceId = null) => itemId is not null && playSessionId is not null
+        && _playSessions.TryGetValue(playSessionId, out var expected) && expected.ItemId == itemId
+        && (string.IsNullOrEmpty(mediaSourceId) || expected.MediaSourceIds.Contains(mediaSourceId, StringComparer.Ordinal));
 
     public bool Record(string kind, string? itemId, string? playSessionId, long? positionTicks,
         string? eventName = null, bool? failed = null)
@@ -290,6 +323,11 @@ internal sealed class FixtureState
                 MediaLength = _mediaLength, StartCount = _events.Count(item => item.Kind == "Start"),
                 ProgressCount = _events.Count(item => item.Kind == "Progress"), StopCount = _events.Count(item => item.Kind == "Stop"),
                 Events = _events.ToArray(), LargeLibraryItems = Options.LargeLibraryItems, CatalogItems = _items.Count,
+                ServerId = ServerId, LumenCatalog = Options.LumenCatalog, LumenDesignCatalog = Options.LumenDesignCatalog, ExternalArtwork = _artwork is not null,
+                ExternalSubtitleConfigured = Options.Subtitle is not null, ExternalSubtitleSha256 = Options.Subtitle?.Sha256,
+                MetadataUpdates = _metadataUpdates, MetadataRefreshRequests = _metadataRefreshRequests,
+                CollectionUpdates = _collectionUpdates, ConfigurationUpdates = _configurationUpdates,
+                HiddenResumeItems = _hiddenResume.Count,
                 QueryCount = _queryCount, Queries = _queries.ToArray(), ImageDelayMilliseconds = Options.ImageDelayMilliseconds,
                 ImageRequests = Volatile.Read(ref _imageRequests), ActiveImages = Volatile.Read(ref _activeImages),
                 PeakActiveImages = Volatile.Read(ref _peakImages), CompletedImages = Volatile.Read(ref _completedImages),
@@ -301,7 +339,27 @@ internal sealed class FixtureState
         }
     }
 
-    private BaseItemDto WithUserData(BaseItemDto item) => item with { UserData = _userData[item.Id!] };
+    private BaseItemDto WithUserData(BaseItemDto item)
+    {
+        var data = _userData[item.Id!];
+        if (!Options.LumenCatalog) return item with { UserData = data };
+        var descendants = item.IsFolder == true ? _items.Values.Where(candidate => candidate.Type == "Episode" && IsDescendant(candidate, item.Id!)).ToArray() : [];
+        var members = _collectionMembers.GetValueOrDefault(item.Id!);
+        var works = item.Type is "Genre" or "Person" ? _items.Values.Where(candidate => candidate.Type is "Movie" or "Series"
+            && (item.Type == "Genre" ? candidate.Genres?.Contains(item.Name!, StringComparer.OrdinalIgnoreCase) == true
+                : candidate.People?.Any(person => person.Id == item.Id) == true)).ToArray() : null;
+        return WithArtworkTags(item with
+        {
+            ChildCount = members?.Count ?? item.ChildCount,
+            MovieCount = members?.Count(id => _items[id].Type == "Movie") ?? works?.Count(candidate => candidate.Type == "Movie") ?? item.MovieCount,
+            SeriesCount = members?.Count(id => _items[id].Type == "Series") ?? works?.Count(candidate => candidate.Type == "Series") ?? item.SeriesCount,
+            UserData = data with
+            {
+                PlayedPercentage = item.RunTimeTicks is > 0 ? (data.Played == true ? 100 : (data.PlaybackPositionTicks ?? 0) * 100.0 / item.RunTimeTicks.Value) : null,
+                UnplayedItemCount = item.Type is "Series" or "Season" ? descendants.Count(candidate => _userData[candidate.Id!].Played != true) : data.UnplayedItemCount
+            }
+        });
+    }
 
     private bool IsDescendant(BaseItemDto item, string parent)
     {
@@ -314,24 +372,34 @@ internal sealed class FixtureState
         return false;
     }
 
-    private MediaSourceInfo Source(string itemId, string? playSessionId = null) => new()
+    private MediaSourceInfo Source(string itemId, string? playSessionId = null, string sourceId = "synthetic-mp4", string? name = null) => new()
     {
-        Id = "synthetic-mp4", Name = "Synthetic H.264 AAC 720p", Container = "mp4", Protocol = "Http",
+        Id = sourceId, Name = name ?? $"Synthetic H.264 AAC {Options.Media.Height}p", Container = "mp4", Protocol = "Http",
         RunTimeTicks = DurationTicks, Size = _mediaLength,
         Bitrate = (long)(_mediaLength * 8.0 / TimeSpan.FromTicks(DurationTicks).TotalSeconds),
         SupportsDirectPlay = false, SupportsDirectStream = true, SupportsTranscoding = false,
-        DirectStreamUrl = playSessionId is null ? null : $"/emby/Videos/{itemId}/stream?Static=true&MediaSourceId=synthetic-mp4&PlaySessionId={playSessionId}",
-        AddApiKeyToDirectStreamUrl = false, DefaultAudioStreamIndex = 1, DefaultSubtitleStreamIndex = -1,
+        DirectStreamUrl = playSessionId is null ? null : $"/emby/Videos/{itemId}/stream?Static=true&MediaSourceId={sourceId}&PlaySessionId={playSessionId}",
+        AddApiKeyToDirectStreamUrl = false, DefaultAudioStreamIndex = 1, DefaultSubtitleStreamIndex = Options.Subtitle is null ? -1 : 2,
         RequiresOpening = false, RequiresClosing = false, IsInfiniteStream = false,
-        MediaStreams =
+        MediaStreams = WithExternalSubtitle(itemId, sourceId,
         [
-            new MediaStream { Index = 0, Type = "Video", Codec = "h264", Width = Options.Media.Width, Height = Options.Media.Height, BitDepth = 8, IsDefault = true, DisplayTitle = "Synthetic 720p H.264" },
-            new MediaStream { Index = 1, Type = "Audio", Codec = "aac", Language = "eng", Channels = Options.Media.AudioChannels, ChannelLayout = "stereo", IsDefault = true, DisplayTitle = "Synthetic 440 Hz tone - AAC stereo" }
-        ]
+            new MediaStream { Index = 0, Type = "Video", Codec = "h264", Width = Options.Media.Width, Height = Options.Media.Height, IsDefault = true,
+                AverageFrameRate = Options.Media.FrameRateDenominator > 0 ? (float)Options.Media.FrameRateNumerator / Options.Media.FrameRateDenominator : null,
+                DisplayTitle = $"Synthetic {Options.Media.Width} x {Options.Media.Height} H.264" },
+            new MediaStream { Index = 1, Type = "Audio", Codec = "aac", Channels = Options.Media.AudioChannels,
+                SampleRate = Options.Media.AudioSampleRate > 0 ? Options.Media.AudioSampleRate : null,
+                ChannelLayout = Options.Media.AudioChannels == 2 ? "stereo" : Options.Media.AudioChannels == 1 ? "mono" : null,
+                IsDefault = true, DisplayTitle = $"Synthetic 440 Hz tone - AAC {Options.Media.AudioChannels} channels" }
+        ])
     };
 
     private IEnumerable<BaseItemDto> CreateCatalog()
     {
+        if (Options.LumenCatalog)
+        {
+            foreach (var item in CreateLumenCatalog()) yield return item;
+            yield break;
+        }
         BaseItemDto Item(string id, string name, string type, string? parent = null) => new()
         {
             Id = id, Name = name, Type = type, ParentId = parent,
@@ -369,6 +437,8 @@ internal sealed class FixtureState
         int.TryParse(Value(query, name), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? Math.Clamp(value, minimum, maximum) : fallback;
 }
 
+internal sealed record FixturePlaySession(string ItemId, string[] MediaSourceIds);
+
 internal sealed record FixturePlaybackEvent(string Kind, string ItemId, string PlaySessionId, long PositionTicks,
     string? EventName, bool? Failed, DateTimeOffset Timestamp);
 internal sealed record FixtureLibraryQuery(int Sequence, string Operation, string? ParentId, int StartIndex,
@@ -393,6 +463,17 @@ internal sealed class FixtureStats
     public FixturePlaybackEvent[] Events { get; init; } = [];
     public int LargeLibraryItems { get; init; }
     public int CatalogItems { get; init; }
+    public string ServerId { get; init; } = "";
+    public bool LumenCatalog { get; init; }
+    public bool LumenDesignCatalog { get; init; }
+    public bool ExternalSubtitleConfigured { get; init; }
+    public string? ExternalSubtitleSha256 { get; init; }
+    public bool ExternalArtwork { get; init; }
+    public int MetadataUpdates { get; init; }
+    public int MetadataRefreshRequests { get; init; }
+    public int CollectionUpdates { get; init; }
+    public int ConfigurationUpdates { get; init; }
+    public int HiddenResumeItems { get; init; }
     public int QueryCount { get; init; }
     public FixtureLibraryQuery[] Queries { get; init; } = [];
     public int ImageDelayMilliseconds { get; init; }

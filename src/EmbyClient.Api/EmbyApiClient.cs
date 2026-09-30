@@ -7,7 +7,7 @@ using System.Text.Json.Serialization.Metadata;
 namespace EmbyClient.Api;
 
 /// <summary>A typed, immutable server/user context. The caller owns the HTTP client.</summary>
-public sealed class EmbyApiClient
+public sealed partial class EmbyApiClient
 {
     private const int MaximumImageBytes = 20 * 1024 * 1024;
     private readonly HttpClient _httpClient;
@@ -120,9 +120,14 @@ public sealed class EmbyApiClient
     }
 
     public Task<QueryResult<BaseItemDto>> GetResumeItemsAsync(ItemQuery? query = null,
-        CancellationToken cancellationToken = default) =>
-        GetItemsResultAsync($"Users/{Segment(RequireUserId())}/Items/Resume",
-            BuildItemQuery(query ?? new ItemQuery { Limit = 20, MediaTypes = ["Video"] }), cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        query ??= new ItemQuery { Limit = 20 };
+        // Emby 4.9.5 returns no resume items without MediaTypes, even when an episode filter is supplied.
+        if (query.MediaTypes is not { Length: > 0 }) query = query with { MediaTypes = ["Video"] };
+        return GetItemsResultAsync($"Users/{Segment(RequireUserId())}/Items/Resume",
+            BuildItemQuery(query), cancellationToken);
+    }
 
     public Task<QueryResult<BaseItemDto>> GetNextUpAsync(NextUpQuery? query = null,
         CancellationToken cancellationToken = default)
@@ -526,6 +531,8 @@ public sealed class EmbyApiClient
             .AddList("Filters", query.Filters).AddList("Ids", query.Ids).AddList("PersonIds", query.PersonIds)
             .AddList("Genres", query.Genres, '|')
             .AddList("Tags", query.Tags, '|').Add("IsPlayed", query.IsPlayed).Add("IsFavorite", query.IsFavorite)
+            .Add("NameStartsWith", query.NameStartsWith).Add("NameStartsWithOrGreater", query.NameStartsWithOrGreater)
+            .Add("NameLessThan", query.NameLessThan)
             .Add("EnableUserData", query.EnableUserData).Add("EnableImages", query.EnableImages)
             .AddList("EnableImageTypes", query.EnableImageTypes).Add("ImageTypeLimit", query.ImageTypeLimit);
     }

@@ -125,6 +125,7 @@ internal static class PlaybackRequestFactory
         IReadOnlyDictionary<string, string> subtitleHeaders = ReadOnlyDictionary<string, string>.Empty;
         if (subtitleStream is not null && string.Equals(subtitleStream.DeliveryMethod, "External", StringComparison.OrdinalIgnoreCase))
         {
+            if (selection.ForceSubtitleBurnIn) throw new PlaybackException("UnsupportedSubtitle");
             // Arbitrary third-party subtitle URLs have no established offset contract.
             // A trimmed progressive conversion uses burn-in fallback rather than silently misaligning captions.
             if (method == PlaybackDeliveryMethod.Transcode && offset > 0)
@@ -168,7 +169,8 @@ internal static class PlaybackRequestFactory
 
     private static bool CanUseDirectStream(MediaSourceInfo source, PlaybackSelection selection)
     {
-        if (selection.ForceTranscoding || selection.AudioStreamIndex.HasValue || source.SupportsDirectStream != true) return false;
+        if (selection.ForceTranscoding || selection.ForceSubtitleBurnIn || selection.AudioStreamIndex.HasValue
+            || source.SupportsDirectStream != true) return false;
         var index = selection.SubtitleStreamIndex ?? source.DefaultSubtitleStreamIndex;
         var subtitle = (source.MediaStreams ?? []).FirstOrDefault(stream => index >= 0 && stream.Index == index && IsType(stream, "Subtitle"));
         return !string.Equals(subtitle?.DeliveryMethod, "Encode", StringComparison.OrdinalIgnoreCase);

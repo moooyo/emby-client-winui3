@@ -4,7 +4,14 @@ using System.Text.Json;
 using EmbyClient.Api;
 using EmbyClient.FixtureServer;
 
-var options = FixtureOptions.Parse(args);
+FixtureOptions options;
+try { options = FixtureOptions.Parse(args); }
+catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException)
+{
+    Console.Error.WriteLine("Fixture configuration was rejected. Supply valid measured synthetic media and bounded explicit optional inputs.");
+    Environment.ExitCode = 1;
+    return;
+}
 var state = new FixtureState(options);
 var builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
 builder.Configuration.Sources.Clear();
@@ -40,6 +47,14 @@ Console.WriteLine("Development data only. This service does not establish Emby c
 Console.WriteLine("Read playback counters at /_fixture/stats. Request bodies and credentials are not logged.");
 if (options.LargeLibraryItems > 0)
     Console.WriteLine($"Large-library mode: {options.LargeLibraryItems} synthetic movies in a separate library.");
+if (options.LumenCatalog)
+    Console.WriteLine("Lumen catalog mode: fictional films, series, people, genres, and collections; every playable item uses the generated synthetic MP4.");
+if (options.LumenDesignCatalog)
+    Console.WriteLine("Design acceptance catalog: handoff titles and artwork order; all playback specifications and durations still describe the synthetic MP4.");
+if (options.ArtworkDirectory is not null)
+    Console.WriteLine("External handoff artwork is enabled for this test fixture. No artwork is copied into the application.");
+if (options.Subtitle is not null)
+    Console.WriteLine("An explicit real external WebVTT fixture is enabled. Native cue parsing and rendering require separate application verification.");
 if (options.FailFirstPlaybackInfo)
     Console.WriteLine("The first valid PlaybackInfo POST with IsPlayback=true will return a synthetic HTTP 503.");
 if (options.BoundaryControls is { Enabled: true })
@@ -50,7 +65,8 @@ namespace EmbyClient.FixtureServer
 {
     internal sealed record FixtureOptions(int Port, string MediaPath, MediaFixtureMetadata Media,
         int LargeLibraryItems = 0, int ImageDelayMilliseconds = 0, bool FailFirstPlaybackInfo = false,
-        FixtureBoundaryOptions? BoundaryControls = null)
+        FixtureBoundaryOptions? BoundaryControls = null, bool LumenCatalog = false, string? ArtworkDirectory = null,
+        bool LumenDesignCatalog = false, FixtureSubtitle? Subtitle = null)
     {
         public static FixtureOptions Parse(string[] arguments)
         {
@@ -59,6 +75,10 @@ namespace EmbyClient.FixtureServer
             var largeLibraryItems = 0;
             var imageDelayMilliseconds = 0;
             var failFirstPlaybackInfo = false;
+            var lumenCatalog = false;
+            var lumenDesignCatalog = false;
+            string? artworkDirectory = null;
+            string? subtitlePath = null;
             var boundaryOptions = new FixtureBoundaryOptionsBuilder();
             for (var index = 0; index < arguments.Length; index++)
             {
@@ -85,6 +105,27 @@ namespace EmbyClient.FixtureServer
                     case "--fail-first-playback-info":
                         failFirstPlaybackInfo = true;
                         break;
+                    case "--lumen-catalog":
+                        lumenCatalog = true;
+                        break;
+                    case "--lumen-design-catalog":
+                        lumenCatalog = true;
+                        lumenDesignCatalog = true;
+                        break;
+                    case "--artwork-directory" when index + 1 < arguments.Length:
+                        var artworkArgument = arguments[++index];
+                        if (!Path.IsPathFullyQualified(artworkArgument))
+                            throw new ArgumentException("The artwork directory must be an absolute path to the external design handoff.");
+                        artworkDirectory = Path.GetFullPath(artworkArgument);
+                        if (!Directory.Exists(artworkDirectory))
+                            throw new ArgumentException("The external artwork directory does not exist.");
+                        break;
+                    case "--subtitle-file" when index + 1 < arguments.Length && subtitlePath is null:
+                        subtitlePath = arguments[++index];
+                        if (!Path.IsPathFullyQualified(subtitlePath))
+                            throw new ArgumentException("The subtitle file must be an explicit absolute WebVTT path.");
+                        subtitlePath = Path.GetFullPath(subtitlePath);
+                        break;
                     case "--item-detail-failure" when index + 1 < arguments.Length:
                         boundaryOptions.AddDetailFailure(arguments[++index]);
                         break;
@@ -101,10 +142,14 @@ namespace EmbyClient.FixtureServer
                         boundaryOptions.LogoutDelayMilliseconds = FixtureBoundaryOptionsBuilder.ParseDelay(arguments[++index]);
                         break;
                     default:
-                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
+                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--lumen-catalog | --lumen-design-catalog] [--artwork-directory <absolute-handoff-directory>] [--subtitle-file <absolute-vtt-path>] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
                 }
             }
 
+            if (artworkDirectory is not null && !lumenCatalog)
+                throw new ArgumentException("External handoff artwork requires --lumen-catalog.");
+            if (lumenCatalog && largeLibraryItems > 0)
+                throw new ArgumentException("Use separate fixture instances for the Lumen catalog and the large-library trial.");
             if (mediaDirectory is null) throw new ArgumentException("--media-dir is required. Generate the synthetic MP4 before starting the fixture server.");
             var path = Path.Combine(mediaDirectory, "fixture-h264-aac.mp4");
             if (!File.Exists(path) || new FileInfo(path).Length < 1024)
@@ -125,7 +170,8 @@ namespace EmbyClient.FixtureServer
                 || !string.Equals(metadata.AudioCodec, "AAC", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The generated media metadata does not match the synthetic MP4.");
             return new FixtureOptions(port, path, metadata, largeLibraryItems, imageDelayMilliseconds,
-                failFirstPlaybackInfo, boundaryOptions.Build());
+                failFirstPlaybackInfo, boundaryOptions.Build(), lumenCatalog, artworkDirectory, lumenDesignCatalog,
+                subtitlePath is null ? null : FixtureSubtitle.Read(subtitlePath));
         }
     }
 

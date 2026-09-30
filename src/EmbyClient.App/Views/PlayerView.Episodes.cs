@@ -64,7 +64,9 @@ public sealed partial class PlayerView
     {
         if (PreviousEpisodeButton is null) return;
         var isEpisode = string.Equals(_item?.Type, "Episode", StringComparison.OrdinalIgnoreCase);
-        PreviousEpisodeButton.Visibility = NextEpisodeButton.Visibility = isEpisode ? Visibility.Visible : Visibility.Collapsed;
+        PreviousEpisodeButton.Visibility = Visibility.Collapsed;
+        NextEpisodeButton.Visibility = EpisodeDrawerButton.Visibility = isEpisode && !_compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+        EpisodeDrawerButton.IsEnabled = isEpisode && _session is not null && !IsModalOpen && _preparationIntent != _playIntent;
         var neighbors = _episodeNeighborsItemId == _item?.Id ? _episodeNeighbors : null;
         var enabled = CanChangeEpisode();
         PreviousEpisodeButton.IsEnabled = enabled && neighbors?.Previous is not null;
@@ -73,17 +75,18 @@ public sealed partial class PlayerView
         SetEpisodeLabel(NextEpisodeButton, "Next episode", neighbors?.Next, enabled);
         NextEpisodeSection.Visibility = isEpisode && _queue.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         NextEpisodeText.Text = neighbors?.Next is { } next ? PlaybackTitle(next, next.Name)
-            : _resolvingEpisodeNeighbors ? "Finding the next episode…"
-            : neighbors is null ? "Episode order is unavailable." : "No next episode is available.";
-        QueueAutoPlayDescription.Text = _queue.Count > 0 ? "Your queue plays first. The next episode is resolved when the queue is empty."
-            : isEpisode ? "Starts the next available episode when this one ends." : "Starts items you add to your queue when this movie ends.";
+            : LumenText.Get(_resolvingEpisodeNeighbors ? "Finding the next episode…"
+            : neighbors is null ? "Episode order is unavailable." : "No next episode is available.");
+        QueueAutoPlayDescription.Text = LumenText.Get(_queue.Count > 0 ? "Your queue plays first. The next episode is resolved when the queue is empty."
+            : isEpisode ? "Starts the next available episode when this one ends." : "Starts items you add to your queue when this movie ends.");
+        UpdateEpisodeDrawerControls();
     }
 
     private void SetEpisodeLabel(Control button, string label, BaseItemDto? target, bool enabled)
     {
-        var detail = target is not null ? $"{label}: {PlaybackTitle(target, target.Name)}"
-            : _resolvingEpisodeNeighbors ? $"{label}: Finding episode order" : $"{label}: No episode available";
-        if (!enabled && target is not null) detail += ". Available while playing or paused.";
+        var detail = target is not null ? LumenText.Get("{0}: {1}", LumenText.Get(label), PlaybackTitle(target, target.Name))
+            : _resolvingEpisodeNeighbors ? LumenText.Get("{0}: Finding episode order", LumenText.Get(label)) : LumenText.Get("{0}: No episode available", LumenText.Get(label));
+        if (!enabled && target is not null) detail += " " + LumenText.Get("Available while playing or paused.");
         SetControlLabel(button, detail);
     }
 

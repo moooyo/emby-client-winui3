@@ -1,0 +1,132 @@
+using System.Globalization;
+
+namespace EmbyClient.App.Services;
+
+/// <summary>Localizes presentation data while keeping implementation identifiers in English.</summary>
+public static class LumenText
+{
+    private static readonly Dictionary<string, string> Strings = new(StringComparer.Ordinal)
+    {
+        ["Home"] = "\u9996\u9875",
+        ["Selected"] = "\u5df2\u9009\u4e2d",
+        ["Some preferences could not be read. Defaults are used without changing the saved file."] = "\u90e8\u5206\u504f\u597d\u65e0\u6cd5\u8bfb\u53d6\uff0c\u6682\u65f6\u4f7f\u7528\u9ed8\u8ba4\u503c\uff0c\u5df2\u4fdd\u5b58\u7684\u6587\u4ef6\u4fdd\u6301\u4e0d\u53d8\u3002",
+        ["Closing the current session..."] = "\u6b63\u5728\u5173\u95ed\u5f53\u524d\u4f1a\u8bdd...",
+        ["Your session has expired. Sign in again."] = "\u4f1a\u8bdd\u5df2\u8fc7\u671f\uff0c\u8bf7\u91cd\u65b0\u767b\u5f55\u3002",
+        ["The play queue is full."] = "\u64ad\u653e\u961f\u5217\u5df2\u6ee1\u3002",
+        ["This item cannot be queued."] = "\u6b64\u5185\u5bb9\u65e0\u6cd5\u52a0\u5165\u64ad\u653e\u961f\u5217\u3002",
+        ["Movie"] = "\u7535\u5f71",
+        ["Movies"] = "\u7535\u5f71",
+        ["Series"] = "\u5267\u96c6",
+        ["Episode"] = "\u5206\u96c6",
+        ["Season"] = "\u5b63",
+        ["Favorites"] = "\u6536\u85cf",
+        ["Search"] = "\u641c\u7d22",
+        ["Settings"] = "\u8bbe\u7f6e",
+        ["Back"] = "\u8fd4\u56de",
+        ["Play"] = "\u64ad\u653e",
+        ["Pause"] = "\u6682\u505c",
+        ["Resume"] = "\u7ee7\u7eed\u64ad\u653e",
+        ["Details"] = "\u8be6\u60c5",
+        ["Refresh"] = "\u5237\u65b0",
+        ["Retry"] = "\u91cd\u8bd5",
+        ["Try again"] = "\u91cd\u8bd5",
+        ["Loading"] = "\u6b63\u5728\u52a0\u8f7d",
+        ["Loading..."] = "\u6b63\u5728\u52a0\u8f7d...",
+        ["Cancel"] = "\u53d6\u6d88",
+        ["Save"] = "\u4fdd\u5b58",
+        ["Close"] = "\u5173\u95ed",
+        ["All"] = "\u5168\u90e8",
+        ["Off"] = "\u5173\u95ed",
+        ["Default"] = "\u9ed8\u8ba4",
+        ["Not available"] = "\u4e0d\u53ef\u7528",
+        ["Continue watching"] = "\u7ee7\u7eed\u89c2\u770b",
+        ["Next up"] = "\u5373\u5c06\u89c2\u770b",
+        ["My media"] = "\u6211\u7684\u5a92\u4f53",
+        ["Latest movies"] = "\u6700\u65b0\u7535\u5f71",
+        ["Latest series"] = "\u6700\u65b0\u5267\u96c6",
+        ["Recently added"] = "\u6700\u65b0\u5165\u5e93",
+        ["Latest added"] = "\u6700\u65b0\u5165\u5e93",
+        ["People"] = "\u4eba\u7269",
+        ["Collections"] = "\u5408\u96c6",
+        ["Collection"] = "\u5408\u96c6",
+        ["Best match"] = "\u6700\u4f73\u5339\u914d",
+        ["Movies and series"] = "\u7535\u5f71\u4e0e\u5267\u96c6",
+        ["Search your library"] = "\u641c\u7d22\u4f60\u7684\u5a92\u4f53\u5e93",
+        ["Clear search"] = "\u6e05\u9664\u641c\u7d22",
+        ["No results"] = "\u6ca1\u6709\u641c\u7d22\u7ed3\u679c",
+        ["No matching items."] = "\u6ca1\u6709\u5339\u914d\u7684\u5185\u5bb9\u3002",
+        ["Results"] = "\u4e2a\u7ed3\u679c",
+        ["Genres"] = "\u7c7b\u578b",
+        ["Filter"] = "\u7b5b\u9009",
+        ["Watched"] = "\u5df2\u770b",
+        ["Unwatched"] = "\u672a\u770b",
+        ["Mark watched"] = "\u6807\u8bb0\u5df2\u770b",
+        ["Mark unwatched"] = "\u6807\u8bb0\u672a\u770b",
+        ["Add favorite"] = "\u6536\u85cf",
+        ["Remove favorite"] = "\u53d6\u6d88\u6536\u85cf",
+        ["Name A-Z"] = "\u540d\u79f0 A-Z",
+        ["Name Z-A"] = "\u540d\u79f0 Z-A",
+        ["Release year"] = "\u4e0a\u6620\u5e74\u4efd",
+        ["Rating"] = "\u8bc4\u5206",
+        ["Grid view"] = "\u7f51\u683c\u89c6\u56fe",
+        ["List view"] = "\u5217\u8868\u89c6\u56fe",
+        ["Poster size"] = "\u6d77\u62a5\u5c3a\u5bf8",
+        ["Load more"] = "\u52a0\u8f7d\u66f4\u591a",
+        ["View all"] = "\u67e5\u770b\u5168\u90e8",
+        ["Playback"] = "\u64ad\u653e",
+        ["Subtitles"] = "\u5b57\u5e55",
+        ["Audio"] = "\u97f3\u9891",
+        ["Version"] = "\u7248\u672c",
+        ["Sign in"] = "\u767b\u5f55",
+        ["Sign in to your Emby server"] = "\u767b\u5f55\u4f60\u7684 Emby \u670d\u52a1\u5668",
+        ["Server address"] = "\u670d\u52a1\u5668\u5730\u5740",
+        ["Username"] = "\u7528\u6237\u540d",
+        ["Password"] = "\u5bc6\u7801",
+        ["Remember this account"] = "\u8bb0\u4f4f\u8fd9\u4e2a\u8d26\u6237",
+        ["Saved accounts"] = "\u5df2\u4fdd\u5b58\u7684\u8d26\u6237",
+        ["Continue with this account"] = "\u4f7f\u7528\u6b64\u8d26\u6237\u7ee7\u7eed",
+        ["Use another account"] = "\u4f7f\u7528\u5176\u4ed6\u8d26\u6237",
+        ["Connecting..."] = "\u6b63\u5728\u8fde\u63a5...",
+        ["Loading saved accounts..."] = "\u6b63\u5728\u52a0\u8f7d\u5df2\u4fdd\u5b58\u8d26\u6237...",
+        ["Retry settings"] = "\u91cd\u8bd5\u52a0\u8f7d\u8bbe\u7f6e",
+        ["Use a temporary session"] = "\u4ec5\u767b\u5f55\u672c\u6b21\u4f1a\u8bdd",
+        ["Enter a complete HTTP or HTTPS server address."] = "\u8bf7\u8f93\u5165\u5b8c\u6574\u7684 HTTP \u6216 HTTPS \u670d\u52a1\u5668\u5730\u5740\u3002",
+        ["Enter your username."] = "\u8bf7\u8f93\u5165\u7528\u6237\u540d\u3002",
+        ["Playback is disabled for this account."] = "\u6b64\u8d26\u6237\u4e0d\u5141\u8bb8\u64ad\u653e\u5a92\u4f53\u3002",
+        ["The operation could not be completed. Try again."] = "\u64cd\u4f5c\u672a\u80fd\u5b8c\u6210\uff0c\u8bf7\u91cd\u8bd5\u3002",
+        ["Your sign-in was not accepted or has expired. Check your account and sign in again."] = "\u767b\u5f55\u5931\u8d25\u6216\u4f1a\u8bdd\u5df2\u8fc7\u671f\uff0c\u8bf7\u68c0\u67e5\u8d26\u6237\u5e76\u91cd\u65b0\u767b\u5f55\u3002",
+        ["Could not reach the Emby server. Check the address and your connection."] = "\u65e0\u6cd5\u8fde\u63a5 Emby \u670d\u52a1\u5668\uff0c\u8bf7\u68c0\u67e5\u5730\u5740\u4e0e\u7f51\u7edc\u3002",
+        ["The request timed out. Check your connection and try again."] = "\u8bf7\u6c42\u8d85\u65f6\uff0c\u8bf7\u68c0\u67e5\u7f51\u7edc\u540e\u91cd\u8bd5\u3002",
+        ["The server returned an unexpected response. Check the address and server compatibility."] = "\u670d\u52a1\u5668\u8fd4\u56de\u4e86\u65e0\u6cd5\u8bc6\u522b\u7684\u54cd\u5e94\uff0c\u8bf7\u68c0\u67e5\u5730\u5740\u4e0e\u517c\u5bb9\u6027\u3002",
+        ["Your Emby account does not have permission to do this."] = "\u5f53\u524d Emby \u8d26\u6237\u6ca1\u6709\u6267\u884c\u6b64\u64cd\u4f5c\u7684\u6743\u9650\u3002",
+        ["Check the server address and required account details."] = "\u8bf7\u68c0\u67e5\u670d\u52a1\u5668\u5730\u5740\u4e0e\u8d26\u6237\u4fe1\u606f\u3002",
+        ["{0} min"] = "{0} \u5206\u949f",
+        ["{0} hr"] = "{0} \u5c0f\u65f6",
+        ["{0} hr {1} min"] = "{0} \u5c0f\u65f6 {1} \u5206\u949f",
+        ["Remaining {0}"] = "\u5269\u4f59 {0}",
+        ["Season {0}"] = "\u7b2c {0} \u5b63",
+        ["Episode {0}"] = "\u7b2c {0} \u96c6",
+        ["{0} episodes"] = "{0} \u96c6",
+        ["{0} seasons"] = "{0} \u5b63",
+        ["{0} watched"] = "\u5df2\u770b {0} \u96c6",
+        ["Currently watching"] = "\u6b63\u5728\u89c2\u770b",
+        ["Now playing"] = "\u6b63\u5728\u64ad\u653e",
+        ["Open play queue"] = "\u6253\u5f00\u64ad\u653e\u961f\u5217",
+        ["Play queue"] = "\u64ad\u653e\u961f\u5217",
+        ["Search in {0}"] = "\u5728 {0} \u4e2d\u641c\u7d22",
+        ["{0} results"] = "{0} \u4e2a\u7ed3\u679c"
+    };
+
+    public static string Get(string key, params object[] arguments)
+    {
+        string text;
+        lock (Strings) text = Strings.GetValueOrDefault(key, key);
+        return arguments.Length == 0 ? text : string.Format(CultureInfo.CurrentCulture, text, arguments);
+    }
+
+    public static void Register(IReadOnlyDictionary<string, string> entries)
+    {
+        lock (Strings)
+            foreach (var entry in entries) Strings[entry.Key] = entry.Value;
+    }
+}

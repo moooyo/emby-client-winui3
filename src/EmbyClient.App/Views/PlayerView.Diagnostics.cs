@@ -14,7 +14,7 @@ public sealed partial class PlayerView
     private DiagnosticBinding? _previousDiagnostic;
     private PlaybackDiagnosticsDialog? _diagnosticsDialog;
 
-    public bool IsModalOpen => _queueDialog is not null || _diagnosticsDialog is not null;
+    public bool IsModalOpen => _queueDialog is not null || _diagnosticsDialog is not null || _externalSubtitlePickerOpen;
 
     public async Task ShowDiagnosticsAsync(XamlRoot xamlRoot, ElementTheme theme, Control? trigger = null)
     {

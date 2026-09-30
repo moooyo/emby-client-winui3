@@ -21,6 +21,8 @@ For a bounded real-AOT scrolling/memory trial, see [Large-library acceptance](La
 
 For deterministic detail-loading, media-opening, and account-cleanup boundaries, see [Boundary controls](Boundary-Controls.md). These additional controls are also off by default, limited to a 30-second delay, and accompanied by bounded synthetic event observations. The documented command-line checks use separate loopback instances and do not control the desktop.
 
+For the redesigned Lumen browsing and detail workflows, see [Lumen catalog](Lumen-Catalog.md). The opt-in `--lumen-catalog` mode adds a richer fictional catalog, two-season episode navigation, cast, genres, collections, local trailers, measured media information, and chapter markers. The optional `--artwork-directory <absolute-handoff-directory>` serves external design-handoff JPEGs through the ordinary authenticated image routes. It does not copy those files into production application assets. This mode uses a distinct synthetic server identity and cannot be combined with the separate large-library mode.
+
 The project excludes local `artifacts/**`, `bin/**`, `obj/**`, and the independent `Tests/**` harness from default SDK item discovery. This prevents generated assembly files, published payloads, or the harness entry point from being compiled or copied by later normal solution builds. Do not remove a running artifact directory to work around build errors; retain the project exclusions and use a separate output directory for each active fixture instance.
 
 ## Implemented development routes
@@ -36,6 +38,8 @@ All Emby-shaped paths use the `/emby` prefix. Except public metadata/user discov
 - Start, progress, stop, capability registration, and encoding-cleanup counters. Playback reports must reference a play session previously issued for that item.
 
 The default catalog is deliberately small and does not reproduce every Emby filter, sort order, permission, version difference, or mutation rule. A completed synthetic playback marks the item played at 90% of its duration; that threshold is a fixture policy, not an assertion about Emby configuration.
+
+Lumen mode adds a third collections view; genre/person queries; similar titles; local trailers; alphabet, genre, tag, person, and common sort filters; resume hiding; and in-memory collection, metadata, refresh, and user-configuration actions. The primary movie exposes two explicitly labeled aliases of the same MP4 to exercise version selection, not two different encodes. Every source has exactly the generated video's H.264 stream and AAC tone stream; no UHD, HDR, alternative language, commentary, or subtitle track is invented.
 
 ## Read development statistics
 

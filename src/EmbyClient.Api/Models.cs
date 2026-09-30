@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace EmbyClient.Api;
 
@@ -62,10 +63,17 @@ public sealed record UserConfiguration
     public bool? EnableNextEpisodeAutoPlay { get; init; }
     public bool? RememberAudioSelections { get; init; }
     public bool? RememberSubtitleSelections { get; init; }
+    public int? ResumeRewindSeconds { get; init; }
+    public string? IntroSkipMode { get; init; }
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }
 
 public sealed record UserPolicy
 {
+    public bool? IsAdministrator { get; init; }
+    public bool? EnableUserPreferenceAccess { get; init; }
+    public bool? EnableSubtitleManagement { get; init; }
     public bool? IsDisabled { get; init; }
     public bool? EnableMediaPlayback { get; init; }
     public bool? EnableAudioPlaybackTranscoding { get; init; }
@@ -85,8 +93,11 @@ public sealed record QueryResult<T>
 
 public sealed record BaseItemDto
 {
+    private string[]? _legacyTags;
     public string? Id { get; init; }
     public string? Name { get; init; }
+    public string? OriginalTitle { get; init; }
+    public string? SortName { get; init; }
     public string? Type { get; init; }
     public bool? IsFolder { get; init; }
     public string? MediaType { get; init; }
@@ -105,8 +116,23 @@ public sealed record BaseItemDto
     public string? SeriesName { get; init; }
     public string? SeasonId { get; init; }
     public int? ChildCount { get; init; }
+    public int? RecursiveItemCount { get; init; }
+    public int? SeasonCount { get; init; }
+    public int? MovieCount { get; init; }
+    public int? SeriesCount { get; init; }
     public string? LocationType { get; init; }
     public string[]? Genres { get; init; }
+    // Keep legacy wire values separate from the authoritative modern tag names used by presentation code.
+    [JsonPropertyName("Tags")]
+    public string[]? LegacyTags { get => _legacyTags; init => _legacyTags = value; }
+    public NameLongIdPair[]? TagItems { get; init; }
+    [JsonIgnore]
+    public string[]? Tags
+    {
+        get => TagItems is null ? _legacyTags : TagItems.Select(item => item?.Name).OfType<string>()
+            .Where(name => !string.IsNullOrWhiteSpace(name)).ToArray();
+        set => _legacyTags = value;
+    }
     public NameLongIdPair[]? GenreItems { get; init; }
     public NameLongIdPair[]? Studios { get; init; }
     public PersonInfo[]? People { get; init; }
@@ -123,6 +149,13 @@ public sealed record BaseItemDto
     public MediaSourceInfo[]? MediaSources { get; init; }
     public MediaStream[]? MediaStreams { get; init; }
     public ChapterInfo[]? Chapters { get; init; }
+    public int? LocalTrailerCount { get; init; }
+    public RemoteTrailer[]? RemoteTrailers { get; init; }
+    public bool? CanEditItems { get; init; }
+    public bool? LockData { get; init; }
+    public string[]? LockedFields { get; init; }
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? ExtensionData { get; set; }
 }
 
 public sealed record NameLongIdPair
@@ -146,6 +179,8 @@ public sealed record ChapterInfo
     public string? Name { get; init; }
     public long StartPositionTicks { get; init; }
     public string? ImageTag { get; init; }
+    public string? MarkerType { get; init; }
+    public int? ChapterIndex { get; init; }
 }
 
 public sealed record UserItemDataDto
@@ -168,6 +203,9 @@ public sealed record ItemQuery
     public int? Limit { get; init; } = 50;
     public bool? Recursive { get; init; }
     public string? SearchTerm { get; init; }
+    public string? NameStartsWith { get; init; }
+    public string? NameStartsWithOrGreater { get; init; }
+    public string? NameLessThan { get; init; }
     public string[]? IncludeItemTypes { get; init; }
     public string[]? MediaTypes { get; init; }
     public string[]? SortBy { get; init; }

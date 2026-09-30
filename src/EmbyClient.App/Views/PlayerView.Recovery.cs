@@ -1,4 +1,5 @@
 using EmbyClient.Api;
+using EmbyClient.App.Services;
 using EmbyClient.Playback;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -20,14 +21,14 @@ public sealed partial class PlayerView
         _updating = true;
         var limit = _session?.User.Policy?.RemoteClientBitrateLimit;
         if (limit is > 0) selected = Math.Min(selected, limit.Value);
-        var values = new List<long> { 1_500_000, 3_000_000, 5_000_000, 10_000_000, 20_000_000, 40_000_000, 80_000_000 };
+        var values = new List<long> { 1_500_000, 3_000_000, 5_000_000, 10_000_000, 20_000_000, 40_000_000, 80_000_000, 120_000_000, int.MaxValue };
         if (limit is > 0) values.Add(limit.Value);
         values.Add(selected);
         QualitySelector.Items.Clear();
         foreach (var value in values.Where(value => value > 0 && (limit is not > 0 || value <= limit.Value)).Distinct().OrderDescending())
         {
-            var label = $"{value / 1_000_000d:0.#} Mbps";
-            if (value == limit) label += " · Account maximum";
+            var label = value == int.MaxValue ? LumenText.Get("Unlimited") : $"{value / 1_000_000d:0.#} Mbps";
+            if (value == limit) label += " · " + LumenText.Get("Account maximum");
             var option = new ComboBoxItem { Content = label, Tag = value };
             QualitySelector.Items.Add(option);
             if (value == selected) QualitySelector.SelectedItem = option;
@@ -57,10 +58,10 @@ public sealed partial class PlayerView
         _retrySettingsReserved = ReserveControlArea.IsOn;
         _retrySettingsAutomatic = AutoPlayNext.IsOn;
         PopulateRetrySelection(_retrySettingsDraft);
-        RetrySettingsContext.Text = $"Retry from {FormatTime(recovery.Selection.StartPositionTicks)}. Changes apply when you retry; your saved position stays the same.";
+        RetrySettingsContext.Text = LumenText.Get("Retry from {0}. Changes apply when you retry; your saved position stays the same.", FormatTime(recovery.Selection.StartPositionTicks));
         RetrySettingsContext.Visibility = Visibility.Visible;
         RetrySettingsFooter.Visibility = Visibility.Visible;
-        SidePanelTitle.Text = "Retry settings";
+        SidePanelTitle.Text = LumenText.Get("Retry settings");
         SetTransportAvailability(false);
         UpdateRecoveryControls();
         return true;
@@ -145,7 +146,7 @@ public sealed partial class PlayerView
         AutoPlayNext.IsOn = _retrySettingsAutomatic;
         if (original is not null) PopulateRetrySelection(original);
         RetrySettingsContext.Visibility = RetrySettingsFooter.Visibility = Visibility.Collapsed;
-        SidePanelTitle.Text = "Playback settings";
+        SidePanelTitle.Text = LumenText.Get("Playback settings");
         SetTransportAvailability(_coordinator?.Status is PlaybackStatus.Playing or PlaybackStatus.Paused
             or PlaybackStatus.Buffering or PlaybackStatus.Seeking);
         UpdateRecoveryControls();
@@ -169,14 +170,14 @@ public sealed partial class PlayerView
     {
         StageStatus.Visibility = PlaybackNotice.IsOpen || status is PlaybackStatus.Playing or PlaybackStatus.Paused or PlaybackStatus.Seeking
             ? Visibility.Collapsed : Visibility.Visible;
-        StageStatusText.Text = status switch
+        StageStatusText.Text = LumenText.Get(status switch
         {
             PlaybackStatus.Negotiating or PlaybackStatus.Opening => "Starting playback",
             PlaybackStatus.Buffering => "Buffering…",
             PlaybackStatus.Ended => "Playback finished",
             PlaybackStatus.Failed => "Playback interrupted",
             _ => "Ready to play"
-        };
+        });
         StageMediaText.Text = status == PlaybackStatus.Buffering ? string.Empty : _item is { } item ? PlaybackTitle(item, item.Name) : string.Empty;
     }
 }

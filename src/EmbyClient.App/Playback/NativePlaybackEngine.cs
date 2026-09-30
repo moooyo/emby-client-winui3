@@ -319,6 +319,7 @@ public sealed partial class NativePlaybackEngine(
         session.Player.Volume = _volumeLevel / 100d;
         session.Player.IsMuted = _isMuted;
         session.NativeSession = session.Player.PlaybackSession;
+        InitializeLumenControls(session);
         session.Player.CommandManager.IsEnabled = false;
         InitializeMediaControls(session);
         session.Opened = (_, _) => Queue(() => OnOpened(session));
@@ -376,6 +377,9 @@ public sealed partial class NativePlaybackEngine(
             ApplyAudioSelection(session);
             ApplySubtitles(session);
             session.IsOpened = true;
+            RefreshVideoSize(session);
+            RestorePreferredPlaybackRate(session);
+            EnsureActive(session);
             if (session.Request.InitialPositionTicks > 0)
             {
                 if (!session.NativeSession!.CanSeek) throw new PlaybackException("UnsupportedFormat");
@@ -420,7 +424,7 @@ public sealed partial class NativePlaybackEngine(
 
     private void TryCompleteOpen(Session session)
     {
-        if (session.IsOpened && !session.InitialSeekPending && session.ExternalTextReady
+        if (IsActive(session) && session.IsOpened && !session.InitialSeekPending && session.ExternalTextReady
             && session.NativeSession!.PlaybackState == MediaPlaybackState.Playing)
             session.Started.TrySetResult();
     }
@@ -435,8 +439,16 @@ public sealed partial class NativePlaybackEngine(
         }
         session.ExternalTracks = [.. args.Tracks];
         session.ExternalTextReady = true;
-        ApplySubtitles(session);
-        TryCompleteOpen(session);
+        try
+        {
+            InitializeSubtitlePresentation(session);
+            ApplySubtitles(session);
+            if (!IsActive(session)) return;
+            Publish(session, PlaybackEngineEventKind.StateChanged);
+            TryCompleteOpen(session);
+        }
+        catch (PlaybackException exception) { Fail(session, exception.ErrorCode); }
+        catch { Fail(session, "UnsupportedSubtitle"); }
     }
 
     private static void ApplyAudioSelection(Session session)
@@ -469,19 +481,22 @@ public sealed partial class NativePlaybackEngine(
         tracks.SelectedIndex = matching[0];
     }
 
-    private static void ApplySubtitles(Session session)
+    private void ApplySubtitles(Session session)
     {
         if (session.Item is null) return;
         var tracks = session.Item.TimedMetadataTracks;
         for (uint index = 0; index < tracks.Count; index++)
         {
             var track = tracks[(int)index];
-            var enabled = session.Request.SubtitleStreamIndex != -1 && session.ExternalTextReady
+            var enabled = (session.LocalSubtitle is not null || session.Request.SubtitleStreamIndex != -1) && session.ExternalTextReady
                 && session.ExternalTracks.Any(external => external == track);
             tracks.SetPresentationMode(index, enabled
-                ? TimedMetadataTrackPresentationMode.PlatformPresented
+                ? SubtitleTextChanged is not null
+                    ? TimedMetadataTrackPresentationMode.ApplicationPresented
+                    : TimedMetadataTrackPresentationMode.PlatformPresented
                 : TimedMetadataTrackPresentationMode.Disabled);
         }
+        RefreshSubtitlePresentation(session);
     }
 
     private static void ValidateSubtitleDelivery(PlaybackEngineRequest request)
@@ -546,6 +561,7 @@ public sealed partial class NativePlaybackEngine(
     {
         try { await session.LoadTask.ConfigureAwait(false); }
         catch { }
+        await DrainLocalSubtitlesAsync(session).ConfigureAwait(false);
         await OnDispatcherAsync(() => ClearRetiredPlayerSource(session)).ConfigureAwait(false);
         if (session.AdaptiveFilter is not null) await session.AdaptiveFilter.DrainAsync().ConfigureAwait(false);
         if (session.DirectRelay is not null) await session.DirectRelay.DisposeAsync().ConfigureAwait(false);
@@ -573,6 +589,7 @@ public sealed partial class NativePlaybackEngine(
         session.Lifetime.Cancel();
         session.Started.TrySetCanceled();
         session.SeekCompletion?.TrySetCanceled();
+        RetireLumenControls(session);
         RetireMediaControls(session);
         if (ReferenceEquals(_current, session))
         {

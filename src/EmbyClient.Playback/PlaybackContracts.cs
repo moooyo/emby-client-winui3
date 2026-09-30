@@ -81,12 +81,19 @@ public sealed record PlaybackSelection
     public int? SubtitleStreamIndex { get; init; }
     public long MaxStreamingBitrate { get; init; } = 20_000_000;
     public bool ForceTranscoding { get; init; }
+
+    /// <summary>
+    /// Requests server-rendered subtitles for the current source and track after external delivery fails.
+    /// Independent of video conversion; changing the source or subtitle track clears this fallback.
+    /// </summary>
+    public bool ForceSubtitleBurnIn { get; init; }
 }
 
 /// <summary>
 /// Changes playback without changing its current position or pause state. Null normally preserves the current selection.
 /// When MediaSourceId changes, omitted audio/subtitle indexes instead request the new source's defaults;
 /// explicitly supplied indexes must belong to that new source. SubtitleStreamIndex = -1 explicitly disables subtitles.
+/// A different source or subtitle track clears its previous subtitle-delivery fallback; other changes preserve it.
 /// </summary>
 public sealed record PlaybackSelectionChange
 {

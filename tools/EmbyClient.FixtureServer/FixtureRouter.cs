@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using EmbyClient.Api;
@@ -51,6 +52,14 @@ internal static class FixtureRouter
         {
             context.Response.StatusCode = 403; return;
         }
+        if (parts is ["Videos", var subtitleItemId, var subtitleSourceId, "Subtitles", "2", "Stream.vtt"] && method is "GET" or "HEAD")
+        {
+            var subtitle = state.Subtitle(subtitleItemId, subtitleSourceId);
+            if (subtitle is null) { context.Response.StatusCode = 404; return; }
+            context.Response.Headers.CacheControl = "private, no-store";
+            await Results.Bytes(subtitle.Bytes, "text/vtt; charset=utf-8").ExecuteAsync(context);
+            return;
+        }
         if (parts is ["System", "Info"] && method == "GET")
         {
             await Json(context, state.SystemInfo, EmbyJsonContext.Default.SystemInfo); return;
@@ -87,6 +96,53 @@ internal static class FixtureRouter
             }, context.RequestAborted);
             return;
         }
+        if (parts is ["Users", _, "Items", var trailerItemId, "LocalTrailers"] && method == "GET")
+        {
+            var trailers = state.LocalTrailers(trailerItemId);
+            if (trailers is null) { context.Response.StatusCode = 404; return; }
+            await Json(context, trailers, EmbyJsonContext.Default.BaseItemDtoArray); return;
+        }
+        if (parts is ["Items", var similarItemId, "Similar"] && method == "GET")
+        {
+            var similar = state.Similar(similarItemId, request.Query);
+            if (similar is null) { context.Response.StatusCode = 404; return; }
+            await Json(context, similar, EmbyJsonContext.Default.QueryResultBaseItemDto); return;
+        }
+        if (parts is [var facet] && facet is "Genres" or "Persons" && method == "GET")
+        {
+            await Json(context, state.Facets(request.Query, facet == "Genres" ? "Genre" : "Person"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
+        }
+        if (parts is ["Users", _, "Items", var resumeItemId, "HideFromResume"] && method == "POST")
+        {
+            if (!bool.TryParse(request.Query["Hide"].ToString(), out var hide)) { context.Response.StatusCode = 400; return; }
+            var data = state.HideFromResume(resumeItemId, hide);
+            if (data is null) { context.Response.StatusCode = 404; return; }
+            await Json(context, data, EmbyJsonContext.Default.UserItemDataDto); return;
+        }
+        if (parts is ["Collections"] && method == "POST")
+        {
+            var result = state.CreateCollection(request.Query["Name"].ToString(), Ids(request.Query["Ids"].ToString()));
+            context.Response.StatusCode = result.StatusCode;
+            if (result.Collection is not null) await Json(context, result.Collection, FixtureJsonContext.Default.FixtureCollectionResult);
+            return;
+        }
+        if (parts is ["Collections", var collectionId, "Items"] && method is "POST" or "DELETE")
+        {
+            context.Response.StatusCode = state.UpdateCollection(collectionId, Ids(request.Query["Ids"].ToString()), method == "DELETE"); return;
+        }
+        if (parts is ["Items", var refreshItemId, "Refresh"] && method == "POST")
+        {
+            await Body(context, EmbyJsonContext.Default.BaseItemDto);
+            context.Response.StatusCode = state.RefreshMetadata(refreshItemId); return;
+        }
+        if (parts is ["Items", var metadataItemId] && method == "POST")
+        {
+            context.Response.StatusCode = state.UpdateMetadata(metadataItemId, await Body(context, EmbyJsonContext.Default.BaseItemDto)); return;
+        }
+        if (parts is ["Users", _, "Configuration"] && method == "POST")
+        {
+            context.Response.StatusCode = state.UpdateConfiguration(await Body(context, EmbyJsonContext.Default.UserConfiguration)); return;
+        }
         if (parts is ["Users", _, var operation, var stateItemId]
             && operation is "FavoriteItems" or "PlayedItems" && method is "POST" or "DELETE")
         {
@@ -100,26 +156,36 @@ internal static class FixtureRouter
         }
         if (parts is ["Shows", var seriesId, "Seasons"] && method == "GET")
         {
+            if (state.Item(seriesId)?.Type != "Series") { context.Response.StatusCode = 404; return; }
             await Json(context, state.Query(request.Query, seriesId, "Season", operation: "Seasons"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
         }
         if (parts is ["Shows", var episodeSeriesId, "Episodes"] && method == "GET")
         {
             var seasonId = request.Query["SeasonId"].ToString();
+            var selectedSeason = seasonId.Length > 0 ? state.Item(seasonId) : null;
+            if (state.Item(episodeSeriesId)?.Type != "Series"
+                || seasonId.Length > 0 && (selectedSeason?.Type != "Season" || selectedSeason?.SeriesId != episodeSeriesId))
+            { context.Response.StatusCode = 404; return; }
             await Json(context, state.Query(request.Query, seasonId.Length > 0 ? seasonId : episodeSeriesId,
                 "Episode", forceRecursive: true, operation: "Episodes"), EmbyJsonContext.Default.QueryResultBaseItemDto); return;
         }
-        if (parts.Length >= 4 && parts[0] is "Items" or "Users" && parts[2] == "Images" && method is "GET" or "HEAD")
+        if (parts.Length is 4 or 5 && parts[0] is "Items" or "Users" && parts[2] == "Images" && method is "GET" or "HEAD")
         {
+            var imageIndex = 0;
+            if (parts.Length == 5 && !int.TryParse(parts[4], NumberStyles.None, CultureInfo.InvariantCulture, out imageIndex))
+            { context.Response.StatusCode = 404; return; }
             state.ImageStarted();
             try
             {
-                var png = state.Poster(parts[0] == "Users" ? "1001" : parts[1]);
-                if (png is null) { context.Response.StatusCode = 404; return; }
+                var image = parts[0] == "Users" && parts[3] == "Primary" && imageIndex == 0 ? state.UserImage()
+                    : parts[0] == "Items" ? state.Image(parts[1], parts[3], imageIndex) : null;
+                if (image is null) { context.Response.StatusCode = 404; return; }
                 if (state.Options.ImageDelayMilliseconds > 0)
                     await Task.Delay(state.Options.ImageDelayMilliseconds, context.RequestAborted);
                 context.Response.Headers.CacheControl = "private, max-age=3600";
-                await Results.Bytes(png, "image/png").ExecuteAsync(context);
-                state.ImageCompleted(png.Length);
+                context.Response.Headers.ETag = '"' + image.Tag + '"';
+                await Results.Bytes(image.Bytes, image.ContentType).ExecuteAsync(context);
+                state.ImageCompleted(image.Bytes.Length);
             }
             catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
             {
@@ -133,7 +199,7 @@ internal static class FixtureRouter
         {
             var body = await Body(context, EmbyJsonContext.Default.PlaybackInfoRequest);
             if (body?.UserId is not null && body.UserId != FixtureState.UserId) { context.Response.StatusCode = 403; return; }
-            if (state.Item(playbackItemId) is not { IsFolder: false }) { context.Response.StatusCode = 404; return; }
+            if (state.Item(playbackItemId) is not { } playable || !FixtureState.IsPlayable(playable)) { context.Response.StatusCode = 404; return; }
             if (state.ConsumePlaybackInfoFailure(body)) { context.Response.StatusCode = 503; return; }
             var response = state.PlaybackInfo(playbackItemId, body);
             if (response is null) { context.Response.StatusCode = 404; return; }
@@ -142,7 +208,7 @@ internal static class FixtureRouter
         if (parts is ["Videos", var streamItemId, "stream"] && method is "GET" or "HEAD")
         {
             var playSessionId = request.Query["PlaySessionId"].ToString();
-            if (!state.OwnsPlayback(streamItemId, playSessionId)) { context.Response.StatusCode = 404; return; }
+            if (!state.OwnsPlayback(streamItemId, playSessionId, request.Query["MediaSourceId"].ToString())) { context.Response.StatusCode = 404; return; }
             state.MediaRequested(request.Headers.ContainsKey("Range"));
             await state.BoundaryControls.MediaAsync(streamItemId, playSessionId, async () =>
             {
@@ -204,6 +270,8 @@ internal static class FixtureRouter
 
     private static async Task<T?> Body<T>(HttpContext context, JsonTypeInfo<T> typeInfo) =>
         await JsonSerializer.DeserializeAsync(context.Request.Body, typeInfo, context.RequestAborted);
+
+    private static string[] Ids(string ids) => ids.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     private static async Task Json<T>(HttpContext context, T value, JsonTypeInfo<T> typeInfo)
     {

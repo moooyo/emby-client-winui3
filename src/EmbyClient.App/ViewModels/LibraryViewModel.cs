@@ -13,7 +13,8 @@ public sealed partial class LibraryViewModel : ObservableObject
 {
     private const int PageSize = 48;
     private const int HomeShelfSize = 16;
-    private static readonly string[] ListFields = ["PrimaryImageAspectRatio", "Overview"];
+    private static readonly string[] ListFields =
+        ["PrimaryImageAspectRatio", "Overview", "OriginalTitle", "SortName", "Genres", "Tags", "SeasonCount", "ChildCount", "RecursiveItemCount"];
     private static readonly string[] SearchTypes = ["Movie", "Series", "Episode", "Video", "MusicVideo", "Audio", "MusicAlbum", "BoxSet"];
     private readonly ImageCache _images = new();
     private readonly Stack<BrowseSnapshot> _history = new();
@@ -224,6 +225,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         CancelAndDispose(ref _sessionCancellation);
         _images.Clear();
         _api = null;
+        _seriesRecommendation = null;
         _librariesReady = null;
         _user = null;
         _serverId = string.Empty;
@@ -234,6 +236,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         _sessionExpiredNotified = false;
         _userDataRevision = 0;
         _userDataChanges.Clear();
+        ResetResumeState();
         foreach (var person in _people) person.Dispose();
         _people.Clear();
         ActivePerson = null;
@@ -252,6 +255,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         PlayableDetail = new(new BaseItemDto());
         Title = "Your library";
         Subtitle = string.Empty;
+        TotalItemsCount = null;
+        ResetLumenState();
         HasDetails = HasItems = HasMore = IsHome = IsBusy = IsMutating = CanGoBack = HasError = false;
         ErrorMessage = string.Empty;
         EmptyMessage = "Connect to a server to browse your media.";
@@ -279,6 +284,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         var location = _location;
         var loadedCount = _nextIndex;
         var userDataRevision = _userDataRevision;
+        var resumeRevision = _resumeRevision;
         CancelAndDispose(ref _seasonCancellation);
         CancelAndDispose(ref _pageCancellation);
         var source = CancellationTokenSource.CreateLinkedTokenSource(_sessionCancellation.Token, cancellationToken);
@@ -299,12 +305,24 @@ public sealed partial class LibraryViewModel : ObservableObject
         {
             var librariesTask = api.GetViewsAsync(cancellationToken: token);
             var pageTask = PreparePageRefreshAsync(api, location, loadedCount, userDataRevision, librariesTask, token);
-            await Task.WhenAll(librariesTask, pageTask);
+            var peopleTask = PrepareLumenSearchPeopleRefreshAsync(api, location, userDataRevision, token);
+            await Task.WhenAll(librariesTask, pageTask, peopleTask);
+            if (location.Kind == LocationKind.Resume) await AwaitResumeMutationAsync(token);
+            while (location.Kind == LocationKind.Resume && resumeRevision != _resumeRevision)
+            {
+                if (!CanCommitPage(pageVersion, token) || seasonRequestVersion != _seasonRequestVersion
+                    || !IsCurrentLibraryRequest(sessionVersion, libraryRequestVersion) || HasPendingSearch) return;
+                resumeRevision = _resumeRevision;
+                pageTask = PreparePageRefreshAsync(api, location, _nextIndex, _userDataRevision, librariesTask, token);
+                await pageTask;
+                await AwaitResumeMutationAsync(token);
+            }
             if (!CanCommitPage(pageVersion, token) || seasonRequestVersion != _seasonRequestVersion
                 || !IsCurrentLibraryRequest(sessionVersion, libraryRequestVersion) || HasPendingSearch) return;
             ReconcileCards(Libraries, PreserveNewerUserData((await librariesTask).Items, userDataRevision));
             _librariesReady = Task.FromResult(true);
             (await pageTask)();
+            (await peopleTask)?.Invoke();
             if (!HasError || HasItems) SetLoadOutcome(PageLoadOutcome.Succeeded);
             OnPropertyChanged(nameof(HomeLibrariesVisibility));
             NotifyBrowseOptions();
@@ -327,6 +345,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             {
                 RestorePageLifetime(pageVersion, source);
                 SetSeriesInitializing(false);
+                SearchPeopleIsBusy = false;
                 IsBusy = false;
             }
         }
@@ -335,9 +354,10 @@ public sealed partial class LibraryViewModel : ObservableObject
     private async Task<bool> LoadLibrariesAsync(EmbyApiClient api, int sessionVersion, int requestVersion,
         CancellationToken cancellationToken)
     {
+        var userDataRevision = _userDataRevision;
         var result = await api.GetViewsAsync(cancellationToken: cancellationToken);
         if (!IsCurrentLibraryRequest(sessionVersion, requestVersion) || cancellationToken.IsCancellationRequested) return false;
-        ReconcileCards(Libraries, result.Items);
+        ReconcileCards(Libraries, PreserveNewerUserData(result.Items, userDataRevision));
         OnPropertyChanged(nameof(HomeLibrariesVisibility));
         NotifyPresentation();
         return true;
@@ -375,63 +395,13 @@ public sealed partial class LibraryViewModel : ObservableObject
         {
             "ProductionYear" => "ProductionYear",
             "DateCreated" => "DateCreated",
+            "CommunityRating" => "CommunityRating",
             _ => "SortName"
         };
         var normalizedFilter = watchFilter is WatchStatusFilter.Unplayed or WatchStatusFilter.Played ? watchFilter : WatchStatusFilter.All;
         var location = (_pendingBrowseLocation ?? _location) with
             { SortKey = normalized, SortDescending = descending, WatchFilter = normalizedFilter };
-        if (location == (_pendingBrowseLocation ?? _location)) return;
-        if (location.Kind == LocationKind.Search && string.IsNullOrWhiteSpace(location.SearchTerm))
-        {
-            _location = location;
-            NotifyBrowseOptions();
-            return;
-        }
-        var version = ++_pageVersion;
-        CancelSearch();
-        CancelAndDispose(ref _pageCancellation);
-        var source = CancellationTokenSource.CreateLinkedTokenSource(_sessionCancellation.Token, cancellationToken);
-        _pageCancellation = source;
-        var token = source.Token;
-        var api = _api;
-        _pendingBrowseLocation = location;
-        _isLoadingMore = false;
-        IsBusy = true;
-        HasError = false;
-        NotifyBrowseOptions();
-        try
-        {
-            var result = await QueryItemsAsync(api, location, 0, token);
-            if (!CanCommitPage(version, token) || HasPendingSearch) return;
-
-            // A filter is committed only after its first page is available. Existing cards
-            // and paging still describe the previous query while the request is pending.
-            _location = location;
-            _pendingBrowseLocation = null;
-            ReconcileItems(result.Items);
-            _nextIndex = result.Items.Length;
-            HasMore = result.Items.Length > 0 && (result.TotalRecordCount is { } total
-                ? _nextIndex < total : result.Items.Length == PageSize);
-            UpdateCount(result.TotalRecordCount);
-            SetLoadOutcome(PageLoadOutcome.Succeeded);
-            NotifyBrowseOptions();
-            NotifyCollectionCommitted();
-        }
-        catch (OperationCanceledException) when (source.IsCancellationRequested) { }
-        catch (Exception exception) when (IsExpectedFailure(exception))
-        {
-            if (CanCommitPage(version, token) && !HasPendingSearch) ShowError(exception);
-        }
-        finally
-        {
-            if (version == _pageVersion)
-            {
-                _pendingBrowseLocation = null;
-                RestorePageLifetime(version, source);
-                NotifyBrowseOptions();
-                IsBusy = false;
-            }
-        }
+        await SetLumenBrowseLocationAsync(location, cancellationToken);
     }
 
     public Task ShowLibraryAsync(MediaCardViewModel library, CancellationToken cancellationToken = default)
@@ -469,31 +439,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         return _history.TryPop(out var state) ? RestoreBrowseStateAsync(state) : Task.CompletedTask;
     }
 
-    public async Task SearchAsync(string text, bool debounce = true, CancellationToken cancellationToken = default)
-    {
-        CancelSearch();
-        if (_sessionCancellation is null) return;
-        var source = CancellationTokenSource.CreateLinkedTokenSource(_sessionCancellation.Token, cancellationToken);
-        var token = source.Token;
-        _searchCancellation = source;
-        _pendingSearchCancellation = source;
-        try
-        {
-            if (debounce) await Task.Delay(350, token);
-            token.ThrowIfCancellationRequested();
-            var term = text.Trim();
-            if (!IsSearch) _searchOriginSnapshot = CaptureBrowseState();
-            var destination = IsSearch
-                ? _location with { Title = "Search", SearchTerm = term }
-                : new BrowseLocation(LocationKind.Search, null, "Search", SearchTerm: term, SearchOrigin: _location);
-            await NavigateAsync(destination, false, token);
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        finally
-        {
-            if (ReferenceEquals(_pendingSearchCancellation, source)) _pendingSearchCancellation = null;
-        }
-    }
+    public Task SearchAsync(string text, bool debounce = true, CancellationToken cancellationToken = default) =>
+        SearchLumenCoreAsync(text, debounce, false, cancellationToken);
 
     public async Task<PageLoadMoreOutcome> LoadMoreAsync(CancellationToken cancellationToken = default)
     {
@@ -504,14 +451,17 @@ public sealed partial class LibraryViewModel : ObservableObject
         _isLoadingMore = true;
         IsBusy = true;
         HasError = false;
-        var count = Items.Count;
         try
         {
-            var result = await QueryItemsAsync(api, _location, _nextIndex, linked.Token);
+            var read = await QueryStableResumePageAsync(api, _location, () => _nextIndex, version, linked.Token);
             if (!CanCommitPage(version, linked.Token) || HasPendingSearch) return PageLoadMoreOutcome.Canceled;
-            AppendItems(result.Items);
+            var result = read.Page;
+            var rawPageLength = result.Items.Length;
+            result = PreserveHiddenResumePage(_location, result, read.ReadRevision);
+            var count = Items.Count;
+            AppendItems(PreserveNewerUserData(result.Items, read.ReadRevision));
             _nextIndex += result.Items.Length;
-            HasMore = result.Items.Length > 0 && (result.TotalRecordCount is { } total ? _nextIndex < total : result.Items.Length == PageSize);
+            HasMore = rawPageLength > 0 && (result.TotalRecordCount is { } total ? _nextIndex < total : rawPageLength == PageSize);
             UpdateCount(result.TotalRecordCount);
             SetLoadOutcome(PageLoadOutcome.Succeeded);
             return Items.Count > count ? PageLoadMoreOutcome.Appended
@@ -564,6 +514,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         var searchOwner = location.Kind == LocationKind.Search ? _pendingSearchCancellation : null;
         var seasonRequestVersion = ++_seasonRequestVersion;
         var version = ++_pageVersion;
+        var userDataRevision = _userDataRevision;
+        var resumeReadRevision = userDataRevision;
         CancelAndDispose(ref _seasonCancellation);
         CancelAndDispose(ref _pageCancellation);
         var source = CancellationTokenSource.CreateLinkedTokenSource(_sessionCancellation.Token, cancellationToken);
@@ -574,6 +526,9 @@ public sealed partial class LibraryViewModel : ObservableObject
         _pendingSeasonId = null;
         SetSeriesInitializing(false);
         _location = location;
+        TotalItemsCount = null;
+        ResetLumenSearchPeople();
+        SetLumenGenreContext(location);
         ActivePerson = person;
         if (location.Kind != LocationKind.Search) _searchOriginSnapshot = null;
         ViewportState = new();
@@ -644,7 +599,7 @@ public sealed partial class LibraryViewModel : ObservableObject
                     SeriesName = item.SeriesName ?? location.SeriesName,
                     SeasonId = item.SeasonId ?? (item.Type == "Episode" ? location.SeasonId : null)
                 };
-                Detail = new(item);
+                Detail = new(PreserveNewerUserData(item, userDataRevision));
                 Title = Detail.Title;
                 HasDetails = true;
                 if (item.Type is "Series" or "Season") EmptyMessage = "No episodes are available in this season.";
@@ -675,13 +630,16 @@ public sealed partial class LibraryViewModel : ObservableObject
             }
             else
             {
-                result = await QueryItemsAsync(api, location, 0, token);
+                var read = await QueryStableResumePageAsync(api, location, () => 0, version, token);
+                result = read.Page;
+                resumeReadRevision = read.ReadRevision;
                 if (!CanCommitNavigation(version, token, searchOwner)) return;
                 HasMore = result.Items.Length > 0 && (result.TotalRecordCount is { } total ? result.Items.Length < total : result.Items.Length == PageSize);
             }
 
             if (!CanCommitNavigation(version, token, searchOwner)) return;
-            AppendItems(result.Items);
+            result = PreserveHiddenResumePage(location, result, resumeReadRevision);
+            AppendItems(PreserveNewerUserData(result.Items, resumeReadRevision));
             if (HasDetails && DetailItemsAreEpisodes) PlayableDetail = FindPlayable(Items);
             _nextIndex = result.Items.Length;
             UpdateCount(result.TotalRecordCount);
@@ -704,13 +662,17 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     private async Task LoadHomeAsync(EmbyApiClient api, int pageVersion, CancellationToken cancellationToken)
     {
+        var userDataRevision = _userDataRevision;
         var results = await QueryHomeShelvesAsync(api, Libraries.Select(library => library.Item).ToArray(), cancellationToken,
             completed =>
             {
-                if (CanCommitPage(pageVersion, cancellationToken) && !HasPendingSearch) ApplyHomeShelves(completed);
+                if (CanCommitPage(pageVersion, cancellationToken) && !HasPendingSearch)
+                    ApplyHomeShelves(completed.Select(result => result with
+                        { Items = PreserveNewerUserData(result.Items, userDataRevision) }), userDataRevision);
             });
         if (!CanCommitPage(pageVersion, cancellationToken) || HasPendingSearch) return;
-        ApplyHomeShelves(results);
+        ApplyHomeShelves(results.Select(result => result with
+            { Items = PreserveNewerUserData(result.Items, userDataRevision) }), userDataRevision);
         SetLoadOutcome(results.Any(result => result.Failure is null) ? PageLoadOutcome.Succeeded : PageLoadOutcome.Failed);
         var failures = results.Select(result => result.Failure).OfType<Exception>().ToArray();
         if (failures.Length > 0)
@@ -724,6 +686,7 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     private async Task LoadSeriesAsync(EmbyApiClient api, BrowseLocation location, int pageVersion, CancellationToken cancellationToken)
     {
+        var userDataRevision = _userDataRevision;
         var seriesId = Detail.Id;
         var seasonRequestVersion = _seasonRequestVersion;
         SetSeriesInitializing(true);
@@ -731,7 +694,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         {
             var seasons = await api.GetSeasonsAsync(seriesId, cancellationToken);
             if (!CanCommitPage(pageVersion, cancellationToken) || HasPendingSearch) return;
-            foreach (var season in seasons.Items.Where(item => !string.IsNullOrWhiteSpace(item.Id)).OrderBy(item => item.IndexNumber ?? int.MaxValue))
+            foreach (var season in PreserveNewerUserData(seasons.Items, userDataRevision)
+                .Where(item => !string.IsNullOrWhiteSpace(item.Id)).OrderBy(item => item.IndexNumber ?? int.MaxValue))
                 Seasons.Add(new(season));
             var selectedSeason = Seasons.FirstOrDefault(season => season.Id == location.SeasonId)
                 ?? Seasons.FirstOrDefault(season => season.Item.IndexNumber is > 0) ?? Seasons.FirstOrDefault();
@@ -748,14 +712,14 @@ public sealed partial class LibraryViewModel : ObservableObject
                 : FindSeriesPlaybackAsync(api, seriesId, false, pageVersion, cancellationToken);
             var episodes = await episodesTask;
             if (!CanCommitPage(pageVersion, cancellationToken) || seasonRequestVersion != _seasonRequestVersion || HasPendingSearch) return;
-            AppendItems(episodes.Items);
+            AppendItems(PreserveNewerUserData(episodes.Items, userDataRevision));
             PlayableDetail = FindPlayable(Items);
             _nextIndex = episodes.Items.Length;
             UpdateCount(episodes.TotalRecordCount);
             SetLoadOutcome(PageLoadOutcome.Succeeded);
             SetSeriesInitializing(false);
             IsBusy = false;
-            _ = UpdateSeriesRecommendationAsync(resumeTask, nextTask, pageVersion, seasonRequestVersion, cancellationToken);
+            StartSeriesRecommendation(resumeTask, nextTask, pageVersion, seasonRequestVersion, userDataRevision, cancellationToken);
         }
         finally
         {
@@ -774,6 +738,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     private async Task<MediaCardViewModel?> FindSeriesPlaybackAsync(EmbyApiClient api, string seriesId, bool resume,
         int pageVersion, CancellationToken cancellationToken)
     {
+        var userDataRevision = _userDataRevision;
         try
         {
             var result = resume
@@ -787,7 +752,7 @@ public sealed partial class LibraryViewModel : ObservableObject
                 }, cancellationToken)
                 : await api.GetNextUpAsync(new NextUpQuery { SeriesId = seriesId, Limit = 1, Fields = ListFields }, cancellationToken);
             if (!CanCommitPage(pageVersion, cancellationToken) || HasPendingSearch) return null;
-            return result.Items.Select(item => new MediaCardViewModel(item))
+            return PreserveNewerUserData(result.Items, userDataRevision).Select(item => new MediaCardViewModel(item))
                 .FirstOrDefault(card => card.Item.Type == "Episode" && card.CanPlay && (!resume || card.CanResume)
                     && (string.IsNullOrWhiteSpace(card.Item.SeriesId) || card.Item.SeriesId == seriesId));
         }
@@ -807,6 +772,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         if (_pendingSeasonId == season.Id
             || _pendingSeasonId is null && _location.SeasonId == season.Id && (Items.Count > 0 || IsBusy)) return;
         var requestVersion = ++_seasonRequestVersion;
+        var userDataRevision = _userDataRevision;
         CancelAndDispose(ref _seasonCancellation);
         var source = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token, cancellationToken);
         _seasonCancellation = source;
@@ -827,7 +793,7 @@ public sealed partial class LibraryViewModel : ObservableObject
                 || HasPendingSearch) return;
             _location = _location with { SeasonId = season.Id, PreferSelectedSeason = true };
             _pendingSeasonId = null;
-            ReconcileItems(result.Items);
+            ReconcileItems(PreserveNewerUserData(result.Items, userDataRevision));
             HasMore = false;
             PlayableDetail = FindPlayable(Items);
             EmptyMessage = "No episodes are available in this season.";
@@ -875,8 +841,11 @@ public sealed partial class LibraryViewModel : ObservableObject
             ParentId = location.Kind is LocationKind.Library or LocationKind.Item or LocationKind.Latest ? location.ItemId : null,
             StartIndex = offset,
             Limit = PageSize,
-            Recursive = location.Kind is LocationKind.Search or LocationKind.Favorites or LocationKind.Latest,
+            Recursive = location.Kind is LocationKind.Search or LocationKind.Favorites or LocationKind.Latest
+                || location.ItemTypes is { Length: > 0 } || location.Genre is not null || location.NameStartsWith is not null,
             SearchTerm = location.SearchTerm,
+            Genres = location.Genre is { } genre ? [genre] : null,
+            NameStartsWith = location.NameStartsWith,
             IsFavorite = location.Kind == LocationKind.Favorites ? true : null,
             IsPlayed = location.WatchFilter switch
             {
@@ -884,7 +853,7 @@ public sealed partial class LibraryViewModel : ObservableObject
                 WatchStatusFilter.Played => true,
                 _ => null
             },
-            IncludeItemTypes = location.Kind is LocationKind.Search or LocationKind.Latest ? SearchTypes : null,
+            IncludeItemTypes = location.ItemTypes ?? (location.Kind is LocationKind.Search or LocationKind.Latest ? SearchTypes : null),
             SortBy = location.SortKey == "SortName" ? ["SortName"] : [location.SortKey, "SortName"],
             SortOrder = [location.SortDescending ? "Descending" : "Ascending"],
             Fields = ListFields,
@@ -893,40 +862,8 @@ public sealed partial class LibraryViewModel : ObservableObject
         }, cancellationToken);
     }
 
-    private async Task MutateUserDataAsync(bool favorite, CancellationToken cancellationToken)
-    {
-        if (!CanEditDetails || _api is null || _sessionCancellation is null || string.IsNullOrWhiteSpace(Detail.Id)) return;
-        var version = _sessionVersion;
-        var pageVersion = _pageVersion;
-        var id = Detail.Id;
-        var api = _api;
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_sessionCancellation.Token, cancellationToken);
-        IsMutating = true;
-        HasError = false;
-        try
-        {
-            var result = favorite
-                ? await api.SetFavoriteAsync(id, !Detail.IsFavorite, linked.Token)
-                : await api.SetPlayedAsync(id, !Detail.IsPlayed, linked.Token);
-            if (!IsCurrentSession(version) || linked.IsCancellationRequested) return;
-            _userDataChanges[id] = (++_userDataRevision, result);
-            foreach (var card in Items.Concat(Libraries).Concat(Seasons).Concat(HomeRows.SelectMany(row => row.Items))
-                .Concat(HistoryCards())
-                .Where(item => item.Id == id)) card.ApplyUserData(result);
-            if (Detail.Id == id) Detail.ApplyUserData(result);
-            if (PlayableDetail.Id == id && !ReferenceEquals(PlayableDetail, Detail)) PlayableDetail.ApplyUserData(result);
-            OnPropertyChanged(nameof(PrimaryPlayLabel));
-        }
-        catch (OperationCanceledException) when (linked.IsCancellationRequested) { }
-        catch (Exception exception) when (IsExpectedFailure(exception))
-        {
-            if (IsCurrentSession(version) && pageVersion == _pageVersion && !linked.IsCancellationRequested) ShowError(exception);
-        }
-        finally
-        {
-            if (IsCurrentSession(version)) IsMutating = false;
-        }
-    }
+    private Task MutateUserDataAsync(bool favorite, CancellationToken cancellationToken) => CanEditDetails
+        ? MutateLumenUserDataAsync(Detail, favorite, cancellationToken) : Task.CompletedTask;
 
     private void AppendItems(BaseItemDto[] items)
     {
@@ -952,6 +889,7 @@ public sealed partial class LibraryViewModel : ObservableObject
 
     private void UpdateCount(int? total)
     {
+        TotalItemsCount = total is >= 0 ? total : null;
         var count = total is { } value && value >= Items.Count ? value : Items.Count;
         var label = count == 1 ? "1 item" : $"{count:N0} items";
         Subtitle = HasDetails ? DetailItemsAreEpisodes ? $"{count:N0} {(count == 1 ? "episode" : "episodes")}" : $"Contents · {label}"
@@ -993,6 +931,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     {
         _pendingSearchCancellation = null;
         CancelAndDispose(ref _searchCancellation);
+        CancelLumenSearchPeople();
     }
 
     private static void CancelAndDispose(ref CancellationTokenSource? source)
@@ -1018,6 +957,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         OnPropertyChanged(nameof(SearchEmptyVisibility));
         OnPropertyChanged(nameof(SearchText));
         OnPropertyChanged(nameof(EmptyVisibility));
+        NotifyLumenBrowseOptions();
         NotifyPresentation();
     }
 
@@ -1034,7 +974,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     private sealed record BrowseLocation(LocationKind Kind, string? ItemId, string Title, string? SeriesId = null,
         string? SearchTerm = null, BrowseLocation? SearchOrigin = null, string SortKey = "SortName",
         bool SortDescending = false, WatchStatusFilter WatchFilter = WatchStatusFilter.All, string? SeasonId = null, bool PreferSelectedSeason = false,
-        string? SeriesName = null)
+        string? SeriesName = null, string[]? ItemTypes = null, string? Genre = null, string? NameStartsWith = null)
     {
         public bool IsHome => Kind == LocationKind.Home;
     }

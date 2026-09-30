@@ -87,7 +87,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             if (GetRecoveryTarget() != observed || Volatile.Read(ref _current) is not null) return;
             cancellationToken.ThrowIfCancellationRequested();
             ArgumentNullException.ThrowIfNull(change);
-            var selection = ApplySelectionChange(observed.State.Selection, change);
+            var selection = ApplySelectionChange(observed.State.Selection, change, observed.SubtitleStreamIndex);
             ValidateSelection(selection);
             // Retain the target if a native resource still cannot be released. This uses the existing resource gate.
             await RetryPendingEngineStopsAsync().ConfigureAwait(false);
@@ -135,7 +135,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         {
             MediaSourceId = observed.Source?.Id ?? observed.Selection.MediaSourceId,
             StartPositionTicks = AbsolutePosition(observed)
-        }, change);
+        }, change, observed.Request?.SubtitleStreamIndex ?? observed.Source?.DefaultSubtitleStreamIndex);
         ValidateSelection(selection);
         var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : observed.OwnerCancellationToken;
         var intent = BeginIntent();
@@ -305,9 +305,9 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                 MaxAudioChannels = 2,
                 DeviceProfile = profile,
                 EnableDirectPlay = false,
-                EnableDirectStream = !selection.ForceTranscoding && !selection.AudioStreamIndex.HasValue,
+                EnableDirectStream = !selection.ForceTranscoding && !selection.ForceSubtitleBurnIn && !selection.AudioStreamIndex.HasValue,
                 EnableTranscoding = true,
-                AllowVideoStreamCopy = !selection.ForceTranscoding,
+                AllowVideoStreamCopy = !selection.ForceTranscoding && !selection.ForceSubtitleBurnIn,
                 AllowAudioStreamCopy = !selection.ForceTranscoding,
                 AllowInterlacedVideoStreamCopy = false,
                 IsPlayback = true,
@@ -385,13 +385,17 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         catch (Exception exception)
         {
             var code = ErrorCode(exception);
-            var retry = !selection.ForceTranscoding && IsFallbackCode(code)
-                && !session.Lifetime.IsCancellationRequested && intent == Volatile.Read(ref _intent);
             CaptureEngineSnapshot(session);
-            var fallback = session.Selection with { StartPositionTicks = AbsolutePosition(session), ForceTranscoding = true };
+            var retry = TryCreateFallbackSelection(session, code, out var fallback)
+                && !session.Lifetime.IsCancellationRequested && intent == Volatile.Read(ref _intent);
             var fallbackPaused = restorePaused || ShouldPauseAfterRestart(session);
             var recovery = CreateRecoveryTarget(session, exception);
             await RetireAsync(session, exception is not OperationCanceledException).ConfigureAwait(false);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                if (intent == Volatile.Read(ref _intent)) PublishStatus(PlaybackStatus.Idle, session);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
             if (retry)
             {
                 EmitDiagnostic(session.Id, "Fallback", code);
@@ -446,7 +450,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             MaxStaticBitrate = selection.MaxStreamingBitrate,
             TranscodingProfiles = profile.TranscodingProfiles?.Select(value => value with { CopyTimestamps = false }).ToArray()
         };
-        if (selection.ForceTranscoding)
+        if (selection.ForceSubtitleBurnIn)
         {
             profile = profile with
             {
@@ -569,13 +573,19 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                     else if (item.EngineEvent?.Kind == PlaybackEngineEventKind.Failed)
                     {
                         var code = SafeCode(item.EngineEvent.ErrorCode ?? "EngineFailed");
-                        var intent = Volatile.Read(ref _intent);
-                        var fallback = session.Selection with { StartPositionTicks = AbsolutePosition(session), ForceTranscoding = true };
+                        var intent = session.Intent;
+                        var retry = TryCreateFallbackSelection(session, code, out var fallback)
+                            && !session.Lifetime.IsCancellationRequested && intent == Volatile.Read(ref _intent);
                         var restorePaused = ShouldPauseAfterRestart(session);
-                        var retry = !session.Selection.ForceTranscoding && IsFallbackCode(code);
                         var recovery = CreateRecoveryTarget(session, new PlaybackException(code));
                         await RetireAsync(session, true).ConfigureAwait(false);
-                        if (retry && intent == Volatile.Read(ref _intent))
+                        if (intent != Volatile.Read(ref _intent)) continue;
+                        if (session.OwnerCancellationToken.IsCancellationRequested)
+                        {
+                            PublishStatus(PlaybackStatus.Idle, session);
+                            continue;
+                        }
+                        if (retry)
                         {
                             EmitDiagnostic(session.Id, "Fallback", code);
                             await StartCoreAsync(fallback, intent, session.OwnerCancellationToken, restorePaused: restorePaused).ConfigureAwait(false);
@@ -868,7 +878,8 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             Selection = selection,
             IsPaused = ShouldPauseAfterRestart(session),
             ErrorCode = ErrorCode(exception)
-        }, session.Intent, session.OwnerCancellationToken);
+        }, session.Intent, session.OwnerCancellationToken,
+            session.Request?.SubtitleStreamIndex ?? session.Source?.DefaultSubtitleStreamIndex);
     }
 
     private void PublishRecovery(RecoveryTarget? recovery)
@@ -904,10 +915,13 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
-    private static PlaybackSelection ApplySelectionChange(PlaybackSelection selection, PlaybackSelectionChange change)
+    private static PlaybackSelection ApplySelectionChange(PlaybackSelection selection, PlaybackSelectionChange change,
+        int? currentSubtitleStreamIndex)
     {
         var changesSource = change.MediaSourceId is not null
             && !string.Equals(change.MediaSourceId, selection.MediaSourceId, StringComparison.Ordinal);
+        var changesSubtitle = change.SubtitleStreamIndex.HasValue
+            && change.SubtitleStreamIndex != (selection.SubtitleStreamIndex ?? currentSubtitleStreamIndex);
         return selection with
         {
             MediaSourceId = change.MediaSourceId ?? selection.MediaSourceId,
@@ -915,7 +929,8 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             AudioStreamIndex = change.AudioStreamIndex ?? (changesSource ? null : selection.AudioStreamIndex),
             SubtitleStreamIndex = change.SubtitleStreamIndex ?? (changesSource ? null : selection.SubtitleStreamIndex),
             MaxStreamingBitrate = change.MaxStreamingBitrate ?? selection.MaxStreamingBitrate,
-            ForceTranscoding = change.ForceTranscoding ?? selection.ForceTranscoding
+            ForceTranscoding = change.ForceTranscoding ?? selection.ForceTranscoding,
+            ForceSubtitleBurnIn = !changesSource && !changesSubtitle && selection.ForceSubtitleBurnIn
         };
     }
 
@@ -935,7 +950,26 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         if (value <= TimeSpan.Zero || value > TimeSpan.FromMinutes(5)) throw new ArgumentOutOfRangeException(name);
     }
 
-    private static bool IsFallbackCode(string code) => code is "UnsupportedTrack" or "UnsupportedFormat" or "UnsupportedSubtitle";
+    private static bool TryCreateFallbackSelection(Session session, string code, out PlaybackSelection fallback)
+    {
+        fallback = session.Selection with
+        {
+            MediaSourceId = session.Source?.Id ?? session.Selection.MediaSourceId,
+            StartPositionTicks = AbsolutePosition(session)
+        };
+        // Each independent delivery fallback can be promoted once without retrying an unchanged configuration.
+        if (code == "UnsupportedSubtitle" && !fallback.ForceSubtitleBurnIn)
+        {
+            fallback = fallback with { ForceSubtitleBurnIn = true };
+            return true;
+        }
+        if ((code is "UnsupportedTrack" or "UnsupportedFormat") && !fallback.ForceTranscoding)
+        {
+            fallback = fallback with { ForceTranscoding = true };
+            return true;
+        }
+        return false;
+    }
     private static string SafeCode(string code) => code.Length is > 0 and <= 64 && code.All(character => char.IsAsciiLetterOrDigit(character) || character == '_')
         ? code : "PlaybackFailed";
     private static string ErrorCode(Exception exception) => exception switch
@@ -1033,7 +1067,8 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         internal long FinalPositionTicks;
     }
 
-    private sealed record RecoveryTarget(PlaybackRecovery State, long Intent, CancellationToken OwnerCancellationToken);
+    private sealed record RecoveryTarget(PlaybackRecovery State, long Intent, CancellationToken OwnerCancellationToken,
+        int? SubtitleStreamIndex);
 
     private readonly record struct WorkItem(Guid PlaybackId, PlaybackEngineEventArgs? EngineEvent, bool IsTimer);
 }

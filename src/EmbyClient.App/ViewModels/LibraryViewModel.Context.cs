@@ -88,6 +88,7 @@ public sealed partial class LibraryViewModel
         CancellationToken cancellationToken)
     {
         if (episode.Item.SeriesId is not { Length: > 0 } seriesId) return;
+        var userDataRevision = _userDataRevision;
         try
         {
             var result = await api.GetEpisodesAsync(seriesId, episode.Item.SeasonId, cancellationToken);
@@ -95,7 +96,8 @@ public sealed partial class LibraryViewModel
             var ordered = result.Items.OrderBy(item => item.ParentIndexNumber ?? int.MaxValue)
                 .ThenBy(item => item.IndexNumber ?? int.MaxValue).ToArray();
             var index = Array.FindIndex(ordered, item => item.Id == episode.Id);
-            var next = index >= 0 ? ordered.Skip(index + 1).Select(item => new MediaCardViewModel(item))
+            var next = index >= 0 ? ordered.Skip(index + 1)
+                .Select(item => new MediaCardViewModel(PreserveNewerUserData(item, userDataRevision)))
                 .FirstOrDefault(item => item.CanPlay) : null;
             if (next is null && index >= 0 && episode.Item.SeasonId is { Length: > 0 } seasonId)
             {
@@ -106,7 +108,7 @@ public sealed partial class LibraryViewModel
                 {
                     var nextSeason = await api.GetEpisodesAsync(seriesId, nextSeasonId, cancellationToken);
                     next = nextSeason.Items.OrderBy(item => item.IndexNumber ?? int.MaxValue)
-                        .Select(item => new MediaCardViewModel(item)).FirstOrDefault(item => item.CanPlay);
+                        .Select(item => new MediaCardViewModel(PreserveNewerUserData(item, userDataRevision))).FirstOrDefault(item => item.CanPlay);
                 }
             }
             if (CanCommitPage(version, cancellationToken) && Detail.Id == episode.Id && !HasPendingSearch) NextEpisode = next;
@@ -119,13 +121,16 @@ public sealed partial class LibraryViewModel
     }
 
     private async Task UpdateSeriesRecommendationAsync(Task<MediaCardViewModel?> resumeTask,
-        Task<MediaCardViewModel?> nextTask, int pageVersion, int seasonVersion, CancellationToken cancellationToken)
+        Task<MediaCardViewModel?> nextTask, int pageVersion, int seasonVersion, long userDataRevision, CancellationToken cancellationToken)
     {
         try
         {
             await Task.WhenAll(resumeTask, nextTask);
             if (!CanCommitPage(pageVersion, cancellationToken) || seasonVersion != _seasonRequestVersion || HasPendingSearch) return;
-            PlayableDetail = await resumeTask ?? await nextTask ?? FindPlayable(Items);
+            var playable = await resumeTask ?? await nextTask ?? FindPlayable(Items);
+            var preserved = PreserveNewerUserData(playable.Item, userDataRevision);
+            if (preserved.UserData is { } data && !ReferenceEquals(playable.Item.UserData, data)) playable.ApplyUserData(data);
+            PlayableDetail = playable;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
     }

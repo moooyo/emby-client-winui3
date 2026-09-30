@@ -17,13 +17,17 @@
     <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.Presentation.cs" Link="Product/LibraryViewModel.Presentation.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.History.cs" Link="Product/LibraryViewModel.History.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.Context.cs" Link="Product/LibraryViewModel.Context.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.PlaybackRecommendation.cs" Link="Product/LibraryViewModel.PlaybackRecommendation.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.People.cs" Link="Product/LibraryViewModel.People.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.Lumen.cs" Link="Product/LibraryViewModel.Lumen.cs" />
+    <Compile Include="../../src/EmbyClient.App/ViewModels/LibraryViewModel.Resume.cs" Link="Product/LibraryViewModel.Resume.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/PersonDetailsViewModel.cs" Link="Product/PersonDetailsViewModel.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/PersonCardViewModel.cs" Link="Product/PersonCardViewModel.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/MediaInformationViewModel.cs" Link="Product/MediaInformationViewModel.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/MediaCardViewModel.cs" Link="Product/MediaCardViewModel.cs" />
     <Compile Include="../../src/EmbyClient.App/ViewModels/MediaShelfViewModel.cs" Link="Product/MediaShelfViewModel.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PlaybackAudioSelectionIntent.cs" Link="Product/PlaybackAudioSelectionIntent.cs" />
     <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
   </ItemGroup>
 </Project>

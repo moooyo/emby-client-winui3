@@ -22,7 +22,19 @@ For longer interactive playback checks, generate a separate sixty-second fixture
 dotnet run --project .\tools\EmbyClient.MediaFixtures\EmbyClient.MediaFixtures.csproj --configuration Release -- --duration-seconds 60 --output-dir .\tools\EmbyClient.MediaFixtures\artifacts\sixty-seconds
 ```
 
-The two options may appear in either order. Invalid, missing, or repeated options are rejected before any output directory or media file is created. Stop the active client and coordinate the fixture server's media directory before switching to a new generated pair; this tool does not restart a running server.
+The options may appear in any order. Invalid, missing, or repeated options are rejected before any output directory or media file is created. Stop the active client and coordinate the fixture server's media directory before switching to a new generated pair; this tool does not restart a running server.
+
+## Explicit Background Image
+
+`--background-image <absolute-jpeg-or-png-path>` optionally replaces the five solid-color clips with one static image clip of the requested duration. The source must be an explicit absolute path to an existing `.jpg`, `.jpeg`, or `.png` file no larger than 20 MiB, with the corresponding JPEG markers or PNG signature. The tool reads the image without changing or copying it into application resources, records its SHA-256, and verifies that the source is unchanged after rendering. Without this option, the existing five-color behavior and metadata format are unchanged.
+
+For a user-provided design reference, generate into a fresh, separately owned acceptance directory:
+
+```powershell
+dotnet run --project .\tools\EmbyClient.MediaFixtures\EmbyClient.MediaFixtures.csproj --configuration Release -- --duration-seconds 60 --background-image D:\Code\design_handoff_emby_player_ui\assets\b\541.jpg --output-dir .\artifacts\lumen-acceptance\fidelity-media-example
+```
+
+The result is a real H.264/AAC video containing a static reference image and one 440 Hz stereo test tone. No motion, alternate audio language, embedded subtitle, original film content, 4K, HDR, or additional playback capability is asserted. The same Windows media reopen/encoding checks run before publication. `fixture-h264-aac.json` remains compatible with the existing fixture server; an additional `fixture-background.receipt.json` records source and output hashes, actual encoding properties, verification method, and limitations. A separately supplied external VTT is not embedded or validated by this generator; real local subtitle loading must be checked independently in the client.
 
 For a published executable outside the source tree, the default output is the executable directory's `artifacts` subdirectory. Relative `--output-dir` paths resolve against the current working directory.
 
@@ -36,6 +48,7 @@ The metadata fields are `FileName`, `FileLength` (bytes), `DurationTicks` (100-n
 
 - [Call Windows Runtime APIs from desktop apps](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/desktop-to-uwp-enhance)
 - [MediaClip.CreateFromColor](https://learn.microsoft.com/en-us/uwp/api/windows.media.editing.mediaclip.createfromcolor?view=winrt-26100)
+- [MediaClip.CreateFromImageFileAsync](https://learn.microsoft.com/en-us/uwp/api/windows.media.editing.mediaclip.createfromimagefileasync?view=winrt-26100)
 - [BackgroundAudioTrack.CreateFromFileAsync](https://learn.microsoft.com/en-us/uwp/api/windows.media.editing.backgroundaudiotrack.createfromfileasync?view=winrt-26100)
 - [MediaComposition.RenderToFileAsync](https://learn.microsoft.com/en-us/uwp/api/windows.media.editing.mediacomposition.rendertofileasync?view=winrt-26100)
 - [MediaEncodingProfile.CreateMp4](https://learn.microsoft.com/en-us/uwp/api/windows.media.mediaproperties.mediaencodingprofile.createmp4?view=winrt-26100)

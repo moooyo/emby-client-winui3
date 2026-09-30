@@ -5,8 +5,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
-if (args.Length != 1 || !File.Exists(args[0]))
-    throw new ArgumentException("Pass the absolute path of a separately built EmbyClient.FixtureServer.dll.");
+if (args.Length is < 1 or > 2 || !File.Exists(args[0]) || args.Length == 2 && args[1] is not ("--lumen-only" or "--lumen-design-only" or "--subtitle-only"))
+    throw new ArgumentException("Pass the absolute path of a separately built EmbyClient.FixtureServer.dll, optionally followed by --lumen-only, --lumen-design-only, or --subtitle-only.");
 
 var serverPath = Path.GetFullPath(args[0]);
 var temporaryRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
@@ -26,11 +26,26 @@ await File.WriteAllTextAsync(Path.Combine(testRoot, "fixture-h264-aac.json"), ""
 var passed = 0;
 try
 {
-    await DefaultBehavior();
-    await DetailBoundaries();
-    await MediaBoundary();
-    await CleanupBoundaries();
-    await InvalidConfiguration();
+    if (args.Length == 2 && args[1] == "--subtitle-only")
+    {
+        await SubtitleContractChecks.RunAsync(serverPath, testRoot, Check);
+    }
+    else if (args.Length == 2 && args[1] == "--lumen-design-only")
+    {
+        await LumenDesignContractChecks.RunAsync(serverPath, testRoot, bytes, Check);
+    }
+    else
+    {
+        if (args.Length == 1)
+        {
+            await DefaultBehavior();
+            await DetailBoundaries();
+            await MediaBoundary();
+            await CleanupBoundaries();
+        }
+        await LumenContractChecks.RunAsync(serverPath, testRoot, bytes, Check);
+        await InvalidConfiguration();
+    }
     Console.WriteLine($"PASS: {passed} HTTP fixture boundary checks. Test-only bytes were not decoded as media.");
 }
 finally
@@ -217,7 +232,14 @@ async Task InvalidConfiguration()
         ["--item-detail-failure", "1001:1", "--item-detail-failure", "1001:1"],
         ["--item-detail-delay", "1001:1:100", "--item-detail-delay", "1001:1:200"],
         Enumerable.Range(1, 33).SelectMany(attempt => new[] { "--item-detail-failure", $"1001:{attempt}" }).ToArray(),
-        ["--logout-delay-ms"]
+        ["--logout-delay-ms"],
+        ["--artwork-directory", "relative-handoff", "--lumen-catalog"],
+        ["--artwork-directory", "D:relative-handoff", "--lumen-catalog"],
+        ["--artwork-directory", testRoot],
+        ["--artwork-directory", Path.Combine(testRoot, "missing-handoff"), "--lumen-catalog"],
+        ["--artwork-directory", testRoot, "--lumen-catalog"],
+        ["--lumen-catalog", "--large-library-items", "5000"],
+        ["--artwork-directory"]
     ];
     foreach (var arguments in invalidArguments)
     {
