@@ -29,10 +29,11 @@ results do not prove physical audio, motion, HDR, universal media support, or
 release readiness. Local UI authorization was restored and supersedes the old
 VM-only checkpoint; no VM UI was ever run. Approved elevated worker-preparation
 cleanup completed without desktop input or starting a new worker. All owned
-test resources are cleaned and no required UI/cleanup work remains. Safe
-integration into `main` and push are requested/in progress, with unrelated
-primary-checkout work preserved separately and excluded from publication.
-Goal completion awaits publication/root confirmation. Private environment
+test resources are cleaned and no required UI/cleanup work remains. Product
+commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61` (257 files) was merged into
+`main`, pushed, and verified on the remote; unrelated primary-checkout work
+remains separately preserved and excluded. Only documentation closeout push
+and root completion confirmation remain. Private environment
 details remain outside repository documentation. The local
 [fidelity checkpoint](../../artifacts/lumen-acceptance/fidelity-final-report/ACCEPTANCE.md)
 retains detailed QA records; the portable summary below is the publication entry.
@@ -55,17 +56,19 @@ identities. AOT09's normal exit is a scoped regression observation, not universa
 crash resolution. The latest human instruction restored local UI authorization;
 the requested bounded AOT10 native checks completed with local runtime cleanup.
 The goal-manager Blocked ledger is historical and goal completion still awaits
-safe main integration/push and root confirmation. Release/device
+documentation closeout push and root confirmation. Release/device
 certification remains separate.
 
 ## Current Acceptance Summary
 
-Status: `UiAcceptancePassedAllOwnedTestResourcesCleanedPublicationPending`.
+Status: `CompletePublicationVerifiedProductionCommit`.
 Date: 2026-10-01. The native WinUI 3 AOT10 design-handoff and named regression
-scope passed; requested repository integration/push is in progress. No final
-publication commit or overall goal-complete flag is asserted before that step
-finishes. Unrelated work in the primary checkout is preserved separately,
-not merged into this publication.
+scope passed. Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61`
+(257 files) is merged into `main`, pushed, and remote-verified. All 23 unrelated
+primary-checkout dirty files retain their hashes and are preserved separately,
+not mixed into publication. The documentation/Git-policy closeout commit is
+still to be pushed; no unpublished future SHA or overall goal-complete flag is
+prefilled. No additional UI or cleanup gate remains.
 
 Verified executable: 23,432,192 bytes, SHA-256
 `41FC56C007CE339636A4C4A8B0900D00951EB6B90B38400A3D63682487EEA6F0`.
@@ -73,6 +76,11 @@ Publication and 966 product tests exited 0, including five focused default-audio
 intent cases. All 308 recorded production inputs matched both the post-test
 snapshot and the final post-native recheck. This is a bounded input manifest,
 not a hash of unrelated repository changes.
+
+Checkout normalization restored original SVG LF bytes, and `.gitattributes`
+enforces LF for future SVG checkouts. A post-correction recheck again matched
+all 308 recorded input hashes. A trailing blank removal in the acceptance tool
+is formatting-only; accepted application source/output identity is unchanged.
 
 All fifteen selected 1440x900 wide reference states were freshly captured from
 that executable and independently inspected beside the design. No significant

@@ -1,8 +1,8 @@
 # Lumen native UI handoff
 
 Updated: 2026-10-01. Repository: `emby-client-winui3`.
-Base revision: `1a178f6bac39e933cd1d4a0d12da3c836c741f3d` (detached managed checkout).
-Status: `UiAcceptancePassedAllOwnedTestResourcesCleanedPublicationPending`.
+Original base revision: `1a178f6bac39e933cd1d4a0d12da3c836c741f3d`. Current branch: `main`.
+Status: `CompletePublicationVerifiedProductionCommit`.
 
 ## Current state
 
@@ -63,11 +63,19 @@ observer/fixture stopped and its port was released, without desktop input or a
 new worker. No required UI/cleanup work remains. Connection/account/path details
 stay outside the repository.
 
-The human additionally requested safe integration into `main` and push; that
-publication is in progress and no future commit identity is asserted here.
-Unrelated primary-checkout changes are preserved separately and excluded
-from the publication. Goal completion awaits publication/root confirmation;
-the old Blocked ledger is historical, not a new threshold claim. Read the
+Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61` (257 files) was merged
+into `main`, pushed, and verified on the remote. All 23 unrelated dirty files in
+the primary checkout retain their exact hashes and are preserved separately on
+`codex/preserve-main-ui-work-20261001`; none was mixed into the product commit.
+SVG checkout bytes were restored to original LF, and `.gitattributes` now enforces
+LF for SVG files. All 308 production-input hashes still match exactly. The sole
+acceptance-tool EOF blank removal is formatting-only; no application source or
+accepted output changed.
+
+Only the documentation/Git-policy closeout commit/push and root completion
+confirmation remain. No future documentation commit SHA is prefilled and no
+additional UI or cleanup gate remains. The old Blocked ledger is historical,
+not a new threshold claim. Read the
 [portable acceptance summary](docs/implementation/lumen-ui.md#current-acceptance-summary)
 before optional local QA artifact links and historical entries below.
 

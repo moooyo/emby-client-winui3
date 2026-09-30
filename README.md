@@ -24,9 +24,11 @@ owned local apps exited with actual code 0 and zero scoped crash events. Env12
 cleanup released port 18984 and retained evidence. After approved elevation,
 the owned worker-preparation observer, fixture, and port were also cleaned,
 without desktop input or starting a new worker. No required UI/cleanup work
-remains. Safe integration into `main` and push are now requested/in progress;
-unrelated primary-checkout work is preserved separately, not mixed into
-publication. Overall goal completion awaits successful publication. See the
+remains. Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61`
+(257 files) was safely merged into `main`, pushed, and verified on the remote.
+Unrelated primary-checkout work remains separately preserved and was not mixed
+into publication. Only the documentation closeout commit/push and root completion
+confirmation remain; no future documentation commit SHA is asserted. See the
 [portable acceptance summary](docs/implementation/lumen-ui.md#current-acceptance-summary).
 
 ## Documentation
