@@ -73,9 +73,8 @@ LF for SVG files. All 308 production-input hashes still match exactly. The sole
 acceptance-tool EOF blank removal is formatting-only; no application source or
 accepted output changed.
 
-Only the documentation/Git-policy closeout commit/push and root completion
-confirmation remain. No future documentation commit SHA is prefilled and no
-additional UI or cleanup gate remains. The old Blocked ledger is historical,
+The scoped implementation, acceptance, cleanup, and publication are complete.
+No additional UI or cleanup gate remains. The old Blocked ledger is historical,
 not a new threshold claim. Read the
 [portable acceptance summary](docs/implementation/lumen-ui.md#current-acceptance-summary)
 before optional local QA artifact links and historical entries below.
