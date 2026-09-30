@@ -64,11 +64,11 @@ certification remains separate.
 Status: `CompletePublicationVerifiedProductionCommit`.
 Date: 2026-10-01. The native WinUI 3 AOT10 design-handoff and named regression
 scope passed. Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61`
-(257 files) is merged into `main`, pushed, and remote-verified. All 23 unrelated
+(257 files) is merged into `main`, pushed, and remote-verified. Hosted CI was
+in progress when that push was verified; no green CI result is included. All 23 unrelated
 primary-checkout dirty files retain their hashes and are preserved separately,
-not mixed into publication. The documentation/Git-policy closeout commit is
-still to be pushed; no unpublished future SHA or overall goal-complete flag is
-prefilled. No additional UI or cleanup gate remains.
+not mixed into publication. The scoped implementation, acceptance, cleanup, and
+publication are complete. No additional UI or cleanup gate remains.
 
 Verified executable: 23,432,192 bytes, SHA-256
 `41FC56C007CE339636A4C4A8B0900D00951EB6B90B38400A3D63682487EEA6F0`.

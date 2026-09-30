@@ -64,7 +64,8 @@ new worker. No required UI/cleanup work remains. Connection/account/path details
 stay outside the repository.
 
 Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61` (257 files) was merged
-into `main`, pushed, and verified on the remote. All 23 unrelated dirty files in
+into `main`, pushed, and verified on the remote. Hosted CI was in progress at that
+verification; a green CI result is not part of this acceptance. All 23 unrelated dirty files in
 the primary checkout retain their exact hashes and are preserved separately on
 `codex/preserve-main-ui-work-20261001`; none was mixed into the product commit.
 SVG checkout bytes were restored to original LF, and `.gitattributes` now enforces

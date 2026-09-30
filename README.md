@@ -26,9 +26,10 @@ the owned worker-preparation observer, fixture, and port were also cleaned,
 without desktop input or starting a new worker. No required UI/cleanup work
 remains. Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61`
 (257 files) was safely merged into `main`, pushed, and verified on the remote.
+Hosted CI was in progress when the production push was verified; a green CI result is not part of this acceptance.
 Unrelated primary-checkout work remains separately preserved and was not mixed
-into publication. Only the documentation closeout commit/push and root completion
-confirmation remain; no future documentation commit SHA is asserted. See the
+into publication. The scoped implementation, acceptance, cleanup, and publication
+are complete. See the
 [portable acceptance summary](docs/implementation/lumen-ui.md#current-acceptance-summary).
 
 ## Documentation
