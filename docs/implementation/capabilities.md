@@ -1,5 +1,11 @@
 # Capability and verification matrix
 
+The decoder API extension now also includes distinct Intel VPL/QSV, AMD AMF, and NVIDIA NVDEC providers and a persisted six-option selector. The [final scoped validation](decoder-api-validation-20261001.md) records actual Intel/NVIDIA playback, AMD missing-device fallback, 1,041 passing tests, thirteen successful runtime controls, and the corrected native ComboBox UI. The earlier common-D3D11 receipt remains a separate candidate baseline.
+
+
+The 2026-10-01 performance update adds configurable FFmpegInteropX D3D11VA/software decoding while retaining Windows MediaPlayer rendering. The [local validation receipt](hardware-decoding-validation-20261001.md) records final NativeAOT builds, 1,024 passing tests, seven successful NVIDIA/software/HLS/multi-audio/fallback controls, and normal application UI observations. Earlier native-system-decoder resource and real-server results below remain historical baselines; their acceptance must be renewed for the FFmpeg path. Intel and AMD have implementation coverage through the same D3D11VA API and require separate device measurements.
+
+
 Snapshot: 2026-09-10. This matrix describes development checkpoints, not a completed release or universal compatibility promise. API responses, compilation, native clock progress, visible pixels, and output-device behavior establish different facts. Each result remains attached to its recorded executable or source revision.
 
 ## Evaluated environment

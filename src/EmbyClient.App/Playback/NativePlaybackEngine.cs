@@ -24,7 +24,9 @@ public sealed partial class NativePlaybackEngine(
     DispatcherQueue dispatcher,
     MediaPlayerElement element,
     int initialVolumeLevel = 100,
-    bool initialMuted = false) : IPlaybackEngine
+    bool initialMuted = false,
+    bool initialHardwareDecoding = true,
+    string? initialDecoderApi = null) : IPlaybackEngine
 {
     private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(45);
     private Session? _current;
@@ -61,7 +63,11 @@ public sealed partial class NativePlaybackEngine(
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
                 cancellationToken.ThrowIfCancellationRequested();
-                var created = new Session(request, cancellationToken);
+                var decoderApi = Volatile.Read(ref _decoderApi);
+                var created = new Session(request, cancellationToken)
+                { HardwareRequested = decoderApi != "Software", RequestedDecoderApi = decoderApi };
+                Volatile.Write(ref _videoDecoding, new VideoDecodingSnapshot(created.HardwareRequested, "Pending", false,
+                    "Unknown", RequestedApi: decoderApi));
                 _current = created;
                 created.Cancellation = cancellationToken.Register(() =>
                 {
@@ -186,70 +192,7 @@ public sealed partial class NativePlaybackEngine(
             if (session.Request.DeliveryMethod == PlaybackDeliveryMethod.Transcode && HasPreservedTimestamps(session.Request.MediaUri))
                 throw new PlaybackException("UnsupportedFormat");
 
-            if (MediaDeliveryClassifier.IsHls(session.Request))
-            {
-                var creationTask = await OnDispatcherAsync(() =>
-                {
-                    EnsureActive(session);
-                    NativeHttpClient? adaptiveHttp = null;
-                    IDisposable? filterOwner = null;
-                    CreateAdaptiveHttpClient(session.Request, ref adaptiveHttp, ref filterOwner);
-                    session.AdaptiveFilterOwner = filterOwner;
-                    if (adaptiveHttp is null)
-                    {
-                        session.AdaptiveFilter = new ScopedAdaptiveHttpFilter(session.Transport,
-                            code => Queue(() => Fail(session, code)));
-                        adaptiveHttp = new NativeHttpClient(session.AdaptiveFilter);
-                    }
-                    session.AdaptiveHttp = adaptiveHttp;
-                    return AdaptiveMediaSource.CreateFromUriAsync(session.Request.MediaUri, session.AdaptiveHttp)
-                        .AsTask(session.Lifetime.Token);
-                }).ConfigureAwait(false);
-                var result = await creationTask.ConfigureAwait(false);
-                await OnDispatcherAsync(() =>
-                {
-                    var adaptive = result.MediaSource;
-                    var creationResponse = result.HttpResponseMessage;
-                    if (!IsActive(session))
-                    {
-                        Release(session, "CloseLateAdaptiveSource", () => adaptive?.Dispose());
-                        Release(session, "CloseLateAdaptiveResponse", () => creationResponse?.Dispose());
-                        throw new OperationCanceledException(session.Lifetime.Token);
-                    }
-                    // The creation result is not closable, but its source and HTTP response both are.
-                    // Keep the response alive until its adaptive consumer retires, then close it explicitly.
-                    session.AdaptiveSource = adaptive;
-                    session.AdaptiveCreationResponse = creationResponse;
-                    if (result.Status != AdaptiveMediaSourceCreationStatus.Success || adaptive is null)
-                        throw new PlaybackException("UnsupportedFormat");
-                    session.MediaSource = MediaSource.CreateFromAdaptiveMediaSource(adaptive);
-                }).ConfigureAwait(false);
-            }
-            else if (session.Request.DeliveryMethod == PlaybackDeliveryMethod.Transcode
-                && session.Request.TimelineKind == PlaybackTimelineKind.ProgressiveSegment)
-            {
-                var relay = await ProgressiveHttpRelay.OpenAsync(session.Transport, session.Request.MediaUri,
-                    session.Request.Source.TranscodingContainer, session.Lifetime.Token, code => OnRelayFailure(session, code)).ConfigureAwait(false);
-                await OnDispatcherAsync(() =>
-                {
-                    // Preserve ownership across cancellation so retirement drains the streaming response lease.
-                    session.ProgressiveRelay = relay;
-                    EnsureActive(session);
-                    session.MediaSource = MediaSource.CreateFromUri(relay.LocalUri);
-                }).ConfigureAwait(false);
-            }
-            else
-            {
-                var relay = await SessionHttpRelay.OpenAsync(session.Transport, session.Request.MediaUri,
-                    session.Request.Source.Container, session.Lifetime.Token, code => OnRelayFailure(session, code)).ConfigureAwait(false);
-                await OnDispatcherAsync(() =>
-                {
-                    // Retain ownership even when cancellation races the completed open; DrainAsync will close the relay.
-                    session.DirectRelay = relay;
-                    EnsureActive(session);
-                    session.MediaSource = MediaSource.CreateFromUri(relay.LocalUri);
-                }).ConfigureAwait(false);
-            }
+            await CreateDecodedSourceAsync(session).ConfigureAwait(false);
 
             if (session.Request.ExternalSubtitleUri is { } subtitleUri)
             {
@@ -297,7 +240,7 @@ public sealed partial class NativePlaybackEngine(
     private void BindPlayer(Session session)
     {
         EnsureActive(session);
-        session.Item = new MediaPlaybackItem(session.MediaSource!);
+        session.Item ??= new MediaPlaybackItem(session.MediaSource!);
         session.TracksChanged = (_, _) => Queue(() =>
         {
             if (!IsActive(session)) return;
@@ -319,6 +262,7 @@ public sealed partial class NativePlaybackEngine(
         session.Player.Volume = _volumeLevel / 100d;
         session.Player.IsMuted = _isMuted;
         session.NativeSession = session.Player.PlaybackSession;
+        if (session.DecoderSource is { } decoder) decoder.PlaybackSession = session.NativeSession;
         InitializeLumenControls(session);
         session.Player.CommandManager.IsEnabled = false;
         InitializeMediaControls(session);
@@ -467,6 +411,20 @@ public sealed partial class NativePlaybackEngine(
             return;
         }
 
+        // FFmpeg preserves container stream indices and orders its audio streams exactly like the playback item.
+        // Its projected languages use Windows tags (for example, en instead of Emby's eng).
+        if (session.DecoderSource is { } decoder && decoder.AudioStreams.Count == tracks.Count)
+        {
+            var decodedTracks = decoder.AudioStreams;
+            var mapped = Enumerable.Range(0, decodedTracks.Count)
+                .Where(i => decodedTracks[i].StreamIndex == index).ToArray();
+            if (mapped.Length == 1)
+            {
+                tracks.SelectedIndex = mapped[0];
+                return;
+            }
+        }
+
         // Native track IDs and Emby container indices are different namespaces.
         // A unique language/title match is safe; a matching ordinal alone is not.
         var matching = Enumerable.Range(0, tracks.Count).Where(i =>
@@ -566,6 +524,7 @@ public sealed partial class NativePlaybackEngine(
         if (session.AdaptiveFilter is not null) await session.AdaptiveFilter.DrainAsync().ConfigureAwait(false);
         if (session.DirectRelay is not null) await session.DirectRelay.DisposeAsync().ConfigureAwait(false);
         if (session.ProgressiveRelay is not null) await session.ProgressiveRelay.DisposeAsync().ConfigureAwait(false);
+        if (session.HlsRelay is not null) await session.HlsRelay.DisposeAsync().ConfigureAwait(false);
         await session.Transport.DisposeAsync().ConfigureAwait(false);
         if (session.SubtitleTransport is not null) await session.SubtitleTransport.DisposeAsync().ConfigureAwait(false);
         session.Cancellation.Dispose();
@@ -575,6 +534,7 @@ public sealed partial class NativePlaybackEngine(
             session.AdaptiveFilter = null;
             session.DirectRelay = null;
             session.ProgressiveRelay = null;
+            session.HlsRelay = null;
             session.SubtitleTransport = null;
             session.LoadTask = Task.CompletedTask;
             session.SeekCompletion = null;
@@ -615,7 +575,10 @@ public sealed partial class NativePlaybackEngine(
         }
         if (session.Item is not null) Release(session, "UnsubscribeMetadataTracks", () => session.Item.TimedMetadataTracksChanged -= session.TracksChanged);
         if (session.TimedText is not null) Release(session, "UnsubscribeTimedText", () => session.TimedText.Resolved -= session.TimedTextResolved);
+        RefreshVideoDecoding(session);
         Release(session, "CloseMediaSource", () => session.MediaSource?.Dispose());
+        Release(session, "CloseDecoderSource", () => session.DecoderSource?.Dispose());
+        session.DecoderSource = null;
         Release(session, "CloseAdaptiveSource", () => session.AdaptiveSource?.Dispose());
         Release(session, "CloseAdaptiveResponse", () => session.AdaptiveCreationResponse?.Dispose());
         Release(session, "CloseAdaptiveHttp", () => session.AdaptiveHttp?.Dispose());
@@ -668,6 +631,7 @@ public sealed partial class NativePlaybackEngine(
             }
         }
         catch { }
+        RefreshVideoDecoding(session);
         var snapshot = new PlaybackEngineSnapshot
         {
             PlaybackId = session.Request.PlaybackId,

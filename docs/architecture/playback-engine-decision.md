@@ -1,14 +1,16 @@
 # Playback engine decision
 
-Decision date: 2026-09-09. Status: accepted implementation direction; playback release acceptance remains incomplete.
+Decision date: 2026-09-09; configurable-decoder follow-up: 2026-10-01. Status: accepted implementation direction; playback release acceptance remains incomplete.
 
 ## Decision
 
-Use `Windows.Media.Playback.MediaPlayer` with the native WinUI `MediaPlayerElement` as the primary playback implementation. Preserve the engine boundary behind `IPlaybackEngine` and keep Emby negotiation, authentication, reporting, and cleanup in the existing API and playback layers. Keep `LibVLCSharp.WinUI` outside product dependencies at this stage.
+Use `Windows.Media.Playback.MediaPlayer` with the native WinUI `MediaPlayerElement` as the primary playback and rendering owner. Supply decoded media through `FFmpegInteropX` with configurable D3D11 hardware decoding and FFmpeg software fallback. Preserve the engine boundary behind `IPlaybackEngine` and keep Emby negotiation, authentication, reporting, and cleanup in the existing API and playback layers. Keep `LibVLCSharp.WinUI` outside product dependencies at this stage.
 
 This resolves the initial engine-selection question in the [implementation plan](windows-client-plan.md#5-playback-engine-comparison) using the available experiments. It does not certify every codec or close the plan's complete acceptance gate. Default direct/HLS lifecycle and system-control ownership checks now pass; final integrated UI and installed-runtime acceptance remain separate.
 
 The evaluated platform is Windows x64 with .NET SDK 10.0.301, a .NET 10 Windows target, and Windows App SDK 2.4.0. Native WinUI remains the application's presentation model. No other operating system is in scope.
+
+The 2026-10-01 decoder change retains Windows media rendering and system controls while adding the [FFmpegInteropX hardware-decoding source](../implementation/hardware-decoding.md). Intel, AMD, and NVIDIA use the Windows-selected D3D11 adapter through the same driver API; the application does not load vendor SDKs or force an adapter. The persisted Boolean policy applies at the next source opening, and diagnostics read the actual decoder and available decoder-device identity. Direct, progressive, and HLS media enter FFmpeg through authenticated local relays. The historical lifecycle and resource receipts below predate this decoder change; they require regression checks for the new source and do not establish three-vendor hardware or performance acceptance.
 
 ## Evidence and limits
 

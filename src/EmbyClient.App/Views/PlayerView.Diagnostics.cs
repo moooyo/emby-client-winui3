@@ -1,4 +1,5 @@
 using EmbyClient.Api;
+using EmbyClient.App.Playback;
 using EmbyClient.App.Services;
 using EmbyClient.Playback;
 using Microsoft.UI.Xaml;
@@ -20,7 +21,10 @@ public sealed partial class PlayerView
     {
         if (IsModalOpen) return;
         var restoreFocus = CaptureDialogFocus(trigger, xamlRoot);
-        var dialog = new PlaybackDiagnosticsDialog(_diagnostics) { XamlRoot = xamlRoot, RequestedTheme = theme };
+        var dialog = new PlaybackDiagnosticsDialog(_diagnostics,
+            () => _engine?.VideoDecoding ?? new VideoDecodingSnapshot(_preferences.HardwareDecoding, "Pending", false,
+                "Unknown", RequestedApi: _preferences.VideoDecoderApi))
+        { XamlRoot = xamlRoot, RequestedTheme = theme };
         _diagnosticsDialog = dialog;
         UpdateQueueControls();
         try { await dialog.ShowAsync(); }

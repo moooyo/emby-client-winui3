@@ -1,0 +1,17 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <DecoderRepositoryRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..'))</DecoderRepositoryRoot>
+    <DecoderNativeRoot Condition="'$(DecoderNativeRoot)' == ''">$(DecoderRepositoryRoot)artifacts\decoder-apis\native\</DecoderNativeRoot>
+    <DecoderDependencyRoot Condition="'$(DecoderDependencyRoot)' == ''">$(DecoderRepositoryRoot)artifacts\decoder-apis\dependencies\</DecoderDependencyRoot>
+    <DecoderFFmpegRoot Condition="'$(DecoderFFmpegRoot)' == ''">$(DecoderDependencyRoot)ffmpeg-devenvy-8.1.3\</DecoderFFmpegRoot>
+    <WindowsTargetPlatformVersion Condition="'$(WindowsTargetPlatformVersion)' == ''">10.0.26100.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.17763.0</WindowsTargetPlatformMinVersion>
+    <GeneratedFilesDir>$(DecoderNativeRoot)generated\</GeneratedFilesDir>
+    <IntDir>$(DecoderNativeRoot)obj\$(Configuration)\</IntDir>
+    <OutDir>$(DecoderNativeRoot)runtime\</OutDir>
+    <AppType>Win32</AppType>
+    <LibraryVersionNumber>2.1.0.1</LibraryVersionNumber>
+    <LibVersionNum>2,1,0,1</LibVersionNum>
+    <LibVersionStr>\"2.1.0.1\"</LibVersionStr>
+  </PropertyGroup>
+</Project>

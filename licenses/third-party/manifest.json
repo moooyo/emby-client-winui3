@@ -269,7 +269,7 @@
     "Provenance": "Repository commit from the resolved WinUIEx nuspec.",
     "Sha256": "253EFE88CEA966DC7A9892DA3DAC7B011E9ADA8DF022346E273F89E46D72339D",
     "CopiedVerbatim": true,
-    "RetrievedUtc": "2026-09-08T23:00:21.9878420+00:00"
+    "RetrievedUtc": "2026-09-09T07:00:21.987842+08:00"
   },
   {
     "PackageId": "Microsoft.Windows.SDK.NET.Ref",
@@ -281,7 +281,7 @@
     "Provenance": "License URL from the resolved targeting-pack nuspec; original RTF response retained.",
     "Sha256": "DD07EB178E00C6BBA4148457FC00FF77CD4887EB521D504186FE59C9EC8BBE62",
     "CopiedVerbatim": true,
-    "RetrievedUtc": "2026-09-08T23:00:22.5043645+00:00"
+    "RetrievedUtc": "2026-09-09T07:00:22.5043645+08:00"
   },
   {
     "PackageId": "CsWinRT",
@@ -293,7 +293,7 @@
     "Provenance": "Bundled WinRT.Runtime.dll ProductVersion in Microsoft.Windows.SDK.NET.Ref 10.0.26100.57.",
     "Sha256": "9906940F61B1F0B533FA7D99BAF55178B2808FBE113EA51DFBFAD8572CCD5F2B",
     "CopiedVerbatim": true,
-    "RetrievedUtc": "2026-09-08T23:00:22.6647806+00:00"
+    "RetrievedUtc": "2026-09-09T07:00:22.6647806+08:00"
   },
   {
     "ComponentId": "Noto Serif SC",
@@ -349,5 +349,949 @@
     "Sha256": "81F887D3F51826636F03D453E43938B3CC83B2F6FB15F37125160FA4F64D2E22",
     "CopiedVerbatim": false,
     "VerifiedOn": "2026-09-30"
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/bzip2.txt",
+    "PackageRelativeSource": "licenses/bzip2.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "ACE879711AAD0985482856336C66EB972C59B2B3268B4BA7CCA1FA162C52E931",
+    "SourceSha256": "ACE879711AAD0985482856336C66EB972C59B2B3268B4BA7CCA1FA162C52E931",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/dav1d.txt",
+    "PackageRelativeSource": "licenses/dav1d.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "B19D87106BF153F6233927D95347B54E7BEC089FBFB49E3C36133B56E45B1571",
+    "SourceSha256": "B19D87106BF153F6233927D95347B54E7BEC089FBFB49E3C36133B56E45B1571",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/ffmpeg.txt",
+    "PackageRelativeSource": "licenses/ffmpeg.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "37828F96B745455C387A19946BC005B5E0B7C4CEF782BBD67E9DE5130D7D0BDC",
+    "SourceSha256": "37828F96B745455C387A19946BC005B5E0B7C4CEF782BBD67E9DE5130D7D0BDC",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/iconv.txt",
+    "PackageRelativeSource": "licenses/iconv.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "0B383D5A63DA644F628D99C33976EA6487ED89AAA59F0B3257992DEAC1171E6B",
+    "SourceSha256": "0B383D5A63DA644F628D99C33976EA6487ED89AAA59F0B3257992DEAC1171E6B",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/liblzma.txt",
+    "PackageRelativeSource": "licenses/liblzma.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "1E7E6BAE5A5BDE32F1AE5A7C37A082D1AB03CF89354F7F936AC40BE9E39A6531",
+    "SourceSha256": "1E7E6BAE5A5BDE32F1AE5A7C37A082D1AB03CF89354F7F936AC40BE9E39A6531",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/libxml2.txt",
+    "PackageRelativeSource": "licenses/libxml2.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "7B5C35A856959625FCA9BCEDB4F13258A37910A0822AEDF29166D3D5EA786951",
+    "SourceSha256": "7B5C35A856959625FCA9BCEDB4F13258A37910A0822AEDF29166D3D5EA786951",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/openssl.txt",
+    "PackageRelativeSource": "licenses/openssl.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "ED72CE2B51EE58F117E5A021E2E04AF158857F40269FBC03491F0B2A99DBCC96",
+    "SourceSha256": "ED72CE2B51EE58F117E5A021E2E04AF158857F40269FBC03491F0B2A99DBCC96",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/licenses/zlib.txt",
+    "PackageRelativeSource": "licenses/zlib.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/ffmpeginteropx.desktop.ffmpeg/8.1.2/ffmpeginteropx.desktop.ffmpeg.8.1.2.nupkg",
+    "Sha256": "2A0913C27E51A4BD3C7FB6AC3FD39584C9F4BF2449F69852F5BC71C03A181D85",
+    "SourceSha256": "2A0913C27E51A4BD3C7FB6AC3FD39584C9F4BF2449F69852F5BC71C03A181D85",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.Windows.CsWinRT",
+    "PackageVersion": "2.2.0",
+    "File": "Microsoft.Windows.CsWinRT-2.2.0/LICENSE",
+    "PackageRelativeSource": "LICENSE",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windows.cswinrt/2.2.0/microsoft.windows.cswinrt.2.2.0.nupkg",
+    "Sha256": "9906940F61B1F0B533FA7D99BAF55178B2808FBE113EA51DFBFAD8572CCD5F2B",
+    "SourceSha256": "9906940F61B1F0B533FA7D99BAF55178B2808FBE113EA51DFBFAD8572CCD5F2B",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "Microsoft.Windows.CsWinRT",
+    "PackageVersion": "2.2.0",
+    "File": "Microsoft.Windows.CsWinRT-2.2.0/NOTICE.txt",
+    "PackageRelativeSource": "NOTICE.txt",
+    "Source": "https://api.nuget.org/v3-flatcontainer/microsoft.windows.cswinrt/2.2.0/microsoft.windows.cswinrt.2.2.0.nupkg",
+    "Sha256": "5C73EC182C994ADC9D90CC576C3188A7F55DF4C129A7DFB923E1CE4D91ED154D",
+    "SourceSha256": "5C73EC182C994ADC9D90CC576C3188A7F55DF4C129A7DFB923E1CE4D91ED154D",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX",
+    "PackageVersion": "2.1.0.81200",
+    "File": "FFmpegInteropX-2.1.0.81200/LICENSE",
+    "Source": "https://raw.githubusercontent.com/ffmpeginteropx/FFmpegInteropX/841fc8e79346a235906f1dbd45be53034b2e2f52/LICENSE",
+    "Sha256": "CB5E8E7E5F4A3988E1063C142C60DC2DF75605F4C46515E776E3ACA6DF976E14",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.Lib",
+    "PackageVersion": "2.1.0",
+    "File": "FFmpegInteropX.Desktop.Lib-2.1.0/LICENSE",
+    "Source": "https://raw.githubusercontent.com/ffmpeginteropx/FFmpegInteropX/841fc8e79346a235906f1dbd45be53034b2e2f52/LICENSE",
+    "Sha256": "CB5E8E7E5F4A3988E1063C142C60DC2DF75605F4C46515E776E3ACA6DF976E14",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/source-notices/FFmpeg-LICENSE.md",
+    "Source": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/38b88335f99e76ed89ff3c93f877fdefce736c13/LICENSE.md",
+    "Sha256": "2E1D16C72FD74E12063776371DA757322F8B77589386532F4FD8634BDE7DE1AF",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/source-notices/libiconv-COPYING.LIB",
+    "Source": "https://raw.githubusercontent.com/ffmpeginteropx/libiconv/d601c3e8e69db72980edd4794e90177f0a74f86d/COPYING.LIB",
+    "Sha256": "56BDEA73B6145EF6AC5259B3DA390B981D840C24CB03B8E1CBC678DE7ECFA18D",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/source-notices/libiconv-README",
+    "Source": "https://raw.githubusercontent.com/ffmpeginteropx/libiconv/d601c3e8e69db72980edd4794e90177f0a74f86d/README",
+    "Sha256": "EC96A8A947102060563D548CB39B7D5253145F8910D64CF5096D9A005026DB09",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/source-notices/liblzma-COPYING",
+    "Source": "https://raw.githubusercontent.com/ffmpeginteropx/liblzma/76a4518a3b74da3a9e424d4d925c1738a7eefe46/COPYING",
+    "Sha256": "BCB02973EF6E87EA73D331B3A80DF7748407F17EFDB784B61B47E0E610D3BB5C",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.Desktop.FFmpeg",
+    "PackageVersion": "8.1.2",
+    "File": "FFmpegInteropX.Desktop.FFmpeg-8.1.2/README.md",
+    "Source": "Local package/source provenance record dated 2026-10-01, citing exact NuGet and upstream source revisions",
+    "Sha256": "6F8E814A1E8AC0E8AF009D800EF0B133D9F84933B0E0622C213B55AF56A00EFD",
+    "CopiedVerbatim": false
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-configuration.txt",
+    "Source": "Local selected-runtime provenance/configuration record dated 2026-10-01, based on the locked archives and fixed upstream build source",
+    "CopiedVerbatim": false,
+    "Sha256": "EB62E502EB975E5C35A8FC3A07C46FCF4BB2629C3E4AF2DEA199E64580BCDE28"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/README.md",
+    "Source": "Local selected-runtime provenance/configuration record dated 2026-10-01, based on the locked archives and fixed upstream build source",
+    "CopiedVerbatim": false,
+    "Sha256": "52F7FDED74BEB0ABDF4545E5C028B369F96DDE6FD3AA104988E6EA08787D2936"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-source/chromaprint.sh",
+    "Source": "https://raw.githubusercontent.com/devenvy/ffmpeg/fcd83b13adbbbdf616f3a48a565f1913dbdfa403/scripts/deps/chromaprint.sh",
+    "SourceSha256": "63A955A99FEB58D2028530ABFFE65BBA39ACE19B1B8E4993EB98D7C99C414EB1",
+    "CopiedVerbatim": true,
+    "Sha256": "63A955A99FEB58D2028530ABFFE65BBA39ACE19B1B8E4993EB98D7C99C414EB1"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-source/deps.json",
+    "Source": "https://raw.githubusercontent.com/devenvy/ffmpeg/fcd83b13adbbbdf616f3a48a565f1913dbdfa403/deps.json",
+    "SourceSha256": "14E7E4DAEEA5BF9C317A66D800785A1DD0D368F1828BBC34BF15C88E565078D2",
+    "CopiedVerbatim": true,
+    "Sha256": "14E7E4DAEEA5BF9C317A66D800785A1DD0D368F1828BBC34BF15C88E565078D2"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-source/freetype.sh",
+    "Source": "https://raw.githubusercontent.com/devenvy/ffmpeg/fcd83b13adbbbdf616f3a48a565f1913dbdfa403/scripts/deps/freetype.sh",
+    "SourceSha256": "0E1A759B04CDCC0D49A7FB038C2175A46DC51C042103516A93B09BB228F80745",
+    "CopiedVerbatim": true,
+    "Sha256": "0E1A759B04CDCC0D49A7FB038C2175A46DC51C042103516A93B09BB228F80745"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-source/highway.sh",
+    "Source": "https://raw.githubusercontent.com/devenvy/ffmpeg/fcd83b13adbbbdf616f3a48a565f1913dbdfa403/scripts/deps/highway.sh",
+    "SourceSha256": "532F34B0295201A1E172ED28E1ED5E273FDACA4D9A0FA37181678C353E75325E",
+    "CopiedVerbatim": true,
+    "Sha256": "532F34B0295201A1E172ED28E1ED5E273FDACA4D9A0FA37181678C353E75325E"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-source/libvpl.sh",
+    "Source": "https://raw.githubusercontent.com/devenvy/ffmpeg/fcd83b13adbbbdf616f3a48a565f1913dbdfa403/scripts/deps/libvpl.sh",
+    "SourceSha256": "07A2EFA34CCB70B3CE85A8425383B84C1FEF6B4AD1D57E267BEC038FC224FB51",
+    "CopiedVerbatim": true,
+    "Sha256": "07A2EFA34CCB70B3CE85A8425383B84C1FEF6B4AD1D57E267BEC038FC224FB51"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/build-source/LICENSE",
+    "Source": "https://raw.githubusercontent.com/devenvy/ffmpeg/fcd83b13adbbbdf616f3a48a565f1913dbdfa403/LICENSE",
+    "SourceSha256": "6C01985F6642BF5E558AB815318751F94A0C47E583867EB130A9E30678CD4DD8",
+    "CopiedVerbatim": true,
+    "Sha256": "6C01985F6642BF5E558AB815318751F94A0C47E583867EB130A9E30678CD4DD8"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/COPYING.GPLv2",
+    "PackageRelativeSource": "legal/COPYING.GPLv2",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "8177F97513213526DF2CF6184D8FF986C675AFB514D4E68A404010521B880643",
+    "CopiedVerbatim": true,
+    "Sha256": "8177F97513213526DF2CF6184D8FF986C675AFB514D4E68A404010521B880643"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/COPYING.LGPLv2.1",
+    "PackageRelativeSource": "legal/COPYING.LGPLv2.1",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "246041B6ECF9BC32D718A62C57877C78B5EB397B6467E74ED7AE2626AB189C30",
+    "CopiedVerbatim": true,
+    "Sha256": "246041B6ECF9BC32D718A62C57877C78B5EB397B6467E74ED7AE2626AB189C30"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/CREDITS",
+    "PackageRelativeSource": "legal/CREDITS",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "28ECC96D495FA5AD48C76739A8F8D2C8980548D7A171585A6EB3F27A9AC8E4A2",
+    "CopiedVerbatim": true,
+    "Sha256": "28ECC96D495FA5AD48C76739A8F8D2C8980548D7A171585A6EB3F27A9AC8E4A2"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/LICENSE-NOTICE.txt",
+    "PackageRelativeSource": "legal/LICENSE-NOTICE.txt",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "13B8FA3A3424FB0D06870042C8AC2D36868B28351B0F16AC29E00616C5076FE7",
+    "CopiedVerbatim": true,
+    "Sha256": "13B8FA3A3424FB0D06870042C8AC2D36868B28351B0F16AC29E00616C5076FE7"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/LICENSE.md",
+    "PackageRelativeSource": "legal/LICENSE.md",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "2E1D16C72FD74E12063776371DA757322F8B77589386532F4FD8634BDE7DE1AF",
+    "CopiedVerbatim": true,
+    "Sha256": "2E1D16C72FD74E12063776371DA757322F8B77589386532F4FD8634BDE7DE1AF"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/SOURCE_OFFER.txt",
+    "PackageRelativeSource": "legal/SOURCE_OFFER.txt",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "84F513A4D40706A302E76C0FF39C25D7F9F7E62F379523781DE121C824E33ABD",
+    "CopiedVerbatim": true,
+    "Sha256": "84F513A4D40706A302E76C0FF39C25D7F9F7E62F379523781DE121C824E33ABD"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/AMF/LICENSE.txt",
+    "PackageRelativeSource": "legal/licenses/AMF/LICENSE.txt",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "EB297397AAA455B5668AB67D216B83828466152DAB123FA92384C6EC16B74170",
+    "CopiedVerbatim": true,
+    "Sha256": "EB297397AAA455B5668AB67D216B83828466152DAB123FA92384C6EC16B74170"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/aom/LICENSE",
+    "PackageRelativeSource": "legal/licenses/aom/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "4764A286D8B2FAEAF42F4418E7D7A28D58FC8FD4D00A3D0A7F44B0A4099DE7F2",
+    "CopiedVerbatim": true,
+    "Sha256": "4764A286D8B2FAEAF42F4418E7D7A28D58FC8FD4D00A3D0A7F44B0A4099DE7F2"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/brotli/LICENSE",
+    "PackageRelativeSource": "legal/licenses/brotli/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "3D180008E36922A4E8DAEC11C34C7AF264FED5962D07924AEA928C38E8663C94",
+    "CopiedVerbatim": true,
+    "Sha256": "3D180008E36922A4E8DAEC11C34C7AF264FED5962D07924AEA928C38E8663C94"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/chromaprint/LICENSE.md",
+    "PackageRelativeSource": "legal/licenses/chromaprint/LICENSE.md",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "562CFE59627E0C4E8E3B066F3FF2E9736F83811FFE4C6C2C7796595AA7595EBD",
+    "CopiedVerbatim": true,
+    "Sha256": "562CFE59627E0C4E8E3B066F3FF2E9736F83811FFE4C6C2C7796595AA7595EBD"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/dav1d/COPYING",
+    "PackageRelativeSource": "legal/licenses/dav1d/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "DD92C3C2247C5651606FC23A5E2D6A1EBC5ACE9A3E49CBDE0E12F05AD1CB1EE5",
+    "CopiedVerbatim": true,
+    "Sha256": "DD92C3C2247C5651606FC23A5E2D6A1EBC5ACE9A3E49CBDE0E12F05AD1CB1EE5"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/freetype/LICENSE.TXT",
+    "PackageRelativeSource": "legal/licenses/freetype/LICENSE.TXT",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "BD36C8B474855FA294C2EC5C184544478EF3720AAD37D65A6296A4F264FD2D3B",
+    "CopiedVerbatim": true,
+    "Sha256": "BD36C8B474855FA294C2EC5C184544478EF3720AAD37D65A6296A4F264FD2D3B"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/fribidi/COPYING",
+    "PackageRelativeSource": "legal/licenses/fribidi/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "20E50FE7AAE3E56378EBF0417D9DE904F55A0E61E4DF315333E632A4D3555D95",
+    "CopiedVerbatim": true,
+    "Sha256": "20E50FE7AAE3E56378EBF0417D9DE904F55A0E61E4DF315333E632A4D3555D95"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/gsm-1.0-pl24/COPYRIGHT",
+    "PackageRelativeSource": "legal/licenses/gsm-1.0-pl24/COPYRIGHT",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "81C68A3374937ED9B5E4929C709E81A2C4B35B5D1F450ECF8C473E2DAEA46FF6",
+    "CopiedVerbatim": true,
+    "Sha256": "81C68A3374937ED9B5E4929C709E81A2C4B35B5D1F450ECF8C473E2DAEA46FF6"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/harfbuzz/COPYING",
+    "PackageRelativeSource": "legal/licenses/harfbuzz/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "9B35B8485F69CD298FCCBB3C40A827DC06CF1185553BEF827903497D2944A8D7",
+    "CopiedVerbatim": true,
+    "Sha256": "9B35B8485F69CD298FCCBB3C40A827DC06CF1185553BEF827903497D2944A8D7"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/highway/copyright",
+    "PackageRelativeSource": "legal/licenses/highway/copyright",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "6E4ECF1CAE052B678EA3178DD4B3652D581EE66A82D58DB8800DD7D80DD6DE76",
+    "CopiedVerbatim": true,
+    "Sha256": "6E4ECF1CAE052B678EA3178DD4B3652D581EE66A82D58DB8800DD7D80DD6DE76"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/highway/LICENSE",
+    "PackageRelativeSource": "legal/licenses/highway/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "E340270D4F64384569A91D546ACB5B094D69CE47F0C015DB77ABB74DC6F815AF",
+    "CopiedVerbatim": true,
+    "Sha256": "E340270D4F64384569A91D546ACB5B094D69CE47F0C015DB77ABB74DC6F815AF"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/kissfft/COPYING",
+    "PackageRelativeSource": "legal/licenses/kissfft/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "A2840585F8411BE8E6826A31EF15AE65C950BD74A2437A73B013398A934AD0C6",
+    "CopiedVerbatim": true,
+    "Sha256": "A2840585F8411BE8E6826A31EF15AE65C950BD74A2437A73B013398A934AD0C6"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/kvazaar/LICENSE",
+    "PackageRelativeSource": "legal/licenses/kvazaar/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "3C1DC3D7F8A3D08C14F4FBE9942F45764D8A21A3296E8D83446F33FD65F21C38",
+    "CopiedVerbatim": true,
+    "Sha256": "3C1DC3D7F8A3D08C14F4FBE9942F45764D8A21A3296E8D83446F33FD65F21C38"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/kvazaar/LICENSE.EXT.greatest",
+    "PackageRelativeSource": "legal/licenses/kvazaar/LICENSE.EXT.greatest",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "16F569C87D5EC20B7474B55EE0A8877B8F8B4DC13F9567EBE0B8FE8AFDEB34D2",
+    "CopiedVerbatim": true,
+    "Sha256": "16F569C87D5EC20B7474B55EE0A8877B8F8B4DC13F9567EBE0B8FE8AFDEB34D2"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/lame-4.0/COPYING",
+    "PackageRelativeSource": "legal/licenses/lame-4.0/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "E64F9C5A18F56828C10A575DF13ADE641AA3AF4512A7AFE6C411256943B57AAF",
+    "CopiedVerbatim": true,
+    "Sha256": "E64F9C5A18F56828C10A575DF13ADE641AA3AF4512A7AFE6C411256943B57AAF"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/lame-4.0/copyright",
+    "PackageRelativeSource": "legal/licenses/lame-4.0/copyright",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "EB2EFB4511F3C5D5E4747B6F3A0DA1DD5649975082284E12889B6892EDEDD53D",
+    "CopiedVerbatim": true,
+    "Sha256": "EB2EFB4511F3C5D5E4747B6F3A0DA1DD5649975082284E12889B6892EDEDD53D"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/lame-4.0/LICENSE",
+    "PackageRelativeSource": "legal/licenses/lame-4.0/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "5C1F8D44F1EACBEA3E1C31FF6EE11A4E1690CCBED4EE4AF16DE3B6EB61DC69A8",
+    "CopiedVerbatim": true,
+    "Sha256": "5C1F8D44F1EACBEA3E1C31FF6EE11A4E1690CCBED4EE4AF16DE3B6EB61DC69A8"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/lcms2/LICENSE",
+    "PackageRelativeSource": "legal/licenses/lcms2/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "6DBD60437F8EF91D8DE1F08AD75882547FD4931BFCC3566A0735F28DB1484D31",
+    "CopiedVerbatim": true,
+    "Sha256": "6DBD60437F8EF91D8DE1F08AD75882547FD4931BFCC3566A0735F28DB1484D31"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libass/COPYING",
+    "PackageRelativeSource": "legal/licenses/libass/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "F7E30699D02798351E7F839E3D3BFEB29CE65E44EFA7735C225464C4FD7DFE9C",
+    "CopiedVerbatim": true,
+    "Sha256": "F7E30699D02798351E7F839E3D3BFEB29CE65E44EFA7735C225464C4FD7DFE9C"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libjxl/copyright",
+    "PackageRelativeSource": "legal/licenses/libjxl/copyright",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "EC6F5BC1043FBA8FFA648157B5BEEE8915865A54F25C5F3201B0E910CD09EBDE",
+    "CopiedVerbatim": true,
+    "Sha256": "EC6F5BC1043FBA8FFA648157B5BEEE8915865A54F25C5F3201B0E910CD09EBDE"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libjxl/LICENSE",
+    "PackageRelativeSource": "legal/licenses/libjxl/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "8405932022A556380C2D8C272EFF154A923FEB197233F348CE5F7334FB0A5EDE",
+    "CopiedVerbatim": true,
+    "Sha256": "8405932022A556380C2D8C272EFF154A923FEB197233F348CE5F7334FB0A5EDE"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libjxl/LICENSE.jpeg-xl",
+    "PackageRelativeSource": "legal/licenses/libjxl/LICENSE.jpeg-xl",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "8405932022A556380C2D8C272EFF154A923FEB197233F348CE5F7334FB0A5EDE",
+    "CopiedVerbatim": true,
+    "Sha256": "8405932022A556380C2D8C272EFF154A923FEB197233F348CE5F7334FB0A5EDE"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libpng/LICENSE",
+    "PackageRelativeSource": "legal/licenses/libpng/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "BDB0A645EA18C60507D0368379B1AC5474B92255FCC2D115E07486A7672BA526",
+    "CopiedVerbatim": true,
+    "Sha256": "BDB0A645EA18C60507D0368379B1AC5474B92255FCC2D115E07486A7672BA526"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libpng/LICENSE_MIT.txt",
+    "PackageRelativeSource": "legal/licenses/libpng/LICENSE_MIT.txt",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "508A77D2E7B51D98ADEED32648AD124B7B30241A8E70B2E72C99F92D8E5874D1",
+    "CopiedVerbatim": true,
+    "Sha256": "508A77D2E7B51D98ADEED32648AD124B7B30241A8E70B2E72C99F92D8E5874D1"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/librist/COPYING",
+    "PackageRelativeSource": "legal/licenses/librist/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "B9841591A3452EE30033D8E3586C7B1244A0B2FC1DC6CB04576957C313CB2792",
+    "CopiedVerbatim": true,
+    "Sha256": "B9841591A3452EE30033D8E3586C7B1244A0B2FC1DC6CB04576957C313CB2792"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libvpl/LICENSE",
+    "PackageRelativeSource": "legal/licenses/libvpl/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "BF1CFAC2E2792B6E1E995CE103D70796AECAF2EC7E4C5FE5474F7ACEC7B4A677",
+    "CopiedVerbatim": true,
+    "Sha256": "BF1CFAC2E2792B6E1E995CE103D70796AECAF2EC7E4C5FE5474F7ACEC7B4A677"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libvpx/LICENSE",
+    "PackageRelativeSource": "legal/licenses/libvpx/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "8267348D5AF1262C11D1A08DE2F5AFC77457755F1AC658627DD9ACF71011D615",
+    "CopiedVerbatim": true,
+    "Sha256": "8267348D5AF1262C11D1A08DE2F5AFC77457755F1AC658627DD9ACF71011D615"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libwebp/COPYING",
+    "PackageRelativeSource": "legal/licenses/libwebp/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "5AEC868F669E384A22372A4E8A1A6CD7D44C64CD451F960CA69CC170D1E13ACF",
+    "CopiedVerbatim": true,
+    "Sha256": "5AEC868F669E384A22372A4E8A1A6CD7D44C64CD451F960CA69CC170D1E13ACF"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/libxml2/Copyright",
+    "PackageRelativeSource": "legal/licenses/libxml2/Copyright",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "5D4873884A890122A4B9B20AD56AC6F7DA1D796A5BFCF04A427970AC96217626",
+    "CopiedVerbatim": true,
+    "Sha256": "5D4873884A890122A4B9B20AD56AC6F7DA1D796A5BFCF04A427970AC96217626"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/ogg/COPYING",
+    "PackageRelativeSource": "legal/licenses/ogg/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "D2AB5758336489DA61C12CC5BB757DA5339C4AE9001F9BB0562B4370249AF814",
+    "CopiedVerbatim": true,
+    "Sha256": "D2AB5758336489DA61C12CC5BB757DA5339C4AE9001F9BB0562B4370249AF814"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/openh264/LICENSE",
+    "PackageRelativeSource": "legal/licenses/openh264/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "DD5C1C9668512530FA5A96E4C29AC4033D70A7EEB0EED7A42FDDB6DD794EBDBB",
+    "CopiedVerbatim": true,
+    "Sha256": "DD5C1C9668512530FA5A96E4C29AC4033D70A7EEB0EED7A42FDDB6DD794EBDBB"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/openjpeg/LICENSE",
+    "PackageRelativeSource": "legal/licenses/openjpeg/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "A6AF136F3E15038A666B61F376612A07D9A4E48CB7C01ADBF3E33B3F14AB49B6",
+    "CopiedVerbatim": true,
+    "Sha256": "A6AF136F3E15038A666B61F376612A07D9A4E48CB7C01ADBF3E33B3F14AB49B6"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/openjpeg/LICENSE.txt",
+    "PackageRelativeSource": "legal/licenses/openjpeg/LICENSE.txt",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "A6AF136F3E15038A666B61F376612A07D9A4E48CB7C01ADBF3E33B3F14AB49B6",
+    "CopiedVerbatim": true,
+    "Sha256": "A6AF136F3E15038A666B61F376612A07D9A4E48CB7C01ADBF3E33B3F14AB49B6"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/opus/COPYING",
+    "PackageRelativeSource": "legal/licenses/opus/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "01E1167D54A096D123CF6DFBBEB19587278845C6481D2D66D545669846079551",
+    "CopiedVerbatim": true,
+    "Sha256": "01E1167D54A096D123CF6DFBBEB19587278845C6481D2D66D545669846079551"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/opus/LICENSE_PLEASE_READ.txt",
+    "PackageRelativeSource": "legal/licenses/opus/LICENSE_PLEASE_READ.txt",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "7EFB4989E0CD1B256229BDF2F09300C5D14E35DB0E7476BFB87FAC243498273D",
+    "CopiedVerbatim": true,
+    "Sha256": "7EFB4989E0CD1B256229BDF2F09300C5D14E35DB0E7476BFB87FAC243498273D"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/soxr/COPYING",
+    "PackageRelativeSource": "legal/licenses/soxr/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "32B1062F7DA84967E7019D01AB805935CAA7AB7321A7CED0E30EBE75E5DF1670",
+    "CopiedVerbatim": true,
+    "Sha256": "32B1062F7DA84967E7019D01AB805935CAA7AB7321A7CED0E30EBE75E5DF1670"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/soxr/COPYING.LGPL",
+    "PackageRelativeSource": "legal/licenses/soxr/COPYING.LGPL",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "F2F118B9029EC1871B953639ECC46651B2FC7B62E295E6CF3EF2AC4C9A058B33",
+    "CopiedVerbatim": true,
+    "Sha256": "F2F118B9029EC1871B953639ECC46651B2FC7B62E295E6CF3EF2AC4C9A058B33"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/speex/COPYING",
+    "PackageRelativeSource": "legal/licenses/speex/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "2654A4264B2BFE298DEDC508748D140111840C315CC8EB646A3A68C13FA75B01",
+    "CopiedVerbatim": true,
+    "Sha256": "2654A4264B2BFE298DEDC508748D140111840C315CC8EB646A3A68C13FA75B01"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/srt/LICENSE",
+    "PackageRelativeSource": "legal/licenses/srt/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "FAB3DD6BDAB226F1C08630B1DD917E11FCB4EC5E1E020E2C16F83A0A13863E85",
+    "CopiedVerbatim": true,
+    "Sha256": "FAB3DD6BDAB226F1C08630B1DD917E11FCB4EC5E1E020E2C16F83A0A13863E85"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/svtav1/LICENSE-BSD2.md",
+    "PackageRelativeSource": "legal/licenses/svtav1/LICENSE-BSD2.md",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "C582FCBEB9CF972A60D298BFAF41DC5ADFF2DD14208946EDCB9BB56A281E8438",
+    "CopiedVerbatim": true,
+    "Sha256": "C582FCBEB9CF972A60D298BFAF41DC5ADFF2DD14208946EDCB9BB56A281E8438"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/svtav1/LICENSE.md",
+    "PackageRelativeSource": "legal/licenses/svtav1/LICENSE.md",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "0ACC2FCB27472BDC9AAF8B71F37055BBDAC4F54671B7D922F241BD7FCD0DD3E6",
+    "CopiedVerbatim": true,
+    "Sha256": "0ACC2FCB27472BDC9AAF8B71F37055BBDAC4F54671B7D922F241BD7FCD0DD3E6"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/vmaf/LICENSE",
+    "PackageRelativeSource": "legal/licenses/vmaf/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "A6FDB51D02B9DFE198E55534BB8047FE6D756EDA117F4FF83DE98F92C1952710",
+    "CopiedVerbatim": true,
+    "Sha256": "A6FDB51D02B9DFE198E55534BB8047FE6D756EDA117F4FF83DE98F92C1952710"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/vorbis/COPYING",
+    "PackageRelativeSource": "legal/licenses/vorbis/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "EC1815DB59FCD302846DF949D7424876CB2E2DC5ED1606C5FB0B36787B1CF43A",
+    "CopiedVerbatim": true,
+    "Sha256": "EC1815DB59FCD302846DF949D7424876CB2E2DC5ED1606C5FB0B36787B1CF43A"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/vorbis/copyright",
+    "PackageRelativeSource": "legal/licenses/vorbis/copyright",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "1F6C6B6397D86D20968D7856D6945591B89E4CB64E5FC1EC8B992811F6A65ED8",
+    "CopiedVerbatim": true,
+    "Sha256": "1F6C6B6397D86D20968D7856D6945591B89E4CB64E5FC1EC8B992811F6A65ED8"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/whisper.cpp/LICENSE",
+    "PackageRelativeSource": "legal/licenses/whisper.cpp/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "94F29BBED6A22C35B992C5C6EBF0E7C92F13B836B90F36F461C9CF2F0F1D010D",
+    "CopiedVerbatim": true,
+    "Sha256": "94F29BBED6A22C35B992C5C6EBF0E7C92F13B836B90F36F461C9CF2F0F1D010D"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/zimg/COPYING",
+    "PackageRelativeSource": "legal/licenses/zimg/COPYING",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "7637386B5F81E8A719CA336233149005E5FA28B5E6054EA7B67DE49355B0AD40",
+    "CopiedVerbatim": true,
+    "Sha256": "7637386B5F81E8A719CA336233149005E5FA28B5E6054EA7B67DE49355B0AD40"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/legal/licenses/zlib/LICENSE",
+    "PackageRelativeSource": "legal/licenses/zlib/LICENSE",
+    "Source": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+    "ArchiveSha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2",
+    "SourceSha256": "E32FF4E00D9D94930537635291DA39E7E612703334BF6FDE8C7F1686FE8A45A2",
+    "CopiedVerbatim": true,
+    "Sha256": "E32FF4E00D9D94930537635291DA39E7E612703334BF6FDE8C7F1686FE8A45A2"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/freetype/docs/FTL.TXT",
+    "Source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/docs/FTL.TXT",
+    "SourceSha256": "5A5EE54C5001BBAD1CDC1A57CC3DD4C42199B2DA09D39C7EE41FAB002D02967F",
+    "CopiedVerbatim": true,
+    "Sha256": "5A5EE54C5001BBAD1CDC1A57CC3DD4C42199B2DA09D39C7EE41FAB002D02967F"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/freetype/docs/GPLv2.TXT",
+    "Source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/docs/GPLv2.TXT",
+    "SourceSha256": "C4120C6752C910C299E3BD9CB3A46FF262C268303CA2069B61F92F10A5656C18",
+    "CopiedVerbatim": true,
+    "Sha256": "C4120C6752C910C299E3BD9CB3A46FF262C268303CA2069B61F92F10A5656C18"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/freetype/src/bdf/README",
+    "Source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/src/bdf/README",
+    "SourceSha256": "7984455E7E5A9FABA3797C8BF095FBE10CC846316B7320AFF8C58402E22B82FE",
+    "CopiedVerbatim": true,
+    "Sha256": "7984455E7E5A9FABA3797C8BF095FBE10CC846316B7320AFF8C58402E22B82FE"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/freetype/src/gzip/zlib.h",
+    "Source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/src/gzip/zlib.h",
+    "SourceSha256": "C86A25C27F74CB97B8FA07B175F479F063D5064ACE9995B4684063643C81CF1B",
+    "CopiedVerbatim": true,
+    "Sha256": "C86A25C27F74CB97B8FA07B175F479F063D5064ACE9995B4684063643C81CF1B"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/freetype/src/pcf/README",
+    "Source": "https://raw.githubusercontent.com/freetype/freetype/VER-2-14-3/src/pcf/README",
+    "SourceSha256": "18D9782898D9EAC04476E2F744678137B2A889689ED3E923E052FC396A86F86B",
+    "CopiedVerbatim": true,
+    "Sha256": "18D9782898D9EAC04476E2F744678137B2A889689ED3E923E052FC396A86F86B"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/gcc/COPYING.RUNTIME",
+    "Source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-13.4.0/COPYING.RUNTIME",
+    "ProvenanceNote": "Original GCC 13 runtime terms; the binary reports gcc 13-win32 without an exact patch version. This source tag is not asserted to be the exact supplier compiler build.",
+    "SourceSha256": "9D6B43CE4D8DE0C878BF16B54D8E7A10D9BD42B75178153E3AF6A815BDC90F74",
+    "CopiedVerbatim": true,
+    "Sha256": "9D6B43CE4D8DE0C878BF16B54D8E7A10D9BD42B75178153E3AF6A815BDC90F74"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/gcc/COPYING3",
+    "Source": "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-13.4.0/COPYING3",
+    "ProvenanceNote": "Original GCC 13 runtime terms; the binary reports gcc 13-win32 without an exact patch version. This source tag is not asserted to be the exact supplier compiler build.",
+    "SourceSha256": "8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903",
+    "CopiedVerbatim": true,
+    "Sha256": "8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/kissfft/LICENSES/BSD-3-Clause",
+    "Source": "https://raw.githubusercontent.com/mborgerding/kissfft/131.2.0/LICENSES/BSD-3-Clause",
+    "SourceSha256": "4D6BCAB46F27D6D0C878E8305D4BDCFE040D52BF6656B9771F04C9FB9902C0ED",
+    "CopiedVerbatim": true,
+    "Sha256": "4D6BCAB46F27D6D0C878E8305D4BDCFE040D52BF6656B9771F04C9FB9902C0ED"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/nv-codec-headers/dynlink_cuda.h",
+    "Source": "https://raw.githubusercontent.com/FFmpeg/nv-codec-headers/n13.1.15.0/include/ffnvcodec/dynlink_cuda.h",
+    "SourceSha256": "C970D5817120EA481BA29B9C603BDC9A386985D9FC98A47F6588030DCDBA87C1",
+    "CopiedVerbatim": true,
+    "Sha256": "C970D5817120EA481BA29B9C603BDC9A386985D9FC98A47F6588030DCDBA87C1"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/nv-codec-headers/dynlink_cuviddec.h",
+    "Source": "https://raw.githubusercontent.com/FFmpeg/nv-codec-headers/n13.1.15.0/include/ffnvcodec/dynlink_cuviddec.h",
+    "SourceSha256": "0D9F490E8699A2E000904275D9E380E7EE9945E5717B95F920358013153C6377",
+    "CopiedVerbatim": true,
+    "Sha256": "0D9F490E8699A2E000904275D9E380E7EE9945E5717B95F920358013153C6377"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/nv-codec-headers/dynlink_loader.h",
+    "Source": "https://raw.githubusercontent.com/FFmpeg/nv-codec-headers/n13.1.15.0/include/ffnvcodec/dynlink_loader.h",
+    "SourceSha256": "144C0927B6009D5AF34A3A7335B0C8C337EEC287B4846DD3AC8519C06956662A",
+    "CopiedVerbatim": true,
+    "Sha256": "144C0927B6009D5AF34A3A7335B0C8C337EEC287B4846DD3AC8519C06956662A"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/nv-codec-headers/dynlink_nvcuvid.h",
+    "Source": "https://raw.githubusercontent.com/FFmpeg/nv-codec-headers/n13.1.15.0/include/ffnvcodec/dynlink_nvcuvid.h",
+    "SourceSha256": "C1290075D5D881E98C8F14DC5A23953A792F56971B172CF84EE0BC7AAB6D1AAB",
+    "CopiedVerbatim": true,
+    "Sha256": "C1290075D5D881E98C8F14DC5A23953A792F56971B172CF84EE0BC7AAB6D1AAB"
+  },
+  {
+    "PackageId": "devenvy.ffmpeg",
+    "PackageVersion": "8.1.3.0",
+    "File": "Devenvy-FFmpeg-8.1.3.0/source-notices/nv-codec-headers/nvEncodeAPI.h",
+    "Source": "https://raw.githubusercontent.com/FFmpeg/nv-codec-headers/n13.1.15.0/include/ffnvcodec/nvEncodeAPI.h",
+    "SourceSha256": "8776FDDCB8FEBC6AEC4D73989B1F21831EB30306BC583DA55B4BF0C14A1DC228",
+    "CopiedVerbatim": true,
+    "Sha256": "8776FDDCB8FEBC6AEC4D73989B1F21831EB30306BC583DA55B4BF0C14A1DC228"
+  },
+  {
+    "PackageId": "FFmpegInteropX.NativeFork",
+    "PackageVersion": "841fc8e",
+    "File": "FFmpegInteropX.NativeFork-841fc8e/LICENSE",
+    "Source": "https://raw.githubusercontent.com/ffmpeginteropx/FFmpegInteropX/841fc8e79346a235906f1dbd45be53034b2e2f52/LICENSE",
+    "Sha256": "CB5E8E7E5F4A3988E1063C142C60DC2DF75605F4C46515E776E3ACA6DF976E14",
+    "CopiedVerbatim": true
+  },
+  {
+    "PackageId": "FFmpegInteropX.NativeFork",
+    "PackageVersion": "841fc8e",
+    "File": "FFmpegInteropX.NativeFork-841fc8e/README.md",
+    "Source": "Local native-fork provenance record dated 2026-10-01, based on pinned upstream and tracked downstream source/build changes",
+    "Sha256": "5AD8CED66F3DDB4F6005696AF80C8A8091D53B2A002D488FD57557F0726ACA85",
+    "CopiedVerbatim": false
   }
 ]

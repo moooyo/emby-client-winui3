@@ -58,6 +58,16 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
         long? rangeLength = null, int maximumBytes = DefaultMaximumBytes, CancellationToken ct = default)
         => DownloadCoreAsync(uri, rangeOffset, rangeLength, maximumBytes, null, null, null, ct);
 
+    /// <summary>Bounds one HLS resource and rejects an origin change before sending any redirected request.</summary>
+    internal Task<MediaResource> DownloadHlsAsync(Uri uri, Uri requiredOrigin, long? rangeOffset = null,
+        long? rangeLength = null, int maximumBytes = DefaultMaximumBytes, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(requiredOrigin);
+        ValidateUri(requiredOrigin);
+        return DownloadCoreAsync(uri, rangeOffset, rangeLength, maximumBytes, null, null, null, ct,
+            requiredOrigin, preserveUnsatisfiableRange: true);
+    }
+
     internal Task<MediaResource> DownloadRangeAsync(Uri uri, long offset, int length,
         long? expectedTotalLength, string? entityTag, DateTimeOffset? lastModified, CancellationToken ct)
         => DownloadCoreAsync(uri, offset, length, length, expectedTotalLength, entityTag, lastModified, ct);
@@ -134,7 +144,8 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
 
     private async Task<MediaResource> DownloadCoreAsync(Uri uri, long? rangeOffset,
         long? rangeLength, int maximumBytes, long? expectedTotalLength, string? entityTag,
-        DateTimeOffset? lastModified, CancellationToken ct)
+        DateTimeOffset? lastModified, CancellationToken ct, Uri? requiredOrigin = null,
+        bool preserveUnsatisfiableRange = false)
     {
         ct.ThrowIfCancellationRequested();
         _lifetimeToken.ThrowIfCancellationRequested();
@@ -149,8 +160,15 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
         try
         {
             using var response = await SendAsync(uri, rangeOffset, rangeLength, entityTag,
-                lastModified, operation.Token).ConfigureAwait(false);
+                lastModified, operation.Token, requiredOrigin: requiredOrigin,
+                preserveUnsatisfiableRange: preserveUnsatisfiableRange).ConfigureAwait(false);
             var content = response.Content.Headers;
+            if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable && preserveUnsatisfiableRange)
+            {
+                // A server's explanatory error body is neither media nor safe to expose to a decoder.
+                return new MediaResource([], "application/octet-stream", response.RequestMessage!.RequestUri!,
+                    response.StatusCode, content.ContentRange!.ToString(), content.ContentRange.Length, null, null);
+            }
             var totalLength = content.ContentRange?.Length;
             if (expectedTotalLength.HasValue && totalLength != expectedTotalLength)
                 throw new PlaybackException("NetworkFailure");
@@ -197,12 +215,14 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
 
     private async Task<HttpResponseMessage> SendAsync(Uri uri, long? rangeOffset, long? rangeLength,
         string? entityTag, DateTimeOffset? lastModified, CancellationToken ct,
-        HttpMethod? method = null, RangeHeaderValue? streamingRange = null, bool streaming = false)
+        HttpMethod? method = null, RangeHeaderValue? streamingRange = null, bool streaming = false,
+        Uri? requiredOrigin = null, bool preserveUnsatisfiableRange = false)
     {
         var current = ScopeUri(uri);
         for (var redirects = 0; ; redirects++)
         {
             ct.ThrowIfCancellationRequested();
+            if (requiredOrigin is not null && !SameOrigin(current, requiredOrigin)) throw new PlaybackException("NotAllowed");
             using var request = new HttpRequestMessage(method ?? HttpMethod.Get, current);
             request.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("identity"));
             if (SameOrigin(current, _origin))
@@ -244,7 +264,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
                 }
 
                 if (streaming) ValidateStreamingResponse(response, streamingRange, method == HttpMethod.Head);
-                else ValidateResponse(response, rangeOffset, rangeLength);
+                else ValidateResponse(response, rangeOffset, rangeLength, preserveUnsatisfiableRange);
                 return response;
             }
             catch
@@ -304,11 +324,21 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
             throw new PlaybackException("UnsupportedFormat");
     }
 
-    private static void ValidateResponse(HttpResponseMessage response, long? rangeOffset, long? rangeLength)
+    private static void ValidateResponse(HttpResponseMessage response, long? rangeOffset, long? rangeLength,
+        bool preserveUnsatisfiableRange = false)
     {
         if (response.StatusCode == HttpStatusCode.Unauthorized)
             throw new PlaybackException("AuthenticationRequired");
         if (response.StatusCode == HttpStatusCode.Forbidden) throw new PlaybackException("NotAllowed");
+        if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable && preserveUnsatisfiableRange && rangeOffset.HasValue)
+        {
+            if (!response.Content.Headers.NonValidated.TryGetValues("Content-Range", out var values)
+                || values.Count != 1 || !ContentRangeHeaderValue.TryParse(values.Single(), out var unsatisfied)
+                || !unsatisfied.Unit.Equals("bytes", StringComparison.OrdinalIgnoreCase)
+                || unsatisfied.From.HasValue || unsatisfied.To.HasValue || !unsatisfied.Length.HasValue)
+                throw new PlaybackException("UnsupportedFormat");
+            return;
+        }
         if (response.StatusCode is HttpStatusCode.RequestedRangeNotSatisfiable or HttpStatusCode.UnsupportedMediaType)
             throw new PlaybackException("UnsupportedFormat");
         if (!response.IsSuccessStatusCode) throw new PlaybackException("NetworkFailure");

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modified by EmbyClient contributors on 2026-10-01 for selectable decoder APIs and reproducible native builds. -->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\DecoderNative.props" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release_Desktop|x64"><Configuration>Release_Desktop</Configuration><Platform>x64</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Debug_Desktop|x64"><Configuration>Debug_Desktop</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{9CFA3B3E-B7AF-4629-84E2-C962C5B046B1}</ProjectGuid><ProjectName>FFmpegInteropX</ProjectName><RootNamespace>FFmpegInteropX</RootNamespace></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType><PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset><CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries Condition="'$(Configuration)' == 'Debug_Desktop'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)' != 'Debug_Desktop'">false</UseDebugLibraries>
+    <WholeProgramOptimization Condition="'$(Configuration)' != 'Debug_Desktop'">true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader><PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile><PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory);$(GeneratedFilesDir);$(DecoderFFmpegRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_WINRT_DLL;Win32;UNICODE;_UNICODE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)' != 'Debug_Desktop'">NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)' == 'Debug_Desktop'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp20</LanguageStandard><LanguageStandard_C>stdc17</LanguageStandard_C><ExceptionHandling>Sync</ExceptionHandling>
+      <WarningLevel>Level4</WarningLevel><DisableSpecificWarnings>28204;4635;4634</DisableSpecificWarnings><AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary Condition="'$(Configuration)' != 'Debug_Desktop'">MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary Condition="'$(Configuration)' == 'Debug_Desktop'">MultiThreadedDebug</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat><MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <ModuleDefinitionFile>FFmpegInteropX.def</ModuleDefinitionFile><AdditionalLibraryDirectories>$(DecoderFFmpegRoot)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;shcore.lib;runtimeobject.lib;mfuuid.lib;dxguid.lib;d3d11.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation><SubSystem>Console</SubSystem><GenerateWindowsMetadata>false</GenerateWindowsMetadata>
+    </Link>
+    <ResourceCompile><AdditionalIncludeDirectories>$(DecoderFFmpegRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><PreprocessorDefinitions>LIB_VERSION_NUM=$(LibVersionNum);LIB_VERSION_STR=$(LibVersionStr);%(PreprocessorDefinitions)</PreprocessorDefinitions></ResourceCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="*.h" /><ClCompile Include="*.cpp" Exclude="pch.cpp;EmbyDecoderApi.cpp" />
+    <ClCompile Include="EmbyDecoderApi.cpp" Condition="Exists('EmbyDecoderApi.cpp')" />
+    <ClCompile Include="pch.cpp"><PrecompiledHeader>Create</PrecompiledHeader></ClCompile><ClCompile Include="$(GeneratedFilesDir)module.g.cpp" />
+    <ResourceCompile Include="FFmpegInteropX.rc" /><None Include="FFmpegInteropX.idl" /><None Include="FFmpegInteropX.def" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

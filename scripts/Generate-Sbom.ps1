@@ -123,6 +123,72 @@ foreach ($key in ($selected.Keys | Sort-Object)) {
     $children = @($selected[$key].dependencies.Keys | Where-Object { $_ -and $refsById.ContainsKey($_) } | ForEach-Object { $refsById[$_] } | Sort-Object -Unique)
     $dependencies += @{ ref = $refsById[$id]; dependsOn = $children }
 }
+
+# Record the actual native overrides separately from the restored NuGet package graph.
+$decoderLockPath = Join-Path $workspace 'native/FFmpegInteropX/dependencies.lock.json'
+if (Test-Path -LiteralPath $decoderLockPath) {
+    $nativeReceiptPath = Join-Path $workspace 'artifacts/decoder-apis/native/build-receipt.json'
+    if (-not (Test-Path -LiteralPath $nativeReceiptPath)) { throw 'Build the native decoder before generating its runtime inventory.' }
+    $decoderLock = Get-Content -LiteralPath $decoderLockPath -Raw | ConvertFrom-Json -AsHashtable
+    $nativeReceipt = Get-Content -LiteralPath $nativeReceiptPath -Raw | ConvertFrom-Json -AsHashtable
+    $nativeRuntimeRoot = Join-Path $workspace 'artifacts/decoder-apis/native/runtime'
+    $wrapperFile = @($nativeReceipt.runtimeFiles | Where-Object name -eq 'FFmpegInteropX.dll')
+    if ($wrapperFile.Count -ne 1) { throw 'Exactly one custom decoder wrapper is required.' }
+    $wrapperRef = 'urn:emby-client:native-decoder:' + $nativeReceipt.sourceFingerprint
+    $ffmpegRef = 'urn:emby-client:ffmpeg-runtime:' + $decoderLock.ffmpeg.runtime.sha256
+    $components += [ordered]@{
+        type = 'library'; 'bom-ref' = $wrapperRef; name = 'FFmpegInteropX.EmbyDecoderApis'; version = '2.1.0+emby-api1'
+        hashes = @(@{ alg = 'SHA-256'; content = $wrapperFile[0].sha256 })
+        licenses = @(@{ expression = 'Apache-2.0' })
+        externalReferences = @(@{ type = 'vcs'; url = $decoderLock.wrapper.repository + '/tree/' + $decoderLock.wrapper.commit })
+        properties = @(
+            @{ name = 'emby:native:sourceFingerprint'; value = $nativeReceipt.sourceFingerprint },
+            @{ name = 'emby:native:sourceChanges'; value = 'Repository native/FFmpegInteropX/Source with session-scoped decoder API extensions.' },
+            @{ name = 'emby:native:buildReceiptSha256'; value = (Get-FileHash -LiteralPath $nativeReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant() }
+        )
+    }
+    $components += [ordered]@{
+        type = 'library'; 'bom-ref' = $ffmpegRef; name = 'FFmpeg.Devenvy.SharedRuntime'; version = $decoderLock.ffmpeg.runtimeVersion
+        hashes = @(@{ alg = 'SHA-256'; content = $decoderLock.ffmpeg.runtime.sha256 })
+        licenses = @(@{ expression = $decoderLock.ffmpeg.license })
+        externalReferences = @(
+            @{ type = 'distribution'; url = $decoderLock.ffmpeg.runtime.url },
+            @{ type = 'vcs'; url = $decoderLock.ffmpeg.repository + '/tree/' + $decoderLock.ffmpeg.buildScriptsCommit }
+        )
+        properties = @(
+            @{ name = 'emby:native:developmentArchiveSha256'; value = $decoderLock.ffmpeg.development.sha256 },
+            @{ name = 'emby:native:buildRelease'; value = $decoderLock.ffmpeg.release },
+            @{ name = 'emby:native:licenseScope'; value = 'FFmpeg library license; bundled external dependency notices and exceptions remain in the retained supplier legal tree.' }
+        )
+    }
+    $ffmpegParts = @()
+    foreach ($file in $nativeReceipt.runtimeFiles | Where-Object name -like '*.dll') {
+        if ([IO.Path]::GetFileName($file.name) -ne $file.name) { throw 'Native inventory file names must be basenames.' }
+        $actualFile = Join-Path $nativeRuntimeRoot $file.name
+        if (-not (Test-Path -LiteralPath $actualFile) -or (Get-FileHash -LiteralPath $actualFile -Algorithm SHA256).Hash.ToLowerInvariant() -cne $file.sha256) {
+            throw "Native runtime hash does not match the build receipt: $($file.name)"
+        }
+        if ($file.name -eq 'FFmpegInteropX.dll') { continue }
+        $partRef = 'urn:emby-client:native-file:' + $file.sha256
+        $ffmpegParts += $partRef
+        $components += [ordered]@{
+            type = 'file'; 'bom-ref' = $partRef; name = $file.name
+            hashes = @(@{ alg = 'SHA-256'; content = $file.sha256 })
+            properties = @(@{ name = 'emby:native:bytes'; value = [string]$file.size })
+        }
+        $dependencies += @{ ref = $partRef; dependsOn = @() }
+    }
+    if ($ffmpegParts.Count -ne 7) { throw 'The locked FFmpeg runtime must contain exactly seven shared library components.' }
+    $dependencies += @{ ref = $ffmpegRef; dependsOn = $ffmpegParts }
+    $dependencies += @{ ref = $wrapperRef; dependsOn = @($ffmpegRef) }
+    $dependencies[0].dependsOn += @($wrapperRef, $ffmpegRef)
+    foreach ($component in $components | Where-Object name -eq 'FFmpegInteropX.Desktop.FFmpeg') {
+        $component.properties += @{ name = 'emby:native:runtimePayloadReplacedBy'; value = $ffmpegRef }
+    }
+    foreach ($component in $components | Where-Object name -eq 'FFmpegInteropX.Desktop.Lib') {
+        $component.properties += @{ name = 'emby:native:wrapperPayloadReplacedBy'; value = $wrapperRef }
+    }
+}
 [xml]$project = Get-Content (Join-Path $workspace 'src/EmbyClient.App/EmbyClient.App.csproj') -Raw
 $appVersion = [string]@($project.Project.PropertyGroup.Version | Where-Object { $_ })[0]
 $assetsHash = (Get-FileHash -LiteralPath $AssetsPath -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -133,7 +199,7 @@ $bom = [ordered]@{
     metadata = @{
         component = @{ type = 'application'; 'bom-ref' = $rootRef; name = 'EmbyClient.App'; version = $appVersion }
         properties = @(
-            @{ name = 'emby:inventory:scope'; value = 'Resolved App package graph plus selected NativeAOT and Windows projection runtime packs; not a post-trimming binary composition analysis.' },
+            @{ name = 'emby:inventory:scope'; value = 'Resolved App package graph, selected runtime packs, and hash-verified native decoder overrides. External dependency notices within the FFmpeg runtime remain a separate supplier inventory.' },
             @{ name = 'emby:inventory:target'; value = $targetKey[0] },
             @{ name = 'emby:inventory:assetsSha256'; value = $assetsHash },
             @{ name = 'emby:inventory:lockSha256'; value = $lockHash },
@@ -159,7 +225,7 @@ function ConvertTo-CanonicalValue([object]$Value) {
 $json = ConvertTo-CanonicalValue $bom | ConvertTo-Json -Depth 30
 # Round-trip before publishing the package inventory. Schema validation is separate.
 $readback = $json | ConvertFrom-Json -AsHashtable
-if ($readback.components.Count -ne $selected.Count -or $readback.specVersion -ne '1.6') { throw 'The SBOM JSON readback did not preserve the expected structure.' }
+if ($readback.components.Count -ne $components.Count -or $readback.specVersion -ne '1.6') { throw 'The SBOM JSON readback did not preserve the expected structure.' }
 [IO.File]::WriteAllText($OutputPath, $json + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
 Write-Output "CycloneDX 1.6 package SBOM: $OutputPath"
 Write-Output "Components: $($components.Count). JSON structure readback passed; schema validation was not run by this script."

@@ -37,7 +37,22 @@ public sealed partial class App : Application
     {
         var commandLine = Environment.GetCommandLineArgs().Skip(1).ToArray();
         string directory;
-        if (commandLine is ["--output-dir", var normalDirectory]) directory = normalDirectory;
+        if (commandLine is ["--output-dir", var multiAudioDirectory, "--hardware-multiaudio", "--media-dir", var multiAudioMediaDirectory, .. var multiAudioOptions])
+        {
+            directory = multiAudioDirectory;
+            ConfigureHardwareMultiAudioMode(multiAudioMediaDirectory, multiAudioOptions);
+        }
+        else if (commandLine is ["--output-dir", var hlsHardwareDirectory, "--hardware-hls", "--media-dir", var hlsMediaDirectory, .. var hlsHardwareOptions])
+        {
+            directory = hlsHardwareDirectory;
+            ConfigureHardwareHlsMode(hlsMediaDirectory, hlsHardwareOptions);
+        }
+        else if (commandLine is ["--output-dir", var hardwareDirectory, "--hardware-decode", .. var hardwareOptions])
+        {
+            directory = hardwareDirectory;
+            ConfigureHardwareDecodeMode(hardwareOptions);
+        }
+        else if (commandLine is ["--output-dir", var normalDirectory]) directory = normalDirectory;
         else if (commandLine is ["--output-dir", var posterDirectory, "--poster-lifecycle"])
         {
             directory = posterDirectory;
@@ -141,18 +156,24 @@ public sealed partial class App : Application
             return;
         }
         if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation && _networkRetryMediaDirectory is null
-            && _externalSubtitleCredentialsPath is null && _complexSubtitleCredentialsPath is null) Save();
+            && _externalSubtitleCredentialsPath is null && _complexSubtitleCredentialsPath is null && !_hardwareDecodeMode
+            && _hardwareHlsMediaDirectory is null && _hardwareMultiAudioMediaDirectory is null) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };
         _window = new Window
         {
-            Title = _complexSubtitleCaseId is null ? "SYNTHETIC native playback probe"
+            Title = _hardwareMultiAudioMediaDirectory is not null ? "SYNTHETIC native audio selection control"
+                : _hardwareHlsMediaDirectory is not null ? "SYNTHETIC native HLS decoding control"
+                : _complexSubtitleCaseId is null ? "SYNTHETIC native playback probe"
                 : (_complexSubtitleHttpProfileControl ? "SYNTHETIC subtitle HTTP profile control: " : "SYNTHETIC complex subtitle: ") + _complexSubtitleCaseId,
             Content = _controlMode is null or "file-playback" or "file-stream-playback" or "file-managed-stream-playback" or "native-http-playback"
                 ? _element : new TextBlock { Text = "Isolated native resource control: " + _controlMode }
         };
         _window.AppWindow.Resize(_complexSubtitleCaseId is null ? new SizeInt32(480, 300) : new SizeInt32(960, 600));
         _window.AppWindow.Show(activateWindow: false);
-        _ = _complexSubtitleCredentialsPath is not null ? RunComplexSubtitleModeAsync()
+        _ = _hardwareMultiAudioMediaDirectory is not null ? RunHardwareMultiAudioAsync()
+            : _hardwareHlsMediaDirectory is not null ? RunHardwareHlsAsync()
+            : _hardwareDecodeMode ? RunHardwareDecodeAsync()
+            : _complexSubtitleCredentialsPath is not null ? RunComplexSubtitleModeAsync()
             : _externalSubtitleCredentialsPath is not null ? RunExternalSubtitleModeAsync()
             : _networkRetryMediaDirectory is not null ? RunNetworkRetryAsync()
             : _lifecycleIsolation ? RunIsolationAsync()

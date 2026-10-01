@@ -4,6 +4,8 @@ Research date: 2026-09-09.
 
 Status: proposed architecture, based on official documentation, upstream source, and published NuGet metadata. No application has been implemented or executed. No local build, test, runtime probe, or compatibility verification was performed. Version availability and source inspection do not establish runtime compatibility.
 
+This is the historical research plan. The later [playback engine decision](playback-engine-decision.md) selects Windows `MediaPlayer`/`MediaPlayerElement` rendering. The 2026-10-01 implementation adds [FFmpegInteropX decoding with a hardware/software preference](../implementation/hardware-decoding.md) and authenticated relays, while preserving that Windows rendering owner. The LibVLC proposals below remain candidate research rather than the current product decoder.
+
 ## 1. Recommended direction
 
 Build a Windows desktop application in C# with WinUI 3, Windows App SDK, WinUIEx, and CommunityToolkit.Mvvm. Use native XAML controls and Windows window management throughout the application. Keep Emby protocol handling independent of the UI and of the playback engine.

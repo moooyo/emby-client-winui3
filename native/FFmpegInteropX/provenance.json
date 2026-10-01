@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "wrapper": {
+    "repository": "https://github.com/ffmpeginteropx/FFmpegInteropX",
+    "originalCommit": "841fc8e79346a235906f1dbd45be53034b2e2f52",
+    "sourceDirectory": "Source",
+    "licensePath": "LICENSE",
+    "license": "Apache-2.0",
+    "unchangedProjection": "FFmpegInteropX.Desktop.Lib/2.1.0",
+    "changes": [ "Per-source vendor API selection and observations", "Hardware-frame system-memory transfer and software fallback", "Three additional C ABI exports", "Windows x64 build project and dependency locking" ]
+  },
+  "ffmpeg": {
+    "sourceRepository": "https://github.com/FFmpeg/FFmpeg",
+    "sourceVersion": "8.1.3",
+    "sourceArchive": "https://ffmpeg.org/releases/ffmpeg-8.1.3.tar.xz",
+    "binaryBuilderRepository": "https://github.com/devenvy/ffmpeg",
+    "binaryBuilderCommit": "fcd83b13adbbbdf616f3a48a565f1913dbdfa403",
+    "runtimeVersion": "8.1.3",
+    "dependencyLock": "dependencies.lock.json",
+    "license": "LGPL-2.1-or-later",
+    "gplEnabled": false,
+    "nonfreeEnabled": false,
+    "version3Enabled": false,
+    "externalAutodetection": false,
+    "runtimeFamily": [ "avcodec-62.dll", "avdevice-62.dll", "avfilter-11.dll", "avformat-62.dll", "avutil-60.dll", "swresample-6.dll", "swscale-9.dll" ],
+    "buildConfigurationReceipt": "artifacts/decoder-apis/native/ffmpeg-version.txt",
+    "decoderInventoryReceipt": "artifacts/decoder-apis/native/ffmpeg-decoders.txt",
+    "completeCorrespondingSourceIncluded": false
+  },
+  "buildReceipt": "artifacts/decoder-apis/native/build-receipt.json",
+  "distributionReviewComplete": false
+}

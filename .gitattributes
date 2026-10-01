@@ -11,3 +11,8 @@
 # Preserve the exact bytes recorded in the upstream notice manifest.
 licenses/third-party/*/** -text -whitespace
 tools/EmbyClient.SubtitleFixtures/licenses/** -text -whitespace
+# Preserve upstream source bytes and whitespace in the vendored decoder fork.
+native/FFmpegInteropX/Source/** -text -whitespace
+native/FFmpegInteropX/LICENSE -text -whitespace
+# The upstream license contains a seven-character Markdown heading underline.
+licenses/third-party/Devenvy-FFmpeg-8.1.3.0/legal/licenses/chromaprint/LICENSE.md conflict-marker-size=32
