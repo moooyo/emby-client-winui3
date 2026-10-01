@@ -246,9 +246,9 @@ public sealed partial class LumenSettingsView : UserControl
             Dropdown("Internet maximum bitrate", [new("20000000", "20 Mbps"), new("10000000", "10 Mbps"), new("4000000", "4 Mbps"), new("0", "Unlimited")],
                 () => _preferences.InternetMaxBitrate.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 value => Change(p => p with { InternetMaxBitrate = long.Parse(value, System.Globalization.CultureInfo.InvariantCulture) })));
-        const string hardwareReason = "The native Windows decoder chooses hardware automatically; manual control is unavailable.";
-        AddRow(quality, "Hardware accelerated decoding", hardwareReason,
-            Switch("Hardware accelerated decoding", () => _preferences.HardwareDecoding, _ => { }, enabled: false, hardwareReason));
+        const string decoderDescription = "Applies to the next video. Unavailable APIs or unsupported streams fall back to software.";
+        AddRow(quality, "Video decoder API", decoderDescription,
+            DecoderApiDropdown());
         const string hdrReason = "This playback profile outputs SDR. HDR has not been verified.";
         AddRow(quality, "HDR output", hdrReason,
             Segments([new("Auto", "Auto"), new("Always", "Always"), new("Off", "Off")], () => _preferences.HdrMode, _ => { }, enabled: false, reason: hdrReason));
@@ -622,6 +622,46 @@ public sealed partial class LumenSettingsView : UserControl
             }
         });
         return outer;
+    }
+
+    private FrameworkElement DecoderApiDropdown()
+    {
+        Option[] options =
+        [
+            new("Auto", "Automatic (D3D11VA)"), new("D3D11", "D3D11VA"), new("IntelQsv", "Intel VPL / QSV"),
+            new("AmdAmf", "AMD AMF"), new("NvidiaNvdec", "NVIDIA NVDEC"), new("Software", "Software decoding")
+        ];
+        var selector = new ComboBox
+        {
+            Width = 220, MinHeight = 36, FontFamily = LumenTheme.SansFont, FontSize = 13,
+            Background = LumenTheme.Brush("Control"), Foreground = LumenTheme.Brush("Ink"),
+            BorderBrush = LumenTheme.Brush("LineStrong"), CornerRadius = new CornerRadius(12),
+            HorizontalContentAlignment = HorizontalAlignment.Stretch, UseSystemFocusVisuals = true
+        };
+        foreach (var option in options)
+            selector.Items.Add(new ComboBoxItem { Content = T(option.Label), Tag = option.Value, MinHeight = 36 });
+        AutomationProperties.SetName(selector, T("Video decoder API"));
+        selector.SelectionChanged += (_, _) =>
+        {
+            if (_synchronizing || selector.SelectedItem is not ComboBoxItem { Tag: string value }
+                || value == _preferences.VideoDecoderApi) return;
+            Change(p => p with { VideoDecoderApi = value, HardwareDecoding = value != "Software" });
+        };
+        _refreshControls.Add(() =>
+        {
+            ComboBoxItem? selected = null;
+            foreach (var item in selector.Items.OfType<ComboBoxItem>())
+            {
+                if (item.Tag is string value && value == _preferences.VideoDecoderApi)
+                {
+                    selected = item;
+                    break;
+                }
+            }
+            if (!ReferenceEquals(selector.SelectedItem, selected)) selector.SelectedItem = selected;
+            AutomationProperties.SetHelpText(selector, $"{T("Video decoder API")}: {selected?.Content}");
+        });
+        return selector;
     }
 
     private FrameworkElement Dropdown(string name, Option[] options, Func<string> getter, Action<string> setter,
@@ -1115,8 +1155,14 @@ public sealed partial class LumenSettingsView : UserControl
         ["Internet maximum bitrate"] = "\u4e92\u8054\u7f51\u6700\u5927\u7801\u7387",
         ["When connecting outside your local network"] = "\u901a\u8fc7\u4e92\u8054\u7f51\u8fde\u63a5\u670d\u52a1\u5668\u65f6",
         ["Unlimited"] = "\u4e0d\u9650\u5236",
-        ["Hardware accelerated decoding"] = "\u786c\u4ef6\u52a0\u901f\u89e3\u7801",
-        ["The native Windows decoder chooses hardware automatically; manual control is unavailable."] = "\u7531 Windows \u539f\u751f\u89e3\u7801\u5668\u81ea\u52a8\u9009\u62e9\u786c\u4ef6\u52a0\u901f\uff0c\u65e0\u6cd5\u624b\u52a8\u5207\u6362\u3002",
+        ["Video decoder API"] = "\u89c6\u9891\u89e3\u7801 API",
+        ["Applies to the next video. Unavailable APIs or unsupported streams fall back to software."] = "\u4e0b\u4e00\u4e2a\u89c6\u9891\u751f\u6548\u3002API \u4e0d\u53ef\u7528\u6216\u89c6\u9891\u6d41\u4e0d\u652f\u6301\u65f6\u56de\u9000\u8f6f\u4ef6\u89e3\u7801\u3002",
+        ["Automatic (D3D11VA)"] = "\u81ea\u52a8\uff08D3D11VA\uff09",
+        ["D3D11VA"] = "D3D11VA",
+        ["Intel VPL / QSV"] = "Intel VPL / QSV",
+        ["AMD AMF"] = "AMD AMF",
+        ["NVIDIA NVDEC"] = "NVIDIA NVDEC",
+        ["Software decoding"] = "\u8f6f\u4ef6\u89e3\u7801",
         ["HDR output"] = "HDR \u8f93\u51fa",
         ["This playback profile outputs SDR. HDR has not been verified."] = "\u5f53\u524d\u64ad\u653e\u914d\u7f6e\u8f93\u51fa SDR\uff0cHDR \u5c1a\u672a\u901a\u8fc7\u9a8c\u8bc1\u3002",
         ["Auto"] = "\u81ea\u52a8",

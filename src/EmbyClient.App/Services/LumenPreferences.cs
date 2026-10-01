@@ -20,6 +20,7 @@ public sealed record LumenPreferences
     public long InternetMaxBitrate { get; set; } = 20_000_000;
 
     public bool HardwareDecoding { get; set; } = true;
+    public string VideoDecoderApi { get; set; } = "Auto";
     public string HdrMode { get; set; } = "Auto";
     public bool MatchRefreshRate { get; set; }
 

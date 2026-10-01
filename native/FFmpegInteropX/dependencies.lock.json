@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "wrapper": {
+    "repository": "https://github.com/ffmpeginteropx/FFmpegInteropX",
+    "commit": "841fc8e79346a235906f1dbd45be53034b2e2f52",
+    "license": "Apache-2.0",
+    "projectionPackage": "FFmpegInteropX.Desktop.Lib/2.1.0",
+    "projectionAbiChanged": false
+  },
+  "ffmpeg": {
+    "repository": "https://github.com/devenvy/ffmpeg",
+    "buildScriptsCommit": "fcd83b13adbbbdf616f3a48a565f1913dbdfa403",
+    "release": "8.1.3.0",
+    "licenseVariant": "lgplv2-shared",
+    "license": "LGPL-2.1-or-later",
+    "runtimeVersion": "8.1.3",
+    "payloadDirectory": "ffmpeg-devenvy-8.1.3",
+    "runtime": {
+      "name": "ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+      "url": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2.tar.gz",
+      "size": 32380961,
+      "sha256": "f437415870b78d6dad38b92de5fc3c62f3a5186a6e86ad1ebc0f2b97d45094e2"
+    },
+    "development": {
+      "name": "ffmpeg-8.1.3-win-x64-lgplv2-dev.tar.gz",
+      "url": "https://github.com/devenvy/ffmpeg/releases/download/8.1.3.0/ffmpeg-8.1.3-win-x64-lgplv2-dev.tar.gz",
+      "size": 405729,
+      "sha256": "c7c5a50d2afbe64bd4b06000403c0b0e929c35fdac0a1c3aa623d03bc82d7beb"
+    },
+    "expectedMajors": { "avcodec": 62, "avformat": 62, "avutil": 60, "avfilter": 11, "avdevice": 62, "swresample": 6, "swscale": 9 },
+    "requiredDecoders": [ "h264_qsv", "h264_amf", "h264_cuvid", "libdav1d" ]
+  },
+  "toolchain": {
+    "platform": "x64",
+    "windowsSdkVersion": "10.0.26100.0",
+    "cppWinRtVersion": "2.0.250303.1",
+    "windowsAppSdkVersion": "2.4.0",
+    "windowsAppSdkInteractiveExperiencesVersion": "2.1.6",
+    "windowsAppSdkFoundationVersion": "2.3.9",
+    "windowsAppSdkWinUiVersion": "2.3.6",
+    "webView2Version": "1.0.3719.77"
+  },
+  "nuget": [
+    { "id": "microsoft.windows.cppwinrt", "version": "2.0.250303.1", "sha512": "rfnscFmliz4OsAV95SkAaS9YMFrui6cI0mXSc6gRJ5eL65vyWZsAhVthtyXU5usGIGtmiX6urvGuyDlI1gvCkw==" },
+    { "id": "ffmpeginteropx.desktop.lib", "version": "2.1.0", "sha512": "kqkmIm4UIHx9S49SvNQ3al2rpAUMuEWypVvwm7VCD/pXYHb4B9OL9JpwWOD8YiJdTvAzXIJgJcHrn1CmDSXhpQ==" },
+    { "id": "microsoft.windowsappsdk.interactiveexperiences", "version": "2.1.6", "sha512": "F11b1MpDz2XQW2kCiwRcwzElYtaPqNKzTFIsnMKYcQyne9aurGaFtJjdeAVmhDKrCYxcPYXefAfde80+enDKkw==" },
+    { "id": "microsoft.windowsappsdk.foundation", "version": "2.3.9", "sha512": "UNTkdxpT8g6eTuWDHumM+AdGZ4EdFCR03o4OLamBkbKVKDmVO04C/lLHp0Zk+wAj4i6caMU5L7SoQ2eiHN9MYA==" },
+    { "id": "microsoft.windowsappsdk.winui", "version": "2.3.6", "sha512": "E1S4NobPvZJq9xTo77a7jYmvJPEIfJzC3m+abRlaYXtFSlKWTRtCt/SRo+oEvKv63CEriAh6zw44OSAO9oiLsQ==" },
+    { "id": "microsoft.web.webview2", "version": "1.0.3719.77", "sha512": "Cpq7EGgijiCN0lg1RlTZuZcRkzyo/USU9cEJMSPh6FG4PLjmTEpJ5NKuJqQ06ONnVVARCcTLf31IjjhFJUrApw==" }
+  ]
+}

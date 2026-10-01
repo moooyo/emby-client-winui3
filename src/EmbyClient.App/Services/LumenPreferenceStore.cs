@@ -53,9 +53,15 @@ public sealed class LumenPreferenceStore
 
                 cancellationToken.ThrowIfCancellationRequested();
                 if (count > MaximumFileBytes) return UseDefaults();
-                var loaded = JsonSerializer.Deserialize(bytes.AsSpan(0, count),
-                    LumenPreferencesJsonContext.Default.LumenPreferences);
+                using var document = JsonDocument.Parse(bytes.AsMemory(0, count),
+                    new JsonDocumentOptions { MaxDepth = 8 });
+                var loaded = document.RootElement.Deserialize(LumenPreferencesJsonContext.Default.LumenPreferences);
                 if (loaded is null) return UseDefaults();
+                if (!HasVideoDecoderApi(document.RootElement))
+                {
+                    // Migrate the legacy toggle only when the API choice was omitted.
+                    loaded = loaded with { VideoDecoderApi = loaded.HardwareDecoding ? "Auto" : "Software" };
+                }
 
                 var validated = Normalize(loaded);
                 var canonicalInput = IsValidSubtitleLanguage(loaded.SubtitleLanguage)
@@ -166,6 +172,8 @@ public sealed class LumenPreferenceStore
     private static LumenPreferences Normalize(LumenPreferences value)
     {
         var defaults = new LumenPreferences();
+        var videoDecoderApi = KnownValue(value.VideoDecoderApi, defaults.VideoDecoderApi,
+            "Auto", "D3D11", "IntelQsv", "AmdAmf", "NvidiaNvdec", "Software");
         return value with
         {
             Theme = KnownValue(value.Theme, defaults.Theme, "Dark", "Light"),
@@ -177,6 +185,8 @@ public sealed class LumenPreferenceStore
             ResumeMode = KnownValue(value.ResumeMode, defaults.ResumeMode, "Continue", "Ask", "Restart"),
             LocalMaxBitrate = IsValidBitrate(value.LocalMaxBitrate) ? value.LocalMaxBitrate : defaults.LocalMaxBitrate,
             InternetMaxBitrate = IsValidBitrate(value.InternetMaxBitrate) ? value.InternetMaxBitrate : defaults.InternetMaxBitrate,
+            VideoDecoderApi = videoDecoderApi,
+            HardwareDecoding = videoDecoderApi != "Software",
             HdrMode = KnownValue(value.HdrMode, defaults.HdrMode, "Auto", "Always", "Off"),
             SubtitleLanguage = IsValidSubtitleLanguage(value.SubtitleLanguage)
                 ? value.SubtitleLanguage.ToLowerInvariant() : defaults.SubtitleLanguage,
@@ -184,6 +194,16 @@ public sealed class LumenPreferenceStore
             SubtitleSize = KnownValue(value.SubtitleSize, defaults.SubtitleSize, "Small", "Medium", "Large"),
             SubtitlePosition = KnownValue(value.SubtitlePosition, defaults.SubtitlePosition, "Bottom", "BlackBars")
         };
+    }
+
+    private static bool HasVideoDecoderApi(JsonElement root)
+    {
+        foreach (var property in root.EnumerateObject())
+        {
+            if (string.Equals(property.Name, nameof(LumenPreferences.VideoDecoderApi), StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     private static string KnownValue(string? value, string fallback, params string[] supported)

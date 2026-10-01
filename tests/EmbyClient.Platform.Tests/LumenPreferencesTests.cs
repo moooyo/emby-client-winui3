@@ -54,6 +54,7 @@ public sealed class LumenPreferencesTests
             LocalMaxBitrate = 0,
             InternetMaxBitrate = 4_000_000,
             HardwareDecoding = false,
+            VideoDecoderApi = "Software",
             HdrMode = "Always",
             MatchRefreshRate = true,
             SubtitleLanguage = "",
@@ -70,12 +71,75 @@ public sealed class LumenPreferencesTests
         Assert.Equal(LumenPreferencePersistenceIssue.None, store.LastIssue);
         Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
         using var json = JsonDocument.Parse(await File.ReadAllBytesAsync(store.FilePath, token));
-        Assert.Equal(20, json.RootElement.EnumerateObject().Count());
+        Assert.Equal(21, json.RootElement.EnumerateObject().Count());
         Assert.False(json.RootElement.TryGetProperty("Accounts", out _));
         Assert.False(json.RootElement.TryGetProperty("AccessToken", out _));
         Assert.False(json.RootElement.TryGetProperty("DeviceId", out _));
         Assert.Equal(accountData, await File.ReadAllTextAsync(fixture.SettingsPath, token));
         Assert.Empty(Directory.GetFiles(fixture.DirectoryPath, "*.tmp"));
+    }
+
+    [Theory]
+    [InlineData("Auto", true)]
+    [InlineData("D3D11", true)]
+    [InlineData("IntelQsv", true)]
+    [InlineData("AmdAmf", true)]
+    [InlineData("NvidiaNvdec", true)]
+    [InlineData("Software", false)]
+    public async Task Every_video_decoder_api_round_trips_with_its_compatible_hardware_toggle(string api, bool hardware)
+    {
+        using var fixture = new TemporaryAccountStore();
+        var token = TestContext.Current.CancellationToken;
+        var store = CreateStore(fixture);
+        var preferences = new LumenPreferences { VideoDecoderApi = api, HardwareDecoding = hardware };
+
+        await store.SaveAsync(preferences, token);
+
+        Assert.Equal(preferences, await new LumenPreferenceStore(store.FilePath).LoadAsync(token));
+        Assert.Equal(LumenPreferencePersistenceIssue.None, store.LastIssue);
+        using var json = JsonDocument.Parse(await File.ReadAllBytesAsync(store.FilePath, token));
+        Assert.Equal(api, json.RootElement.GetProperty("VideoDecoderApi").GetString());
+        Assert.Equal(hardware, json.RootElement.GetProperty("HardwareDecoding").GetBoolean());
+    }
+
+    [Theory]
+    [InlineData("{}", "Auto", true)]
+    [InlineData("{\"HardwareDecoding\":true}", "Auto", true)]
+    [InlineData("{\"HardwareDecoding\":false}", "Software", false)]
+    [InlineData("{\"hardwaredecoding\":false}", "Software", false)]
+    public async Task Legacy_hardware_toggle_migrates_without_rewriting_the_file(string json, string api, bool hardware)
+    {
+        using var fixture = new TemporaryAccountStore();
+        var token = TestContext.Current.CancellationToken;
+        var store = CreateStore(fixture);
+        await File.WriteAllTextAsync(store.FilePath, json, token);
+
+        var loaded = await store.LoadAsync(token);
+
+        Assert.Equal(new LumenPreferences { VideoDecoderApi = api, HardwareDecoding = hardware }, loaded);
+        Assert.Equal(LumenPreferencePersistenceIssue.None, store.LastIssue);
+        Assert.Equal(json, await File.ReadAllTextAsync(store.FilePath, token));
+        await store.SaveAsync(loaded, token);
+        Assert.Equal(loaded, await new LumenPreferenceStore(store.FilePath).LoadAsync(token));
+    }
+
+    [Theory]
+    [InlineData("Auto", false, true)]
+    [InlineData("IntelQsv", false, true)]
+    [InlineData("Software", true, false)]
+    public async Task Explicit_video_decoder_api_repairs_a_conflicting_legacy_toggle(
+        string api, bool legacyHardware, bool expectedHardware)
+    {
+        using var fixture = new TemporaryAccountStore();
+        var token = TestContext.Current.CancellationToken;
+        var store = CreateStore(fixture);
+        var original = new LumenPreferences { VideoDecoderApi = api, HardwareDecoding = legacyHardware };
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(original, LumenPreferencesJsonContext.Default.LumenPreferences);
+        await File.WriteAllBytesAsync(store.FilePath, bytes, token);
+
+        Assert.Equal(original with { HardwareDecoding = expectedHardware }, await store.LoadAsync(token));
+        Assert.Equal(LumenPreferencePersistenceIssue.InvalidData, store.LastIssue);
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(store.FilePath, token));
     }
 
     [Theory]
@@ -210,6 +274,9 @@ public sealed class LumenPreferencesTests
     [InlineData("{\"InternetMaxBitrate\":9223372036854775807}")]
     [InlineData("{\"HdrMode\":\"On\"}")]
     [InlineData("{\"HdrMode\":null}")]
+    [InlineData("{\"VideoDecoderApi\":\"Unknown\"}")]
+    [InlineData("{\"VideoDecoderApi\":\"NVDEC\"}")]
+    [InlineData("{\"VideoDecoderApi\":null}")]
     [InlineData("{\"SubtitleLanguage\":\"../private\"}")]
     [InlineData("{\"SubtitleLanguage\":\"chi\\neng\"}")]
     [InlineData("{\"SubtitleLanguage\":\"chi\\u0000\"}")]
@@ -259,10 +326,10 @@ public sealed class LumenPreferencesTests
         using var fixture = new TemporaryAccountStore();
         var token = TestContext.Current.CancellationToken;
         var store = CreateStore(fixture);
-        const string json = """{"theme":"light","Accent":"sage","subtitlelanguage":"ENG"}""";
+        const string json = """{"theme":"light","Accent":"sage","subtitlelanguage":"ENG","videodecoderapi":"nvidianvdec"}""";
         await File.WriteAllTextAsync(store.FilePath, json, token);
 
-        Assert.Equal(new LumenPreferences { Theme = "Light", Accent = "Sage", SubtitleLanguage = "eng" },
+        Assert.Equal(new LumenPreferences { Theme = "Light", Accent = "Sage", SubtitleLanguage = "eng", VideoDecoderApi = "NvidiaNvdec" },
             await store.LoadAsync(token));
         Assert.Equal(LumenPreferencePersistenceIssue.InvalidData, store.LastIssue);
         Assert.Equal(json, await File.ReadAllTextAsync(store.FilePath, token));
@@ -277,6 +344,7 @@ public sealed class LumenPreferencesTests
     [InlineData("\"invalid\"")]
     [InlineData("{\"HeroRotation\":\"true\"}")]
     [InlineData("{\"PosterColumns\":1.5}")]
+    [InlineData("{\"VideoDecoderApi\":42}")]
     public async Task Corrupt_json_returns_defaults_and_an_issue_without_destroying_the_input(string json)
     {
         using var fixture = new TemporaryAccountStore();
@@ -546,6 +614,7 @@ public sealed class LumenPreferencesTests
         Assert.Equal(0L, preferences.LocalMaxBitrate);
         Assert.Equal(20_000_000L, preferences.InternetMaxBitrate);
         Assert.True(preferences.HardwareDecoding);
+        Assert.Equal("Auto", preferences.VideoDecoderApi);
         Assert.Equal("Auto", preferences.HdrMode);
         Assert.False(preferences.MatchRefreshRate);
         Assert.Equal("chi", preferences.SubtitleLanguage);
@@ -571,6 +640,12 @@ public sealed class LumenPreferencesTests
         yield return new() { IntroSkipMode = null! };
         yield return new() { ResumeMode = "Resume" };
         yield return new() { ResumeMode = null! };
+        yield return new() { VideoDecoderApi = "Unknown" };
+        yield return new() { VideoDecoderApi = "auto" };
+        yield return new() { VideoDecoderApi = "intelqsv" };
+        yield return new() { VideoDecoderApi = null! };
+        yield return new() { VideoDecoderApi = "Software", HardwareDecoding = true };
+        yield return new() { VideoDecoderApi = "D3D11", HardwareDecoding = false };
         yield return new() { HdrMode = "On" };
         yield return new() { HdrMode = null! };
         yield return new() { SubtitleLanguage = "../private" };

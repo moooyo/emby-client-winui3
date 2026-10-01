@@ -2,6 +2,12 @@
 
 This guide describes the functionality implemented in the V7 development source. It uses native WinUI 3 controls and Windows media playback. V7 native UI acceptance is paused; see [implementation status](status.md) for the exact build evidence, observed scope, and unfinished release gates.
 
+## Configure the video decoder API
+
+Open **Settings > Playback > Quality and decoding > Video decoder API**. Choose automatic D3D11VA, explicit D3D11VA, Intel VPL/QSV, AMD AMF, NVIDIA NVDEC, or software. The saved choice applies to the next video/source opening. An unavailable device/API or unsupported stream uses software and preserves your requested choice.
+
+After playback advances, open **Settings > About > Playback diagnostics** to inspect the actual API and decoder GPU. The displayed request is separate from the actual result; diagnostics retain the last result after stop. See the [implementation](hardware-decoding.md) and [scoped validation](decoder-api-validation-20261001.md). Vendor APIs currently use a CPU-visible frame bridge for MediaPlayer presentation, so measure performance for your media before choosing a backend.
+
 ## Connect and manage accounts
 
 On first launch with no saved accounts, enter a complete server address, including `https://` or `http://`, your Emby username, and your password directly in the sign-in form. A reverse-proxy base path can be part of the address. The client uses your Emby Server account; Emby Connect is not implemented. A small progress ring and status appear during connection, with **Cancel** available while the request is running.

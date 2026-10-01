@@ -29,6 +29,17 @@
                         <TextBlock x:Name="PlaybackStatusDetailText" TextWrapping="Wrap"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
+                    <StackPanel Spacing="4">
+                        <TextBlock x:Name="VideoDecodingHeadingText" Text="Video decoding" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   AutomationProperties.HeadingLevel="Level2" />
+                        <TextBlock x:Name="VideoDecodingStatusText" TextWrapping="Wrap" />
+                        <TextBlock x:Name="VideoDecodingRequestedText" TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="VideoDecodingFallbackText" TextWrapping="Wrap" Visibility="Collapsed"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="VideoDecodingGpuText" TextWrapping="Wrap" Visibility="Collapsed"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
                     <StackPanel x:Name="RecentFailurePanel" Spacing="4" Visibility="Collapsed">
                         <TextBlock Text="Recent failure" FontWeight="SemiBold" TextWrapping="Wrap"
                                    AutomationProperties.HeadingLevel="Level2" />
@@ -91,7 +102,7 @@
                         <TextBlock Grid.Row="2" Text="Runtime" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <TextBlock x:Name="RuntimeText" Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         <TextBlock Grid.Row="3" Text="Player" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="Windows MediaPlayer" TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="Windows MediaPlayer + FFmpegInteropX" TextWrapping="Wrap" />
                     </Grid>
                 </Expander>
                 <Expander Header="Technical details" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">

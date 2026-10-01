@@ -14,3 +14,5 @@ TestResults/
 appsettings.local.json
 .env
 .env.*
+native/FFmpegInteropX/Output/
+native/FFmpegInteropX/Intermediate/

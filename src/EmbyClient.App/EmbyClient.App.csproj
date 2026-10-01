@@ -33,6 +33,7 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" PrivateAssets="all" />
     <PackageReference Include="WinUIEx" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="FFmpegInteropX" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
@@ -47,4 +48,5 @@
     <Compile Include="..\..\tools\EmbyClient.LibraryObservation\LibraryView.Observation.cs"
              Link="Observation\LibraryView.Observation.cs" />
   </ItemGroup>
+  <Import Project="../../native/FFmpegInteropX/DecoderNative.targets" />
 </Project>

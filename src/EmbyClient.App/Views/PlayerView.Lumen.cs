@@ -43,6 +43,7 @@ public sealed partial class PlayerView
     {
         ArgumentNullException.ThrowIfNull(preferences);
         _preferences = preferences;
+        _engine?.ConfigureVideoDecoderApi(preferences.VideoDecoderApi);
         _synchronizingAutoPlay = true;
         AutoPlayNext.IsOn = QueueAutoPlayNext.IsOn = preferences.AutoPlayNext;
         _synchronizingAutoPlay = false;

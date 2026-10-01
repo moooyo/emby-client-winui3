@@ -14,6 +14,55 @@ The probe opens a small native `MediaPlayerElement` window without requesting ac
 
 ## Run
 
+### Actual hardware and software decoding controls
+
+`--hardware-decode` is an independent one-playback mode using the same identity-checked 60-second synthetic fixture and the linked product engine. It records the actual decoder producing frames, the requested policy, hardware fallback, codec, and the D3D11 adapter name/vendor/LUID when available. A playing native clock and video dimensions are required before decoder observation. Fifteen seconds of advancing playback permit external process-scoped GPU and CPU sampling, followed by pause, seek to 20 seconds, resume, stop, coordinator disposal, logout, and a post-stop traffic check. This mode does not apply the separate 20-loop resource thresholds or claim captured pixels.
+
+Use distinct output directories and separate process invocations for a hardware run and a software control:
+
+```powershell
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/hardware-run --hardware-decode --require-hardware
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/software-run --hardware-decode --software-decode
+```
+
+All three decoding controls accept `--decoder-api Auto|D3D11|IntelQsv|AmdAmf|NvidiaNvdec|Software`. The default `Auto` policy uses D3D11 when available. `--software-decode` remains an alias for `--decoder-api Software`, requiring the actual `Software` decoder and a disabled hardware policy. It cannot be combined with a different selected API.
+
+For `Auto` and `D3D11`, `--require-hardware` requires the actual `D3D11` decoder; without it an honestly reported software fallback is accepted. An explicit `IntelQsv`, `AmdAmf`, or `NvidiaNvdec` selection requires that exact actual API, a native decoder name ending in `_qsv`, `_amf`, or `_cuvid`, respectively, and a positive `HardwareDecodedFrames` count. A D3D11 result cannot satisfy a vendor API selection. Optional `--require-vendor Nvidia`, `Intel`, or `Amd` also requires hardware and checks the real device vendor ID; it must match an explicit vendor API. The operating system can choose an integrated adapter on a computer that also contains a discrete NVIDIA adapter. A retained decoder snapshot after stop describes the last playback and does not imply that its graph remains active.
+
+Use `--expect-api-fallback` with one explicit vendor API to validate unavailable or unsupported hardware. It cannot be combined with `--require-hardware` or `--require-vendor`. Passing requires that `RequestedApi` retain the selected vendor API, `ActualApi=Software`, `HardwareRequested=true`, `HardwareFallback=true`, and an allowlisted `FallbackReason`: `DecoderApiUnavailable`, `CodecUnsupported`, `DeviceUnavailable`, `DecoderInitializationFailed`, or `DecoderRuntimeFailed`. A fallback run supplies software recovery evidence and does not establish vendor hardware decoding support.
+
+```powershell
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/nvdec-run --hardware-decode --decoder-api NvidiaNvdec --require-hardware --require-vendor Nvidia
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/qsv-fallback-run --hardware-decode --decoder-api IntelQsv --expect-api-fallback
+```
+
+Each decoder observation records `RequestedApi`, `ActualApi`, `FallbackReason`, `NativeDecoderName`, `DecodedFrames`, and `HardwareDecodedFrames`, alongside the existing legacy `Decoder` value (`D3D11`, `QSV`, `AMF`, `NVDEC`, or `Software`) and adapter metadata. A pending snapshot cannot satisfy a decoder observation.
+
+Reports contain no media URI, authentication token, password, real account data, or raw exception message. The report records only the adapter actually used by this run; a successful NVIDIA run does not certify Intel or AMD hardware.
+
+### Independent native HLS relay control
+
+`--hardware-hls --media-dir <absolute-generated-directory>` runs an independent native HLS transport and decoder control. The explicit directory must contain `index.m3u8` and its referenced `segment-<digits>.ts` files. The manifest must describe a finite 59-61 second media playlist with an end tag; external references, nested playlists, encryption-key references, reparse-point inputs, and unbounded files are rejected. Input files are read into a bounded immutable fixture snapshot and their names, lengths, and SHA-256 values are retained in the report.
+
+```powershell
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/hls-hardware-run --hardware-hls --media-dir 'C:/absolute/generated-hls' --require-hardware
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/hls-software-run --hardware-hls --media-dir 'C:/absolute/generated-hls' --software-decode
+```
+
+The mode owns an ephemeral IPv4 loopback origin serving only that manifest and its allowlisted segments. Each request requires a fixed synthetic header that represents no real credential. It constructs a `Transcode` / `FullSource` engine request with `ts` / `hls` source metadata and exercises the linked product HLS relay and decoder through actual open, playing-clock observation, pause, seek, resume, stop, and disposal. HLS seeking follows the product's reopen contract: open a new playback ID at the requested source position, confirm the native clock, and restore pause before resuming. The report identifies this as `ReopenAtSourcePosition`; it does not claim an in-place HLS seek. The report records authenticated manifest/segment traffic, native video dimensions, actual decoder/GPU snapshots, and no new upstream requests during a 1.3-second observation after stop. The listener is closed after cleanup. Decoder policy and optional vendor requirements use the same modifiers as `--hardware-decode`.
+
+This control does not connect to an Emby server, use the playback coordinator, negotiate an API profile, or certify real-server transcoding/reporting. Its generated input and native control result remain separate from product lifecycle and real-server acceptance.
+
+### Independent multi-audio decoder control
+
+`--hardware-multiaudio --media-dir <absolute-generated-directory>` uses a generated 60-second `fixture-multiaudio.mp4` with two AAC streams and the second stream marked default. It records native audio-track selection and product container-stream mapping, authenticated loopback traffic, native playback clocks, decoder evidence, stop detachment, and upstream quiescence. The directory and MP4 are checked before the owned loopback origin is created. `--same-language` selects the fixture variant where both tracks use English, so a language label alone cannot establish correct container-stream selection.
+
+```powershell
+& ./artifacts/probes/native-probe-publish/EmbyClient.NativeProbe.exe --output-dir ./artifacts/probes/multiaudio-nvdec-run --hardware-multiaudio --media-dir 'C:/absolute/generated-multiaudio' --decoder-api NvidiaNvdec --require-hardware --require-vendor Nvidia
+```
+
+The selected hardware API is retained for each hardware round. With `--require-hardware` or an explicit vendor API, the same engine performs two selected-API opens, a software-only open, and a final open using the original selected API. Each round records its own requested API, actual API, native decoder, and frame counts. `--expect-api-fallback` applies the same fallback assertions as the direct and HLS controls. The existing `--expect-software-fallback` MPEG4 fixture control is limited to `Auto` or `D3D11` and cannot be combined with the vendor API fallback control. These controls do not certify real-server audio switching, audible output, displayed pixels, or a vendor test matrix.
+
 Generate 60-second synthetic media and start a dedicated fixture on port 18961. Keep that fixture exclusive to this probe so that request deltas remain attributable to the run:
 
 ```powershell

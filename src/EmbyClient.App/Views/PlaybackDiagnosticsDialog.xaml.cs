@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using EmbyClient.App.Playback;
 using EmbyClient.App.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation.Peers;
@@ -14,16 +15,20 @@ namespace EmbyClient.App.Views;
 public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
 {
     private readonly PlaybackDiagnostics _diagnostics;
+    private readonly Func<VideoDecodingSnapshot?> _videoDecoding;
     private byte[] _snapshot = [];
     private bool _saving;
     private XamlRoot? _dialogRoot;
 
     public ObservableCollection<PlaybackDiagnosticEventRow> RecentEvents { get; } = [];
 
-    internal PlaybackDiagnosticsDialog(PlaybackDiagnostics diagnostics)
+    internal PlaybackDiagnosticsDialog(PlaybackDiagnostics diagnostics, Func<VideoDecodingSnapshot?> videoDecoding)
     {
         _diagnostics = diagnostics;
+        _videoDecoding = videoDecoding;
+        RegisterVideoDecodingText();
         InitializeComponent();
+        VideoDecodingHeadingText.Text = LumenText.Get("Video decoding");
         Opened += (_, _) =>
         {
             _dialogRoot = XamlRoot;
@@ -56,6 +61,7 @@ public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
     {
         StatusText.Text = string.Empty;
         StatusText.Visibility = Visibility.Collapsed;
+        RefreshVideoDecoding();
         try
         {
             _snapshot = _diagnostics.CreateSnapshot();
@@ -110,6 +116,74 @@ public sealed partial class PlaybackDiagnosticsDialog : ContentDialog
         }
         UpdateActions();
     }
+
+    private void RefreshVideoDecoding()
+    {
+        var decoding = _videoDecoding();
+        var decoder = decoding?.ActualApi switch
+        {
+            "D3D11" => "Actual decoder API: D3D11VA",
+            "IntelQsv" => "Actual decoder API: Intel VPL / QSV",
+            "AmdAmf" => "Actual decoder API: AMD AMF",
+            "NvidiaNvdec" => "Actual decoder API: NVIDIA NVDEC",
+            "Software" => "Actual decoder API: Software",
+            _ => "Actual decoder API: Pending"
+        };
+        VideoDecodingStatusText.Text = LumenText.Get(decoder);
+        var requested = decoding is null ? "Start playback, then refresh to see the decoder." : decoding.RequestedApi switch
+        {
+            "Auto" => "Requested decoder API: Automatic (D3D11VA)",
+            "D3D11" => "Requested decoder API: D3D11VA",
+            "IntelQsv" => "Requested decoder API: Intel VPL / QSV",
+            "AmdAmf" => "Requested decoder API: AMD AMF",
+            "NvidiaNvdec" => "Requested decoder API: NVIDIA NVDEC",
+            "Software" => "Requested decoder API: Software",
+            _ => "Requested decoder API: Unknown"
+        };
+        VideoDecodingRequestedText.Text = LumenText.Get(requested);
+        var fallback = decoding is { ActualApi: "Software", HardwareFallback: true };
+        var fallbackReason = decoding?.FallbackReason switch
+        {
+            "DecoderApiUnavailable" => "The requested decoder API is unavailable; using software.",
+            "CodecUnsupported" => "The requested decoder does not support this stream; using software.",
+            "DeviceUnavailable" => "The requested decoder device is unavailable; using software.",
+            "DecoderInitializationFailed" => "The requested decoder could not be initialized; using software.",
+            _ => "The requested decoder could not be used; using software."
+        };
+        VideoDecodingFallbackText.Text = fallback
+            ? LumenText.Get(fallbackReason) : string.Empty;
+        VideoDecodingFallbackText.Visibility = fallback ? Visibility.Visible : Visibility.Collapsed;
+        var gpuName = decoding is { ActualApi: "D3D11" or "IntelQsv" or "AmdAmf" or "NvidiaNvdec", GpuName: { } name }
+            ? string.Concat(name.Where(character => !char.IsControl(character))).Trim() : string.Empty;
+        if (gpuName.Length > 120) gpuName = gpuName[..117] + "...";
+        VideoDecodingGpuText.Text = gpuName.Length > 0 ? LumenText.Get("Decoder GPU: {0}", gpuName) : string.Empty;
+        VideoDecodingGpuText.Visibility = gpuName.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static void RegisterVideoDecodingText() => LumenText.Register(new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["Video decoding"] = "\u89c6\u9891\u89e3\u7801",
+        ["Actual decoder API: D3D11VA"] = "\u5b9e\u9645\u89e3\u7801 API\uff1aD3D11VA",
+        ["Actual decoder API: Intel VPL / QSV"] = "\u5b9e\u9645\u89e3\u7801 API\uff1aIntel VPL / QSV",
+        ["Actual decoder API: AMD AMF"] = "\u5b9e\u9645\u89e3\u7801 API\uff1aAMD AMF",
+        ["Actual decoder API: NVIDIA NVDEC"] = "\u5b9e\u9645\u89e3\u7801 API\uff1aNVIDIA NVDEC",
+        ["Actual decoder API: Software"] = "\u5b9e\u9645\u89e3\u7801 API\uff1a\u8f6f\u4ef6\u89e3\u7801",
+        ["Actual decoder API: Pending"] = "\u5b9e\u9645\u89e3\u7801 API\uff1a\u7b49\u5f85\u64ad\u653e\u786e\u8ba4",
+        ["Requested decoder API: Automatic (D3D11VA)"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1a\u81ea\u52a8\uff08D3D11VA\uff09",
+        ["Requested decoder API: D3D11VA"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1aD3D11VA",
+        ["Requested decoder API: Intel VPL / QSV"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1aIntel VPL / QSV",
+        ["Requested decoder API: AMD AMF"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1aAMD AMF",
+        ["Requested decoder API: NVIDIA NVDEC"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1aNVIDIA NVDEC",
+        ["Requested decoder API: Software"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1a\u8f6f\u4ef6\u89e3\u7801",
+        ["Requested decoder API: Unknown"] = "\u8bf7\u6c42\u89e3\u7801 API\uff1a\u672a\u77e5",
+        ["Start playback, then refresh to see the decoder."] = "\u5f00\u59cb\u64ad\u653e\u540e\u5237\u65b0\u4ee5\u67e5\u770b\u89e3\u7801\u5668\u3002",
+        ["The requested decoder API is unavailable; using software."] = "\u8bf7\u6c42\u7684\u89e3\u7801 API \u4e0d\u53ef\u7528\uff0c\u5df2\u56de\u9000\u8f6f\u4ef6\u89e3\u7801\u3002",
+        ["The requested decoder does not support this stream; using software."] = "\u8bf7\u6c42\u7684\u89e3\u7801\u5668\u4e0d\u652f\u6301\u5f53\u524d\u89c6\u9891\u6d41\uff0c\u5df2\u56de\u9000\u8f6f\u4ef6\u89e3\u7801\u3002",
+        ["The requested decoder device is unavailable; using software."] = "\u8bf7\u6c42\u7684\u89e3\u7801\u8bbe\u5907\u4e0d\u53ef\u7528\uff0c\u5df2\u56de\u9000\u8f6f\u4ef6\u89e3\u7801\u3002",
+        ["The requested decoder could not be initialized; using software."] = "\u8bf7\u6c42\u7684\u89e3\u7801\u5668\u521d\u59cb\u5316\u5931\u8d25\uff0c\u5df2\u56de\u9000\u8f6f\u4ef6\u89e3\u7801\u3002",
+        ["The requested decoder could not be used; using software."] = "\u8bf7\u6c42\u7684\u89e3\u7801\u5668\u65e0\u6cd5\u4f7f\u7528\uff0c\u5df2\u56de\u9000\u8f6f\u4ef6\u89e3\u7801\u3002",
+        ["Decoder GPU: {0}"] = "\u89e3\u7801 GPU\uff1a{0}"
+    });
 
     private void UpdatePlaybackSummary(JsonElement events)
     {

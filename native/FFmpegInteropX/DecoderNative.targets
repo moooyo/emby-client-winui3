@@ -1,0 +1,19 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <DecoderRepositoryRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..'))</DecoderRepositoryRoot>
+    <DecoderNativeRuntimeRoot Condition="'$(DecoderNativeRuntimeRoot)' == ''">$(DecoderRepositoryRoot)artifacts\decoder-apis\native\runtime\</DecoderNativeRuntimeRoot>
+    <BuildDecoderNative Condition="'$(BuildDecoderNative)' == ''">true</BuildDecoderNative>
+  </PropertyGroup>
+  <Target Name="PrepareDecoderNativeRuntime" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec Command="pwsh -NoProfile -File &quot;$(DecoderRepositoryRoot)scripts\Build-DecoderNative.ps1&quot;" Condition="'$(BuildDecoderNative)' == 'true'" />
+    <Error Condition="!Exists('$(DecoderNativeRuntimeRoot)FFmpegInteropX.dll')" Text="The custom native decoder runtime is missing. Run scripts/Build-DecoderNative.ps1 before building this application." />
+  </Target>
+  <Target Name="CopyDecoderNativeRuntime" AfterTargets="Build" DependsOnTargets="PrepareDecoderNativeRuntime" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup><DecoderNativeRuntimeFile Include="$(DecoderNativeRuntimeRoot)*.dll;$(DecoderNativeRuntimeRoot)*.winmd;$(DecoderNativeRuntimeRoot)*.xml" /></ItemGroup>
+    <Copy SourceFiles="@(DecoderNativeRuntimeFile)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+  <Target Name="PublishDecoderNativeRuntime" AfterTargets="Publish" DependsOnTargets="PrepareDecoderNativeRuntime" Condition="'$(DesignTimeBuild)' != 'true'">
+    <ItemGroup><DecoderNativePublishFile Include="$(DecoderNativeRuntimeRoot)*.dll;$(DecoderNativeRuntimeRoot)*.winmd;$(DecoderNativeRuntimeRoot)*.xml" /></ItemGroup>
+    <Copy SourceFiles="@(DecoderNativePublishFile)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

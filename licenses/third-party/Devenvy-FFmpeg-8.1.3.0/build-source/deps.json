@@ -1,0 +1,372 @@
+{
+  "ffmpeg": [
+    "8.1.3",
+    "9.0.2"
+  ],
+  "defaults": {
+    "dav1d": {
+      "origin": "https://code.videolan.org/videolan/dav1d.git",
+      "tag": "1.5.4",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://code.videolan.org"
+    },
+    "fribidi": {
+      "origin": "https://github.com/fribidi/fribidi.git",
+      "tag": "v1.0.17",
+      "datasource": "github-tags"
+    },
+    "harfbuzz": {
+      "origin": "https://github.com/harfbuzz/harfbuzz.git",
+      "tag": "14.5.0",
+      "datasource": "github-tags"
+    },
+    "kvazaar": {
+      "origin": "https://github.com/ultravideo/kvazaar.git",
+      "tag": "v2.3.2",
+      "datasource": "github-tags"
+    },
+    "libass": {
+      "origin": "https://github.com/libass/libass.git",
+      "tag": "0.17.5",
+      "datasource": "github-tags"
+    },
+    "libdrm": {
+      "origin": "https://gitlab.freedesktop.org/mesa/drm.git",
+      "tag": "libdrm-2.4.134",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://gitlab.freedesktop.org"
+    },
+    "libogg": {
+      "origin": "https://github.com/xiph/ogg.git",
+      "tag": "v1.3.6",
+      "datasource": "github-tags"
+    },
+    "libva": {
+      "origin": "https://github.com/intel/libva.git",
+      "tag": "2.24.1",
+      "datasource": "github-tags"
+    },
+    "libvorbis": {
+      "origin": "https://github.com/xiph/vorbis.git",
+      "tag": "v1.3.7",
+      "datasource": "github-tags"
+    },
+    "libvpx": {
+      "origin": "https://chromium.googlesource.com/webm/libvpx.git",
+      "tag": "v1.17.0",
+      "datasource": "git-refs"
+    },
+    "x265": {
+      "origin": "https://bitbucket.org/multicoreware/x265_git.git",
+      "tag": "4.2",
+      "datasource": "bitbucket-tags",
+      "registryUrl": "https://bitbucket.org"
+    },
+    "moltenvk": {
+      "origin": "https://github.com/KhronosGroup/MoltenVK.git",
+      "tag": "v1.4.2",
+      "datasource": "github-tags"
+    },
+    "openh264": {
+      "origin": "https://github.com/cisco/openh264.git",
+      "tag": "v2.6.0",
+      "datasource": "github-tags"
+    },
+    "openssl": {
+      "origin": "https://github.com/openssl/openssl.git",
+      "tag": "openssl-3.5.7",
+      "datasource": "github-tags"
+    },
+    "whisper": {
+      "origin": "https://github.com/ggml-org/whisper.cpp.git",
+      "tag": "v1.9.4",
+      "datasource": "github-tags"
+    },
+    "zimg": {
+      "origin": "https://github.com/sekrit-twc/zimg.git",
+      "tag": "release-3.0.6",
+      "datasource": "github-tags"
+    },
+    "zlib": {
+      "origin": "https://github.com/madler/zlib.git",
+      "tag": "v1.3.2",
+      "datasource": "github-tags"
+    },
+    "gmp": {
+      "origin": "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz",
+      "tag": "6.3.0",
+      "releasesUrl": "https://ftp.gnu.org/gnu/gmp/",
+      "releasesStyle": "tarball",
+      "reason": "gmp.sh downloads a GNU tarball (GMP_VER=6.3.0) via dep_version, not git; no canonical git mirror with a matching v6.3.0 tag was found (checked github.com/alisw/GMP and git.savannah.gnu.org/git/gmp — neither has it), so origin/tag here describe the tarball, not a clonable git ref; tag is the bare tarball-filename version. 6.3. Tracked via the tarball-listing custom datasource against releasesUrl, so a new upstream release still raises a PR."
+    },
+    "gnutls": {
+      "origin": "https://gitlab.com/gnutls/gnutls.git",
+      "tag": "3.8.13",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://gitlab.com"
+    },
+    "nettle": {
+      "origin": "https://git.lysator.liu.se/nettle/nettle.git",
+      "tag": "4.0",
+      "datasource": "git-refs",
+      "reason": "nettle.sh downloads a GNU tarball (NETTLE_VER=4.0) built via dep_version, not git clone_dep (nettle git tag has no pre-generated ./configure); tag is the bare tarball-filename version, not the git tag (which is nettle_4.0_release_20260205)."
+    },
+    "libtasn1": {
+      "origin": "https://gitlab.com/gnutls/libtasn1.git",
+      "tag": "4.21.0",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://gitlab.com",
+      "reason": "libtasn1.sh downloads a GNU tarball (TASN1_VER=4.21.0) built via dep_version, not git clone_dep (libtasn1's git tag has no pre-generated ./configure); tag is the bare tarball-filename version, not the git tag (which is v4.21.0)."
+    },
+    "libexpat": {
+      "origin": "https://github.com/libexpat/libexpat.git",
+      "tag": "R_2_8_3",
+      "datasource": "github-tags"
+    },
+    "fontconfig": {
+      "origin": "https://gitlab.freedesktop.org/fontconfig/fontconfig.git",
+      "tag": "2.18.3",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://gitlab.freedesktop.org"
+    },
+    "libplacebo": {
+      "origin": "https://github.com/haasn/libplacebo.git",
+      "tag": "v7.360.1",
+      "datasource": "github-tags"
+    },
+    "libpng": {
+      "origin": "https://github.com/pnggroup/libpng.git",
+      "tag": "v1.6.58",
+      "datasource": "github-tags"
+    },
+    "freetype": {
+      "origin": "https://gitlab.freedesktop.org/freetype/freetype.git",
+      "tag": "VER-2-14-3",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://gitlab.freedesktop.org"
+    },
+    "amf": {
+      "origin": "https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git",
+      "commit": "a4c8f39ae1959c9ca9d56ade35d6a23c52fc77c5",
+      "digestBranch": "master",
+      "datasource": "github-tags",
+      "reason": "amf's latest release tag v1.4.36 ships DisplayCapture.h with an unguarded extern \"C\" that breaks C compilation of FFmpeg's vsrc_amf.c under mingw (issue #7); v1.4.35 is too old for FFmpeg's AMF version check. master carries the __cplusplus guard fix but has no newer tag yet, so pin a reviewed master commit. Bump to the next release tag once it includes the fix."
+    },
+    "aom": {
+      "origin": "https://aomedia.googlesource.com/aom",
+      "tag": "v3.15.0",
+      "datasource": "git-refs"
+    },
+    "libmp3lame": {
+      "origin": "https://downloads.sourceforge.net/project/lame/lame/4.0/lame-4.0.tar.gz",
+      "tag": "4.0",
+      "releasesUrl": "https://sourceforge.net/projects/lame/files/lame/",
+      "releasesStyle": "directory",
+      "reason": "libmp3lame.sh downloads a SourceForge tarball (lame-3.100.tar.gz) via dep_version, not git; no verified git mirror carries a matching RELEASE__3_100-style tag (checked github.com/rbrito/lame — closest is lame3_100_with_psymodel_v3_99_5, not exact), so this entry cannot be faithfully expressed as a clonable ref; tag is the bare tarball-filename version. 3. Tracked via the tarball-listing custom datasource against releasesUrl, so a new upstream release still raises a PR."
+    },
+    "libvpl": {
+      "origin": "https://github.com/intel/libvpl.git",
+      "tag": "v2.17.0",
+      "datasource": "github-tags"
+    },
+    "libwebp": {
+      "origin": "https://chromium.googlesource.com/webm/libwebp.git",
+      "tag": "v1.6.0",
+      "datasource": "git-refs"
+    },
+    "libxml2": {
+      "origin": "https://github.com/GNOME/libxml2.git",
+      "tag": "v2.15.4",
+      "datasource": "git-tags"
+    },
+    "lcms2": {
+      "origin": "https://github.com/mm2/Little-CMS.git",
+      "tag": "lcms2.19.1",
+      "datasource": "github-tags"
+    },
+    "openjpeg": {
+      "origin": "https://github.com/uclouvain/openjpeg.git",
+      "tag": "v2.5.4",
+      "datasource": "github-tags"
+    },
+    "libvmaf": {
+      "origin": "https://github.com/Netflix/vmaf.git",
+      "tag": "v3.2.1",
+      "datasource": "github-tags"
+    },
+    "brotli": {
+      "origin": "https://github.com/google/brotli.git",
+      "tag": "v1.2.0",
+      "datasource": "github-tags"
+    },
+    "highway": {
+      "origin": "https://github.com/google/highway.git",
+      "tag": "1.4.0",
+      "datasource": "github-tags"
+    },
+    "libjxl": {
+      "origin": "https://github.com/libjxl/libjxl.git",
+      "tag": "v0.12.0",
+      "datasource": "github-tags"
+    },
+    "nv-codec": {
+      "origin": "https://github.com/FFmpeg/nv-codec-headers.git",
+      "tag": "n13.1.15.0",
+      "datasource": "github-tags"
+    },
+    "opus": {
+      "origin": "https://github.com/xiph/opus.git",
+      "tag": "v1.6.1",
+      "datasource": "github-tags"
+    },
+    "llvm-mingw": {
+      "origin": "https://github.com/mstorsjo/llvm-mingw.git",
+      "tag": "20260908",
+      "datasource": "github-tags"
+    },
+    "patchelf": {
+      "origin": "https://github.com/NixOS/patchelf.git",
+      "tag": "0.19.1",
+      "datasource": "github-tags"
+    },
+    "shaderc": {
+      "origin": "https://github.com/google/shaderc.git",
+      "tag": "v2026.4",
+      "datasource": "github-tags"
+    },
+    "soxr": {
+      "origin": "https://github.com/dofuuz/soxr.git",
+      "tag": "0.1.3",
+      "datasource": "github-tags"
+    },
+    "svtav1": {
+      "origin": "https://gitlab.com/AOMediaCodec/SVT-AV1.git",
+      "tag": "v4.2.0",
+      "datasource": "gitlab-tags",
+      "registryUrl": "https://gitlab.com"
+    },
+    "x264": {
+      "origin": "https://code.videolan.org/videolan/x264.git",
+      "commit": "b35605ace3ddf7c1a5d67a2eb553f034aef41d55",
+      "digestBranch": "stable",
+      "datasource": "git-refs",
+      "reason": "x264 has no release tags; pinned reviewed stable HEAD"
+    },
+    "vulkan-shim": {
+      "origin": "https://github.com/BtbN/Vulkan-Shim-Loader.git",
+      "commit": "65b3936528cd92eb4ea3de485d03f858a3850484",
+      "digestBranch": "master",
+      "datasource": "git-refs",
+      "reason": "No release tags; pinned reviewed master HEAD. Static stub that LoadLibrary/dlopens the real Vulkan loader at runtime so Windows artifacts carry no hard vulkan-1.dll import - BtbN/FFmpeg-Builds uses the same shim for the same reason."
+    },
+    "vulkan-headers": {
+      "origin": "https://github.com/KhronosGroup/Vulkan-Headers.git",
+      "tag": "vulkan-sdk-1.4.357.0",
+      "datasource": "github-tags"
+    },
+    "vulkan-loader": {
+      "origin": "https://github.com/KhronosGroup/Vulkan-Loader.git",
+      "tag": "vulkan-sdk-1.4.357.0",
+      "datasource": "github-tags"
+    },
+    "spirv-headers": {
+      "origin": "https://github.com/KhronosGroup/SPIRV-Headers.git",
+      "tag": "vulkan-sdk-1.4.357.0",
+      "datasource": "github-tags"
+    },
+    "speex": {
+      "origin": "https://github.com/xiph/speex.git",
+      "tag": "Speex-1.2.1",
+      "datasource": "github-tags"
+    },
+    "chromaprint": {
+      "origin": "https://github.com/acoustid/chromaprint.git",
+      "tag": "v1.6.1",
+      "datasource": "github-tags"
+    },
+    "kissfft": {
+      "origin": "https://github.com/mborgerding/kissfft.git",
+      "tag": "131.2.0",
+      "datasource": "github-tags"
+    },
+    "libgsm": {
+      "origin": "https://www.quut.com/gsm/",
+      "tag": "1.0.24",
+      "releasesUrl": "https://www.quut.com/gsm/",
+      "releasesStyle": "tarball",
+      "reason": "libgsm.sh downloads https://www.quut.com/gsm/gsm-<tag>.tar.gz via dep_version, not git; there is no clean canonical upstream git repo (the code ships as a hand-packed tarball with a non-standard Makefile). origin is the release DIRECTORY, deliberately without a version in it: Renovate's tarball manager updates `tag` only, so a versioned origin URL goes stale on the first bump -- which is exactly what happened here (origin said 1.0.22 while tag was 1.0.24). tag is the bare tarball-filename version. Tracked via the tarball-listing custom datasource against releasesUrl, so a new upstream release still raises a PR."
+    },
+    "opencore-amr": {
+      "origin": "https://downloads.sourceforge.net/opencore-amr/opencore-amr-0.1.6.tar.gz",
+      "tag": "0.1.6",
+      "releasesUrl": "https://sourceforge.net/projects/opencore-amr/files/opencore-amr/",
+      "releasesStyle": "tarball",
+      "reason": "opencore-amr.sh downloads a SourceForge tarball (opencore-amr-0.1.6.tar.gz) via dep_version, not git; no clean canonical git mirror carries a matching bare-version tag, so origin/tag describe the tarball; tag is the bare tarball-filename version. Tracked via the tarball-listing custom datasource against releasesUrl, so a new upstream release still raises a PR."
+    },
+    "vo-amrwbenc": {
+      "origin": "https://downloads.sourceforge.net/opencore-amr/vo-amrwbenc-0.1.3.tar.gz",
+      "tag": "0.1.3",
+      "releasesUrl": "https://sourceforge.net/projects/opencore-amr/files/vo-amrwbenc/",
+      "releasesStyle": "tarball",
+      "reason": "vo-amrwbenc.sh downloads a SourceForge tarball (vo-amrwbenc-0.1.3.tar.gz) via dep_version, not git; no clean canonical git mirror carries a matching bare-version tag, so origin/tag describe the tarball; tag is the bare tarball-filename version. Tracked via the tarball-listing custom datasource against releasesUrl, so a new upstream release still raises a PR."
+    },
+    "mbedtls": {
+      "origin": "https://github.com/Mbed-TLS/mbedtls.git",
+      "tag": "v3.6.7",
+      "datasource": "github-tags",
+      "reason": "Renovate tracks the git tag (git-tags on origin), but mbedtls.sh downloads the matching release tarball (mbedtls-<ver>.tar.bz2, v stripped) instead of cloning — the tarball bundles the 'framework' submodule in-tree, avoiding a submodule init. Pin the 3.6 LTS line (4.x is the TF-PSA-Crypto split, not yet consumed by FFmpeg/SRT/librist). Held at 3.x by a renovate.json allowedVersions rule: FFmpeg's tls_mbedtls.c uses mbedtls_ctr_drbg_*/mbedtls_entropy_* unconditionally and mbedTLS 4 removed those headers (moved to PSA Crypto); FFmpeg master has not migrated either. Tracked in issue #18."
+    },
+    "srt": {
+      "origin": "https://github.com/Haivision/srt.git",
+      "tag": "v1.5.7",
+      "datasource": "github-tags"
+    },
+    "librist": {
+      "origin": "https://code.videolan.org/rist/librist.git",
+      "tag": "v0.2.20",
+      "datasource": "gitlab-tags"
+    }
+  },
+  "overrides": {
+    "8": {
+      "x265": {
+        "origin": "https://bitbucket.org/multicoreware/x265_git.git",
+        "tag": "3.6",
+        "datasource": "bitbucket-tags",
+        "registryUrl": "https://bitbucket.org",
+        "reason": "x265 4.0+ ships broken aarch64 NEON intrinsics in intrapred-prim.cpp (bitbucket #937, HandBrake #3652, vcpkg #46880); held at 3.6 on EVERY ARM64 target. win-arm64 and maccatalyst-arm64 were missing from this list until 2026-09-14 -- they were added to the repo after the hold was written and never backfilled, so they were silently taking the broken default. Other arches take the default. Remove when upstream fixes the aarch64 NEON build.",
+        "issue": 6,
+        "platforms": [
+          "linux-arm64",
+          "linux-musl-arm64",
+          "win-arm64",
+          "osx-arm64",
+          "maccatalyst-arm64",
+          "ios-arm64",
+          "ios-sim-arm64",
+          "android-arm64"
+        ]
+      }
+    },
+    "9": {
+      "x265": {
+        "origin": "https://bitbucket.org/multicoreware/x265_git.git",
+        "tag": "3.6",
+        "datasource": "bitbucket-tags",
+        "registryUrl": "https://bitbucket.org",
+        "reason": "x265 4.0+ ships broken aarch64 NEON intrinsics in intrapred-prim.cpp (bitbucket #937, HandBrake #3652, vcpkg #46880); held at 3.6 on EVERY ARM64 target. win-arm64 and maccatalyst-arm64 were missing from this list until 2026-09-14 -- they were added to the repo after the hold was written and never backfilled, so they were silently taking the broken default. Other arches take the default. Remove when upstream fixes the aarch64 NEON build.",
+        "issue": 6,
+        "platforms": [
+          "linux-arm64",
+          "linux-musl-arm64",
+          "win-arm64",
+          "osx-arm64",
+          "maccatalyst-arm64",
+          "ios-arm64",
+          "ios-sim-arm64",
+          "android-arm64"
+        ]
+      }
+    }
+  }
+}

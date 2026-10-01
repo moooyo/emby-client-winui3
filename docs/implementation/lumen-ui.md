@@ -284,8 +284,9 @@ and cannot alter playback outcomes.
 These features are source/native-format dependent. Server-burned subtitles
 cannot be styled or delayed by the app. The baseline remains SDR H.264/AAC MP4
 and server-generated HLS with explicit codec/transcoding constraints. Hardware
-decoder override, HDR output, and refresh-rate matching are visibly disabled with
-accurate reasons. Advanced ASS/PGS rendering, HDR/Dolby Vision, passthrough,
+decoding is configurable through FFmpegInteropX D3D11VA or software decoding; see
+the [2026-10-01 implementation and validation](hardware-decoding.md). HDR output
+and refresh-rate matching remain visibly disabled with accurate reasons. Advanced ASS/PGS rendering, HDR/Dolby Vision, passthrough,
 multichannel output, universal codecs, and physical media commands remain
 unverified or unsupported; the API expansion does not change those boundaries.
 
