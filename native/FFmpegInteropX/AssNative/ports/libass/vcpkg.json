@@ -1,0 +1,14 @@
+{
+  "name": "libass",
+  "version": "0.17.5",
+  "description": "libass subtitle renderer with the Windows DirectWrite font provider",
+  "homepage": "https://github.com/libass/libass",
+  "license": "ISC",
+  "supports": "x64 & windows & !uwp",
+  "dependencies": [
+    "freetype",
+    "fribidi",
+    "harfbuzz",
+    { "name": "vcpkg-tool-meson", "host": true }
+  ]
+}

@@ -158,12 +158,13 @@ public sealed partial class LumenDetailView
     }
 
     private static bool ExpectedRequestFailure(Exception exception) => exception is EmbyApiException or EmbyTransportException
-        or EmbyProtocolException or TimeoutException;
+        or EmbyProtocolException or TimeoutException or System.IO.IOException;
     private static string DescribeRequestFailure(Exception exception) => LumenText.Get(exception switch
     {
         EmbyApiException { IsAuthenticationFailure: true } => "Your sign-in was not accepted or has expired. Check your account and sign in again.",
         EmbyApiException { IsPermissionDenied: true } => "Your Emby account does not have permission to do this.",
         EmbyTransportException => "Could not reach the Emby server. Check the address and your connection.",
+        System.IO.IOException => "Could not reach the Emby server. Check the address and your connection.",
         TimeoutException => "The request timed out. Check your connection and try again.",
         _ => "The operation could not be completed. Try again."
     });

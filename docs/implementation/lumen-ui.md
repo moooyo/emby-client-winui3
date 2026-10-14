@@ -1,19 +1,114 @@
 # Lumen native UI
 
-Current fidelity candidate: AOT10, 23,432,192 bytes, SHA-256
+Current sources and Windows acceptance are tracked in the
+[Windows continuation](lumen-windows-continuation.md). Its candidate
+receipts distinguish compilation, packaging and automated checks from observed
+runtime behavior. The existing app-03 `native-resume-20261014` observations now
+record actual ASS/SSA fixture pixels: static ASS styles and drawing, sampled paused movement,
+transform and karaoke states, LocalASS Replay restoration, signed 0.1-second
+delay changes at a fixed media position, ASS/SSA Off clearing and two-line V4
+SSA text. Natural Ended reached 1:00/1:00, and Replay retained Off. Playing-time
+progression does not establish complete continuous interpolation within one
+cue. Capture 13 is a Replay startup transition and is not Paused/Ended evidence.
+
+The [independent app-03 pixel review](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-03/UI-REVIEW-resume-20261014.md)
+retains the capture identities and non-atomic UIA/image limits in 11/12/13/19.
+
+Computer use resumed with fresh owned runs of the same publish-04 payload. The
+[app-04 review](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-04/UI-REVIEW.md)
+accepts the sampled static ASS layers at 2560 x 1440 fullscreen, restored wide
+size and an ordinary 780 x 894 window; natural Ended retained `1:00 / 1:00`
+and Timeline `60.0106458` without subtitle remnants. It also records twelve
+actual BIF JPEGs at 0, 5, ..., 55 seconds and actual Home Play, Watch again and
+Continue S1:E3 tooltips. These samples do not establish complete Home or PiP
+prototype parity, other source SAR values or continuous ASS interpolation.
+
+The separate [app-05 review](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-05/UI-REVIEW.md)
+accepts both embedded PGS fixture cues, first-cue absence by 18.7904166 seconds,
+Off clearing, recovery after seeking before the second cue and demuxing
+forward, narrow/fullscreen/restored
+mapping, and Back returning to Home without the bitmap. Reselecting the track
+at the paused mid-cue position did not alone restore the earlier bitmap;
+recovery is not claimed from reselect alone. The wide/fullscreen HUD crosses
+some lower glyph pixels; narrow/restored samples show the complete second cue.
+Both [app-04](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-04/app-exit-final.json)
+and [app-05](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-05/app-exit-final.json)
+have normal title-bar Close actions and actual retained-handle exit code 0.
+The [app-04](../../artifacts/lumen-windows-continuation-20261013/run-02/final-verification-02/app04-final-non-ui-20261014/APP04-NON-UI-AUDIT.md)
+and [app-05 non-UI audits](../../artifacts/lumen-windows-continuation-20261013/run-02/final-verification-02/app05-final-non-ui-20261014/APP05-NON-UI-AUDIT.md)
+each retain bounded event/log/session observations and all 595 copied payload
+files matching. These are separate finite evidence scopes.
+
+The app-04 Copy feedback visibly covered the information-panel Close area.
+[Publish-05 verification](../../artifacts/lumen-windows-continuation-20261013/run-02/copy-feedback-publish-05/RESULTS.md)
+records the bounded two-call change to `ShowPlayerToast`, normal Debug/AOT
+builds and package/SBOM readback with actual exits 0. Its 668-file inventory has
+exactly one changed production file; all 24 native runtime files are unchanged.
+The [app-06 review](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-06/UI-REVIEW.md)
+accepts the new bottom Copy success feedback clear of Close at 780 x 894,
+subsequent feedback disappearance, later panel Close, a complete PGS first cue
+while Playing at `1x`, and Back to the actual detail page. Its
+[same-handle normal exit](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-06/app-exit-final.json)
+is actual code 0. This targeted feedback/basic-PGS check does not rerun or
+transfer the publish-04 ASS/PGS lifecycle matrix to publish-05. Clipboard
+contents, the failure-feedback branch and Close during feedback remain outside
+the observed scope.
+
+The [final non-UI audit](../../artifacts/lumen-windows-continuation-20261013/run-02/final-verification-02/app06-final-non-ui-20261014/APP06-NON-UI-AUDIT.md)
+records complete 595-file readbacks of both app-06 and publish-05 and a fresh
+668-source/24-runtime manifest matching the publish-05 freeze. Its initial
+static-SVG privacy-guard refusal is retained with the later complete readback.
+The [final owned cleanup](../../artifacts/lumen-acceptance/windows-continuation-20261013/owned-cleanup-final-20261014.json)
+records canonical fixture Stop command exits 0, absent owned processes and
+released ports 18985/18986. The outer collector naturally exited 1 after pipe
+closure and its deferred wrapper guard; the original launcher exit 0 and prior
+rejection receipt remain unchanged, and no collector stop signal was sent.
+This completes the scoped local continuation. Physical receiver bitstream and
+HDR output remain unverified. The earlier firewall obstruction has cleared;
+app-02's observations and failures and historical unknown exits retain their
+separate scope.
+
+The [owned cleanup receipt](../../artifacts/lumen-acceptance/windows-continuation-20261013/owned-cleanup-20261014.json)
+and [CLI execution receipt](../../artifacts/lumen-acceptance/windows-continuation-20261013/owned-cleanup-20261014.execution.json)
+record the earlier app-03 checkpoint's two owned fixtures stopped through
+guarded CLI commands with actual exit code 0 and ports 18985/18986 released.
+Fixture inputs, candidates and
+synthetic profiles were retained. app-03's process is absent, but its
+[actual exit code and cause remain Unknown](../../artifacts/lumen-acceptance/windows-continuation-20261013/app-03/app-exit.json);
+normal UI close was not observed. The retained logical Stop and limited exact-
+path crash audit do not establish normal exit or absence of every crash.
+
+The fresh app-04/app-05 runs extend the observed scope without changing that
+historical exit. Current candidate identities and remaining acceptance are
+maintained in the linked continuation; retired run directories and PIDs are not
+reused.
+
+The sections below preserve the 2026-10-01 rewrite and fidelity checkpoints,
+including their original counts, candidate identities and receipts. They do not
+describe the current source snapshot or certify the later Windows candidates.
+
+## Historical fidelity checkpoint (2026-10-01)
+
+The archived artifact paths below are preserved as literal references. These
+historical artifacts are not materialized in this checkout and cannot be
+independently reread here. This link repair does not regenerate reports or
+independently reverify their historical results.
+
+Historical fidelity candidate: AOT10, 23,432,192 bytes, SHA-256
 `41FC56C007CE339636A4C4A8B0900D00951EB6B90B38400A3D63682487EEA6F0`.
 Publication and all 966 product tests exited 0, including five new default-audio-
 intent cases. The recorded post-test snapshot matched 308 production inputs at
 `2026-09-30T18:28:56.0838558+00:00`; later edits are outside that evidence.
 AOT10 adds default-audio-intent handling in helper/detail playback routes,
 explicit localization of two recovery commands, and zero timeline/time for null
-playback context. The same AOT10 executable now passed bounded local native
+playback context. The same AOT10 executable passed bounded local native
 checks: 15 wide references re-captured/reviewed, default movie Continue,
 localized zero-position recovery, 628x594 caption panels/local VTT import/Off,
 PiP/fullscreen return, and three actual normal exits with zero scoped crash
-events. See the [portable acceptance summary](#current-acceptance-summary); the
-[independent visual review](../../artifacts/lumen-acceptance/fidelity-comparisons/AOT10-INDEPENDENT-VISUAL-REVIEW.md)
-is an optional local QA artifact, not required to read the published scope.
+events. See the [historical acceptance summary](#historical-acceptance-summary).
+The archived independent visual review reference is
+`../../artifacts/lumen-acceptance/fidelity-comparisons/AOT10-INDEPENDENT-VISUAL-REVIEW.md`;
+it was an optional local QA artifact, not required to read the published scope.
 Selected states 12/14 use the populated drawer and actual light-wall hover;
 wrong intermediates remain retained and excluded. Final recheck confirms the
 same 308 inputs and executable SHA after runtime acceptance.
@@ -24,51 +119,60 @@ recovery commands were untranslated. Its correct The Fallen Ground captures,
 other original states, review, normal exit code 0, and zero scoped crash events
 remain AOT09 evidence only. Env11 owned cleanup released port 18984 with evidence
 retained. Later Env12 guarded cleanup released port 18984 with seven Starts/seven
-Stops and 247 partial responses recorded by the synthetic fixture. These current
+Stops and 247 partial responses recorded by the synthetic fixture. These historical
 results do not prove physical audio, motion, HDR, universal media support, or
 release readiness. Local UI authorization was restored and supersedes the old
 VM-only checkpoint; no VM UI was ever run. Approved elevated worker-preparation
 cleanup completed without desktop input or starting a new worker. All owned
-test resources are cleaned and no required UI/cleanup work remains. Product
-commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61` (257 files) was merged into
+test resources from that checkpoint were cleaned and its required UI/cleanup
+work was complete. Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61`
+(257 files) was merged into
 `main`, pushed, and verified on the remote; unrelated primary-checkout work
-remains separately preserved and excluded. Only documentation closeout push
-and root completion confirmation remain. Private environment
-details remain outside repository documentation. The local
-[fidelity checkpoint](../../artifacts/lumen-acceptance/fidelity-final-report/ACCEPTANCE.md)
-retains detailed QA records; the portable summary below is the publication entry.
+was separately preserved and excluded. At that intermediate closeout, only
+documentation closeout push and root completion confirmation remained. Private
+environment details remain outside repository documentation. The archived
+fidelity checkpoint reference is
+`../../artifacts/lumen-acceptance/fidelity-final-report/ACCEPTANCE.md` for its
+historical detailed QA records; the portable summary below is the publication
+entry.
 
 Updated: **2026-10-01**. This is the implementation and verification checkpoint
 for the native rewrite based on the v4 `design_handoff_emby_player_ui` reference
 bundle. The frozen AOT08 source passed product
 tests, publication, and scoped native fixture/official-server regressions. Owned
-cleanup is complete, and the [final report](../../artifacts/lumen-acceptance/final-report/ACCEPTANCE.md)
-and [receipt](../../artifacts/lumen-acceptance/final-report/acceptance-summary.json)
-record the historical `AcceptedForScopedDesignHandoff` status. That functional
-checkpoint did not establish matched high-fidelity restoration. The current
-[fidelity checkpoint](../../artifacts/lumen-acceptance/fidelity-final-report/ACCEPTANCE.md)
-records current AOT10 source results, reviewed AOT09 captures, and all intermediate AOT03/AOT04 and
-later failure evidence. The fidelity AOT08 movie captures 04-06 used Star Trails
+cleanup is complete. The historical record cites the archived final report at
+`../../artifacts/lumen-acceptance/final-report/ACCEPTANCE.md` and receipt at
+`../../artifacts/lumen-acceptance/final-report/acceptance-summary.json` for its
+`AcceptedForScopedDesignHandoff` status. That functional checkpoint did not
+establish matched high-fidelity restoration. The archived fidelity checkpoint
+reference, `../../artifacts/lumen-acceptance/fidelity-final-report/ACCEPTANCE.md`,
+described that checkpoint's AOT10 source results, reviewed AOT09 captures, and all
+intermediate AOT03/AOT04 and later failure evidence. The fidelity AOT08 movie
+captures 04-06 used Star Trails
 instead of the reference The Fallen Ground, and its Movies-tab poster load
 failed; original receipts are retained, not promoted into a correct comparison.
 AOT05/AOT07 shutdown crashes and the subsequent source guards retain their own
 identities. AOT09's normal exit is a scoped regression observation, not universal
-crash resolution. The latest human instruction restored local UI authorization;
+crash resolution. The human instruction for that checkpoint restored local UI
+authorization;
 the requested bounded AOT10 native checks completed with local runtime cleanup.
-The goal-manager Blocked ledger is historical and goal completion still awaits
-documentation closeout push and root confirmation. Release/device
+The goal-manager Blocked ledger and the intermediate wait for documentation
+closeout push and root confirmation are historical. Release/device
 certification remains separate.
 
-## Current Acceptance Summary
+<a id="current-acceptance-summary"></a>
 
-Status: `CompletePublicationVerifiedProductionCommit`.
+## Historical Acceptance Summary
+
+Recorded status: `CompletePublicationVerifiedProductionCommit`.
 Date: 2026-10-01. The native WinUI 3 AOT10 design-handoff and named regression
 scope passed. Product commit `72f15ed72bcf875d5783fb61bea45a0a630a3d61`
-(257 files) is merged into `main`, pushed, and remote-verified. Hosted CI was
+(257 files) was merged into `main`, pushed, and remote-verified. Hosted CI was
 in progress when that push was verified; no green CI result is included. All 23 unrelated
-primary-checkout dirty files retain their hashes and are preserved separately,
+primary-checkout dirty files retained their hashes and were preserved separately,
 not mixed into publication. The scoped implementation, acceptance, cleanup, and
-publication are complete. No additional UI or cleanup gate remains.
+publication were complete. No additional UI or cleanup gate remained within
+that historical scope.
 
 Verified executable: 23,432,192 bytes, SHA-256
 `41FC56C007CE339636A4C4A8B0900D00951EB6B90B38400A3D63682487EEA6F0`.
@@ -88,7 +192,7 @@ visible layout/readability collision was found in those states, eight named
 narrow images, and fullscreen. This is qualitative visible-state review, not
 a pixel-perfect score or proof of every control's timing/backend operation.
 
-| Reference | Current observed surface |
+| Reference | Historical AOT10 observed surface |
 | --- | --- |
 | 01 | Dark Home: Hero, navigation, commands, six thumbnails, continuation track |
 | 02 | Movie wall: eight columns and complete first-poster hover controls |
@@ -135,7 +239,7 @@ Original screenshot/UIA groups, one-to-one decoded comparison boards, native
 exit/event receipts, synthetic fixture stats, and input manifests remain local
 QA records under `artifacts/lumen-acceptance`; private worker cleanup receipts
 remain outside the repository. These optional ignored artifacts may be absent
-from a public checkout. This committed summary carries the current scope without
+from a public checkout. This historical summary records that checkpoint's scope without
 publishing screenshots, crash dumps, private environment paths, or account data.
 
 The fixture uses actual approximately 60-second SDR H.264/720p media, AAC audio,
@@ -244,7 +348,7 @@ and [Lucide provenance/ISC notice](../../licenses/third-party/Lumen-Lucide/READM
 ship with the publish output. The repository's own license still awaits an
 owner decision.
 
-## Player boundaries
+## Historical player boundaries
 
 The custom HUD auto-hides after three seconds when no active interaction blocks
 hiding. Native caption buttons remain visible in windowed mode: Windows ignores
@@ -282,20 +386,23 @@ metadata. It records no text, URLs, IDs, credentials, or raw exception messages
 and cannot alter playback outcomes.
 
 These features are source/native-format dependent. Server-burned subtitles
-cannot be styled or delayed by the app. The baseline remains SDR H.264/AAC MP4
-and server-generated HLS with explicit codec/transcoding constraints. Hardware
-decoding is configurable through FFmpegInteropX D3D11VA or software decoding; see
-the [2026-10-01 implementation and validation](hardware-decoding.md). HDR output
-and refresh-rate matching remain visibly disabled with accurate reasons. Advanced ASS/PGS rendering, HDR/Dolby Vision, passthrough,
-multichannel output, universal codecs, and physical media commands remain
-unverified or unsupported; the API expansion does not change those boundaries.
+cannot be styled or delayed by the app. At the 2026-10-01 checkpoint, the baseline
+was SDR H.264/AAC MP4 and server-generated HLS with explicit codec/transcoding
+constraints. Hardware decoding was configurable through FFmpegInteropX D3D11VA
+or software decoding; see the [2026-10-01 implementation and validation](hardware-decoding.md).
+HDR output and refresh-rate matching were visibly disabled. Advanced ASS/PGS
+rendering, HDR/Dolby Vision, passthrough, multichannel output, universal codecs,
+and physical media commands were unverified or unsupported by that checkpoint.
+The later [Windows continuation](lumen-windows-continuation.md) records subsequent
+source paths and their separate output limits.
 
 ## Historical Functional Verification
 
-The task authorized local Windows verification and isolated backend/test-data
-work through `ssh test-env`. Desktop operation is currently suspended by the
-latest human instruction. This table retains the historical functional AOT08
-checkpoint, not the newest fidelity AOT10 identity or permission to resume UI.
+The earlier functional task authorized local Windows verification and isolated
+backend/test-data work through `ssh test-env`. Desktop operation was suspended
+under an instruction applicable to that earlier stage. This authorization note
+does not govern the later Windows continuation. This table retains the historical
+functional AOT08 checkpoint and does not certify AOT10 or later candidates.
 Evidence categories remain separate; counts do not imply native output.
 
 | Evidence | September 30 checkpoint | Location/boundary |
@@ -460,12 +567,12 @@ sound. Safe parser observations reported three native/text/captured WebVTT cues,
 unhandled entries, and retained evidence. All final app instances were observed
 absent; the old fixture-profile AOT05 exception was not erased.
 
-## Completion and cleanup
+## Historical AOT08 completion and cleanup
 
-The final 919-case product run, AOT08 publication/build-input comparison,
+The historical final 919-case product run, AOT08 publication/build-input comparison,
 same-executable native fixture/official-server regressions, and owned cleanup
-are complete. The final outcome is `AcceptedForScopedDesignHandoff`; both final
-apps are absent and the local fixture port is released. The official cleanup
+were completed. The recorded outcome is `AcceptedForScopedDesignHandoff`; both final
+apps were absent and the local fixture port was released. The official cleanup
 summary records completion at 03:47:01 UTC: one owned container, network, remote
 relay, private run directory, and local SSH tunnel plus two auxiliary directories
 removed/stopped, two loopback endpoints released, and zero owned active resources.
@@ -476,7 +583,7 @@ Cleanup evidence is `artifacts/lumen-official-validation/cleanup-summary.json`,
 were not printed; no source/system configuration change or Docker prune occurred.
 The consolidated final report and receipt retain every candidate's scope and
 failure history. No additional source changes, builds, tests, UI checks,
-installation, or deployment are required to complete this scoped task.
+installation, or deployment were required to complete that historical scoped task.
 
 ## Future certification
 

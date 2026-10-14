@@ -12,7 +12,7 @@ namespace EmbyClient.App.Views.Lumen;
 
 public sealed partial class LumenLibraryView
 {
-    private (double Width, int Columns, string Page, string Tab, int Revision, int People, int Collections)? _searchLayoutKey;
+    private (double Width, int Columns, string Page, string Tab, int Revision, int People)? _searchLayoutKey;
 
     private async Task LoadCollectionPreviewAsync(Grid preview, MediaCardViewModel collection, CancellationToken cancellationToken)
     {
@@ -54,52 +54,57 @@ public sealed partial class LumenLibraryView
 
     private void UpdateSearchLayout(double width)
     {
-        var layoutKey = (width, _columns, _renderedPage, _searchTab, _searchLayoutRevision, _searchPeoplePreviewCount, _searchCollectionPreviewCount);
+        var layoutKey = (width, _columns, _renderedPage, _searchTab, _searchLayoutRevision, _searchPeoplePreviewCount);
         if (_searchLayoutKey is { } applied && applied.Equals(layoutKey)) return;
         _searchLayoutKey = layoutKey;
-        var margin = new Thickness(_pageMargin, 96, _pageMargin + 8, 64);
+        var margin = new Thickness(_pageMargin, 116, _pageMargin, 60);
         if (!_search.Margin.Equals(margin)) _search.Margin = margin;
-        var hintVisibility = width < 1120 ? Visibility.Collapsed : Visibility.Visible;
-        if (_searchHint.Visibility != hintVisibility) _searchHint.Visibility = hintVisibility;
-        var hasBest = _searchFeatured.Children.Any(child => !ReferenceEquals(child, _searchSecondary));
-        var compact = width < 1120 || !hasBest;
-        var featuredColumnSpacing = compact ? 0d : 28;
-        var featuredRowSpacing = compact && hasBest && _searchSecondary.Children.Count > 0 ? 28d : 0;
-        if (_searchFeatured.ColumnSpacing != featuredColumnSpacing) _searchFeatured.ColumnSpacing = featuredColumnSpacing;
-        if (_searchFeatured.RowSpacing != featuredRowSpacing) _searchFeatured.RowSpacing = featuredRowSpacing;
-        SetSearchTrackWidth(_searchFeatured.ColumnDefinitions[0], compact ? new GridLength(1, GridUnitType.Star) : new GridLength(600));
-        SetSearchTrackWidth(_searchFeatured.ColumnDefinitions[1], compact ? new GridLength(0) : new GridLength(1, GridUnitType.Star));
-        SetSearchGridPosition(_searchSecondary, compact ? 0 : 1, compact && hasBest ? 1 : 0);
-        var usable = Math.Max(1, width - _pageMargin * 2 - 8);
+        var usable = Math.Max(1, width - _pageMargin * 2);
+        _searchHint.Visibility = Visibility.Visible;
+        _searchHint.MaxWidth = usable * .4;
         if (_search.Width != usable) _search.Width = usable;
-        if (_search.HorizontalAlignment != HorizontalAlignment.Left) _search.HorizontalAlignment = HorizontalAlignment.Left;
-        var secondaryWidth = compact ? usable : usable - 600 - _searchFeatured.ColumnSpacing;
-        var combinedHeight = 88 + _searchPeoplePreviewCount * 64 + _searchCollectionPreviewCount * 72
-            + Math.Max(0, _searchPeoplePreviewCount - 1) * 8 + Math.Max(0, _searchCollectionPreviewCount - 1) * 8;
-        var splitSecondary = _searchPeopleSection is not null && _searchCollectionsSection is not null
-            && _searchCollectionPreviewCount > 1 && combinedHeight > 338 && secondaryWidth >= 600;
-        var secondaryColumnSpacing = splitSecondary ? 20d : 0;
-        var secondaryRowSpacing = !splitSecondary && _searchPeopleSection is not null && _searchCollectionsSection is not null ? 20d : 0;
-        if (_searchSecondary.ColumnSpacing != secondaryColumnSpacing) _searchSecondary.ColumnSpacing = secondaryColumnSpacing;
-        if (_searchSecondary.RowSpacing != secondaryRowSpacing) _searchSecondary.RowSpacing = secondaryRowSpacing;
-        SetSearchTrackWidth(_searchSecondary.ColumnDefinitions[1], splitSecondary ? new GridLength(1, GridUnitType.Star) : new GridLength(0));
+        _search.HorizontalAlignment = HorizontalAlignment.Left;
+        var hasBest = _searchFeatured.Children.Any(child => !ReferenceEquals(child, _searchSecondary));
+        var compact = usable < 848 || !hasBest;
+        var bestWidth = Math.Clamp(usable * .58, 520, 680);
+        _searchFeatured.ColumnSpacing = compact ? 0 : 28;
+        _searchFeatured.RowSpacing = compact && hasBest && _searchSecondary.Children.Count > 0 ? 28 : 0;
+        SetSearchTrackWidth(_searchFeatured.ColumnDefinitions[0], compact ? new GridLength(1, GridUnitType.Star) : new GridLength(bestWidth));
+        SetSearchTrackWidth(_searchFeatured.ColumnDefinitions[1], compact ? new GridLength(0) : new GridLength(1, GridUnitType.Star));
+        foreach (var match in _searchFeatured.Children.OfType<Grid>().Where(child => !ReferenceEquals(child, _searchSecondary)))
+        {
+            match.MaxWidth = 680;
+            match.HorizontalAlignment = HorizontalAlignment.Left;
+            match.Width = compact ? Math.Min(680, usable) : bestWidth;
+        }
+        SetSearchGridPosition(_searchSecondary, compact ? 0 : 1, compact && hasBest ? 1 : 0);
+        _searchSecondary.ColumnSpacing = 0;
+        _searchSecondary.RowSpacing = 0;
+        SetSearchTrackWidth(_searchSecondary.ColumnDefinitions[1], new GridLength(0));
         if (_searchPeopleSection is not null) SetSearchGridPosition(_searchPeopleSection, 0, 0);
-        if (_searchCollectionsSection is not null)
-            SetSearchGridPosition(_searchCollectionsSection, splitSecondary ? 1 : 0, !splitSecondary && _searchPeopleSection is not null ? 1 : 0);
-        var columns = Math.Clamp(Math.Min(_columns, (int)(usable / 115)), 2, 10);
-        var cardWidth = Math.Max(80, Math.Floor((usable - 20 * (columns - 1)) / columns * 4) / 4);
-        _searchCardWidth = cardWidth;
-        if (_searchRepeater.Width != usable) _searchRepeater.Width = usable;
-        if (_searchRepeater.HorizontalAlignment != HorizontalAlignment.Left) _searchRepeater.HorizontalAlignment = HorizontalAlignment.Left;
-        if (_searchGridLayout.MaximumRowsOrColumns != columns) _searchGridLayout.MaximumRowsOrColumns = columns;
-        if (_searchGridLayout.MinItemWidth != cardWidth) _searchGridLayout.MinItemWidth = cardWidth;
-        var cardHeight = cardWidth * 1.5 + 48;
-        if (_searchGridLayout.MinItemHeight != cardHeight) _searchGridLayout.MinItemHeight = cardHeight;
-        if (_renderedPage == "search")
-            foreach (var card in _realizedCards)
-                if (card.Width != cardWidth) card.SetCardWidth(cardWidth);
+        var columns = Math.Max(1, (int)Math.Floor((usable + 20) / 160));
+        _searchCardWidth = Math.Max(80, Math.Floor((usable - 20 * (columns - 1)) / columns * 4) / 4);
+        foreach (var repeater in new[] { _searchRepeater, _searchSkeletons })
+        {
+            repeater.Width = usable;
+            repeater.HorizontalAlignment = HorizontalAlignment.Left;
+        }
+        foreach (var layout in new[] { _searchGridLayout, _searchSkeletonLayout })
+        {
+            layout.MaximumRowsOrColumns = columns;
+            layout.MinItemWidth = _searchCardWidth;
+            layout.MinItemHeight = _searchCardWidth * 1.5 + 48;
+        }
+        for (var index = 0; index < _searchMedia.Count; index++)
+            if (_searchRepeater.TryGetElement(index) is LumenMediaCard card) card.SetCardWidth(_searchCardWidth);
+        for (var index = 0; index < 16; index++)
+            if (_searchSkeletons.TryGetElement(index) is CatalogSkeletonCard skeleton) skeleton.SetWidth(_searchCardWidth);
+        var peopleColumns = Math.Max(1, (int)Math.Floor((usable + 10) / 290));
+        _searchPeopleRepeater.Width = usable;
+        _searchPeopleGridLayout.MaximumRowsOrColumns = peopleColumns;
+        _searchPeopleGridLayout.MinItemWidth = Math.Floor((usable - 10 * (peopleColumns - 1)) / peopleColumns);
+        UpdateSearchDiscoveryLayout();
     }
-
     private static void SetSearchTrackWidth(ColumnDefinition track, GridLength width)
     {
         if (!track.Width.Equals(width)) track.Width = width;

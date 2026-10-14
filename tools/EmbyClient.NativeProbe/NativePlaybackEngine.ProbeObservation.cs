@@ -48,6 +48,8 @@ public sealed partial class NativePlaybackEngine
 
     partial void CreateSessionPlayer(PlaybackEngineRequest request, ref MediaPlayer? player, ref bool ownsPlayer)
     {
+        NativeAudioOutputProbeObserver?.RecordBackendAssignment(request.PlaybackId, request.AudioPassthroughMode,
+            CaptureNativeAudioStateForProbe());
         AttachOpeningCancellationForProbe(request);
         if (!ReuseNativeHttpControlPlayer) return;
         if (!request.MediaUri.IsLoopback || request.MediaUri.Port != 19096 || request.MediaUri.Scheme != "http"

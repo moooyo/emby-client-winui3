@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "payloadDirectory": "libass-0.17.5-x64",
+  "vcpkg": {
+    "repository": "https://github.com/microsoft/vcpkg",
+    "commit": "e456309491fd875487bf02b8a0dca76c1b1b00cc",
+    "license": "MIT",
+    "triplet": "x64-windows-emby-ass",
+    "hostTriplet": "x64-windows-emby-ass",
+    "tool": {
+      "version": "2026-09-26",
+      "name": "vcpkg.exe",
+      "url": "https://github.com/microsoft/vcpkg-tool/releases/download/2026-09-26/vcpkg.exe",
+      "size": 6791480,
+      "sha256": "2a4ae1467b9e797964c60c919d057b9e5dc1ec03f4b9632c1150026db25201f2"
+    }
+  },
+  "runtime": {
+    "name": "ass-9.dll",
+    "importLibrary": "ass.lib",
+    "header": "ass/ass.h",
+    "crtLinkage": "static",
+    "libraryLinkage": "dynamic",
+    "buildType": "release",
+    "fontProvider": "DirectWrite/GDI",
+    "assemblyOptimizations": true,
+    "wrapUnicode": false,
+    "wrapUnicodeReason": "The pinned official libass dependency graph does not supply libunibreak. ASS_FEATURE_WRAP_UNICODE must remain disabled."
+  },
+  "libraries": [
+    {
+      "id": "libass", "version": "0.17.5", "portVersion": 0, "license": "ISC",
+      "source": {
+        "repository": "https://github.com/libass/libass", "ref": "0.17.5", "commit": "4a05d8127f525943ebf45fdc6497c9e665947f0d",
+        "url": "https://github.com/libass/libass/archive/0.17.5.tar.gz",
+        "sha512": "8dfea8ef3043ace28efa8a6ae4d6a443fd19d49ad19a521a642e7ec3a7c6f97284cda16d479e168ce30bd560f7e05a0675c9f3fde872bb92ed650343499a57b1"
+      },
+      "dependencies": ["freetype", "fribidi", "harfbuzz"],
+      "notices": ["libass/COPYING"]
+    },
+    {
+      "id": "freetype", "version": "2.14.3", "portVersion": 0, "license": "FTL OR GPL-2.0-or-later",
+      "source": {
+        "repository": "https://gitlab.freedesktop.org/freetype/freetype", "ref": "VER-2-14-3",
+        "url": "https://gitlab.freedesktop.org/freetype/freetype/-/archive/VER-2-14-3/freetype-VER-2-14-3.tar.gz",
+        "sha512": "c3b6b0cc4b428c9c647ab2148386901dfd315273b68051940e8fea6010d46fdd2913467c3ef58be0d499b8e2ef5a0f1a4cc5e739756155587f4f7dff08ef9695"
+      },
+      "dependencies": ["brotli", "bzip2", "libpng", "zlib"],
+      "notices": ["freetype/LICENSE.TXT", "freetype/FTL.TXT", "freetype/GPLv2.TXT", "freetype/BDF-README", "freetype/PCF-README", "freetype/gzip-zlib.h"]
+    },
+    {
+      "id": "fribidi", "version": "1.0.17", "portVersion": 0, "license": "LGPL-2.1-or-later AND Unicode-3.0",
+      "source": {
+        "repository": "https://github.com/fribidi/fribidi", "ref": "v1.0.17",
+        "url": "https://github.com/fribidi/fribidi/archive/v1.0.17.tar.gz",
+        "sha512": "7cb021b2e2e25f5a9867e0c05cc5c0d2b9668172fb9409dda5b5ec330af57448c83afe82ff287e9f23488175aba65a9b7b628c221a8724959ffb42752361c5a1"
+      },
+      "dependencies": [],
+      "notices": ["fribidi/COPYING", "fribidi/Unicode-ReadMe.txt", "fribidi/UNICODE-LICENSE.txt"]
+    },
+    {
+      "id": "harfbuzz", "version": "14.5.1", "portVersion": 0, "license": "MIT-Modern-Variant AND MIT",
+      "source": {
+        "repository": "https://github.com/harfbuzz/harfbuzz", "ref": "14.5.1",
+        "url": "https://github.com/harfbuzz/harfbuzz/archive/14.5.1.tar.gz",
+        "sha512": "18cd352c3879c8b44f150c9a3171f3790c3c641e161ae1f5591c8156cf8c551aa45c7873cb6ddc9138e2fdc6c331d6812c21e6a210eb1385dd2813a738317593"
+      },
+      "dependencies": ["freetype"],
+      "notices": ["harfbuzz/COPYING", "harfbuzz/Microsoft-USE-COPYING"]
+    },
+    {
+      "id": "brotli", "version": "1.2.0", "portVersion": 0, "license": "MIT",
+      "source": {
+        "repository": "https://github.com/google/brotli", "ref": "v1.2.0",
+        "url": "https://github.com/google/brotli/archive/v1.2.0.tar.gz",
+        "sha512": "f94542afd2ecd96cc41fd21a805a3da314281ae558c10650f3e6d9ca732b8425bba8fde312823f0a564c7de3993bdaab5b43378edab65ebb798cefb6fd702256"
+      },
+      "dependencies": [],
+      "notices": ["brotli/LICENSE"]
+    },
+    {
+      "id": "bzip2", "version": "1.0.8", "portVersion": 6, "license": "bzip2-1.0.6",
+      "source": {
+        "repository": "https://sourceware.org/bzip2/", "ref": "1.0.8",
+        "url": "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
+        "sha512": "083f5e675d73f3233c7930ebe20425a533feedeaaa9d8cc86831312a6581cefbe6ed0d08d2fa89be81082f2a5abdabca8b3c080bf97218a1bd59dc118a30b9f3"
+      },
+      "dependencies": [],
+      "notices": ["bzip2/LICENSE"]
+    },
+    {
+      "id": "libpng", "version": "1.6.59", "portVersion": 0, "license": "libpng-2.0",
+      "source": {
+        "repository": "https://github.com/pnggroup/libpng", "ref": "v1.6.59",
+        "url": "https://github.com/pnggroup/libpng/archive/v1.6.59.tar.gz",
+        "sha512": "2d753e764846a0a75a10f2a00c6f4ae23d2ae37237c69d59d5e619da3f143d59f4ea9ce29c1fb39435df1cef77877c83b042a2275934c353a6603061da2d2dd9"
+      },
+      "dependencies": ["zlib"],
+      "notices": ["libpng/LICENSE"]
+    },
+    {
+      "id": "zlib", "version": "1.3.2", "portVersion": 2, "license": "Zlib",
+      "source": {
+        "repository": "https://github.com/madler/zlib", "ref": "v1.3.2",
+        "url": "https://github.com/madler/zlib/archive/v1.3.2.tar.gz",
+        "sha512": "16fea4df307a68cf0035858abe2fd550250618a97590e202037acd18a666f57afc10f8836cbbd472d54a0e76539d0e558cb26f059d53de52ff90634bbf4f47d4"
+      },
+      "dependencies": [],
+      "notices": ["zlib/LICENSE"]
+    }
+  ],
+  "buildTools": {
+    "mesonVersion": "1.9.0",
+    "mesonPortVersion": 10,
+    "sourceBoundary": "All vcpkg helper ports, tool-download checksums, and downstream library patches are fixed by the recorded vcpkg Git commit. Binary caches are disabled."
+  },
+  "upstreamReleaseSource": {
+    "url": "https://github.com/libass/libass/releases/download/0.17.5/libass-0.17.5.tar.xz",
+    "sha256": "2dca25c0e0c837ddf00b52011b3f82cac1e4ddd3ad018227806b0c2288864acc",
+    "note": "The build uses the independently SHA512-locked tag archive above, not this distinct release archive."
+  }
+}

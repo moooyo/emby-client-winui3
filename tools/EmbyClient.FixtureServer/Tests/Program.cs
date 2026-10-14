@@ -5,8 +5,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 
-if (args.Length is < 1 or > 2 || !File.Exists(args[0]) || args.Length == 2 && args[1] is not ("--lumen-only" or "--lumen-design-only" or "--subtitle-only"))
-    throw new ArgumentException("Pass the absolute path of a separately built EmbyClient.FixtureServer.dll, optionally followed by --lumen-only, --lumen-design-only, or --subtitle-only.");
+var bifOnly = args.Length == 3 && args[1] == "--bif-only" && Path.IsPathFullyQualified(args[2]) && File.Exists(args[2]);
+var embeddedPgsOnly = args.Length == 3 && args[1] == "--embedded-pgs-only" && Path.IsPathFullyQualified(args[2]) && Directory.Exists(args[2]);
+if (args.Length is < 1 or > 3 || !File.Exists(args[0]) || args.Length == 3 && !bifOnly && !embeddedPgsOnly
+    || args.Length == 2 && args[1] is not ("--lumen-only" or "--lumen-design-only" or "--subtitle-only"))
+    throw new ArgumentException("Pass the absolute path of a separately built EmbyClient.FixtureServer.dll, optionally followed by --lumen-only, --lumen-design-only, --subtitle-only, --bif-only <absolute-real-bif-path>, or --embedded-pgs-only <absolute-measured-media-dir>.");
 
 var serverPath = Path.GetFullPath(args[0]);
 var temporaryRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
@@ -26,7 +29,15 @@ await File.WriteAllTextAsync(Path.Combine(testRoot, "fixture-h264-aac.json"), ""
 var passed = 0;
 try
 {
-    if (args.Length == 2 && args[1] == "--subtitle-only")
+    if (embeddedPgsOnly)
+    {
+        await EmbeddedPgsContractChecks.RunAsync(serverPath, testRoot, args[2], Check);
+    }
+    else if (bifOnly)
+    {
+        await BifContractChecks.RunAsync(serverPath, testRoot, args[2], Check);
+    }
+    else if (args.Length == 2 && args[1] == "--subtitle-only")
     {
         await SubtitleContractChecks.RunAsync(serverPath, testRoot, Check);
     }

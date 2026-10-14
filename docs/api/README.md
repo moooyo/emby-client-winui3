@@ -2,6 +2,12 @@
 
 Research date: **2026-09-09**. This is an original, curated client implementation reference, rather than a mirror of all Emby server administration APIs.
 
+The original `MVP` / `Later` priorities below describe the September plan, not
+the current implementation. The [Lumen capability contract](06-lumen-capabilities.md),
+[October API support audit](../research/lumen-v2-emby-api-support.md), and
+[supported-gap implementation](../implementation/lumen-v2-supported-gaps.md)
+record subsequent behavior and its verification boundaries.
+
 ## Reading order
 
 1. [Conventions and transport](01-conventions.md): API roots, identity, data types, errors, caching, and compatibility.
@@ -9,7 +15,9 @@ Research date: **2026-09-09**. This is an original, curated client implementatio
 3. [Library and user data](03-library-and-user-data.md): home, queries, details, images, search, episodes, favorites, watched state, and playlists.
 4. [Playback and sessions](04-playback-and-sessions.md): capability negotiation, sources, streams, subtitles, reporting, and cleanup.
 5. [Optional features](05-optional-features.md): music expansion, display preferences, downloads, synchronization, Live TV, and remote control.
-6. [Source provenance](../research/sources-and-compatibility.md) and [remote verification](../research/verification-plan.md).
+6. [Lumen capabilities](06-lumen-capabilities.md): discovery, field-preserving mutations, settings, and marker contracts.
+7. [V2 API support audit](../research/lumen-v2-emby-api-support.md) and [supported-gap implementation](../implementation/lumen-v2-supported-gaps.md).
+8. [Source provenance](../research/sources-and-compatibility.md) and [remote verification](../research/verification-plan.md).
 
 ## Scope and priority
 
@@ -48,7 +56,12 @@ Chapter navigation normally uses `ChapterInfo` metadata returned with an item/so
 
 ## Deliberate exclusions
 
-The client does not need user administration, library creation, metadata editing, media deletion, plugin management, scheduled tasks, server restart, tuner configuration, or API-key administration. A playback client should not require an administrator account or a shared administrator API key.
+User administration, library creation, media deletion, plugin management,
+scheduled tasks, server restart, tuner configuration, and API-key administration
+remain outside the playback client scope. Bounded, field-preserving metadata
+editing was added subsequently under endpoint-specific authorization; see the
+[Lumen contract](06-lumen-capabilities.md#explicit-mutations). Normal playback
+does not require an administrator account or a shared administrator API key.
 
 Game, book, and photo-library specialization; DLNA server behavior; watch parties; camera upload; and third-party plugin APIs are not part of this proposal. Skip-intro markers, trickplay thumbnails, and similar enhanced navigation should be separate compatibility research before being promised.
 
@@ -56,4 +69,9 @@ Game, book, and photo-library specialization; DLNA server behavior; watch partie
 
 Methods and paths are documented from official Emby sources. Required parameters, response shapes, authorization, and available fields must still be checked against the target server. Some generated references omit schemas or disagree with the conceptual guides. These cases are called out in the detailed pages and the [compatibility ledger](../research/sources-and-compatibility.md).
 
-Examples are illustrative and contain placeholders. They were not executed. Supported Emby server versions remain **TBD** until remote verification is complete. Jellyfin compatibility is not implied.
+Examples are illustrative and contain placeholders. They were not executed.
+The later [Lumen contract](06-lumen-capabilities.md#verification) records a scoped
+official Emby 4.9.5.0 API run; it does not establish broad server-version or
+Windows playback compatibility. The October audit checks a newer public schema
+and keeps its research evidence separate from runtime acceptance. Jellyfin
+compatibility is not implied.

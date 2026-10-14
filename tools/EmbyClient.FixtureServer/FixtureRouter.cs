@@ -52,6 +52,26 @@ internal static class FixtureRouter
         {
             context.Response.StatusCode = 403; return;
         }
+        if (parts is ["Items", var thumbnailItemId, "ThumbnailSet"] && method == "GET")
+        {
+            var bif = state.Bif(thumbnailItemId);
+            if (bif is null) { context.Response.StatusCode = 404; return; }
+            if (!HasThumbnailWidth(request.Query, int.MaxValue)) { context.Response.StatusCode = 400; return; }
+            context.Response.Headers.CacheControl = "private, no-store";
+            await Json(context, bif.Metadata, EmbyJsonContext.Default.ThumbnailSetInfo);
+            state.ThumbnailSetServed();
+            return;
+        }
+        if (parts is ["Videos", var bifItemId, "index.bif"] && method is "GET" or "HEAD")
+        {
+            var bif = state.Bif(bifItemId);
+            if (bif is null) { context.Response.StatusCode = 404; return; }
+            if (!HasThumbnailWidth(request.Query)) { context.Response.StatusCode = 400; return; }
+            context.Response.Headers.CacheControl = "private, no-store";
+            await Results.Bytes(bif.Bytes, "application/octet-stream").ExecuteAsync(context);
+            if (method == "GET") state.BifServed(bif.Bytes.Length);
+            return;
+        }
         if (parts is ["Videos", var subtitleItemId, var subtitleSourceId, "Subtitles", "2", "Stream.vtt"] && method is "GET" or "HEAD")
         {
             var subtitle = state.Subtitle(subtitleItemId, subtitleSourceId);
@@ -212,7 +232,7 @@ internal static class FixtureRouter
             state.MediaRequested(request.Headers.ContainsKey("Range"));
             await state.BoundaryControls.MediaAsync(streamItemId, playSessionId, async () =>
             {
-                await Results.File(state.Options.MediaPath, contentType: "video/mp4", enableRangeProcessing: true).ExecuteAsync(context);
+                await Results.File(state.Options.MediaPath, contentType: state.Options.EmbeddedPgs ? "video/x-matroska" : "video/mp4", enableRangeProcessing: true).ExecuteAsync(context);
                 if (context.Response.StatusCode == StatusCodes.Status206PartialContent) state.PartialResponse();
                 return context.Response.StatusCode;
             }, context.RequestAborted);
@@ -272,6 +292,10 @@ internal static class FixtureRouter
         await JsonSerializer.DeserializeAsync(context.Request.Body, typeInfo, context.RequestAborted);
 
     private static string[] Ids(string ids) => ids.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static bool HasThumbnailWidth(IQueryCollection query, int maximum = BifThumbnailReader.MaximumImageDimension) => query["Width"].Count == 1
+        && int.TryParse(query["Width"].ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out var width)
+        && width > 0 && width <= maximum;
 
     private static async Task Json<T>(HttpContext context, T value, JsonTypeInfo<T> typeInfo)
     {

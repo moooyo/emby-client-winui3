@@ -94,7 +94,13 @@ internal sealed partial class FixtureState
     ];
     private static readonly string[] DesignLatestMovies = ["1004", "1027", "1001", "1012", "1029", "1024", "1006", "1014", "1019", "1010"];
     private static readonly string[] DesignLatestSeries = ["2200", "2400", "5400", "4200", "2000", "4400", "3200", "5000", "3600", "2800"];
+    private static readonly string[] DesignViewOrder = ["movies", "shows", "design-4k", "design-mystery", "design-family", "design-recent", "collections"];
+    private static readonly string[] DesignBackdrops = ["249", "515", "541", "666", "683", "797"];
+    private static readonly HashSet<string> DesignThumbs = DesignMovies.Select(title => title.Art)
+        .Concat(DesignSeries.Select(title => title.Art)).Concat(DesignEpisodes.Select(episode => episode.Art))
+        .ToHashSet(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _designLatestRanks = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, HashSet<string>> _designViewMembers = new(StringComparer.Ordinal);
 
     private IEnumerable<BaseItemDto> CreateLumenDesignCatalog()
     {
@@ -185,6 +191,7 @@ internal sealed partial class FixtureState
                 SeriesCount = works.Count(item => item.Type == "Series"), CanEditItems = false
             });
         }
+        AddDesignViews(catalog);
         SetLatestRanks(DesignLatestMovies, DesignMovies.Select(spec => spec.Id.ToString(CultureInfo.InvariantCulture)));
         SetLatestRanks(DesignLatestSeries, DesignSeries.Select(spec => spec.Id.ToString(CultureInfo.InvariantCulture)));
         return catalog;
@@ -226,8 +233,35 @@ internal sealed partial class FixtureState
         string? backdrop = null, string? thumb = null, bool landscape = false) =>
         LumenItem(id, name, type, parent, art, backdrop, thumb, landscape) with { Overview = null };
 
-    private static string DesignBackdrop(string art, bool series) => LumenBackdrops.Contains(art, StringComparer.Ordinal) ? art : series ? "541" : "515";
-    private static string DesignThumb(string art, bool series) => LumenThumbs.Contains(art, StringComparer.Ordinal) ? art : series ? "541" : "515";
+    private void AddDesignViews(List<BaseItemDto> catalog)
+    {
+        var titles = catalog.Where(item => item.Type is "Movie" or "Series").ToArray();
+        AddView("design-4k", "4K \u7247\u5e93", "683", _ => Options.Media.Width >= 3840);
+        AddView("design-mystery", "\u60ac\u7591\u63a8\u7406", "797", item => HasGenre(item, "\u60ac\u7591", "\u72af\u7f6a", "\u60ca\u609a"));
+        AddView("design-family", "\u5408\u5bb6\u6b22", "249", item => HasGenre(item, "\u5bb6\u5ead", "\u559c\u5267", "\u52a8\u753b"));
+        AddView("design-recent", "\u65b0\u7247\u901f\u9012", "666", item => item.ProductionYear >= 2025);
+
+        void AddView(string id, string name, string art, Func<BaseItemDto, bool> predicate)
+        {
+            var members = titles.Where(predicate).ToArray();
+            var ids = members.Select(item => item.Id!).ToHashSet(StringComparer.Ordinal);
+            _designViewMembers[id] = ids;
+            catalog.Add(DesignItem(id, name, "CollectionFolder", null, art, art, art, landscape: true) with
+            {
+                ChildCount = members.Length, MovieCount = members.Count(item => item.Type == "Movie"),
+                SeriesCount = members.Count(item => item.Type == "Series"),
+                RecursiveItemCount = catalog.Count(item => ids.Contains(item.Id!) || item.SeriesId is { } seriesId && ids.Contains(seriesId)),
+                CanEditItems = false, Tags = ["Synthetic", "DesignAcceptance"],
+                Overview = "A read-only synthetic library view over the existing design titles. Media properties remain measured fixture values."
+            });
+        }
+
+        static bool HasGenre(BaseItemDto item, params string[] genres) =>
+            (item.Genres ?? []).Intersect(genres, StringComparer.Ordinal).Any();
+    }
+
+    private static string DesignBackdrop(string art, bool series) => DesignBackdrops.Contains(art, StringComparer.Ordinal) ? art : series ? "541" : "515";
+    private static string DesignThumb(string art, bool series) => DesignThumbs.Contains(art) ? art : series ? "541" : "515";
     private static string DesignSeasonId(int seriesId, int season) => (seriesId == 2000 ? 2100 + (season - 1) * 10 : seriesId + season * 10).ToString(CultureInfo.InvariantCulture);
     private static string DesignEpisodeId(int seriesId, int season, int episode)
     {

@@ -30,6 +30,9 @@ public sealed partial class LumenAmbientArtwork : UserControl
     private long _generation;
     private bool _subscribed;
 
+    internal bool HasArtwork => _image.Source is not null;
+    internal event EventHandler? ArtworkChanged;
+
     public LumenAmbientArtwork()
     {
         HorizontalContentAlignment = HorizontalAlignment.Stretch;
@@ -125,6 +128,7 @@ public sealed partial class LumenAmbientArtwork : UserControl
                     || !ReferenceEquals(item, _item) || !ReferenceEquals(library, _library)
                     || !ReferenceEquals(source, _request)) return;
                 _image.Source = bitmap;
+                ArtworkChanged?.Invoke(this, EventArgs.Empty);
             });
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
@@ -146,6 +150,10 @@ public sealed partial class LumenAmbientArtwork : UserControl
         var request = _request;
         _request = null;
         request?.Cancel();
-        if (clear) _image.Source = null;
+        if (clear && _image.Source is not null)
+        {
+            _image.Source = null;
+            ArtworkChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 }

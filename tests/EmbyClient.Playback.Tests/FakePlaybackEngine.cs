@@ -2,12 +2,13 @@ using System.Collections.Concurrent;
 
 namespace EmbyClient.Playback.Tests;
 
-internal sealed class FakePlaybackEngine : IPlaybackEngine
+internal sealed class FakePlaybackEngine : IPlaybackEngine, IPlaybackSubtitleSelectionEngine
 {
     private readonly ConcurrentQueue<PlaybackEngineRequest> opened = new();
     private readonly ConcurrentQueue<Guid> stopped = new();
     private readonly ConcurrentQueue<Guid> paused = new();
     private readonly ConcurrentQueue<(Guid PlaybackId, long PositionTicks)> sought = new();
+    private readonly ConcurrentQueue<(Guid PlaybackId, int SubtitleStreamIndex)> selectedEmbeddedBitmapSubtitles = new();
     private PlaybackEngineSnapshot? snapshot;
     private int disposalCalls;
 
@@ -17,6 +18,7 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
     public Func<Guid, CancellationToken, Task>? OnStopAsync { get; set; }
     public Func<Guid, CancellationToken, Task>? OnPauseAsync { get; set; }
     public Func<Guid, long, CancellationToken, Task>? OnSeekAsync { get; set; }
+    public Func<Guid, int, CancellationToken, Task<bool>>? OnTrySelectEmbeddedBitmapSubtitleAsync { get; set; }
     public Func<Task>? OnDisposeAsync { get; set; }
     public int DisposalCalls => Volatile.Read(ref disposalCalls);
     public Task? DisposalCompletion { get; private set; }
@@ -24,6 +26,7 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
     public Guid[] Stopped => stopped.ToArray();
     public Guid[] Paused => paused.ToArray();
     public (Guid PlaybackId, long PositionTicks)[] Sought => sought.ToArray();
+    public (Guid PlaybackId, int SubtitleStreamIndex)[] SelectedEmbeddedBitmapSubtitles => selectedEmbeddedBitmapSubtitles.ToArray();
     public PlaybackEngineSnapshot? Snapshot => Volatile.Read(ref snapshot);
     public bool IsDisposed { get; private set; }
 
@@ -71,6 +74,14 @@ internal sealed class FakePlaybackEngine : IPlaybackEngine
         if (OnSeekAsync is not null) await OnSeekAsync(playbackId, positionTicks, cancellationToken);
         if (Snapshot is { } current && current.PlaybackId == playbackId)
             Volatile.Write(ref snapshot, current with { PositionTicks = positionTicks });
+    }
+
+    public Task<bool> TrySelectEmbeddedBitmapSubtitleAsync(Guid playbackId, int subtitleStreamIndex,
+        CancellationToken cancellationToken = default)
+    {
+        selectedEmbeddedBitmapSubtitles.Enqueue((playbackId, subtitleStreamIndex));
+        return OnTrySelectEmbeddedBitmapSubtitleAsync?.Invoke(playbackId, subtitleStreamIndex, cancellationToken)
+            ?? Task.FromResult(false);
     }
 
     public Task SetVolumeAsync(Guid playbackId, int volumeLevel, bool isMuted, CancellationToken cancellationToken = default)

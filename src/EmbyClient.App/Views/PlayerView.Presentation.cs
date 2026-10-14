@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Windows.System;
 using WinRT;
@@ -37,6 +38,7 @@ public sealed partial class PlayerView
 
     private void InitializePresentation()
     {
+        InitializeNativeSubtitleLayout();
         Loaded += (_, _) =>
         {
             _subtitleLayoutLoaded = true;
@@ -51,6 +53,7 @@ public sealed partial class PlayerView
         VideoFocusTarget.ContextFlyout = MoreMenu;
         InitializeEpisodeDrawer();
         InitializeChapters();
+        InitializeV2Interaction();
         _chromeTimer.Tick += (_, _) =>
         {
             _chromeTimer.Stop();
@@ -146,6 +149,7 @@ public sealed partial class PlayerView
 
     public void SetWindowTitleBarIntegrated(bool enabled)
     {
+        _windowTitleBarIntegrated = enabled;
         UpdatePlayerLayout();
     }
 
@@ -157,6 +161,7 @@ public sealed partial class PlayerView
         {
             _openQuickFlyout?.Hide();
             CloseSidePanel(restoreFocus: false);
+            ClosePlaybackInformation(restoreFocus: false);
             HideChapterPreview();
             SkipIntroButton.Visibility = Visibility.Collapsed;
         }
@@ -173,16 +178,17 @@ public sealed partial class PlayerView
     {
         if (VideoStage is null || SidePanel is null) return;
         PlayerHeader.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
-        var dockHeight = _compactOverlay ? 120d : PlayerRoot.ActualWidth < 780 ? 372d : 320d;
+        var dockHeight = _compactOverlay ? 120d : 320d;
         if (ControlDock.Height != dockHeight) ControlDock.Height = dockHeight;
+        HeaderContentGrid.Margin = new Thickness(12, 0, _windowTitleBarIntegrated && !_fullscreen ? 150 : 12, 0);
         var sideOpen = _sidePanelMode != PlayerSidePanel.None;
         SideColumn.Width = new GridLength(0);
         Grid.SetColumn(SidePanel, 0);
         var tracks = _sidePanelMode == PlayerSidePanel.Tracks;
-        var right = tracks && PlayerRoot.ActualWidth >= 700 ? 44d : 16d;
+        var right = tracks ? 44d : 16d;
         var narrowCaptionBand = UsesNarrowCaptionBand;
         if (narrowCaptionBand) UpdateSubtitleOverlayLayout();
-        var panelBottom = PlayerRoot.ActualWidth < 780 ? 170d : 118d;
+        var panelBottom = 118d;
         if (narrowCaptionBand)
         {
             // Caption width is independent of the panel; its measured height alone reserves this band.
@@ -191,7 +197,7 @@ public sealed partial class PlayerView
                 ? SubtitleOverlay.ActualHeight : PreferredSubtitleFontSize * 2 * 1.45;
             panelBottom = Math.Max(panelBottom, SubtitleOverlay.Margin.Bottom + captionHeight + 12);
         }
-        var panelWidth = Math.Min(tracks ? 480 : 400, Math.Max(0, PlayerRoot.ActualWidth - right - 16));
+        var panelWidth = Math.Min(tracks ? 480 : 400, Math.Max(0, PlayerRoot.ActualWidth - (tracks ? right * 2 : right + 16)));
         if (Math.Abs(SidePanel.Width - panelWidth) > .01) SidePanel.Width = panelWidth;
         var panelMargin = new Thickness(16, 64, right, panelBottom);
         if (!SidePanel.Margin.Equals(panelMargin)) SidePanel.Margin = panelMargin;
@@ -217,15 +223,22 @@ public sealed partial class PlayerView
         if (!narrowCaptionBand) UpdateSubtitleOverlayLayout();
         else UpdateChapterPreviewClearance();
         NextEpisodeCountdown.VerticalAlignment = _compactOverlay ? VerticalAlignment.Top : VerticalAlignment.Bottom;
-        NextEpisodeCountdown.Margin = _compactOverlay ? new Thickness(16, 32, 16, 0) : new Thickness(0, 0, 56, 128);
-        NextEpisodeCountdown.Padding = new Thickness(_compactOverlay ? 12 : 20, _compactOverlay ? 10 : 16, _compactOverlay ? 12 : 20, _compactOverlay ? 10 : 16);
+        NextEpisodeCountdown.Margin = _compactOverlay ? new Thickness(16, 32, 16, 0) : new Thickness(0, 0, 48, 140);
+        NextEpisodeCountdown.Padding = _compactOverlay ? new Thickness(12, 10, 12, 10) : new Thickness(14, 14, 14, 18);
+        NextEpisodeCountdownProgress.Margin = _compactOverlay ? new Thickness(-12, 0, -12, -10) : new Thickness(-14, 0, -14, -18);
         NextEpisodeCountdown.MaxWidth = Math.Max(0, PlayerRoot.ActualWidth - 32);
-        NextEpisodeCountdown.Width = _compactOverlay ? Math.Max(0, PlayerRoot.ActualWidth - 32) : 320;
+        NextEpisodeCountdown.Width = _compactOverlay ? Math.Max(0, PlayerRoot.ActualWidth - 32) : Math.Min(428, Math.Max(0, PlayerRoot.ActualWidth - 96));
+        NextEpisodePreview.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
         NextCountdownText.MaxLines = _compactOverlay ? 1 : 2;
-        NextCountdownText.Height = _compactOverlay ? 20 : 40;
+        NextCountdownText.Height = double.NaN;
         NextCountdownText.TextTrimming = TextTrimming.CharacterEllipsis;
+        PlaybackInfoPanel.Width = Math.Min(420, Math.Max(0, PlayerRoot.ActualWidth - 32));
+        PlaybackInfoPanel.MaxHeight = Math.Max(0, PlayerRoot.ActualHeight - 64 - 118);
+        PlayerToast.MaxWidth = Math.Max(0, PlayerRoot.ActualWidth - 32);
+        UpdateEndRecommendationsLayout();
         RebuildChapterTicks();
         UpdatePlaybackNoticeMargin();
+        QueueNativeSubtitleImageLayout();
     }
 
     private void PlayerHeaderSizeChanged(object sender, SizeChangedEventArgs args) => UpdatePlaybackNoticeMargin();
@@ -253,36 +266,40 @@ public sealed partial class PlayerView
 
     private void UpdateTransportLayout(double width)
     {
-        var compact = !_compactOverlay && width < 780;
-        TransportRow.Height = _compactOverlay ? 40 : compact ? 104 : 52;
+        var narrow = width < 980;
+        TransportRow.Height = _compactOverlay ? 40 : 52;
         TransportRow.RowDefinitions.Clear();
         TransportRow.RowDefinitions.Add(new RowDefinition { Height = new GridLength(_compactOverlay ? 40 : 52) });
-        if (compact) TransportRow.RowDefinitions.Add(new RowDefinition { Height = new GridLength(52) });
-        Grid.SetRow(UtilityButtons, compact ? 1 : 0);
-        Grid.SetColumn(UtilityButtons, compact ? 0 : 3);
-        Grid.SetColumnSpan(UtilityButtons, compact ? 4 : 1);
-        UtilityButtons.HorizontalAlignment = compact ? HorizontalAlignment.Right : HorizontalAlignment.Center;
+        Grid.SetRow(UtilityButtons, 0);
+        Grid.SetColumn(UtilityButtons, 3);
+        Grid.SetColumnSpan(UtilityButtons, 1);
+        UtilityButtons.HorizontalAlignment = HorizontalAlignment.Right;
+        TransportRow.ColumnSpacing = width < 760 ? 4 : 8;
         VolumeGroup.Visibility = !_compactOverlay && width >= 460 ? Visibility.Visible : Visibility.Collapsed;
-        Volume.Visibility = width >= 680 ? Visibility.Visible : Visibility.Collapsed;
-        TimeReadout.HorizontalAlignment = compact ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        Volume.Visibility = !narrow ? Visibility.Visible : Visibility.Collapsed;
+        TimeReadout.HorizontalAlignment = HorizontalAlignment.Left;
         TimeReadout.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
         TimelineHost.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
-        RewindButton.Visibility = ForwardButton.Visibility = SubtitleButton.Visibility = RateButton.Visibility = FullscreenButton.Visibility
+        RewindButton.Visibility = ForwardButton.Visibility = _compactOverlay || narrow ? Visibility.Collapsed : Visibility.Visible;
+        SubtitleButton.Visibility = RateButton.Visibility = FullscreenButton.Visibility = EpisodeDrawerButton.Visibility
             = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
-        EpisodeDrawerButton.Visibility = NextEpisodeButton.Visibility = !_compactOverlay && string.Equals(_item?.Type, "Episode", StringComparison.OrdinalIgnoreCase)
+        NextEpisodeButton.Visibility = !_compactOverlay && string.Equals(_item?.Type, "Episode", StringComparison.OrdinalIgnoreCase)
             ? Visibility.Visible : Visibility.Collapsed;
         PauseButton.Width = PauseButton.Height = _compactOverlay ? 40 : 52;
         PauseButton.CornerRadius = new CornerRadius(_compactOverlay ? 20 : 26);
         PauseButton.Padding = new Thickness(_compactOverlay ? 8 : 14);
         PauseButton.Margin = new Thickness(0, 0, _compactOverlay ? 0 : 6, 0);
         PictureInPictureButton.Width = PictureInPictureButton.Height = _compactOverlay ? 40 : 44;
-        StreamInfoPill.Visibility = width >= 820 ? Visibility.Visible : Visibility.Collapsed;
-        var gutter = !_compactOverlay && width >= 780 ? 44d : 16d;
+        foreach (var button in new[] { EpisodeDrawerButton, SubtitleButton, RateButton, PictureInPictureButton, FullscreenButton })
+            button.Width = button.Height = width < 760 ? 40 : 44;
+        TitleText.MaxWidth = Math.Max(80, Math.Min(320, width * .3));
+        StreamInfoButton.Visibility = !narrow ? Visibility.Visible : Visibility.Collapsed;
+        var gutter = _compactOverlay ? 16d : width < 760 ? 24d : 44d;
         var bottom = _compactOverlay ? 16d : 22d;
         ControlDock.Padding = new Thickness(gutter, 0, gutter, bottom);
         DockSurface.Margin = DockGradient.Margin = new Thickness(-gutter, 0, -gutter, -bottom);
-        TimelineHost.Margin = new Thickness(12, 0, 12, compact ? 112 : 60);
-        ChapterPreview.Margin = new Thickness(ChapterPreview.Margin.Left, 0, 0, compact ? 166 : 114);
+        TimelineHost.Margin = new Thickness(12, 0, 12, 60);
+        ChapterPreview.Margin = new Thickness(ChapterPreview.Margin.Left, 0, 0, 114);
         UpdatePlayerLayout();
     }
 
@@ -297,15 +314,15 @@ public sealed partial class PlayerView
     {
         var source = args.OriginalSource as DependencyObject;
         var point = args.GetCurrentPoint(PlayerMain).Position;
-        _pointerOnChrome = PlayerHeader.Visibility == Visibility.Visible && point.Y <= 64 || point.Y >= PlayerMain.ActualHeight - (_compactOverlay ? 60 : PlayerRoot.ActualWidth < 780 ? 166 : 114)
-            || IsWithin(source, SidePanel);
+        _pointerOnChrome = PlayerHeader.Visibility == Visibility.Visible && point.Y <= 48 || point.Y >= PlayerMain.ActualHeight - (_compactOverlay ? 60 : 132)
+            || IsWithin(source, SidePanel) || IsWithin(source, PlaybackInfoPanel);
         RevealControls();
     }
 
     private bool CanHideControls()
     {
         if (Visibility != Visibility.Visible || !IsLoaded || IsModalOpen || IsSettingsOpen
-            || _pointerOnChrome || _timelineDrag.IsActive || _keyboardTimelinePlaybackId is not null
+            || _pointerOnChrome || _captionPointerActive || _playbackInfoOpen || _timelineDrag.IsActive || _keyboardTimelinePlaybackId is not null
             || _preparationIntent == _playIntent
             || PlaybackNotice.IsOpen || _coordinator?.Status != PlaybackStatus.Playing
             || _engine?.Snapshot?.State != PlaybackEngineState.Playing) return false;
@@ -321,7 +338,8 @@ public sealed partial class PlayerView
         PlayerHeader.IsHitTestVisible = ControlDock.IsHitTestVisible = visible;
         if (AreControlsVisible != visible)
         {
-            if (new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
+            var animated = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
+            if (animated)
             {
                 foreach (var element in new FrameworkElement[] { PlayerHeader, ControlDock })
                 {
@@ -329,11 +347,13 @@ public sealed partial class PlayerView
                     var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
                     animation.InsertKeyFrame(0, visible ? 0 : 1);
                     animation.InsertKeyFrame(1, visible ? 1 : 0);
-                    animation.Duration = TimeSpan.FromMilliseconds(180);
+                    animation.Duration = TimeSpan.FromMilliseconds(350);
                     visual.StartAnimation("Opacity", animation);
                 }
             }
             AreControlsVisible = visible;
+            NativeSubtitleControlsVisibilityChanged(visible, animated);
+            ProtectedCursor = visible ? Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.Arrow) : null;
             UpdateSubtitleOverlayLayout();
             PresentationChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -361,7 +381,11 @@ public sealed partial class PlayerView
 
     private void VideoSurfaceClicked(object sender, RoutedEventArgs args)
     {
-        CloseSidePanel(restoreFocus: false);
+        if (_sidePanelMode != PlayerSidePanel.None) { CloseSidePanel(restoreFocus: false); return; }
+        if (_playbackInfoOpen) { ClosePlaybackInformation(); return; }
+        if (Stopwatch.GetTimestamp() < _suppressVideoClickUntil) return;
+        _videoTapTimer.Stop();
+        _videoTapTimer.Start();
         RevealControls();
     }
 
@@ -374,18 +398,28 @@ public sealed partial class PlayerView
             FullscreenRequested?.Invoke(this, EventArgs.Empty);
             return;
         }
-        // The video focus target is a Button, so the host deliberately leaves its keys to this view.
-        if (!IsSettingsOpen && !IsModalOpen && _session is not null && !_expiredReported && !_advancing
-            && !_retryInProgress && _preparationIntent != _playIntent
-            && ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), VideoFocusTarget))
+        // Consume routed keys before awaiting so the host cannot execute the same command twice.
+        var focused = FocusManager.GetFocusedElement(XamlRoot);
+        if (!args.Handled && IsPlaybackShortcutKey(args.Key) && !IsModalOpen && _openQuickFlyout is null
+            && (ReferenceEquals(focused, VideoFocusTarget)
+                || args.Key is not (VirtualKey.Space or VirtualKey.Left or VirtualKey.Right or VirtualKey.Up or VirtualKey.Down)
+                    && focused is not (TextBox or PasswordBox or ComboBox or Slider)))
         {
-            if (args.Key == VirtualKey.Space) { args.Handled = true; await TogglePauseAsync(); return; }
-            if (args.Key is VirtualKey.Left or VirtualKey.Right)
-            { args.Handled = true; await SeekRelativeAsync(args.Key == VirtualKey.Left ? -10 : 10); return; }
+            var control = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+            var shift = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+            var alt = (Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu) & Windows.UI.Core.CoreVirtualKeyStates.Down) != 0;
+            if (!alt && (!control || args.Key is VirtualKey.Left or VirtualKey.Right)
+                && (_sidePanelMode == PlayerSidePanel.None && !_playbackInfoOpen || args.Key == VirtualKey.I))
+            {
+                args.Handled = true;
+                await HandlePlaybackShortcutAsync(args.Key, control, shift);
+                return;
+            }
         }
         if (args.Handled || args.Key != VirtualKey.Escape) return;
         if (_openQuickFlyout is not null) { _openQuickFlyout.Hide(); args.Handled = true; }
         else if (_sidePanelMode != PlayerSidePanel.None) { CloseSidePanel(keyboard: true); args.Handled = true; }
+        else if (_playbackInfoOpen) { ClosePlaybackInformation(); args.Handled = true; }
     }
 
     private async void RewindClicked(object sender, RoutedEventArgs args) => await SeekRelativeAsync(-10);
@@ -394,6 +428,7 @@ public sealed partial class PlayerView
 
     private void QuickFlyoutOpening(object sender, object args)
     {
+        if (ReferenceEquals(sender, MoreMenu)) RebuildPlaybackContextMenu();
         _openQuickFlyout = sender as FlyoutBase;
         RevealControls();
     }
@@ -465,6 +500,7 @@ public sealed partial class PlayerView
     private void OpenSidePanel(PlayerSidePanel mode, Control trigger)
     {
         if (IsModalOpen) return;
+        ClosePlaybackInformation(restoreFocus: false);
         _openQuickFlyout?.Hide();
         RememberPanelFocus();
         if (mode != PlayerSidePanel.Settings && _retrySettingsDraft is not null) CancelRetrySettings();
@@ -477,8 +513,8 @@ public sealed partial class PlayerView
         QueuePanel.Visibility = mode == PlayerSidePanel.Queue ? Visibility.Visible : Visibility.Collapsed;
         TrackPanel.Visibility = mode == PlayerSidePanel.Tracks ? Visibility.Visible : Visibility.Collapsed;
         EpisodesPanel.Visibility = mode == PlayerSidePanel.Episodes ? Visibility.Visible : Visibility.Collapsed;
-        EpisodeSeasonHeading.Visibility = mode == PlayerSidePanel.Episodes ? Visibility.Visible : Visibility.Collapsed;
-        SidePanelTitle.Visibility = mode == PlayerSidePanel.Episodes ? Visibility.Collapsed : Visibility.Visible;
+        EpisodeSeasonHeading.Visibility = mode is PlayerSidePanel.Episodes or PlayerSidePanel.Queue ? Visibility.Visible : Visibility.Collapsed;
+        SidePanelTitle.Visibility = mode is PlayerSidePanel.Episodes or PlayerSidePanel.Queue ? Visibility.Collapsed : Visibility.Visible;
         SidePanelTitle.Text = LumenText.Get(mode == PlayerSidePanel.Queue ? "Queue" : _retrySettingsDraft is not null ? "Retry settings" : "Playback settings");
         RetrySettingsFooter.Visibility = mode == PlayerSidePanel.Settings && _retrySettingsDraft is not null ? Visibility.Visible : Visibility.Collapsed;
         UpdateSelectionPresentation();
@@ -497,6 +533,7 @@ public sealed partial class PlayerView
         SkipIntroButton.Visibility = NextEpisodeCountdown.Visibility = Visibility.Collapsed;
         DispatcherQueue.TryEnqueue(() => LocalizePlayerTree(SidePanel));
         UpdatePanelButtonStates();
+        UpdateDrawerTabs();
         RefreshChapterControls();
         AnimatePanelEntrance();
     }
@@ -558,6 +595,7 @@ public sealed partial class PlayerView
     {
         if (QueueList is null || QueueSummaryText is null) return;
         QueueSummaryText.Text = LumenText.Get("{0} queued items", _queue.Count);
+        UpdateDrawerTabs();
         QueueEmptyText.Visibility = _queue.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         QueueList.Visibility = _queue.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var index = QueueList.SelectedItem is PlaybackQueueEntry entry ? _queue.IndexOf(entry.EntryId) : -1;
@@ -565,8 +603,10 @@ public sealed partial class PlayerView
         QueueMoveDownButton.IsEnabled = index >= 0 && index < _queue.Count - 1;
         QueueRemoveButton.IsEnabled = index >= 0;
         QueueClearButton.IsEnabled = _queue.Count > 0;
-        QueueActions.Visibility = _queue.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        QueueFooter.Visibility = _sidePanelMode == PlayerSidePanel.Queue && _queue.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        QueueActions.Visibility = Visibility.Collapsed;
+        QueueFooter.Visibility = Visibility.Collapsed;
+        DrawerClearQueueButton.Visibility = _queue.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var entryId in _queueArtwork.Keys.Where(entryId => _queue.IndexOf(entryId) < 0).ToArray()) _queueArtwork.Remove(entryId);
         QueuePlayNextButton.IsEnabled = _queue.Count > 0 && CanStartQueuedItem();
         QueueNextDescription.Text = _queue.Next is { } head ? LumenText.Get("Starts {0}.", head.Title) : string.Empty;
         UpdateEpisodeControls();
@@ -647,6 +687,7 @@ public sealed partial class PlayerView
                 $"{entry.Title}, {QueueEntryDetail(entry.Item)}{(index == 0 ? ", " + LumenText.Get("Next in queue") : string.Empty)}"));
         if (container.ContentTemplateRoot is not { } templateRoot) return;
         var template = templateRoot.As<FrameworkElement>();
+        UpdateQueueArtwork(container, entry, template);
         if (template.FindName("OrderText") is { } order) order.As<TextBlock>().Text = index < 0 ? string.Empty : (index + 1).ToString();
         if (entry is not null && template.FindName("QueueDetailText") is { } detail) detail.As<TextBlock>().Text = QueueEntryDetail(entry.Item);
         if (template.FindName("NextText") is { } next)

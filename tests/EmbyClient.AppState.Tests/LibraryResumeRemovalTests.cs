@@ -424,7 +424,9 @@ public sealed class LibraryResumeRemovalTests
         Assert.Equal(48, original.Length);
         Assert.Equal(100, model.TotalItemsCount);
         Assert.DoesNotContain(original, card => card.Id == target.Id);
-        await context.OpenLibraryAsync([target]);
+        context.Catalog = [target];
+        await model.ShowShelfAsync(new MediaShelfViewModel("Recently added in Movies", false,
+            HomeSection.RecentlyAdded, "library-a"), TestContext.Current.CancellationToken);
         var libraryCard = Assert.Single(model.Items);
         await model.ShowItemAsync(libraryCard, TestContext.Current.CancellationToken);
         var detail = model.Detail;

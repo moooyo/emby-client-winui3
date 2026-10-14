@@ -77,7 +77,9 @@ public sealed partial class LumenDetailView
     private static string VideoRange(MediaStream? stream)
     {
         var extended = CleanVideoRange(stream?.ExtendedVideoSubTypeDescription);
-        return extended.Length > 0 ? extended : CleanVideoRange(stream?.VideoRange);
+        if (extended.Length > 0) return extended;
+        if (stream?.ExtendedVideoSubType?.StartsWith("DoviProfile", StringComparison.OrdinalIgnoreCase) == true) return "Dolby Vision";
+        return CleanVideoRange(stream?.VideoRange);
     }
 
     private static string CleanVideoRange(string? value)

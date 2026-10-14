@@ -31,11 +31,12 @@ internal static class PlaybackRequestFactory
         if (source.RequiresOpening == true) throw new PlaybackException("SourceNotOpened");
         ValidateTrack(source, selection.AudioStreamIndex, "Audio");
         ValidateTrack(source, selection.SubtitleStreamIndex, "Subtitle");
-        // The SDK defines VideoRange as an open string without defining profile-condition values.
-        // Force a fresh conversion with stream copy disabled for explicitly non-SDR source metadata.
-        // Missing metadata is not evidence of HDR support.
-        if (!selection.ForceTranscoding && (source.MediaStreams ?? []).Any(stream => IsType(stream, "Video")
-            && !string.IsNullOrWhiteSpace(stream.VideoRange) && !string.Equals(stream.VideoRange, "SDR", StringComparison.OrdinalIgnoreCase)))
+        var videoStreams = (source.MediaStreams ?? []).Where(stream => IsType(stream, "Video")).ToArray();
+        var hasHdr10Source = videoStreams.Any(Hdr10PlaybackPolicy.IsExplicitHdr10);
+        // An ineligible or unknown HDR input needs a new request with stream copy disabled, even if
+        // the first response offers a conversion URL. Only the captured window eligibility permits HDR10.
+        if (!selection.ForceTranscoding && (videoStreams.Any(stream => Hdr10PlaybackPolicy.RequiresServerConversion(stream, selection.Hdr10OutputEligible))
+            || hasHdr10Source && !Hdr10PlaybackPolicy.IsSupportedContainer(source.Container)))
             throw new PlaybackException("UnsupportedFormat");
         var audio = selection.AudioStreamIndex ?? source.DefaultAudioStreamIndex;
         var subtitle = selection.SubtitleStreamIndex ?? source.DefaultSubtitleStreamIndex;
@@ -121,7 +122,20 @@ internal static class PlaybackRequestFactory
             }
         }
 
+        // Source metadata can still describe the original embedded track after the selected conversion
+        // URL confirms server burn-in. That delivery must not enable or validate a native embedded track.
+        var confirmedBurnIn = method == PlaybackDeliveryMethod.Transcode
+            && string.Equals(GetQueryParameter(uri, "SubtitleMethod", rejectDuplicates: true), "Encode", StringComparison.OrdinalIgnoreCase);
+        var nativeEmbeddedSubtitle = !confirmedBurnIn
+            && string.Equals(subtitleStream?.DeliveryMethod, "Embed", StringComparison.OrdinalIgnoreCase);
+        if (nativeEmbeddedSubtitle && (subtitleStream is null
+            || !(selection.NativeEmbeddedSubtitlesEligible && NativeSubtitlePlaybackPolicy.IsSupportedEmbeddedBitmap(subtitleStream)
+                || selection.NativeAssSubtitlesEligible && NativeSubtitlePlaybackPolicy.IsSupportedEmbeddedAss(subtitleStream))
+            || !useDirect || !IsOriginalStaticDelivery(api, source, uri)))
+            throw new PlaybackException("UnsupportedSubtitle");
+
         Uri? subtitleUri = null;
+        string? subtitleFormat = null;
         IReadOnlyDictionary<string, string> subtitleHeaders = ReadOnlyDictionary<string, string>.Empty;
         if (subtitleStream is not null && string.Equals(subtitleStream.DeliveryMethod, "External", StringComparison.OrdinalIgnoreCase))
         {
@@ -133,10 +147,16 @@ internal static class PlaybackRequestFactory
             if (!string.IsNullOrWhiteSpace(subtitleStream.DeliveryUrl))
             {
                 subtitleUri = api.ResolveMediaUri(subtitleStream.DeliveryUrl);
+                var extension = Path.GetExtension(subtitleUri.AbsolutePath).TrimStart('.').ToLowerInvariant();
+                subtitleFormat = extension is "ass" or "ssa" ? extension : "vtt";
+                if (subtitleFormat is "ass" or "ssa" && !selection.NativeAssSubtitlesEligible)
+                    throw new PlaybackException("UnsupportedSubtitle");
             }
             else if (subtitleStream.IsTextSubtitleStream == true)
             {
-                subtitleUri = new Uri(api.ApiRoot, $"Videos/{Uri.EscapeDataString(selection.ItemId)}/{Uri.EscapeDataString(source.Id)}/Subtitles/{subtitleStream.Index.ToString(CultureInfo.InvariantCulture)}/Stream.vtt");
+                subtitleFormat = selection.NativeAssSubtitlesEligible && subtitleStream.Codec?.ToLowerInvariant() is "ass" or "ssa"
+                    ? subtitleStream.Codec!.ToLowerInvariant() : "vtt";
+                subtitleUri = new Uri(api.ApiRoot, $"Videos/{Uri.EscapeDataString(selection.ItemId)}/{Uri.EscapeDataString(source.Id)}/Subtitles/{subtitleStream.Index.ToString(CultureInfo.InvariantCulture)}/Stream.{subtitleFormat}");
             }
             else throw new PlaybackException("UnsupportedSubtitle");
             subtitleHeaders = BuildHeaders(api, subtitleUri, SameOrigin(uri, subtitleUri) ? source.RequiredHttpHeaders : null);
@@ -153,9 +173,17 @@ internal static class PlaybackRequestFactory
             InitialPositionTicks = initialPosition,
             TimelineOffsetTicks = offset,
             ItemRunTimeTicks = source.IsInfiniteStream == true ? null : source.RunTimeTicks,
+            RequiresHdr10Output = useDirect && selection.Hdr10OutputEligible && hasHdr10Source,
+            Hdr10OutputAllowed = !selection.ForceTranscoding && selection.Hdr10OutputEligible && hasHdr10Source,
+            NativeEmbeddedSubtitlesEligible = nativeEmbeddedSubtitle && selection.NativeEmbeddedSubtitlesEligible,
+            NativeAssSubtitlesEligible = selection.NativeAssSubtitlesEligible && !confirmedBurnIn,
+            NativeAudioPassthroughEligible = selection.NativeAudioPassthroughEligible && useDirect
+                && IsOriginalStaticDelivery(api, source, uri),
+            AudioPassthroughMode = method == PlaybackDeliveryMethod.Transcode ? AudioPassthroughMode.Off : selection.AudioPassthroughMode,
             AudioStreamIndex = audio,
             SubtitleStreamIndex = subtitle,
             ExternalSubtitleUri = subtitleUri,
+            ExternalSubtitleFormat = subtitleFormat,
             ExternalSubtitleHeaders = subtitleHeaders
         };
     }
@@ -177,6 +205,20 @@ internal static class PlaybackRequestFactory
     }
 
     private static bool IsType(MediaStream stream, string type) => string.Equals(stream.Type, type, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsOriginalStaticDelivery(EmbyApiClient api, MediaSourceInfo source, Uri uri)
+    {
+        if (!SameOrigin(api.ApiRoot, uri) || source.IsInfiniteStream == true
+            || !TryGetVideoResource(api.ApiRoot, uri, out var resource)
+            || !resource.Equals("stream", StringComparison.OrdinalIgnoreCase)
+                && !resource.Equals("stream." + source.Container, StringComparison.OrdinalIgnoreCase)) return false;
+        try
+        {
+            var original = GetQueryParameter(uri, "Static", rejectDuplicates: true);
+            return string.Equals(original, "true", StringComparison.OrdinalIgnoreCase) || original == "1";
+        }
+        catch (PlaybackException) { return false; }
+    }
 
     private static bool IsProtocol(string? actual, string expected) => string.IsNullOrWhiteSpace(actual)
         || string.Equals(actual, expected, StringComparison.OrdinalIgnoreCase);

@@ -7,7 +7,8 @@ namespace EmbyClient.App.Playback;
 public sealed record VideoDecodingSnapshot(bool HardwareRequested, string Decoder, bool HardwareFallback,
     string Codec, string? GpuName = null, uint? GpuVendorId = null, long? AdapterLuid = null,
     string RequestedApi = "Auto", string ActualApi = "Pending", string? FallbackReason = null,
-    string? NativeDecoderName = null, ulong DecodedFrames = 0, ulong HardwareDecodedFrames = 0);
+    string? NativeDecoderName = null, ulong DecodedFrames = 0, ulong HardwareDecodedFrames = 0,
+    bool HasFrameStatistics = false);
 
 public sealed partial class NativePlaybackEngine
 {
@@ -30,6 +31,7 @@ public sealed partial class NativePlaybackEngine
 
     private async Task CreateDecodedSourceAsync(Session session)
     {
+        await OnDispatcherAsync(() => BeginHdrConfiguration(session)).ConfigureAwait(false);
         Uri localUri;
         if (MediaDeliveryClassifier.IsHls(session.Request))
         {
@@ -68,7 +70,7 @@ public sealed partial class NativePlaybackEngine
                 // A missing extension must never silently execute D3D11 while presenting a vendor API selection.
                 config.Video.VideoDecoderMode = VideoDecoderMode.ForceFFmpegSoftwareDecoder;
             }
-            config.Video.HdrSupport = HdrSupport.Disabled;
+            var hdrWindowId = ApplyHdrConfiguration(session, config);
             config.General.MaxSupportedPlaybackRate = MaximumPlaybackRate;
             config.General.FastSeek = false;
             config.General.KeepMetadataOnMediaSourceClosed = false;
@@ -76,7 +78,7 @@ public sealed partial class NativePlaybackEngine
             // FFmpeg sees capability URLs only. Managed relays retain credentials and validate all upstream requests.
             config.FFmpegOptions.Add("protocol_whitelist", "http,tcp,crypto");
             config.FFmpegOptions.Add("rw_timeout", "15000000");
-            return FFmpegMediaSource.CreateFromUriAsync(localUri.AbsoluteUri, config).AsTask(session.Lifetime.Token);
+            return FFmpegMediaSource.CreateFromUriAsync(localUri.AbsoluteUri, config, hdrWindowId).AsTask(session.Lifetime.Token);
         }).ConfigureAwait(false);
         var decoder = await creation.ConfigureAwait(false);
         await OnDispatcherAsync(() =>
@@ -87,6 +89,9 @@ public sealed partial class NativePlaybackEngine
                 throw new OperationCanceledException(session.Lifetime.Token);
             }
             session.DecoderSource = decoder;
+            VerifyDecodedHdr10Source(session, decoder);
+            PrepareNativeEmbeddedSubtitles(session, decoder);
+            PrepareNativeAudioOutput(session, decoder);
             session.Item = decoder.CreateMediaPlaybackItem();
             session.MediaSource = session.Item.Source;
         }).ConfigureAwait(false);
@@ -99,6 +104,7 @@ public sealed partial class NativePlaybackEngine
         {
             var video = source.CurrentVideoStream;
             if (video is null) return;
+            RefreshHdrMetadataState(session, video);
             // Automatic mode initially reports software until the MF D3D11 device and first frame arrive.
             if (!session.IsOpened || session.NativeSession?.Position <= TimeSpan.Zero) return;
             var native = session.NativeDecoderConfigured ? VendorDecoderInterop.Read(source) : null;
@@ -129,7 +135,8 @@ public sealed partial class NativePlaybackEngine
             Volatile.Write(ref _videoDecoding, new VideoDecodingSnapshot(session.HardwareRequested, decoder,
                 fallback, codec, hardware ? native?.GpuName ?? gpu?.Name : null, hardware ? native?.VendorId ?? gpu?.VendorId : null,
                 hardware ? native?.AdapterLuid ?? gpu?.AdapterLuid : null, session.RequestedDecoderApi, actual, reason,
-                native?.CodecName, native?.DecodedFrameCount ?? 0, native?.HardwareFrameCount ?? 0));
+                native?.CodecName, native?.DecodedFrameCount ?? 0, native?.HardwareFrameCount ?? 0,
+                HasFrameStatistics: native is not null));
         }
         catch
         {

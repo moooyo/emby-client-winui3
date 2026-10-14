@@ -49,7 +49,7 @@ public sealed partial class PlayerView : UserControl
     public string PresentationSubtitle => PlaybackSubtitle(_item);
     public int QueueCount => _queue.Count;
     public bool IsQueueOpen => _queueDialog is not null || _sidePanelMode == PlayerSidePanel.Queue;
-    public bool IsSettingsOpen => _sidePanelMode != PlayerSidePanel.None || _openQuickFlyout is not null;
+    public bool IsSettingsOpen => _sidePanelMode != PlayerSidePanel.None || _openQuickFlyout is not null || _playbackInfoOpen;
 
     partial void ObservationClockTick();
     partial void ObservationPositionUpdate();
@@ -79,6 +79,7 @@ public sealed partial class PlayerView : UserControl
             UpdateRecoveryControls();
             UpdatePosition();
             UpdatePresentationClock();
+            RefreshHdrDisplayEligibilityWhenDue();
         };
         PopulateQualityOptions(_bitrate);
         UpdateSelectionPresentation();
@@ -88,6 +89,7 @@ public sealed partial class PlayerView : UserControl
     {
         await DisconnectAsync();
         _session = session;
+        ResetPlaybackPreferenceSession();
         _expiredReported = false;
         var engine = new NativePlaybackEngine(DispatcherQueue, VideoSurface,
             initialVolumeLevel: (int)Volume.Value, initialMuted: MuteButton.IsChecked == true);
@@ -95,6 +97,7 @@ public sealed partial class PlayerView : UserControl
         engine.MediaCommandRequested += SystemMediaCommandRequested;
         engine.EventReceived += EnginePlaybackStateChanged;
         engine.SubtitleTextChanged += NativeSubtitleTextChanged;
+        engine.SubtitleFrameChanged += NativeSubtitleImageFrameChanged;
         engine.Diagnostic += EngineDiagnosticReceived;
         _coordinator = new PlaybackCoordinator(session.Api, engine, new PlaybackCoordinatorOptions { EnableExternalWebVtt = true });
         _coordinator.StatusChanged += CoordinatorStatusChanged;
@@ -112,6 +115,7 @@ public sealed partial class PlayerView : UserControl
         UpdatePresentationClock();
         ActivateCaptionLayout();
         ApplyPreferences(_preferences);
+        await ConfigureIdlePlaybackPresentationAsync(session);
     }
 
     private void UpdatePresentationClock()
@@ -190,6 +194,7 @@ public sealed partial class PlayerView : UserControl
         QueueButton.IsEnabled = _session is not null && !IsModalOpen;
         DiagnosticsButton.IsEnabled = !IsModalOpen;
         UpdateQueuePanel();
+        UpdateTaskbarState();
         QueueChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -222,7 +227,6 @@ public sealed partial class PlayerView : UserControl
         var coordinator = _coordinator;
         if (session is null || coordinator is null || item.Id is null) return;
         var (intent, cancellationToken) = BeginPlayRequest(coordinator);
-        if (_item?.Id != item.Id) _subtitleDelay = 0;
         _preparationIntent = intent;
         ResetEpisodeNeighbors();
         StateText.Text = LumenText.Get("Loading item");
@@ -244,6 +248,12 @@ public sealed partial class PlayerView : UserControl
             async (detail, token) =>
             {
                 _item = detail;
+                _requestedPlaybackSourceId = mediaSourceId;
+                PlaybackItemPreparedForActivation(session, detail);
+                var explicitSubtitleIndex = PlaybackPreferenceRestorePolicy.ResolveSubtitleRequestIndex(
+                    subtitleStreamIndex, _preferences.SubtitleMode, isReplay: false);
+                var playbackPreferences = await PreparePlaybackPreferencesForItemAsync(session, item.Id, intent,
+                    explicitSubtitleIndex, token);
                 TitleText.Text = string.Equals(detail.Type, "Episode", StringComparison.OrdinalIgnoreCase)
                     ? detail.SeriesName ?? detail.Name ?? LumenText.Get("Now playing") : detail.Name ?? item.Name ?? LumenText.Get("Now playing");
                 EpisodeIdentityText.Text = PlaybackSubtitle(detail);
@@ -255,15 +265,16 @@ public sealed partial class PlayerView : UserControl
                 _notificationOwner.Arm(intent);
                 try
                 {
-                    await coordinator.PlayAsync(new PlaybackSelection
+                    await coordinator.PlayAsync(WithCurrentNativeCapabilities(new PlaybackSelection
                     {
                         ItemId = item.Id, StartPositionTicks = Math.Max(0, startPositionTicks),
                         MediaSourceId = mediaSourceId,
                         AudioStreamIndex = audioStreamIndex,
-                        SubtitleStreamIndex = subtitleStreamIndex ?? PreferredSubtitleIndex(detail, mediaSourceId, audioStreamIndex),
+                        SubtitleStreamIndex = PlaybackPreferenceRestorePolicy.ResolveInitialSubtitleIndex(playbackPreferences,
+                            explicitSubtitleIndex, PreferredSubtitleIndex(detail, mediaSourceId, audioStreamIndex)),
                         MaxStreamingBitrate = _bitrate,
                         ForceTranscoding = !_preferences.PreferDirectPlay
-                    }, token);
+                    }), token);
                 }
                 finally
                 {
@@ -330,6 +341,7 @@ public sealed partial class PlayerView : UserControl
             {
                 if (_displayedPlayback != context.PlaybackId) PopulateTracks(context);
                 UpdateStreamPresentation(context);
+                PresentDolbyVisionTranscode(context);
             }
             if (args.Status == PlaybackStatus.Failed)
             {
@@ -338,6 +350,7 @@ public sealed partial class PlayerView : UserControl
             }
             if (args.Status is PlaybackStatus.Ended or PlaybackStatus.Failed or PlaybackStatus.Idle)
                 Timeline.IsEnabled = false;
+            CaptureEndedClockPresentation(args, ticket);
             UpdatePosition();
             SetTransportAvailability(args.Status is PlaybackStatus.Playing or PlaybackStatus.Paused
                 or PlaybackStatus.Buffering or PlaybackStatus.Seeking);
@@ -346,9 +359,13 @@ public sealed partial class PlayerView : UserControl
             if (args.Status == PlaybackStatus.Failed && _sidePanelMode == PlayerSidePanel.Settings) BeginRetrySettings();
             UpdateRecoveryControls();
             UpdateStageStatus(args.Status);
+            PlaybackEndedOverlay.Visibility = args.Status == PlaybackStatus.Ended && !_compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+            UpdatePlaybackEndedPresentation();
+            if (args.Status == PlaybackStatus.Ended) LoadEndRecommendations();
             UpdateQueueControls();
             UpdatePresentationClock();
             UpdateChromeForPlaybackState();
+            _ = RefreshHdrDisplayEligibilityAsync();
             if (args.Status == PlaybackStatus.Ended && AutoPlayNext.IsOn && !TryScheduleEndedCountdown(ticket))
                 _ = AdvanceAsync(ticket);
         });
@@ -356,12 +373,25 @@ public sealed partial class PlayerView : UserControl
 
     private (long Intent, CancellationToken Token) BeginPlayRequest(PlaybackCoordinator coordinator, bool preserveRecovery = false)
     {
+        ClosePlayerToast();
+        BeginPlaybackPreferenceRequest();
         CancelRetrySettings();
         ClearPlaybackNotice();
         ClearTimelineInteraction();
         if (_sidePanelMode == PlayerSidePanel.Episodes) CloseSidePanel(restoreFocus: false);
         ResetEpisodeDrawer();
         ResetChapters();
+        _videoTapTimer.Stop();
+        ClosePlaybackInformation(restoreFocus: false);
+        PlaybackEndedOverlay.Visibility = Visibility.Collapsed;
+        ResetEndRecommendations();
+        _mediaArtworkPlaybackId = null;
+        _nextArtworkItemId = null;
+        _localSubtitleChoices.Clear();
+        _selectedLocalSubtitle = null;
+        _localSubtitleRestorePlaybackId = null;
+        _trackRowsSnapshots.Remove(SubtitleTrackItems);
+        ClearNativeSubtitleImage();
         ClearSubtitleOverlay();
         _preparationRetry = null;
         _preparationIntent = null;
@@ -432,8 +462,15 @@ public sealed partial class PlayerView : UserControl
             {
                 if (!ReferenceEquals(coordinator, _coordinator) || intent != _playIntent
                     || coordinator.Recovery?.RecoveryId != expected) return;
+                if (_session is { } activeSession && _item?.Id is { } itemId)
+                    await PreparePlaybackPreferencesForItemAsync(activeSession, itemId, intent,
+                        PlaybackPreferenceRestorePolicy.ResolveSubtitleRequestIndex(change?.SubtitleStreamIndex,
+                            _preferences.SubtitleMode, isReplay: false), token);
+                var retryChange = change ?? new PlaybackSelectionChange();
+                if (retryChange.SubtitleStreamIndex is null && _playbackPreferences.SubtitleSelection == PlaybackSubtitleSelection.Off)
+                    retryChange = retryChange with { SubtitleStreamIndex = -1 };
                 _notificationOwner.Arm(intent);
-                await coordinator.RetryAsync(expected, change ?? new PlaybackSelectionChange(), token);
+                await coordinator.RetryAsync(expected, WithCurrentNativeCapabilities(retryChange), token);
             });
         }
         finally
@@ -453,12 +490,21 @@ public sealed partial class PlayerView : UserControl
                 preparation.MediaSourceId, preparation.AudioStreamIndex, preparation.SubtitleStreamIndex);
         var coordinator = _coordinator;
         if (coordinator is null) return Task.CompletedTask;
+        var replay = CapturePlaybackPreferencesForReplay();
         var (intent, token) = BeginPlayRequest(coordinator);
         if (_item is { } item && _session is { } session) _ = ResolveEpisodeNeighborsAsync(item, session, intent, token);
         return RunAsync(async () =>
         {
+            if (_session is { } activeSession && _item?.Id is { } itemId)
+                await PreparePlaybackPreferencesForItemAsync(activeSession, itemId, intent,
+                    PlaybackPreferenceRestorePolicy.ResolveSubtitleRequestIndex(null, _preferences.SubtitleMode,
+                        isReplay: true), token, replay);
             _notificationOwner.Arm(intent);
-            await coordinator.ReplayAsync(token);
+            if (_playbackPreferences.SubtitleSelection == PlaybackSubtitleSelection.Off
+                && _lastPlaybackContext is { } last && last.Selection.ItemId == _item?.Id)
+                await coordinator.PlayAsync(WithCurrentNativeCapabilities(last.Selection with
+                { StartPositionTicks = 0, SubtitleStreamIndex = -1, ForceSubtitleBurnIn = false }), token);
+            else await coordinator.ReplayAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange()), token);
         });
     }
 
@@ -547,21 +593,29 @@ public sealed partial class PlayerView : UserControl
     private void UpdatePosition()
     {
         ObservationPositionUpdate();
+        UpdateRefreshRatePlayback();
         if (_preparationIntent == _playIntent) return;
         var context = _coordinator?.ActiveContext;
         if (context is null)
         {
             ClearTimelineInteraction();
-            Timeline.Value = 0;
-            PositionText.Text = FormatTime(0);
-            DurationText.Text = FormatTime(0);
+            if (!TryPresentEndedClock())
+            {
+                Timeline.Value = 0;
+                PositionText.Text = FormatTime(0);
+                DurationText.Text = FormatTime(0);
+            }
             Timeline.IsEnabled = RewindButton.IsEnabled = ForwardButton.IsEnabled = false;
             RefreshChapterControls();
+            UpdateTaskbarState();
             return;
         }
         _engine?.UpdateMediaControls(context, _coordinator!.Status, TitleText.Text);
+        UpdateMediaControlsPresentation(context);
+        UpdateStreamPresentation(context);
         var duration = context.Source.RunTimeTicks;
-        PositionText.Text = FormatTime(context.PositionTicks);
+        PositionText.Text = _showRemainingTime && duration is > 0
+            ? "-" + FormatTime(Math.Max(0, duration.Value - context.PositionTicks)) : FormatTime(context.PositionTicks);
         DurationText.Text = duration.HasValue ? FormatTime(duration.Value) : LumenText.Get("Live");
         RateText.Text = FormatPlaybackRate(_engine?.PlaybackRate ?? 1);
         RateButton.IsEnabled = _engine?.SupportsPlaybackRate == true
@@ -579,7 +633,11 @@ public sealed partial class PlayerView : UserControl
             Timeline.Value = Math.Clamp(context.PositionTicks / (double)TimeSpan.TicksPerSecond, 0, Timeline.Maximum);
         }
         UpdateChapterPosition(context);
+        RestorePlaybackPreferencesForContext(context);
         UpdateSubtitleControls();
+        RestoreLocalSubtitleForContext(context);
+        UpdatePlaybackInformation();
+        UpdateTaskbarState();
     }
 
     private void EnginePlaybackStateChanged(object? sender, PlaybackEngineEventArgs args)
@@ -589,11 +647,15 @@ public sealed partial class PlayerView : UserControl
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!ReferenceEquals(sender, _engine)) return;
+            UpdateRefreshRatePlayback();
+            ObservePlaybackPreferenceSnapshot(args.Snapshot);
             UpdateDisplayRequest(args.Snapshot.PlaybackId);
             UpdatePresentationClock();
             UpdateChromeForPlaybackState();
             UpdateSubtitleControls();
             if (_coordinator?.ActiveContext is { } context) UpdateStreamPresentation(context);
+            if (_coordinator?.ActiveContext?.PlaybackId == args.Snapshot.PlaybackId)
+                _ = RefreshHdrDisplayEligibilityAsync();
         });
     }
 
@@ -618,14 +680,15 @@ public sealed partial class PlayerView : UserControl
     {
         var coordinator = _coordinator;
         if (!ReferenceEquals(sender, _engine) || coordinator?.ActiveContext?.PlaybackId != args.PlaybackId) return;
+        if (args.Command is NativeMediaCommand.Previous or NativeMediaCommand.Next)
+        {
+            await ChangeEpisodeWithFeedbackAsync(args.Command == NativeMediaCommand.Previous);
+            return;
+        }
         if (args.Command == NativeMediaCommand.Stop)
         {
-            ClearTimelineInteraction();
-            _preparationRetry = null;
-            _preparationIntent = null;
-            _notificationOwner.BeginStop(coordinator, ++_playIntent, args.PlaybackId);
-            _retryRecoveryId = null;
-            UpdateRecoveryControls();
+            await StopAsync();
+            return;
         }
         await RunAsync(async () =>
         {
@@ -638,10 +701,6 @@ public sealed partial class PlayerView : UserControl
                     break;
                 case NativeMediaCommand.Pause:
                     await coordinator.PauseAsync(args.PlaybackId);
-                    break;
-                case NativeMediaCommand.Stop:
-                    _displayRequest.Suspend();
-                    await coordinator.StopAsync(args.PlaybackId);
                     break;
                 case NativeMediaCommand.Seek when args.PositionTicks is { } ticks:
                     await coordinator.SeekAsync(args.PlaybackId, ticks);
@@ -714,6 +773,7 @@ public sealed partial class PlayerView : UserControl
         var coordinator = _coordinator;
         if (coordinator is null || _session is null || _expiredReported || _advancing || _retryInProgress
             || IsModalOpen || _preparationIntent == _playIntent) return;
+        var previousStatus = coordinator.Status;
         if (_preparationRetry is not null)
         {
             await ReplayCurrentAsync();
@@ -734,6 +794,9 @@ public sealed partial class PlayerView : UserControl
         else if (coordinator.Status is PlaybackStatus.Playing or PlaybackStatus.Buffering or PlaybackStatus.Seeking
             && coordinator.ActiveContext is { } playing)
             await coordinator.PauseAsync(playing.PlaybackId);
+        if (ReferenceEquals(coordinator, _coordinator) && previousStatus != coordinator.Status
+            && coordinator.Status is PlaybackStatus.Playing or PlaybackStatus.Paused)
+            ShowPlaybackFlash(coordinator.Status == PlaybackStatus.Playing);
     });
 
     public Task SeekRelativeAsync(int seconds) => RunAsync(async () =>
@@ -743,6 +806,9 @@ public sealed partial class PlayerView : UserControl
             || _preparationIntent == _playIntent || coordinator?.ActiveContext is not { CanSeek: true } context) return;
         await coordinator.SeekAsync(context.PlaybackId,
             Math.Max(0, checked(context.PositionTicks + seconds * TimeSpan.TicksPerSecond)));
+        if (ReferenceEquals(coordinator, _coordinator))
+            ShowPlayerOsd(seconds < 0 ? "skip_back_10_24_regular" : "skip_forward_30_24_regular",
+                LumenText.Get(seconds < 0 ? "Back {0} seconds" : "Forward {0} seconds", Math.Abs(seconds)));
     });
 
     private async void ReplayClicked(object sender, RoutedEventArgs args) => await ReplayCurrentAsync();
@@ -750,19 +816,34 @@ public sealed partial class PlayerView : UserControl
     private async void VolumeChanged(object sender, RangeBaseValueChangedEventArgs args)
     {
         if (_updating || _coordinator is null) return;
-        await RunAsync(() => _coordinator.SetVolumeAsync((int)args.NewValue, MuteButton.IsChecked == true));
+        var coordinator = _coordinator;
+        MuteButton.IsChecked = args.NewValue <= 0;
+        UpdateVolumeIcon();
+        await RunAsync(() => coordinator.SetVolumeAsync((int)args.NewValue, args.NewValue <= 0));
+        if (ReferenceEquals(coordinator, _coordinator))
+        {
+            SavePlaybackPreferences();
+            ShowPlayerOsd("speaker_2_24_regular", $"{(int)args.NewValue}%", args.NewValue);
+        }
     }
 
     private async void MuteClicked(object sender, RoutedEventArgs args)
     {
         var muted = MuteButton.IsChecked == true;
-        VolumeButton.Content = PlayerIcon("speaker_2_24_regular");
-        VolumeButton.Opacity = muted ? 0.5 : 1;
-        SetControlLabel(MuteButton, muted ? "Unmute" : "Mute");
+        if (!muted && Volume.Value <= 0)
+        {
+            var wasUpdating = _updating;
+            _updating = true;
+            Volume.Value = 40;
+            _updating = wasUpdating;
+        }
+        UpdateVolumeIcon();
         await RunAsync(async () =>
         {
             if (_coordinator is not null) await _coordinator.SetVolumeAsync((int)Volume.Value, muted);
         });
+        SavePlaybackPreferences();
+        ShowPlayerOsd("speaker_2_24_regular", muted ? LumenText.Get("Mute") : $"{(int)Volume.Value}%", muted ? 0 : Volume.Value);
     }
 
     private async void SourceChanged(object sender, SelectionChangedEventArgs args)
@@ -770,10 +851,11 @@ public sealed partial class PlayerView : UserControl
         if (TryChangeRetrySource()) return;
         if (_updating || _coordinator?.ActiveContext is not { } context
             || SourceSelector.SelectedItem is not ComboBoxItem { Tag: string source } || source == context.Source.Id) return;
-        await RunAsync(() => _coordinator.ChangeSelectionAsync(new PlaybackSelectionChange
+        await RunAsync(() => _coordinator.ChangeSelectionAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange
         {
-            MediaSourceId = source, MaxStreamingBitrate = _bitrate
-        }));
+            MediaSourceId = source, MaxStreamingBitrate = _bitrate,
+            SubtitleStreamIndex = _selectedLocalSubtitle is not null ? -1 : null
+        })));
     }
 
     private async void AudioChanged(object sender, SelectionChangedEventArgs args)
@@ -781,7 +863,10 @@ public sealed partial class PlayerView : UserControl
         if (!_updating && _retrySettingsDraft is { } draft && AudioSelector.SelectedItem is ComboBoxItem { Tag: int selected })
         { _retrySettingsDraft = draft with { AudioStreamIndex = selected }; return; }
         if (_updating || _coordinator?.ActiveContext is null || AudioSelector.SelectedItem is not ComboBoxItem { Tag: int index }) return;
-        await RunAsync(() => _coordinator.ChangeSelectionAsync(new PlaybackSelectionChange { AudioStreamIndex = index }));
+        await RunAsync(() => _coordinator.ChangeSelectionAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange
+        {
+            AudioStreamIndex = index, SubtitleStreamIndex = _selectedLocalSubtitle is not null ? -1 : null
+        })));
     }
 
     private async void SubtitleChanged(object sender, SelectionChangedEventArgs args)
@@ -791,9 +876,15 @@ public sealed partial class PlayerView : UserControl
         var coordinator = _coordinator;
         var playbackId = coordinator?.ActiveContext?.PlaybackId;
         if (_updating || playbackId is null || SubtitleSelector.SelectedItem is not ComboBoxItem { Tag: int index }) return;
-        if (_localSubtitleName is not null) await ClearCurrentLocalSubtitleAsync();
+        var intent = _playIntent;
+        BeginExplicitSubtitleSelection();
+        if (index == -1 || _localSubtitleName is not null || _selectedLocalSubtitle is not null)
+            await ClearCurrentLocalSubtitleAsync();
         if (!ReferenceEquals(coordinator, _coordinator) || coordinator!.ActiveContext?.PlaybackId != playbackId) return;
-        await RunAsync(() => coordinator.ChangeSelectionAsync(new PlaybackSelectionChange { SubtitleStreamIndex = index }));
+        await RunAsync(() => coordinator.ChangeSelectionAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange { SubtitleStreamIndex = index })));
+        if (ReferenceEquals(coordinator, _coordinator) && intent == _playIntent
+            && coordinator.ActiveContext?.Selection.SubtitleStreamIndex == index)
+            RememberServerSubtitleSelection(index);
     }
 
     private async void QualityChanged(object sender, SelectionChangedEventArgs args)
@@ -804,7 +895,10 @@ public sealed partial class PlayerView : UserControl
         if (_session?.User.Policy?.RemoteClientBitrateLimit is long limit && limit > 0) _bitrate = Math.Min(_bitrate, limit);
         UpdateSelectionPresentation();
         if (_coordinator?.ActiveContext is not null)
-            await RunAsync(() => _coordinator.ChangeSelectionAsync(new PlaybackSelectionChange { MaxStreamingBitrate = _bitrate }));
+            await RunAsync(() => _coordinator.ChangeSelectionAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange
+            {
+                MaxStreamingBitrate = _bitrate, SubtitleStreamIndex = _selectedLocalSubtitle is not null ? -1 : null
+            })));
     }
 
     private async void NextClicked(object sender, RoutedEventArgs args)
@@ -870,6 +964,9 @@ public sealed partial class PlayerView : UserControl
         var intent = _playIntent;
         try { await operation(); }
         catch (Exception) when (!ReferenceEquals(owner, _coordinator) || intent != _playIntent) { }
+        catch (PlaybackException ex) when (owner?.Status != PlaybackStatus.Failed && ex.ErrorCode is "AudioDelayNotSupported"
+            or "SubtitleFrameRateUnavailable" or "UnsupportedSubtitle" or "SubtitlePreferencesNotSupported" or "PlaybackRateNotSupported")
+        { ShowOperationError(ex); }
         catch (PlaybackException ex) { ShowPlaybackError(ex.ErrorCode); }
         catch (EmbyApiException ex) when (ex.IsAuthenticationFailure && ex.ApplicationErrorCode != "ParentalControl")
         { ReportExpiredSession(); }
@@ -887,10 +984,14 @@ public sealed partial class PlayerView : UserControl
     {
         if (code is "AuthenticationExpired" or "AuthenticationRequired") { ReportExpiredSession(); return; }
         PlaybackNotice.Severity = InfoBarSeverity.Error;
-        PlaybackNotice.Title = LumenText.Get("Playback interrupted");
+        var unavailableDolbyVision = (code is "NoCompatibleSource" or "NoCompatibleTranscode" or "NoCompatibleStream"
+            or "NotAllowed" or "UnsupportedFormat" or "NegotiationRejected") && IsUnavailableDolbyVisionTranscode();
+        PlaybackNotice.Title = LumenText.Get(unavailableDolbyVision ? "Cannot play this version" : "Playback interrupted");
         PlaybackNotice.IsClosable = false;
         PlaybackNoticeHost.VerticalAlignment = VerticalAlignment.Stretch;
-        PlaybackNotice.Message = LumenText.Get(code switch
+        PlaybackNotice.Message = LumenText.Get(unavailableDolbyVision
+            ? "Dolby Vision P5 requires server transcoding, but this account does not allow video transcoding. Choose a compatible version."
+            : code switch
         {
             "NoCompatibleSource" or "NoCompatibleTranscode" => "The server has no compatible stream for these playback settings.",
             "NegotiationRejected" => "The server did not allow this playback. Check your account permissions and playback settings.",
@@ -911,6 +1012,19 @@ public sealed partial class PlayerView : UserControl
 
     private void ShowOperationError(Exception exception)
     {
+        if (exception is PlaybackException playback && playback.ErrorCode is "SubtitleFrameRateUnavailable" or "AudioDelayNotSupported"
+            or "UnsupportedSubtitle" or "SubtitlePreferencesNotSupported" or "PlaybackRateNotSupported")
+        {
+            ShowPlayerOsd("closed_caption_24_regular", LumenText.Get(playback.ErrorCode switch
+            {
+                "SubtitleFrameRateUnavailable" => "This SUB file requires a known video frame rate",
+                "AudioDelayNotSupported" => "Audio delay is unavailable for this stream",
+                "PlaybackRateNotSupported" => "Playback speed is unavailable for this stream",
+                "SubtitlePreferencesNotSupported" => "Subtitle timing is unavailable for this track",
+                _ => "This subtitle file could not be loaded"
+            }));
+            return;
+        }
         if (_coordinator?.Status == PlaybackStatus.Failed && PlaybackNotice.IsOpen && PlaybackNotice.Severity == InfoBarSeverity.Error) return;
         PlaybackNotice.Title = LumenText.Get(_preparationRetry is null ? "Playback operation failed" : "Unable to load media");
         PlaybackNotice.Message = LumenText.Get(UiErrors.Describe(exception));
@@ -932,7 +1046,10 @@ public sealed partial class PlayerView : UserControl
 
     public Task StopAsync()
     {
+        ClosePlayerToast();
+        BeginPlaybackPreferenceRequest();
         ResetChapters();
+        ClearNativeSubtitleImage();
         ClearSubtitleOverlay();
         CloseSidePanel(restoreFocus: false);
         RevealControls();
@@ -947,11 +1064,19 @@ public sealed partial class PlayerView : UserControl
         if (coordinator is not null) _notificationOwner.BeginStop(coordinator, intent, coordinator.ActiveContext?.PlaybackId);
         else _notificationOwner.Invalidate(intent);
         _playRequest?.Cancel();
-        return RunAsync(async () => { if (coordinator is not null) await coordinator.StopAsync(); });
+        return RunAsync(async () =>
+        {
+            await _playbackPreferenceWrite;
+            if (coordinator is not null && ReferenceEquals(coordinator, _coordinator) && intent == _playIntent)
+                await coordinator.StopAsync();
+        });
     }
 
     public async Task DisconnectAsync()
     {
+        BeginPlaybackPreferenceRequest();
+        ClearNativeSubtitleImage();
+        ClearIdlePlaybackPresentation();
         InvalidateCaptionLayout();
         _chromeTimer.Stop();
         ResetEpisodeDrawer();
@@ -982,10 +1107,16 @@ public sealed partial class PlayerView : UserControl
             engine.MediaCommandRequested -= SystemMediaCommandRequested;
             engine.EventReceived -= EnginePlaybackStateChanged;
             engine.SubtitleTextChanged -= NativeSubtitleTextChanged;
+            engine.SubtitleFrameChanged -= NativeSubtitleImageFrameChanged;
         }
         _coordinator = null;
         _session = null;
+        _hdrDisplayConversionId = null;
+        _nextHdrDisplayEligibilityRefresh = 0;
+        ReadCurrentNativeCapabilities();
+        UpdateRefreshRatePlayback();
         UpdateQueueControls();
+        await _playbackPreferenceWrite;
         if (coordinator is not null)
         {
             coordinator.StatusChanged -= CoordinatorStatusChanged;
@@ -1000,12 +1131,24 @@ public sealed partial class PlayerView : UserControl
             }
         }
         _item = null;
+        ResetPlaybackPreferenceSession();
         _subtitleDelay = 0;
+        _localSubtitleChoices.Clear();
+        _selectedLocalSubtitle = null;
+        _localSubtitleRestorePlaybackId = null;
+        _mediaArtworkPlaybackId = null;
+        _nextArtworkItemId = null;
+        _playerArtworkCache.Clear();
+        _queueArtwork.Clear();
+        _pendingQueueArtwork.Clear();
+        NextEpisodeArtwork.Source = null;
+        ResetV2Interaction();
         _lastPlaybackContext = null;
         ResetEpisodeNeighbors();
         _displayedPlayback = null;
         QueueNowPlayingText.Text = LumenText.Get("No active playback");
         PresentationChanged?.Invoke(this, EventArgs.Empty);
+        UpdateTaskbarState();
         _chromeTimer.Stop();
     }
 

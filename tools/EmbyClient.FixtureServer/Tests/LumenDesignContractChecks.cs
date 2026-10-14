@@ -17,6 +17,10 @@ internal static class LumenDesignContractChecks
         var info = await JsonAsync("/emby/System/Info/Public");
         check(info.GetProperty("Id").GetString() == "synthetic-lumen-design-server-0001",
             "Design acceptance has its own synthetic identity and does not reuse the functional catalog's identity.");
+        var publicUsers = await JsonAsync("/emby/Users/Public");
+        check(Items(publicUsers) is [var publicUser] && publicUser.GetProperty("Name").GetString() == "demo"
+            && publicUser.GetProperty("HasPassword").GetBoolean(),
+            "The design public user advertises its real fixed login name without inventing a passwordless account.");
 
         var movies = await JsonAsync(UserPath + "/Items?ParentId=movies&IncludeItemTypes=Movie&Limit=100");
         var series = await JsonAsync(UserPath + "/Items?ParentId=shows&IncludeItemTypes=Series&Limit=100");
@@ -26,6 +30,47 @@ internal static class LumenDesignContractChecks
             "Movie wall ordering follows the handoff's stable pinyin-initial sequence.");
         check(Ids(series).Take(10).SequenceEqual(["3600", "5000", "3400", "4200", "2800", "3800", "4800", "4000", "2000", "5400"]),
             "Series wall ordering follows the handoff's stable pinyin-initial sequence.");
+        var views = await JsonAsync(UserPath + "/Views");
+        check(Ids(views).SequenceEqual(["movies", "shows", "design-4k", "design-mystery", "design-family", "design-recent", "collections"])
+            && views.GetProperty("TotalRecordCount").GetInt32() == 7,
+            "V2 navigation receives seven ordered real API views, including enough libraries to exercise overflow.");
+        var expectedLibraries = new[]
+        {
+            (Id: "design-mystery", Movies: 7, Series: 7,
+                Members: new[] { "1001", "1005", "1008", "1013", "1014", "1015", "1022", "2000", "2200", "2800", "3000", "3400", "4400", "5000" }),
+            (Id: "design-family", Movies: 2, Series: 2, Members: new[] { "1007", "1025", "4200", "5200" }),
+            (Id: "design-recent", Movies: 6, Series: 4, Members: new[] { "1001", "1004", "1012", "1024", "1027", "1029", "2200", "2400", "4200", "5400" })
+        };
+        foreach (var expected in expectedLibraries)
+        {
+            var members = await JsonAsync(UserPath + "/Items?ParentId=" + expected.Id + "&IncludeItemTypes=Movie,Series&Recursive=true&Limit=100");
+            var view = Items(views).Single(item => item.GetProperty("Id").GetString() == expected.Id);
+            check(Ids(members).ToHashSet(StringComparer.Ordinal).SetEquals(expected.Members)
+                && members.GetProperty("TotalRecordCount").GetInt32() == expected.Members.Length
+                && view.GetProperty("ChildCount").GetInt32() == expected.Members.Length
+                && view.GetProperty("MovieCount").GetInt32() == expected.Movies
+                && view.GetProperty("SeriesCount").GetInt32() == expected.Series,
+                "V2 library membership and displayed counts agree for " + expected.Id + ".");
+        }
+        var fourK = await JsonAsync(UserPath + "/Items?ParentId=design-4k&IncludeItemTypes=Movie,Series&Recursive=true&Limit=100");
+        check(Items(fourK).Length == 0 && fourK.GetProperty("TotalRecordCount").GetInt32() == 0
+            && Items(views).Single(item => item.GetProperty("Id").GetString() == "design-4k").GetProperty("ChildCount").GetInt32() == 0,
+            "The 4K library stays empty for the measured 720p fixture instead of fabricating UHD sources.");
+        var recentSeries = await JsonAsync(UserPath + "/Items/Latest?ParentId=design-recent&IncludeItemTypes=Series&Limit=20");
+        check(Ids(recentSeries).SequenceEqual(["2200", "2400", "5400", "4200"]),
+            "A dynamic library scopes descendant episodes before grouped latest-series results are selected.");
+        var familyGenres = await JsonAsync("/emby/Genres?UserId=synthetic-user-demo&ParentId=design-family&IncludeItemTypes=Movie,Series&Limit=50");
+        check(Items(familyGenres).Select(item => item.GetProperty("Name").GetString()).ToHashSet(StringComparer.Ordinal)
+                .SetEquals(["\u559c\u5267", "\u5bb6\u5ead"]),
+            "The genre facet follows dynamic library membership without leaking unrelated categories.");
+        var genreSearch = await JsonAsync(UserPath + "/Items?ParentId=design-family&IncludeItemTypes=Movie,Series&SearchTerm="
+            + Uri.EscapeDataString("\u5bb6\u5ead") + "&Limit=100");
+        check(Ids(genreSearch).ToHashSet(StringComparer.Ordinal).SetEquals(["1025", "4200"]),
+            "V2 search matches genre labels inside the selected API library scope.");
+        var actorSearch = await JsonAsync(UserPath + "/Items?ParentId=design-family&IncludeItemTypes=Movie,Series&SearchTerm="
+            + Uri.EscapeDataString("\u6797\u590f") + "&Limit=100");
+        check(Ids(actorSearch).ToHashSet(StringComparer.Ordinal).SetEquals(["1007", "1025", "4200", "5200"]),
+            "V2 search finds actual fixture credits while retaining the selected library scope.");
         var movie = await JsonAsync(UserPath + "/Items/1001");
         var show = await JsonAsync(UserPath + "/Items/2000");
         check(movie.GetProperty("Name").GetString() == "\u5760\u843d\u4e4b\u5730"
@@ -119,6 +164,8 @@ internal static class LumenDesignContractChecks
             "Design negotiation still streams the exact generated fixture bytes.");
         await ImageAsync("1001", "Primary", "p/515");
         await ImageAsync("1001", "Backdrop", "b/515");
+        await ImageAsync("1005", "Backdrop", "b/515");
+        await ImageAsync("1009", "Thumb", "s/778");
         await ImageAsync("2115", "Primary", "s/541");
         await ImageAsync("2213", "Primary", "s/797");
         await ImageAsync("2418", "Primary", "s/666");
@@ -159,8 +206,8 @@ internal static class LumenDesignContractChecks
             "443", "447", "453", "494", "515", "525", "541", "543", "545", "556", "563", "579", "58", "581", "594", "633", "639", "655",
             "660", "666", "670", "683", "685", "726", "729", "757", "778", "786", "797", "804", "826", "832", "838"
         ];
-        string[] backdrops = ["227", "249", "515", "525", "541", "666", "683", "797"];
-        string[] thumbs = ["158", "227", "249", "293", "404", "515", "525", "541", "552", "581", "594", "598", "612", "639", "655", "666", "683", "700", "797", "804", "841"];
+        string[] backdrops = ["249", "515", "541", "666", "683", "797"];
+        var thumbs = posters.Concat(["158", "293", "552", "598", "612", "700", "841"]).Distinct(StringComparer.Ordinal).ToArray();
         var result = new Dictionary<string, byte[]>(StringComparer.Ordinal);
         foreach (var (kind, keys) in new[] { ("p", posters), ("b", backdrops), ("s", thumbs) })
         {

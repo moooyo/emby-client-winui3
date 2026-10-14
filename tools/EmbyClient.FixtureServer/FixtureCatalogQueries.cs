@@ -89,8 +89,7 @@ internal sealed partial class FixtureState
             IEnumerable<BaseItemDto> scope = _items.Values.Where(item => item.Type is "Movie" or "Series" or "Episode");
             var parent = Value(query, "ParentId");
             if (!string.IsNullOrEmpty(parent))
-                scope = _collectionMembers.TryGetValue(parent, out var members) ? scope.Where(item => members.Contains(item.Id!))
-                    : scope.Where(item => IsDescendant(item, parent));
+                scope = ScopeToParent(scope, parent, recursive: true);
             var types = Values(query, "IncludeItemTypes");
             if (types.Length > 0) scope = scope.Where(item => types.Contains(item.Type, StringComparer.OrdinalIgnoreCase));
             scope = ApplyMediaFilters(scope, query);
@@ -102,10 +101,22 @@ internal sealed partial class FixtureState
         }
     }
 
+    private IEnumerable<BaseItemDto> ScopeToParent(IEnumerable<BaseItemDto> items, string parent, bool recursive)
+    {
+        if (_designViewMembers.TryGetValue(parent, out var viewMembers))
+            return items.Where(item => viewMembers.Contains(item.Id!)
+                || recursive && item.SeriesId is { } seriesId && viewMembers.Contains(seriesId));
+        if (_collectionMembers.TryGetValue(parent, out var collectionMembers))
+            return items.Where(item => collectionMembers.Contains(item.Id!));
+        return recursive ? items.Where(item => IsDescendant(item, parent)) : items.Where(item => item.ParentId == parent);
+    }
+
     private bool MatchesSearch(BaseItemDto item, string search) => item.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) == true
         || Options.LumenCatalog && (item.OriginalTitle?.Contains(search, StringComparison.OrdinalIgnoreCase) == true
             || item.Overview?.Contains(search, StringComparison.OrdinalIgnoreCase) == true
-            || item.Tags?.Any(tag => tag.Contains(search, StringComparison.OrdinalIgnoreCase)) == true);
+            || item.Tags?.Any(tag => tag.Contains(search, StringComparison.OrdinalIgnoreCase)) == true)
+        || Options.LumenDesignCatalog && (item.Genres?.Any(genre => genre.Contains(search, StringComparison.OrdinalIgnoreCase)) == true
+            || item.People?.Any(person => person.Name?.Contains(search, StringComparison.OrdinalIgnoreCase) == true) == true);
 
     private IEnumerable<BaseItemDto> ApplyMediaFilters(IEnumerable<BaseItemDto> items, IQueryCollection query)
     {

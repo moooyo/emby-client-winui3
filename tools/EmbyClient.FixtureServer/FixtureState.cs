@@ -90,7 +90,7 @@ internal sealed partial class FixtureState
 
     public UserDto User => new()
     {
-        Id = UserId, Name = "demo (synthetic)", ServerId = ServerId, HasPassword = true,
+        Id = UserId, Name = Options.LumenDesignCatalog ? "demo" : "demo (synthetic)", ServerId = ServerId, HasPassword = true,
         PrimaryImageTag = Options.LumenCatalog ? "synthetic-user-v1" : "synthetic-poster-v1",
         Configuration = _configuration,
         Policy = new UserPolicy
@@ -169,7 +169,8 @@ internal sealed partial class FixtureState
 
     public QueryResult<BaseItemDto> Views()
     {
-        var views = Options.LumenCatalog ? new[] { Item("movies")!, Item("shows")!, Item("collections")! }
+        var views = Options.LumenDesignCatalog ? DesignViewOrder.Select(id => Item(id)!).ToArray()
+            : Options.LumenCatalog ? new[] { Item("movies")!, Item("shows")!, Item("collections")! }
             : Options.LargeLibraryItems > 0 ? new[] { Item("movies")!, Item("shows")!, Item("large-movies")! }
             : [Item("movies")!, Item("shows")!];
         return new QueryResult<BaseItemDto> { Items = views, TotalRecordCount = views.Length };
@@ -185,10 +186,7 @@ internal sealed partial class FixtureState
             var parent = parentOverride ?? Value(query, "ParentId");
             if (!string.IsNullOrEmpty(parent))
             {
-                items = _collectionMembers.TryGetValue(parent, out var members) ? items.Where(item => members.Contains(item.Id!))
-                    : forceRecursive || Boolean(query, "Recursive") == true
-                    ? items.Where(item => IsDescendant(item, parent))
-                    : items.Where(item => item.ParentId == parent);
+                items = ScopeToParent(items, parent, forceRecursive || Boolean(query, "Recursive") == true);
             }
             var types = typeOverride is null ? Values(query, "IncludeItemTypes") : typeOverride.Split(',');
             if (Options.LumenCatalog && operation == "Latest")
@@ -325,6 +323,16 @@ internal sealed partial class FixtureState
                 Events = _events.ToArray(), LargeLibraryItems = Options.LargeLibraryItems, CatalogItems = _items.Count,
                 ServerId = ServerId, LumenCatalog = Options.LumenCatalog, LumenDesignCatalog = Options.LumenDesignCatalog, ExternalArtwork = _artwork is not null,
                 ExternalSubtitleConfigured = Options.Subtitle is not null, ExternalSubtitleSha256 = Options.Subtitle?.Sha256,
+                EmbeddedPgsConfigured = Options.EmbeddedPgs, MediaContainer = Options.EmbeddedPgs ? "mkv" : "mp4",
+                EmbeddedPgsMediaSha256 = Options.EmbeddedPgs ? Options.Media.FileSha256 : null,
+                EmbeddedPgsProbeSha256 = Options.EmbeddedPgs ? Options.Media.ProbeSha256 : null,
+                EmbeddedPgsNativeSubtitleIndex = Options.EmbeddedPgs ? Options.Media.EmbeddedSubtitle?.Index : null,
+                ExternalBifConfigured = Options.Bif is not null, ExternalBifSha256 = Options.Bif?.Sha256,
+                ExternalBifBytes = Options.Bif?.Bytes.Length ?? 0, ExternalBifTotalImageCount = Options.Bif?.TotalImageCount ?? 0,
+                ExternalBifAvailableImageCount = Options.Bif?.AvailableImageCount ?? 0,
+                ExternalBifSelectedImageCount = Options.Bif?.SelectedImageCount ?? 0,
+                BifArchivesServed = Volatile.Read(ref _bifArchivesServed), BifBytesServed = Interlocked.Read(ref _bifBytesServed),
+                ThumbnailSetsServed = Volatile.Read(ref _thumbnailSetsServed),
                 MetadataUpdates = _metadataUpdates, MetadataRefreshRequests = _metadataRefreshRequests,
                 CollectionUpdates = _collectionUpdates, ConfigurationUpdates = _configurationUpdates,
                 HiddenResumeItems = _hiddenResume.Count,
@@ -374,19 +382,25 @@ internal sealed partial class FixtureState
 
     private MediaSourceInfo Source(string itemId, string? playSessionId = null, string sourceId = "synthetic-mp4", string? name = null) => new()
     {
-        Id = sourceId, Name = name ?? $"Synthetic H.264 AAC {Options.Media.Height}p", Container = "mp4", Protocol = "Http",
+        Id = sourceId, Name = name ?? $"Synthetic H.264 AAC {Options.Media.Height}p", Container = Options.EmbeddedPgs ? "mkv" : "mp4", Protocol = "Http",
         RunTimeTicks = DurationTicks, Size = _mediaLength,
         Bitrate = (long)(_mediaLength * 8.0 / TimeSpan.FromTicks(DurationTicks).TotalSeconds),
         SupportsDirectPlay = false, SupportsDirectStream = true, SupportsTranscoding = false,
         DirectStreamUrl = playSessionId is null ? null : $"/emby/Videos/{itemId}/stream?Static=true&MediaSourceId={sourceId}&PlaySessionId={playSessionId}",
-        AddApiKeyToDirectStreamUrl = false, DefaultAudioStreamIndex = 1, DefaultSubtitleStreamIndex = Options.Subtitle is null ? -1 : 2,
+        AddApiKeyToDirectStreamUrl = false, DefaultAudioStreamIndex = Options.EmbeddedPgs ? Options.Media.AudioStreamIndex : 1,
+        DefaultSubtitleStreamIndex = Options.EmbeddedPgs ? Options.Media.EmbeddedSubtitle is { IsDefault: true } embedded ? embedded.Index : -1
+            : Options.Subtitle is null ? -1 : 2,
         RequiresOpening = false, RequiresClosing = false, IsInfiniteStream = false,
         MediaStreams = WithExternalSubtitle(itemId, sourceId,
         [
-            new MediaStream { Index = 0, Type = "Video", Codec = "h264", Width = Options.Media.Width, Height = Options.Media.Height, IsDefault = true,
+            new MediaStream { Index = Options.EmbeddedPgs ? Options.Media.VideoStreamIndex
+                    ?? throw new InvalidOperationException("The observed native video index is missing.") : 0,
+                Type = "Video", Codec = "h264", Width = Options.Media.Width, Height = Options.Media.Height, IsDefault = true,
                 AverageFrameRate = Options.Media.FrameRateDenominator > 0 ? (float)Options.Media.FrameRateNumerator / Options.Media.FrameRateDenominator : null,
                 DisplayTitle = $"Synthetic {Options.Media.Width} x {Options.Media.Height} H.264" },
-            new MediaStream { Index = 1, Type = "Audio", Codec = "aac", Channels = Options.Media.AudioChannels,
+            new MediaStream { Index = Options.EmbeddedPgs ? Options.Media.AudioStreamIndex
+                    ?? throw new InvalidOperationException("The observed native audio index is missing.") : 1,
+                Type = "Audio", Codec = "aac", Channels = Options.Media.AudioChannels,
                 SampleRate = Options.Media.AudioSampleRate > 0 ? Options.Media.AudioSampleRate : null,
                 ChannelLayout = Options.Media.AudioChannels == 2 ? "stereo" : Options.Media.AudioChannels == 1 ? "mono" : null,
                 IsDefault = true, DisplayTitle = $"Synthetic 440 Hz tone - AAC {Options.Media.AudioChannels} channels" }
@@ -468,6 +482,20 @@ internal sealed class FixtureStats
     public bool LumenDesignCatalog { get; init; }
     public bool ExternalSubtitleConfigured { get; init; }
     public string? ExternalSubtitleSha256 { get; init; }
+    public bool EmbeddedPgsConfigured { get; init; }
+    public string MediaContainer { get; init; } = "mp4";
+    public string? EmbeddedPgsMediaSha256 { get; init; }
+    public string? EmbeddedPgsProbeSha256 { get; init; }
+    public int? EmbeddedPgsNativeSubtitleIndex { get; init; }
+    public bool ExternalBifConfigured { get; init; }
+    public string? ExternalBifSha256 { get; init; }
+    public int ExternalBifBytes { get; init; }
+    public int ExternalBifTotalImageCount { get; init; }
+    public int ExternalBifAvailableImageCount { get; init; }
+    public int ExternalBifSelectedImageCount { get; init; }
+    public int BifArchivesServed { get; init; }
+    public long BifBytesServed { get; init; }
+    public int ThumbnailSetsServed { get; init; }
     public bool ExternalArtwork { get; init; }
     public int MetadataUpdates { get; init; }
     public int MetadataRefreshRequests { get; init; }

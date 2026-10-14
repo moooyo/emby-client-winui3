@@ -9,6 +9,10 @@
 #include "CodecChecker.h"
 #include "MediaMetadata.h"
 #include "text_encoding_detect.h"
+#include "EmbySubtitleApi.h"
+#include "EmbyAudioApi.h"
+
+class PassthroughAudioSampleProvider;
 
 namespace winrt::FFmpegInteropX::implementation
 {
@@ -280,6 +284,12 @@ namespace winrt::FFmpegInteropX::implementation
         }
 
         std::shared_ptr<EmbyDecoderState> DecoderObservationState = std::make_shared<EmbyDecoderState>();
+        std::shared_ptr<EmbyAssSubtitleState> AssSubtitleState = EmbyCreateAssSubtitleState();
+
+        HRESULT TryOpenEmbyBitstream(int32_t mode, int32_t streamIndex);
+        AudioOutputObservation GetEmbyAudioObservation();
+        void SuspendEmbyAudioOutput();
+        HRESULT CloseEmbyAudioOutput();
 
         static IAsyncOperation<winrt::FFmpegInteropX::FFmpegMediaSource> ReadExternalSubtitleStreamAsync(IRandomAccessStream stream, hstring streamName, winrt::FFmpegInteropX::MediaSourceConfig const& config, VideoStreamDescriptor videoDescriptor, uint64_t windowId, bool useHdr);
         static IAsyncOperation<FFmpegInteropX::FFmpegMediaSource> CreateFromStreamInternalAsync(IRandomAccessStream stream, FFmpegInteropX::MediaSourceConfig config, uint64_t windowId);
@@ -327,6 +337,8 @@ namespace winrt::FFmpegInteropX::implementation
 
         std::shared_ptr<MediaSampleProvider> currentVideoStream = { nullptr };
         std::shared_ptr<MediaSampleProvider> currentAudioStream = { nullptr };
+        std::shared_ptr<PassthroughAudioSampleProvider> embyBitstreamProvider;
+        AudioOutputObservation embyAudioObservation{};
         FFmpegInteropX::AudioStreamInfo currentAudioStreamInfo = { nullptr };
         FFmpegInteropX::VideoStreamInfo currentVideoStreamInfo = { nullptr };
         int thumbnailStreamIndex = 0;

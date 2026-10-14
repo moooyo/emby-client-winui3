@@ -111,26 +111,34 @@ public sealed partial class LibraryViewModel
         }
     }
 
-    private sealed record PageWindow(BaseItemDto[] Items, int NextIndex, int? TotalCount, bool HasMore);
-    private sealed record HomeShelfResult(MediaShelfViewModel Shelf, BaseItemDto[] Items, Exception? Failure);
+    private sealed record PageWindow(BaseItemDto[] Items, int NextIndex, int? TotalCount, bool HasMore, int StartIndex = 0);
+    private sealed record HomeShelfResult(MediaShelfViewModel Shelf, BaseItemDto[] Items, Exception? Failure, long? ReadRevision = null);
 
     private static async Task<PageWindow> QueryLoadedWindowAsync(EmbyApiClient api, BrowseLocation location,
-        int loadedCount, CancellationToken cancellationToken)
+        int loadedCount, CancellationToken cancellationToken, int startIndex = 0)
     {
         var items = new List<BaseItemDto>();
-        var offset = 0;
+        var offset = startIndex;
         int? totalCount;
         bool hasMore;
         do
         {
             var page = await QueryItemsAsync(api, location, offset, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
+            if (items.Count == 0 && offset > 0 && page.Items.Length == 0 && page.TotalRecordCount is >= 0)
+            {
+                // Preserve a bounded window when titles are removed before a refresh reaches it.
+                startIndex = Math.Max(0, page.TotalRecordCount.Value - PageSize);
+                offset = startIndex;
+                page = await QueryItemsAsync(api, location, offset, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
             items.AddRange(page.Items);
             offset += page.Items.Length;
             totalCount = page.TotalRecordCount;
             hasMore = page.Items.Length > 0 && (totalCount is { } total ? offset < total : page.Items.Length == PageSize);
-        } while (hasMore && offset < Math.Max(PageSize, loadedCount));
-        return new(items.ToArray(), offset, totalCount, hasMore);
+        } while (hasMore && offset - startIndex < Math.Max(PageSize, loadedCount));
+        return new(items.ToArray(), offset, totalCount, hasMore, startIndex);
     }
 
     private static async Task<HomeShelfResult[]> QueryHomeShelvesAsync(EmbyApiClient api,
@@ -180,23 +188,54 @@ public sealed partial class LibraryViewModel
         return await Task.WhenAll(requests.Select((request, index) => LoadShelfAsync(request, index)));
     }
 
-    private void ApplyHomeShelves(IEnumerable<HomeShelfResult> results, long userDataRevision)
+    private MediaShelfViewModel[] MergeHomeShelves(IEnumerable<MediaShelfViewModel> source,
+        IEnumerable<HomeShelfResult> results, long userDataRevision)
     {
-        var available = results.Select(result => result.Shelf.Section == HomeSection.ContinueWatching
-            ? result with { Items = PreserveHiddenResumeItems(result.Items, userDataRevision) } : result).ToArray();
+        var previous = source.ToArray();
+        var available = results.Select(result =>
+        {
+            var readRevision = result.ReadRevision ?? userDataRevision;
+            var items = PreserveNewerUserData(result.Items, readRevision);
+            return result with
+            {
+                Items = result.Shelf.Section == HomeSection.ContinueWatching
+                    ? PreserveHiddenResumeItems(items, readRevision) : items
+            };
+        }).ToArray();
         var resumeIds = available.Where(result => result.Shelf.Section == HomeSection.ContinueWatching)
-            .SelectMany(result => result.Failure is null ? result.Items : HomeRows
+            .SelectMany(result => result.Failure is null ? result.Items : previous
                 .Where(row => row.Section == HomeSection.ContinueWatching).SelectMany(row => row.Items).Select(card => card.Item))
             .Where(item => new MediaCardViewModel(item).CanResume).Select(item => item.Id).ToHashSet(StringComparer.Ordinal);
         var desired = new List<MediaShelfViewModel>();
         foreach (var result in available)
         {
-            var shelf = HomeRows.FirstOrDefault(row => row.Section == result.Shelf.Section
-                && row.LibraryId == result.Shelf.LibraryId && row.Title == result.Shelf.Title) ?? result.Shelf;
-            if (result.Failure is null)
-                ReconcileCards(shelf.Items, result.Shelf.Section == HomeSection.NextUp
-                    ? result.Items.Where(item => !resumeIds.Contains(item.Id)) : result.Items);
+            var old = previous.FirstOrDefault(row => row.Section == result.Shelf.Section && row.LibraryId == result.Shelf.LibraryId);
+            if (result.Failure is not null)
+            {
+                if (old is { Items.Count: > 0 }) desired.Add(old);
+                continue;
+            }
+            var shelf = new MediaShelfViewModel(result.Shelf.Title, result.Shelf.IsLandscape,
+                result.Shelf.Section, result.Shelf.LibraryId);
+            foreach (var item in result.Shelf.Section == HomeSection.NextUp
+                ? result.Items.Where(item => !resumeIds.Contains(item.Id)) : result.Items)
+                if (!string.IsNullOrWhiteSpace(item.Id)) shelf.Items.Add(new(item));
             if (shelf.Items.Count > 0) desired.Add(shelf);
+        }
+        return desired.ToArray();
+    }
+
+    private void ApplyHomeShelves(IEnumerable<HomeShelfResult> results, long userDataRevision)
+    {
+        var rows = MergeHomeShelves(HomeRows, results, userDataRevision);
+        var desired = new List<MediaShelfViewModel>();
+        foreach (var row in rows)
+        {
+            var existing = HomeRows.FirstOrDefault(current => current.Section == row.Section
+                && current.LibraryId == row.LibraryId && current.Title == row.Title);
+            if (existing is not null && !ReferenceEquals(existing, row))
+                ReconcileCards(existing.Items, row.Items.Select(card => card.Item));
+            desired.Add(existing ?? row);
         }
         for (var index = HomeRows.Count - 1; index >= 0; index--)
         {
@@ -214,20 +253,24 @@ public sealed partial class LibraryViewModel
     }
 
     private async Task<Action> PreparePageRefreshAsync(EmbyApiClient api, BrowseLocation location, int loadedCount, long userDataRevision,
-        Task<QueryResult<BaseItemDto>> librariesTask, CancellationToken cancellationToken)
+        Task<QueryResult<BaseItemDto>> librariesTask, CancellationToken cancellationToken, int startIndex = 0, int? homeReadVersion = null)
     {
         // All requests stage data first. The caller alone commits the prepared operation
         // after the page, season, and library generations still match their owners.
         if (location.IsHome)
         {
+            var sessionVersion = _sessionVersion;
+            var homeOwner = homeReadVersion ?? BeginHomeRead();
             var libraries = await librariesTask;
-            var shelves = await QueryHomeShelvesAsync(api, libraries.Items, cancellationToken);
-            var failures = shelves.Select(shelf => shelf.Failure).OfType<Exception>().ToArray();
-            if (failures.FirstOrDefault(IsSessionExpired) is { } expired) throw expired;
+            if (!CanCommitHomeRead(homeOwner, sessionVersion, cancellationToken)) return () => { };
+            var read = await ReadHomeShelvesAsync(api, libraries.Items, cancellationToken);
+            var failures = read.Results.Select(shelf => shelf.Failure).OfType<Exception>().ToArray();
+            if (CanCommitHomeRead(homeOwner, sessionVersion, cancellationToken)
+                && failures.FirstOrDefault(IsSessionExpired) is { } expired) throw expired;
             return () =>
             {
-                ApplyHomeShelves(shelves.Select(shelf => shelf with
-                    { Items = PreserveNewerUserData(shelf.Items, userDataRevision) }), userDataRevision);
+                if (!CanCommitHomeRead(homeOwner, sessionVersion, cancellationToken)) return;
+                CommitHomeShelfResults(read.Results, read.UserDataRevision, updateVisible: true);
                 if (failures.Length == 0) return;
                 ShowError(failures[0]);
                 ErrorMessage = "Some home sections could not be refreshed. Previously loaded content is still shown.";
@@ -235,7 +278,7 @@ public sealed partial class LibraryViewModel
         }
         if (location.Kind != LocationKind.Item)
         {
-            var page = await QueryLoadedWindowAsync(api, location, loadedCount, cancellationToken);
+            var page = await QueryLoadedWindowAsync(api, location, loadedCount, cancellationToken, startIndex);
             return () =>
             {
                 var preserved = PreserveHiddenResumeWindow(location, page, userDataRevision);
@@ -378,6 +421,7 @@ public sealed partial class LibraryViewModel
     {
         ReconcileItems(page.Items);
         _nextIndex = page.NextIndex;
+        _browseWindowStartIndex = page.StartIndex;
         HasMore = page.HasMore;
         UpdateCount(page.TotalCount);
     }

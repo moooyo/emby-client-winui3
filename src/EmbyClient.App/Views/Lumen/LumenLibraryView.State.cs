@@ -79,22 +79,25 @@ public sealed partial class LumenLibraryView
             : ViewModel.IsHome ? "home" : ViewModel.IsSearch ? "search" : "wall";
         var changed = mode != _renderedPage;
         _detail.Visibility = mode == "detail" ? Visibility.Visible : Visibility.Collapsed;
-        _scroll.Visibility = mode == "detail" ? Visibility.Collapsed : Visibility.Visible;
+        _home.Visibility = mode == "home" ? Visibility.Visible : Visibility.Collapsed;
+        _scroll.Visibility = mode is "detail" or "home" ? Visibility.Collapsed : Visibility.Visible;
         _ambience.Visibility = mode is "wall" or "search" or "person" ? Visibility.Visible : Visibility.Collapsed;
-        _alphabet.Visibility = mode == "wall" && ViewModel.BrowseSortKey == "SortName" ? Visibility.Visible : Visibility.Collapsed;
+        _ambience.Height = mode == "search" ? 560 : mode == "person" ? 620 : 640;
+        if (mode != "wall") _alphabet.Visibility = Visibility.Collapsed;
         if (mode != "person") DetachPerson();
         if (mode != "search") DetachSearchCards();
         if (changed)
         {
             _renderedPage = mode;
             _page.Children.Clear();
-            if (mode == "home") _page.Children.Add(_home);
-            else if (mode == "wall") _page.Children.Add(_wall);
+            if (mode == "wall") _page.Children.Add(_wall);
             else if (mode == "search") _page.Children.Add(_search);
             else if (mode == "person") _page.Children.Add(BuildPerson());
             if (!_restorePending) _scroll.ChangeView(null, 0, null, true);
-            if (mode != "detail") LumenUi.AnimateEntrance(_page);
-            else LumenUi.AnimateEntrance(_detail);
+            if (mode == "home") ResetHomePointerFocus();
+            if (mode == "home" && !_restorePending) _homeDeck.GoToPage(0, false);
+            if (mode is not ("detail" or "home")) LumenUi.AnimateEntrance(_page);
+            else if (mode == "detail") LumenUi.AnimateEntrance(_detail);
         }
         if (mode == "home") RenderHome();
         else if (mode == "wall")
@@ -118,7 +121,7 @@ public sealed partial class LumenLibraryView
                 : ViewModel.Items.Count == 0 && (_searchTab != "all" || ViewModel.SearchPeople.Count == 0));
         var isEmpty = !ViewModel.IsBusy && !ViewModel.HasError && !IsDetail
             && (ViewModel.IsSearch ? emptySearch : !ViewModel.HasItems);
-        _empty.Visibility = isEmpty ? Visibility.Visible : Visibility.Collapsed;
+        _empty.Visibility = isEmpty && mode is not ("home" or "wall" or "search") ? Visibility.Visible : Visibility.Collapsed;
         _emptyTitle.Text = LumenText.Get(ViewModel.IsSearch ? "No results" : ViewModel.IsFavorites ? "No favorites yet" : "Your library is empty");
         _emptyMessage.Text = LumenText.Get(ViewModel.EmptyMessage);
         UpdateHeroTimer();
@@ -131,16 +134,24 @@ public sealed partial class LumenLibraryView
         var previous = ActiveNavigation;
         if (ViewModel.HasDetails)
         {
-            if (ViewModel.Detail.Item.Type is "Series" or "Season" or "Episode") ActiveNavigation = "series";
-            else if (ViewModel.Detail.Item.Type == "Movie") ActiveNavigation = "movies";
+            ActiveNavigation = NavigationKeyForMediaType(ViewModel.Detail.Item.Type is "Series" or "Season" or "Episode" ? "Series" : "Movie");
         }
+        else if (ViewModel.IsPerson) ActiveNavigation = "person";
         else if (ViewModel.IsHome || ViewModel.IsHomeSection) ActiveNavigation = "home";
         else if (ViewModel.IsSearch) ActiveNavigation = "search";
         else if (ViewModel.IsFavorites) ActiveNavigation = "favs";
-        else if (ViewModel.BrowseMediaType is "Movie") ActiveNavigation = "movies";
-        else if (ViewModel.BrowseMediaType is "Series") ActiveNavigation = "series";
+        else if (ViewModel.BrowseMediaType is "Movie") ActiveNavigation = NavigationKeyForMediaType("Movie");
+        else if (ViewModel.BrowseMediaType is "Series") ActiveNavigation = NavigationKeyForMediaType("Series");
+        else if (ViewModel.SelectedLibraryId is { Length: > 0 } selectedLibrary)
+        {
+            var library = ViewModel.Libraries.FirstOrDefault(item => item.Id == selectedLibrary);
+            ActiveNavigation = library is not null ? LibraryViewModel.PrimaryNavigationForLibrary(library.Item.CollectionType)
+                ?? "library:" + selectedLibrary : "library:" + selectedLibrary;
+        }
         if (previous != ActiveNavigation) NavigationStateChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    private static string NavigationKeyForMediaType(string mediaType) => mediaType == "Series" ? "series" : "movies";
 
     private async Task OpenItemAsync(MediaCardViewModel item)
     {
@@ -191,10 +202,20 @@ public sealed partial class LumenLibraryView
         card.PlayRequested += (_, args) => ForwardPlay(args);
         card.FavoriteRequested += async (_, selected) => await ViewModel.ToggleItemFavoriteAsync(selected);
         card.WatchedRequested += async (_, selected) => await ViewModel.ToggleItemPlayedAsync(selected);
+        card.MediaInformationRequested += async (_, selected) => await OpenItemMediaInformationAsync(selected);
+        card.CollectionRequested += async (_, selected) => await _detail.AddItemToCollectionAsync(selected);
+        card.RemoveFromContinueWatchingRequested += async (_, selected) => await ViewModel.RemoveFromContinueWatchingAsync(selected);
         card.HoverRequested += (_, selected) => SetAmbience(selected);
         card.Loaded += (_, _) => _realizedCards.Add(card);
         card.Unloaded += (_, _) => _realizedCards.Remove(card);
         return card;
+    }
+
+    private Task OpenItemMediaInformationAsync(MediaCardViewModel item)
+    {
+        _lastInvokedId = item.Id;
+        CloseBrowseFlyouts();
+        return _detail.ShowItemMediaInformationAsync(item);
     }
 
     private void SetAmbience(MediaCardViewModel? item)
@@ -221,6 +242,8 @@ public sealed partial class LumenLibraryView
 
     private async void LibraryKeyDown(object sender, KeyRoutedEventArgs args)
     {
+        if (args.Handled) return;
+        if (HandleHomeNavigationKey(args)) return;
         if (args.Key == Windows.System.VirtualKey.Escape && CanGoBack)
         {
             args.Handled = true;
@@ -232,9 +255,11 @@ public sealed partial class LumenLibraryView
     {
         if (!_renderEnabled || !_renderLoaded || _session is null) return;
         if (ViewModel.ActivePerson is { } person) person.ScrollOffset = _scroll.VerticalOffset;
-        ViewModel.ViewportState = new(VerticalOffset: _scroll.VerticalOffset, DetailOffset: _detail.ScrollOffset,
-            FocusedItemId: _lastInvokedId, CollectionWidth: _scroll.ViewportWidth);
+        ViewModel.ViewportState = new(VerticalOffset: ViewModel.IsHome ? HomeVerticalOffset : _scroll.VerticalOffset, DetailOffset: _detail.ScrollOffset,
+            FocusedItemId: _lastInvokedId, CollectionWidth: ViewModel.IsHome ? ActualWidth : _scroll.ViewportWidth,
+            HomePageIndex: _homeDeck.SelectedIndex, DetailPageIndex: _detail.SelectedPageIndex);
         if (ViewModel.IsSearch) _searchViewports.Add(ViewModel.ViewportState, new(_searchTab));
+        if (ViewModel.IsHome) CaptureHomeViewport(ViewModel.ViewportState);
         _lastInvokedId = null;
     }
 
@@ -250,7 +275,7 @@ public sealed partial class LumenLibraryView
             _searchTabVersion++;
             _searchTypeOperation = Task.CompletedTask;
             _searchTab = _searchViewports.TryGetValue(ViewModel.ViewportState, out var presentation) ? presentation.Tab
-                : ViewModel.BrowseSearchType switch { "Movie" => "movies", "Series" => "series", "BoxSet" => "collections", _ => "all" };
+                : ViewModel.BrowseSearchType switch { "Movie" => "movies", "Series" => "series", _ => "all" };
             SetSearchDraft(ViewModel.SearchText);
         }
         var revision = ViewModel.NavigationRevision;
@@ -262,12 +287,13 @@ public sealed partial class LumenLibraryView
             RenderPage();
             ApplyResponsiveLayout();
             _scroll.UpdateLayout();
-            _scroll.ChangeView(null, ViewModel.IsPerson ? ViewModel.ActivePerson?.ScrollOffset ?? 0 : ViewModel.ViewportState.VerticalOffset, null, true);
-            if (ViewModel.HasDetails) _detail.ScrollOffset = ViewModel.ViewportState.DetailOffset;
+            if (ViewModel.IsHome) RestoreHomeViewport();
+            else _scroll.ChangeView(null, ViewModel.IsPerson ? ViewModel.ActivePerson?.ScrollOffset ?? 0 : ViewModel.ViewportState.VerticalOffset, null, true);
+            if (ViewModel.HasDetails) _detail.SelectedPageIndex = ViewModel.ViewportState.DetailPageIndex;
             else
             {
                 _scroll.UpdateLayout();
-                if (ViewModel.ViewportState.FocusedItemId is { } focusedId) FindItemButton(_page, focusedId)?.Focus(FocusState.Programmatic);
+                if (ViewModel.ViewportState.FocusedItemId is { } focusedId) FindItemButton(ViewModel.IsHome ? _home : _page, focusedId)?.Focus(FocusState.Programmatic);
             }
             _restorePending = false;
         }) && epoch == _renderEpoch) _restorePending = false;
@@ -275,6 +301,11 @@ public sealed partial class LumenLibraryView
 
     private async void ScrollChanged(object? sender, ScrollViewerViewChangedEventArgs args)
     {
+        if (_lastHeaderScrolled != IsHeaderScrolled)
+        {
+            _lastHeaderScrolled = IsHeaderScrolled;
+            NavigationStateChanged?.Invoke(this, EventArgs.Empty);
+        }
         if (!_renderEnabled || !_renderLoaded || args.IsIntermediate || _restorePending || _autoPageBlocked
             || _scroll.ScrollableHeight - _scroll.VerticalOffset > 700) return;
         if (ViewModel.IsPerson && ViewModel.ActivePerson is { CanLoadMore: true } person)
@@ -306,7 +337,8 @@ public sealed partial class LumenLibraryView
         // Content and scrollbar measurement must not feed back into the outer viewport's card widths.
         var width = ActualWidth;
         if (!double.IsFinite(width) || width <= 0) return;
-        _pageMargin = width < 1000 ? 32 : 56;
+        _pageMargin = Math.Clamp(width * .04, 24, 56);
+        _notice.Margin = new Thickness(_pageMargin, 96, _pageMargin, 0);
         if (_renderedPage == "search")
         {
             UpdateSearchLayout(width);

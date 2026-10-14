@@ -7,12 +7,12 @@ namespace EmbyClient.App.Services;
 public sealed partial class ConnectionService
 {
     private async Task<ConnectedSession> SignInCoreAsync(string address, string username, string password,
-        bool remember, CancellationToken cancellationToken)
+        bool remember, CancellationToken cancellationToken, string? expectedServerId)
     {
         var publicApi = CreatePublicClient(address);
         var server = await publicApi.GetPublicSystemInfoAsync(cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
-        RequireServerIdentity(server);
+        RequireExpectedServerIdentity(server, expectedServerId);
         var existingTokens = await ReadExistingTokenFingerprintsAsync(cancellationToken);
         var result = await publicApi.AuthenticateByNameAsync(username.Trim(), password, cancellationToken);
         if (string.IsNullOrWhiteSpace(result.AccessToken) || string.IsNullOrWhiteSpace(result.User?.Id))
@@ -61,7 +61,8 @@ public sealed partial class ConnectionService
             // the connection. Cancellation after that boundary must not discard its result.
             _acceptedTokenFingerprints.Add(fingerprint);
             _accountRestrictions.TryRemove(key, out _);
-            return new(api, server, user, key, result.SessionInfo?.Id, warning, registered);
+            return new(api, server, user, key, result.SessionInfo?.Id, warning, registered,
+                AllowLocalPersistence: !IsTemporarySession);
         }
         catch
         {

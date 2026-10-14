@@ -5,123 +5,183 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System.Numerics;
+using Windows.Foundation;
 
 namespace EmbyClient.App.Views.Lumen;
 
 public sealed partial class LumenLibraryView
 {
-    private readonly StackPanel _home = new();
-    private readonly Grid _hero = new() { Height = 660 };
-    private readonly LumenArtwork[] _heroArtwork = [new() { CornerRadius = new CornerRadius(0) }, new() { CornerRadius = new CornerRadius(0), Opacity = 0 }];
-    private readonly Border _heroBottom = new();
-    private readonly StackPanel _heroInfo = new() { Spacing = 12, Width = 580, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(56, 0, 0, 112) };
+    private readonly Grid _home = new();
+    private readonly LumenPageDeck _homeDeck = new();
+    private readonly Grid _hero = new();
+    private readonly ScrollViewer _heroViewport = new()
+    {
+        HorizontalScrollMode = ScrollMode.Disabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+        VerticalScrollMode = ScrollMode.Enabled, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
+        HorizontalContentAlignment = HorizontalAlignment.Stretch, IsTabStop = false
+    };
+    private readonly Grid _heroLayout = new();
+    private readonly Grid _heroContent = new() { ColumnSpacing = 40 };
+    private readonly StackPanel _heroInfo = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom,
+        MaxWidth = 680, Opacity = .66
+    };
     private readonly TextBlock _heroTitle = LumenUi.Text(string.Empty, 66, true);
-    private readonly TextBlock _heroOriginal = LumenUi.Text(string.Empty, 12);
     private readonly RichTextBlock _heroMetadata = new()
     {
-        FontFamily = LumenTheme.SansFont, FontSize = 13, LineHeight = 22,
+        FontFamily = LumenTheme.SansFont, FontSize = 14, LineHeight = 24,
         Foreground = LumenTheme.Brush("ImageInk"), IsTextSelectionEnabled = false,
-        TextWrapping = TextWrapping.Wrap
+        TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 18, 0, 0), Opacity = .92
     };
     private readonly TextBlock _heroOverview = LumenUi.Text(string.Empty, 15);
-    private readonly TextBlock _heroType = LumenUi.Text(string.Empty, 12);
-    private readonly Button _heroPlay = LumenUi.Button("Play", "play", true, true);
-    private readonly Button _heroDetails = LumenUi.Button("Details", "info", false, true);
-    private readonly Button _heroFavorite = LumenUi.IconButton("heart", "Add favorite", 44, true);
-    private readonly StackPanel _heroButtons = new() { Orientation = Orientation.Horizontal, Spacing = 10 };
-    private readonly ScrollViewer _heroThumbScroll = new() { HorizontalScrollMode = ScrollMode.Enabled, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, VerticalScrollMode = ScrollMode.Disabled, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 56, 112) };
-    private readonly StackPanel _heroThumbs = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 8, 0, 0) };
-    private readonly StackPanel _homeBody = new() { Spacing = 36, Margin = new Thickness(0, -44, 0, 64) };
-    private readonly DispatcherTimer _heroTimer = new() { Interval = TimeSpan.FromSeconds(7) };
-    private readonly List<(Button Button, Border Progress, Border Stroke)> _heroThumbStates = [];
-    private readonly List<FrameworkElement> _homeHeaders = [];
-    private readonly List<ScrollViewer> _homeScrollers = [];
-    private Grid? _mediaTiles;
+    private readonly TextBlock _heroType = LumenUi.Text(string.Empty, 15);
+    private readonly Button _heroDetails = LumenUi.Button("Details", "info", false, true, 56);
+    private readonly Button _heroFavorite = LumenUi.IconButton("heart", "Add favorite", 56, true);
+    private readonly StackPanel _heroButtons = new() { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new Thickness(0, 28, 0, 0) };
+    private readonly Border _heroThumbnailStrip = new()
+    {
+        HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Bottom,
+        Margin = new Thickness(0, 0, 0, 4)
+    };
+    private readonly StackPanel _heroThumbs = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 7, 0, 0) };
+    private readonly StackPanel _heroSegments = new() { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(0, 14, 0, -10) };
+    private readonly DispatcherTimer _heroTimer = new() { Interval = TimeSpan.FromSeconds(8) };
+    private readonly List<HeroThumbnailState> _heroThumbStates = [];
+    private readonly List<HomeShelfState> _homeShelves = [];
     private MediaCardViewModel[] _heroItems = [];
     private int _heroIndex;
-    private int _heroBuffer;
-    private int _heroArtworkVersion;
-    private readonly Dictionary<LumenArtwork, long> _heroSourceSubscriptions = [];
     private string? _heroId;
+    private bool _heroHasFocus;
     private string _homeSignature = string.Empty;
+
+    public Func<bool>? HomeInteractionBlocked { get; set; }
+
+    private sealed record HeroThumbnailState(Button Button, LumenArtwork Artwork, Grid Surface,
+        Border Progress, Border Stroke, Button SegmentButton, Border Segment)
+    {
+        public bool Hovered { get; set; }
+        public double VerticalOffset { get; set; }
+        public Storyboard? SegmentAnimation { get; set; }
+    }
 
     private void BuildHome()
     {
-        _hero.SizeChanged += (_, _) => _hero.Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, _hero.ActualWidth, _hero.ActualHeight) };
-        _heroTitle.FontWeight = Microsoft.UI.Text.FontWeights.Black;
-        _heroTitle.LineHeight = 71.28;
-        _heroTitle.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        AutomationProperties.SetAutomationId(_home, "LumenHome");
+        AutomationProperties.SetAutomationId(_homeDeck, "LumenHomePages");
+        AutomationProperties.SetAutomationId(_hero, "LumenHomeFeaturedPage");
         AutomationProperties.SetAutomationId(_heroTitle, "LumenHeroTitle");
-        AutomationProperties.SetAutomationId(_heroPlay, "LumenHeroPlay");
         AutomationProperties.SetAutomationId(_heroDetails, "LumenHeroDetails");
         AutomationProperties.SetAutomationId(_heroFavorite, "LumenHeroFavorite");
-        foreach (var artwork in _heroArtwork)
-        {
-            artwork.SetCoverFocalPoint(.5, .5);
-            _hero.Children.Add(artwork);
-        }
-        _hero.Children.Add(new Border { Background = LumenTheme.ImageFade(horizontal: true) });
-        _hero.Children.Add(new Border { Background = LumenTheme.ImageFade(), Height = 180, VerticalAlignment = VerticalAlignment.Top });
-        _heroBottom.Background = LumenTheme.ImageFade(pageBottom: true);
-        _hero.Children.Add(_heroBottom);
+        BuildHomeStage();
+        _home.Children.Add(_homeDeck);
+        _root.Children.Insert(2, _home);
+        _heroLayout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        _heroLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        _heroContent.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        _heroContent.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetRow(_heroContent, 1);
+        _heroLayout.Children.Add(_heroContent);
+        _heroViewport.Content = _heroLayout;
+        _hero.Children.Add(_heroViewport);
+        BuildHomePlayback();
+
         var eyebrow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-        var badge = new Border { Background = LumenTheme.Brush("ImageAccent"), CornerRadius = new CornerRadius(12), Padding = new Thickness(12, 4, 12, 4) };
-        var badgeText = Label("Latest added", 11);
+        var badgeText = Label("Latest added", 12);
         badgeText.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
         badgeText.Foreground = LumenTheme.Brush("ImageAccentInk");
-        badge.Child = badgeText;
-        eyebrow.Children.Add(badge);
+        badgeText.CharacterSpacing = 80;
+        eyebrow.Children.Add(new Border
+        {
+            Background = LumenTheme.Brush("ImageAccent"), CornerRadius = new CornerRadius(99),
+            Padding = new Thickness(12, 5, 12, 5), Child = badgeText
+        });
         _heroType.VerticalAlignment = VerticalAlignment.Center;
+        _heroType.Opacity = .82;
         eyebrow.Children.Add(_heroType);
         _heroInfo.Children.Add(eyebrow);
+        _heroTitle.FontWeight = Microsoft.UI.Text.FontWeights.Black;
+        _heroTitle.CharacterSpacing = 30;
+        _heroTitle.Margin = new Thickness(0, 18, 0, 0);
+        _heroTitle.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
         _heroTitle.TextWrapping = TextWrapping.Wrap;
-        _heroTitle.MaxLines = 2;
-        _heroTitle.TextTrimming = TextTrimming.CharacterEllipsis;
         _heroInfo.Children.Add(_heroTitle);
-        _heroOriginal.Opacity = 0.7;
-        _heroOriginal.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
-        _heroInfo.Children.Add(_heroOriginal);
         _heroInfo.Children.Add(_heroMetadata);
+        _heroOverview.Margin = new Thickness(0, 16, 0, 0);
+        _heroOverview.MaxWidth = 620;
+        _heroOverview.Opacity = .84;
         _heroOverview.TextWrapping = TextWrapping.Wrap;
-        _heroOverview.MaxLines = 3;
+        _heroOverview.MaxLines = 2;
         _heroOverview.TextTrimming = TextTrimming.CharacterEllipsis;
-        _heroOverview.LineHeight = 25.5;
         _heroInfo.Children.Add(_heroOverview);
-        _heroButtons.Margin = new Thickness(0, 8, 0, 0);
-        _heroButtons.Children.Add(_heroPlay);
+        _heroDetails.Padding = new Thickness(20, 0, 26, 0);
+        if (_heroDetails.Content is StackPanel detailContent)
+        {
+            detailContent.Spacing = 10;
+            foreach (var label in detailContent.Children.OfType<TextBlock>()) label.FontSize = 18;
+        }
+        _heroDetails.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(26, 255, 255, 255));
         _heroButtons.Children.Add(_heroDetails);
         _heroButtons.Children.Add(_heroFavorite);
         _heroInfo.Children.Add(_heroButtons);
-        _hero.Children.Add(_heroInfo);
-        _heroThumbScroll.Content = _heroThumbs;
-        _hero.Children.Add(_heroThumbScroll);
-        _home.Children.Add(_hero);
-        _home.Children.Add(_homeBody);
-        _heroTimer.Tick += (_, _) => SelectHero((_heroIndex + 1) % Math.Max(1, _heroItems.Length));
-        _heroPlay.Click += (_, _) =>
+        _heroInfo.Children.Add(_heroSegments);
+        _heroContent.Children.Add(_heroInfo);
+        _heroThumbnailStrip.Child = _heroThumbs;
+        _heroThumbs.AddHandler(PointerWheelChangedEvent,
+            new PointerEventHandler((_, args) => _homeDeck.HandleVerticalWheel(args)), true);
+        Grid.SetColumn(_heroThumbnailStrip, 1);
+        _heroContent.Children.Add(_heroThumbnailStrip);
+
+        _homeDeck.PageChanged += (_, _) => HomePageChanged();
+        _home.PointerMoved += (_, args) => UpdateHomePointerFocus(args.GetCurrentPoint(_home).Position);
+        _home.PointerExited += (_, _) => ResetHomePointerFocus();
+        _hero.GotFocus += (_, _) => { _heroHasFocus = true; UpdateHeroTimer(); UpdateHomeInteraction(); };
+        _hero.LostFocus += (_, _) =>
         {
-            if (_heroItems.ElementAtOrDefault(_heroIndex) is not { } item) return;
-            ForwardPlay(new(item.Item, item.CanResume ? item.ResumeTicks : 0));
+            var epoch = _renderEpoch;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (!_renderLoaded || !_renderEnabled || epoch != _renderEpoch) return;
+                _heroHasFocus = XamlRoot is not null && IsDescendantOf(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject, _hero);
+                UpdateHeroTimer();
+                UpdateHomeInteraction();
+            });
         };
-        _heroDetails.Click += async (_, _) => { if (_heroItems.ElementAtOrDefault(_heroIndex) is { } item) await OpenItemAsync(item); };
+        _heroTimer.Tick += (_, _) =>
+        {
+            if (HomeInteractionBlocked?.Invoke() == true || XamlRoot?.IsHostVisible != true) return;
+            SelectHero((_heroIndex + 1) % Math.Max(1, _heroItems.Length));
+        };
+        _heroDetails.Click += async (_, _) =>
+        {
+            if (_heroItems.ElementAtOrDefault(_heroIndex) is { } item) await OpenItemAsync(item);
+        };
         _heroFavorite.Click += async (_, _) =>
         {
             if (_heroItems.ElementAtOrDefault(_heroIndex) is not { } item) return;
-            await ViewModel.ToggleItemFavoriteAsync(item);
+            _heroFavorite.IsEnabled = false;
+            try { await ViewModel.ToggleItemFavoriteAsync(item); }
+            finally { _heroFavorite.IsEnabled = true; }
             RenderHeroText();
         };
+        RebuildHomePages([], [], []);
     }
 
     private void RenderHome()
     {
         var latest = ViewModel.HomeRows.Where(row => row.Section == HomeSection.RecentlyAdded)
             .SelectMany(row => row.Items).DistinctBy(item => item.Id).ToArray();
+        var resume = ViewModel.HomeRows.Where(row => row.Section == HomeSection.ContinueWatching)
+            .SelectMany(row => row.Items).DistinctBy(item => item.Id).ToArray();
         var heroes = latest.Where(item => item.Item.Type is "Movie" or "Series" or "Episode" or "Video")
             .DistinctBy(item => item.Item.BackdropImageTags?.FirstOrDefault(tag => !string.IsNullOrWhiteSpace(tag)) ?? item.Id)
             .Take(6).ToArray();
-        if (!_heroItems.Select(item => item.Id).SequenceEqual(heroes.Select(item => item.Id)))
+        if (heroes.Length == 0) heroes = resume.Take(6).ToArray();
+        if (!_heroItems.SequenceEqual(heroes))
         {
             _heroItems = heroes;
             _heroIndex = Math.Max(0, Array.FindIndex(heroes, item => item.Id == _heroId));
@@ -129,173 +189,256 @@ public sealed partial class LumenLibraryView
             SelectHero(_heroIndex);
         }
         else RenderHeroText();
-        _hero.Visibility = heroes.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        _homeBody.Margin = new Thickness(0, heroes.Length > 0 ? (LumenTheme.IsDark ? -44 : 8) : 104, 0, 64);
-        var signature = string.Join("|", ViewModel.HomeRows.Select(row => row.Title + ":" + string.Join(",", row.Items.Select(item => item.Id))))
-            + ";" + string.Join("|", ViewModel.Libraries.Select(item => item.Id + ":" + item.Title + ":" + item.Item.ChildCount + ":" + item.Item.RecursiveItemCount));
-        if (signature == _homeSignature) return;
-        _homeSignature = signature;
-        _homeBody.Children.Clear();
-        _homeHeaders.Clear();
-        _homeScrollers.Clear();
-        var resume = ViewModel.HomeRows.FirstOrDefault(row => row.Section == HomeSection.ContinueWatching);
-        if (resume?.Items.Count > 0) _homeBody.Children.Add(HomeShelf("Continue watching", resume.Items, true, async () => await ViewModel.ShowShelfAsync(resume)));
-        var next = ViewModel.HomeRows.FirstOrDefault(row => row.Section == HomeSection.NextUp);
-        if (ViewModel.Libraries.Count > 0) _homeBody.Children.Add(BuildMediaTiles());
-        var movies = latest.Where(item => item.Item.Type == "Movie").ToArray();
-        var shows = latest.Where(item => item.Item.Type == "Series").ToArray();
-        if (movies.Length > 0) _homeBody.Children.Add(HomeShelf("Latest movies", movies, false, async () => await NavigateAsync("movies")));
-        if (shows.Length > 0) _homeBody.Children.Add(HomeShelf("Latest series", shows, false, async () => await NavigateAsync("series")));
-        if (next?.Items.Count > 0) _homeBody.Children.Add(HomeShelf("Next up", next.Items, true, async () => await ViewModel.ShowShelfAsync(next)));
-        if (movies.Length == 0 && shows.Length == 0 && latest.Length > 0)
-            _homeBody.Children.Add(HomeShelf("Recently added", latest, false, async () => await ViewModel.ShowHomeSectionAsync(HomeSection.RecentlyAdded)));
+
+        var movies = latest.Where(item => item.Item.Type == "Movie").Take(24).ToArray();
+        var shows = latest.Where(item => item.Item.Type is "Series" or "Episode" or "Season")
+            .DistinctBy(item => item.Item.Type == "Series" ? item.Id : item.Item.SeriesId ?? item.Id).Take(24).ToArray();
+        var signature = string.Join("|", new[] { resume, movies, shows }
+            .Select(items => string.Join(",", items.Select(item => item.Id))));
+        var sameInstances = _homeShelves.Count == 3 && _homeShelves[0].Items.SequenceEqual(resume)
+            && _homeShelves[1].Items.SequenceEqual(movies) && _homeShelves[2].Items.SequenceEqual(shows);
+        if (signature != _homeSignature || !sameInstances)
+        {
+            _homeSignature = signature;
+            RebuildHomePages(resume, movies, shows);
+        }
+        foreach (var shelf in _homeShelves) RenderHomeShelfText(shelf);
+        UpdateHomeStage();
+        UpdateHeroTimer();
     }
 
     private void BuildHeroThumbnails()
     {
+        StopHeroThumbnailAnimations();
         _heroThumbs.Children.Clear();
+        _heroSegments.Children.Clear();
         _heroThumbStates.Clear();
         for (var index = 0; index < _heroItems.Length; index++)
         {
             var selectedIndex = index;
             var item = _heroItems[index];
-            var artwork = new LumenArtwork { CornerRadius = new CornerRadius(10), Width = 116, Height = 65 };
+            var artwork = new LumenArtwork { CornerRadius = new CornerRadius(12) };
             artwork.SetCoverFocalPoint(.5, .5);
-            artwork.Set(item, ViewModel, ArtworkKind.Backdrop, 232);
-            var surface = new Grid { Width = 116, Height = 65 };
+            artwork.Set(item, ViewModel, ArtworkKind.Landscape, 320);
+            var frame = new Grid();
+            var surface = new Grid { Width = 104, Height = 58.5, CornerRadius = new CornerRadius(12) };
+            frame.Children.Add(surface);
+            AttachHomeShadow(frame, 12, 26, 10, .45f);
+            surface.Loaded += (_, _) => SetRoundedHomeClip(surface, 12);
+            surface.SizeChanged += (_, _) => SetRoundedHomeClip(surface, 12);
             surface.Children.Add(artwork);
-            var progress = new Border { Height = 3, Background = LumenTheme.Brush("ImageAccent"), VerticalAlignment = VerticalAlignment.Bottom, HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(3, 0, 3, 2), IsHitTestVisible = false };
+            var progress = new Border
+            {
+                Height = 3, Background = LumenTheme.Brush("ImageAccent"),
+                VerticalAlignment = VerticalAlignment.Bottom, IsHitTestVisible = false
+            };
             surface.Children.Add(progress);
-            var stroke = new Border { BorderThickness = new Thickness(2), BorderBrush = LumenTheme.Brush("ImageAccent"), CornerRadius = new CornerRadius(10), IsHitTestVisible = false };
-            surface.Children.Add(stroke);
-            var button = new Button { Content = surface, Padding = new Thickness(0), BorderThickness = new Thickness(0), CornerRadius = new CornerRadius(10), Width = 116, Height = 65, Background = new SolidColorBrush(Colors.Transparent) };
-            AutomationProperties.SetName(button, item.Title);
+            var stroke = new Border
+            {
+                BorderThickness = new Thickness(2), BorderBrush = LumenTheme.Brush("ImageAccent"),
+                CornerRadius = new CornerRadius(17), Margin = new Thickness(-5), IsHitTestVisible = false
+            };
+            // The outline extends beyond the thumbnail without changing its layout width.
+            frame.Children.Add(stroke);
+            var button = new Button
+            {
+                Content = frame, Padding = new Thickness(0), BorderThickness = new Thickness(0),
+                CornerRadius = new CornerRadius(17), Background = new SolidColorBrush(Colors.Transparent),
+                UseSystemFocusVisuals = true
+            };
+            button.Resources["ButtonBackgroundPointerOver"] = new SolidColorBrush(Colors.Transparent);
+            button.Resources["ButtonBackgroundPressed"] = new SolidColorBrush(Colors.Transparent);
+            var segment = new Border { Width = 8, Height = 4, CornerRadius = new CornerRadius(2), Background = LumenUi.WhiteBrush };
+            var segmentButton = new Button
+            {
+                Content = segment, Height = 24, MinHeight = 24, MinWidth = 0, Padding = new Thickness(0),
+                BorderThickness = new Thickness(0), Background = new SolidColorBrush(Colors.Transparent),
+                UseSystemFocusVisuals = true
+            };
+            AutomationProperties.SetName(button, item.DisplayTitle);
+            AutomationProperties.SetName(segmentButton, item.DisplayTitle);
             AutomationProperties.SetAutomationId(button, "LumenHeroThumbnail" + index);
-            ToolTipService.SetToolTip(button, item.Title);
-            button.Click += (_, _) => { SelectHero(selectedIndex); _heroTimer.Stop(); UpdateHeroTimer(); };
+            AutomationProperties.SetAutomationId(segmentButton, "LumenHeroSegment" + index);
+            ToolTipService.SetToolTip(button, item.DisplayTitle);
+            ToolTipService.SetToolTip(segmentButton, item.DisplayTitle);
+            button.Click += (_, _) => SelectHero(selectedIndex);
+            segmentButton.Click += (_, _) => SelectHero(selectedIndex);
+            var state = new HeroThumbnailState(button, artwork, surface, progress, stroke, segmentButton, segment);
+            button.PointerEntered += (_, _) => { state.Hovered = true; SetHeroOpacity(button, 1, 350); };
+            button.PointerExited += (_, _) => { state.Hovered = false; SetHeroOpacity(button, selectedIndex == _heroIndex ? 1 : .5, 350); };
             _heroThumbs.Children.Add(button);
-            _heroThumbStates.Add((button, progress, stroke));
+            _heroSegments.Children.Add(segmentButton);
+            _heroThumbStates.Add(state);
         }
+        UpdateHomeLayout(Math.Max(640, ActualWidth));
     }
 
     private void SelectHero(int index)
     {
-        if (_heroItems.ElementAtOrDefault(index) is not { } item) return;
-        _heroIndex = index;
-        if (_heroId != item.Id)
+        if (_heroItems.ElementAtOrDefault(index) is not { } item)
         {
-            _heroId = item.Id;
-            var old = _heroArtwork[_heroBuffer];
-            var incomingBuffer = 1 - _heroBuffer;
-            var next = _heroArtwork[incomingBuffer];
-            var version = ++_heroArtworkVersion;
-            if (_heroSourceSubscriptions.Remove(next, out var oldSubscription))
-                next.Image.UnregisterPropertyChangedCallback(Image.SourceProperty, oldSubscription);
-            next.Opacity = 1;
-            var nextVisual = ElementCompositionPreview.GetElementVisual(next);
-            nextVisual.StopAnimation("Opacity");
-            nextVisual.Opacity = 0;
-            var subscription = next.Image.RegisterPropertyChangedCallback(Image.SourceProperty, (_, _) =>
-            {
-                if (next.Image.Source is null || version != _heroArtworkVersion || _heroId != item.Id) return;
-                if (_heroSourceSubscriptions.Remove(next, out var completed))
-                    next.Image.UnregisterPropertyChangedCallback(Image.SourceProperty, completed);
-                _heroBuffer = incomingBuffer;
-                CrossFadeHero(old, next);
-            });
-            _heroSourceSubscriptions[next] = subscription;
-            next.Set(item, ViewModel, ArtworkKind.Backdrop, 1920);
+            _heroId = null;
+            RenderHeroText();
+            return;
         }
+        _heroIndex = index;
+        _heroId = item.Id;
         RenderHeroText();
         for (var thumb = 0; thumb < _heroThumbStates.Count; thumb++)
         {
-            var (button, progress, stroke) = _heroThumbStates[thumb];
-            button.Opacity = thumb == index ? 1 : 0.62;
-            stroke.Visibility = thumb == index ? Visibility.Visible : Visibility.Collapsed;
-            button.RenderTransform = new TranslateTransform { Y = thumb == index ? -8 : 0 };
-            progress.Visibility = thumb == index && _preferences.HeroRotation ? Visibility.Visible : Visibility.Collapsed;
-            if (thumb == index) AnimateHeroProgress(progress);
+            var state = _heroThumbStates[thumb];
+            var selected = thumb == index;
+            SetHeroOpacity(state.Button, selected || state.Hovered ? 1 : .5, 350);
+            state.Stroke.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+            SetHeroThumbnailOffset(state, selected ? -6 : 0);
+            SetHeroSegmentWidth(state, selected ? 28 : 8);
+            SetHeroOpacity(state.SegmentButton, selected ? 1 : .45, 400);
+            state.Progress.Visibility = selected ? Visibility.Visible : Visibility.Collapsed;
+            if (selected) AnimateHeroProgress(state.Progress, _preferences.HeroRotation && !_heroHasFocus);
         }
+        if (_homeDeck.SelectedIndex == 0) UpdateHomeStage();
+        _heroTimer.Stop();
+        UpdateHeroTimer();
     }
 
     private void RenderHeroText()
     {
-        if (_heroItems.ElementAtOrDefault(_heroIndex) is not { } item) return;
+        if (_heroItems.ElementAtOrDefault(_heroIndex) is not { } item)
+        {
+            _heroTitle.Text = LumenText.Get("Your library is empty");
+            _heroType.Text = string.Empty;
+            _heroOverview.Text = LumenText.Get("Browse a library to find your next watch.");
+            _heroOverview.Visibility = Visibility.Visible;
+            _heroMetadata.Visibility = Visibility.Collapsed;
+            _heroButtons.Visibility = Visibility.Collapsed;
+            _heroPlayback.Visibility = Visibility.Collapsed;
+            return;
+        }
         _heroTitle.Text = item.DisplayTitle;
-        _heroOriginal.Text = item.Item.OriginalTitle?.ToUpperInvariant() ?? string.Empty;
-        _heroOriginal.Visibility = string.IsNullOrWhiteSpace(_heroOriginal.Text) ? Visibility.Collapsed : Visibility.Visible;
-        _heroType.Text = LumenText.Get(item.Item.Type == "Series" ? "Series" : item.Item.Type == "Episode" ? "Episode" : "Movie");
+        _heroType.Text = LumenText.Get(item.Item.Type is "Series" or "Episode" or "Season" ? "Series" : "Movie");
         RenderHeroMetadata(item);
-        _heroOverview.Text = string.IsNullOrWhiteSpace(item.Item.Overview) ? string.Empty : item.Item.Overview;
-        _heroOverview.Visibility = _heroOverview.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-        var playLabel = item.CanResume ? LumenText.Get("Resume") : LumenText.Get("Play");
-        if (item.CanResume && item.Item.Type == "Episode"
-            && item.Item.ParentIndexNumber is { } season && item.Item.IndexNumber is { } episode)
-            playLabel += $" S{season}:E{episode}";
-        _heroPlay.Content = ActionContent(playLabel, "play", true);
-        AutomationProperties.SetName(_heroPlay, playLabel);
-        _heroPlay.IsEnabled = ViewModel.IsPlaybackAllowed;
+        _heroOverview.Text = item.Item.Overview ?? string.Empty;
+        _heroOverview.Visibility = string.IsNullOrWhiteSpace(_heroOverview.Text) ? Visibility.Collapsed : Visibility.Visible;
+        _heroButtons.Visibility = Visibility.Visible;
         _heroDetails.Tag = item;
         _heroFavorite.Content = LumenUi.Icon(item.IsFavorite ? "heart-filled" : "heart", 20, true);
+        _heroFavorite.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(item.IsFavorite ? (byte)66 : (byte)26, 255, 255, 255));
         AutomationProperties.SetName(_heroFavorite, LumenText.Get(item.FavoriteLabel));
         ToolTipService.SetToolTip(_heroFavorite, LumenText.Get(item.FavoriteLabel));
+        RenderHomePlayback(item);
     }
 
-    private static void CrossFadeHero(LumenArtwork old, LumenArtwork next)
+    private static void AnimateHeroProgress(Border progress, bool rotate)
     {
-        var visual = ElementCompositionPreview.GetElementVisual(next);
-        if (!new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
-        {
-            visual.StopAnimation("Opacity");
-            visual.StopAnimation("Scale");
-            visual.Opacity = 1;
-            visual.Scale = Vector3.One;
-            var previousVisual = ElementCompositionPreview.GetElementVisual(old);
-            previousVisual.StopAnimation("Opacity");
-            previousVisual.Opacity = 0;
-            return;
-        }
-        var compositor = visual.Compositor;
-        var fade = compositor.CreateScalarKeyFrameAnimation();
-        fade.InsertKeyFrame(0, 0);
-        fade.InsertKeyFrame(1, 1);
-        fade.Duration = TimeSpan.FromMilliseconds(900);
-        visual.StartAnimation("Opacity", fade);
-        var previous = ElementCompositionPreview.GetElementVisual(old);
-        var fadeOut = compositor.CreateScalarKeyFrameAnimation();
-        fadeOut.InsertKeyFrame(0, 1);
-        fadeOut.InsertKeyFrame(1, 0);
-        fadeOut.Duration = TimeSpan.FromMilliseconds(900);
-        previous.StartAnimation("Opacity", fadeOut);
-        visual.CenterPoint = new Vector3((float)next.ActualWidth / 2, (float)next.ActualHeight / 2, 0);
-        var scale = compositor.CreateVector3KeyFrameAnimation();
-        scale.InsertKeyFrame(0, new Vector3(1.06f, 1.06f, 1));
-        scale.InsertKeyFrame(1, Vector3.One);
-        scale.Duration = TimeSpan.FromSeconds(9);
-        visual.StartAnimation("Scale", scale);
-    }
-
-    private static void AnimateHeroProgress(Border progress)
-    {
+        if (!progress.IsLoaded) return;
         var visual = ElementCompositionPreview.GetElementVisual(progress);
-        if (!new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
+        visual.StopAnimation("Scale");
+        visual.CenterPoint = Vector3.Zero;
+        if (!rotate || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
         {
-            visual.StopAnimation("Scale");
             visual.Scale = Vector3.One;
             return;
         }
-        visual.CenterPoint = Vector3.Zero;
         var animation = visual.Compositor.CreateVector3KeyFrameAnimation();
         animation.InsertKeyFrame(0, new Vector3(0, 1, 1));
-        animation.InsertKeyFrame(1, Vector3.One);
-        animation.Duration = TimeSpan.FromSeconds(7);
+        animation.InsertKeyFrame(1, Vector3.One, visual.Compositor.CreateLinearEasingFunction());
+        animation.Duration = TimeSpan.FromSeconds(8);
         visual.StartAnimation("Scale", animation);
+    }
+
+    private void StopHeroThumbnailAnimations()
+    {
+        foreach (var state in _heroThumbStates)
+        {
+            state.SegmentAnimation?.Stop();
+            state.SegmentAnimation = null;
+        }
+    }
+
+    private static void SetHeroOpacity(FrameworkElement element, double opacity, double duration)
+    {
+        var previous = element.Opacity;
+        if (Math.Abs(previous - opacity) < .001) return;
+        element.Opacity = opacity;
+        var visual = ElementCompositionPreview.GetElementVisual(element);
+        visual.StopAnimation("Opacity");
+        visual.Opacity = (float)opacity;
+        if (!element.IsLoaded || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled) return;
+        var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
+        animation.InsertKeyFrame(0, (float)previous);
+        animation.InsertKeyFrame(1, (float)opacity,
+            visual.Compositor.CreateCubicBezierEasingFunction(new Vector2(.25f, .1f), new Vector2(.25f, 1)));
+        animation.Duration = TimeSpan.FromMilliseconds(duration);
+        visual.StartAnimation("Opacity", animation);
+    }
+
+    private static void SetHeroThumbnailOffset(HeroThumbnailState state, double offset)
+    {
+        var previous = state.VerticalOffset;
+        state.VerticalOffset = offset;
+        if (!state.Button.IsLoaded)
+        {
+            state.Button.RenderTransform = new TranslateTransform { Y = offset };
+            return;
+        }
+        state.Button.ClearValue(RenderTransformProperty);
+        ElementCompositionPreview.SetIsTranslationEnabled(state.Button, true);
+        var visual = ElementCompositionPreview.GetElementVisual(state.Button);
+        var target = new Vector3(0, (float)offset, 0);
+        visual.Properties.InsertVector3("Translation", target);
+        visual.Properties.StopAnimation("Translation");
+        if (previous == offset || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled) return;
+        var animation = visual.Compositor.CreateVector3KeyFrameAnimation();
+        animation.InsertKeyFrame(0, new Vector3(0, (float)previous, 0));
+        animation.InsertKeyFrame(1, target,
+            visual.Compositor.CreateCubicBezierEasingFunction(new Vector2(.25f, .1f), new Vector2(.25f, 1)));
+        animation.Duration = TimeSpan.FromMilliseconds(350);
+        visual.Properties.StartAnimation("Translation", animation);
+    }
+
+    private static void SetHeroSegmentWidth(HeroThumbnailState state, double width)
+    {
+        if (state.Segment.Width == width) return;
+        var previous = state.Segment.ActualWidth > 0 ? state.Segment.ActualWidth : state.Segment.Width;
+        state.SegmentAnimation?.Stop();
+        state.SegmentAnimation = null;
+        state.Segment.Width = width;
+        if (!state.Segment.IsLoaded || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled) return;
+        var animation = new DoubleAnimationUsingKeyFrames { EnableDependentAnimation = true, Duration = TimeSpan.FromMilliseconds(400) };
+        animation.KeyFrames.Add(new LinearDoubleKeyFrame { Value = previous, KeyTime = KeyTime.FromTimeSpan(TimeSpan.Zero) });
+        animation.KeyFrames.Add(new SplineDoubleKeyFrame
+        {
+            Value = width, KeyTime = KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(400)),
+            KeySpline = new KeySpline { ControlPoint1 = new Point(.25, .1), ControlPoint2 = new Point(.25, 1) }
+        });
+        Storyboard.SetTarget(animation, state.Segment);
+        Storyboard.SetTargetProperty(animation, "Width");
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(animation);
+        state.SegmentAnimation = storyboard;
+        storyboard.Completed += (_, _) =>
+        {
+            if (!ReferenceEquals(state.SegmentAnimation, storyboard)) return;
+            storyboard.Stop();
+            state.SegmentAnimation = null;
+        };
+        storyboard.Begin();
     }
 
     private void UpdateHeroTimer()
     {
-        var shouldRun = IsLoaded && Visibility == Visibility.Visible && _renderedPage == "home" && _preferences.HeroRotation && _heroItems.Length > 1;
-        if (shouldRun && !_heroTimer.IsEnabled) _heroTimer.Start();
-        else if (!shouldRun) _heroTimer.Stop();
+        var shouldRun = IsLoaded && Visibility == Visibility.Visible && _renderedPage == "home"
+            && _homeDeck.SelectedIndex == 0 && _preferences.HeroRotation && !_heroHasFocus
+            && new Windows.UI.ViewManagement.UISettings().AnimationsEnabled && _heroItems.Length > 1;
+        if (shouldRun && !_heroTimer.IsEnabled)
+        {
+            _heroTimer.Start();
+            if (_heroThumbStates.ElementAtOrDefault(_heroIndex) is { } active) AnimateHeroProgress(active.Progress, true);
+        }
+        else if (!shouldRun)
+        {
+            _heroTimer.Stop();
+            if (_heroThumbStates.ElementAtOrDefault(_heroIndex) is { } active) AnimateHeroProgress(active.Progress, false);
+        }
     }
 }

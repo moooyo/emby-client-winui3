@@ -26,7 +26,7 @@ public sealed partial class NativePlaybackEngine(
     int initialVolumeLevel = 100,
     bool initialMuted = false,
     bool initialHardwareDecoding = true,
-    string? initialDecoderApi = null) : IPlaybackEngine
+    string? initialDecoderApi = null) : IPlaybackEngine, IPlaybackSubtitleSelectionEngine
 {
     private static readonly TimeSpan OpenTimeout = TimeSpan.FromSeconds(45);
     private Session? _current;
@@ -58,31 +58,26 @@ public sealed partial class NativePlaybackEngine(
         try
         {
             var previous = await OnDispatcherAsync(() => _current).ConfigureAwait(false);
-            if (previous is not null) await RetireAsync(previous).ConfigureAwait(false);
-            session = await OnDispatcherAsync(() =>
+            if (previous is not null)
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
-                cancellationToken.ThrowIfCancellationRequested();
-                var decoderApi = Volatile.Read(ref _decoderApi);
-                var created = new Session(request, cancellationToken)
-                { HardwareRequested = decoderApi != "Software", RequestedDecoderApi = decoderApi };
-                Volatile.Write(ref _videoDecoding, new VideoDecodingSnapshot(created.HardwareRequested, "Pending", false,
-                    "Unknown", RequestedApi: decoderApi));
-                _current = created;
-                created.Cancellation = cancellationToken.Register(() =>
-                {
-                    created.Started.TrySetCanceled(cancellationToken);
-                    Queue(() => RetireNative(created));
-                });
-                created.LoadTask = LoadAsync(created);
-                if (!created.Retired) Publish(created, PlaybackEngineEventKind.StateChanged, PlaybackEngineState.Opening);
-                return created;
-            }).ConfigureAwait(false);
+                await RetireAsync(previous).ConfigureAwait(false);
+                if (!previous.NativeAudioCleanupSucceeded) throw new PlaybackException("AudioOutputCleanupPending");
+            }
+            session = await OnDispatcherAsync(() => BeginSession(request, cancellationToken)).ConfigureAwait(false);
         }
         finally { _openingTransition.Release(); }
         try
         {
             await session.Started.Task.WaitAsync(OpenTimeout, cancellationToken).ConfigureAwait(false);
+            var fallback = await OnDispatcherAsync(() => session.AudioFallbackTask).ConfigureAwait(false);
+            if (fallback is not null) await fallback.WaitAsync(OpenTimeout, cancellationToken).ConfigureAwait(false);
+            await WaitForAudioRecoveryAsync(request.PlaybackId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && session.AudioFallbackTask is not null)
+        {
+            // A genuine output failure may replace this backend between its first Playing event and Started.
+            // The replacement keeps the playback ID and coordinator lifetime; it owns the new completion.
+            await session.AudioFallbackTask.WaitAsync(OpenTimeout, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -106,6 +101,32 @@ public sealed partial class NativePlaybackEngine(
         }
     }
 
+    private Session BeginSession(PlaybackEngineRequest request, CancellationToken cancellationToken,
+        bool startPaused = false, string? audioFallbackReason = null, string? preservedDecoderApi = null,
+        AudioPassthroughMode? audioRecoveryRequestedMode = null)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        cancellationToken.ThrowIfCancellationRequested();
+        var decoderApi = preservedDecoderApi ?? Volatile.Read(ref _decoderApi);
+        var created = new Session(request, cancellationToken)
+        {
+            HardwareRequested = decoderApi != "Software", RequestedDecoderApi = decoderApi,
+            StartPaused = startPaused, AudioRecoveryFallbackReason = audioFallbackReason,
+            AudioRecoveryRequestedMode = audioRecoveryRequestedMode
+        };
+        Volatile.Write(ref _videoDecoding, new VideoDecodingSnapshot(created.HardwareRequested, "Pending", false,
+            "Unknown", RequestedApi: decoderApi));
+        _current = created;
+        created.Cancellation = cancellationToken.Register(() =>
+        {
+            created.Started.TrySetCanceled(cancellationToken);
+            Queue(() => RetireNative(created));
+        });
+        created.LoadTask = LoadAsync(created);
+        if (!created.Retired) Publish(created, PlaybackEngineEventKind.StateChanged, PlaybackEngineState.Opening);
+        return created;
+    }
+
     public Task PauseAsync(Guid playbackId, CancellationToken cancellationToken = default) =>
         ControlAsync(playbackId, session => session.Player!.Pause(), cancellationToken);
 
@@ -116,6 +137,7 @@ public sealed partial class NativePlaybackEngine(
     {
         ArgumentOutOfRangeException.ThrowIfNegative(positionTicks);
         cancellationToken.ThrowIfCancellationRequested();
+        await WaitForAudioRecoveryAsync(playbackId, cancellationToken).ConfigureAwait(false);
         Task? seek = await OnPlayerDispatcherAsync(() =>
         {
             var session = Find(playbackId);
@@ -126,6 +148,7 @@ public sealed partial class NativePlaybackEngine(
             session.SeekCompletion?.TrySetCanceled();
             session.SeekCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             session.UserSeeking = true;
+            InvalidateAssSubtitleImage(session);
             Publish(session, PlaybackEngineEventKind.StateChanged, PlaybackEngineState.Seeking);
             session.NativeSession.Position = TimeSpan.FromTicks(positionTicks);
             return session.SeekCompletion.Task;
@@ -137,22 +160,38 @@ public sealed partial class NativePlaybackEngine(
         }
     }
 
-    public Task SetVolumeAsync(Guid playbackId, int volumeLevel, bool isMuted, CancellationToken cancellationToken = default)
+    public async Task SetVolumeAsync(Guid playbackId, int volumeLevel, bool isMuted, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(volumeLevel);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(volumeLevel, 100);
-        return ControlAsync(playbackId, session =>
+        if (volumeLevel != 100 || isMuted)
+        {
+            await OnPlayerDispatcherAsync(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Find(playbackId) is { NativeAudioOutputOpened: true })
+                {
+                    // The replacement must bind the requested volume before it resumes PCM output.
+                    _volumeLevel = volumeLevel;
+                    _isMuted = isMuted;
+                }
+                return true;
+            }).ConfigureAwait(false);
+            await EnsurePcmAudioOutputAsync(playbackId, "SoftwareVolumeRequired", cancellationToken).ConfigureAwait(false);
+        }
+        await ControlAsync(playbackId, session =>
         {
             session.Player!.Volume = volumeLevel / 100d;
             session.Player.IsMuted = isMuted;
             _volumeLevel = volumeLevel;
             _isMuted = isMuted;
             Publish(session, PlaybackEngineEventKind.StateChanged);
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task StopAsync(Guid playbackId, CancellationToken cancellationToken = default)
     {
+        await CancelAudioRecoveryAsync(playbackId).ConfigureAwait(false);
         var session = await OnDispatcherAsync(() => _current?.Request.PlaybackId == playbackId ? _current : null).ConfigureAwait(false);
         if (session is not null) await RetireAsync(session).ConfigureAwait(false);
     }
@@ -174,7 +213,11 @@ public sealed partial class NativePlaybackEngine(
         await Task.Yield();
         try
         {
+            await CancelAudioRecoveryAsync(null).ConfigureAwait(false);
             if (session is not null) await RetireAsync(session).ConfigureAwait(false);
+            var replacement = await OnDispatcherAsync(() => _current).ConfigureAwait(false);
+            if (replacement is not null && !ReferenceEquals(replacement, session))
+                await RetireAsync(replacement).ConfigureAwait(false);
         }
         finally
         {
@@ -200,25 +243,33 @@ public sealed partial class NativePlaybackEngine(
                     session.Request.ExternalSubtitleHeaders, session.Lifetime.Token);
                 var subtitle = await session.SubtitleTransport.DownloadAsync(subtitleUri,
                     maximumBytes: 4 * 1024 * 1024, ct: session.Lifetime.Token).ConfigureAwait(false);
-                if (!Encoding.UTF8.GetString(subtitle.Data).TrimStart('\uFEFF').StartsWith("WEBVTT", StringComparison.Ordinal))
-                    throw new PlaybackException("UnsupportedSubtitle");
-                var subtitleWrite = await OnDispatcherAsync(() =>
+                if (session.Request.ExternalSubtitleFormat is "ass" or "ssa")
                 {
-                    EnsureActive(session);
-                    var stream = new InMemoryRandomAccessStream();
-                    session.SubtitleStream = stream;
-                    return stream.WriteAsync(subtitle.Data.AsBuffer()).AsTask(session.Lifetime.Token);
-                }).ConfigureAwait(false);
-                await subtitleWrite.ConfigureAwait(false);
-                await OnDispatcherAsync(() =>
+                    await PrepareExternalAssSubtitleAsync(session, subtitle.Data, session.Request.ExternalSubtitleFormat,
+                        session.Lifetime.Token).ConfigureAwait(false);
+                }
+                else
                 {
-                    EnsureActive(session);
-                    session.SubtitleStream!.Seek(0);
-                    session.TimedText = TimedTextSource.CreateFromStream(session.SubtitleStream);
-                    session.TimedTextResolved = (_, args) => Queue(() => OnTimedTextResolved(session, args));
-                    session.TimedText.Resolved += session.TimedTextResolved;
-                    session.MediaSource!.ExternalTimedTextSources.Add(session.TimedText);
-                }).ConfigureAwait(false);
+                    if (!Encoding.UTF8.GetString(subtitle.Data).TrimStart('\uFEFF').StartsWith("WEBVTT", StringComparison.Ordinal))
+                        throw new PlaybackException("UnsupportedSubtitle");
+                    var subtitleWrite = await OnDispatcherAsync(() =>
+                    {
+                        EnsureActive(session);
+                        var stream = new InMemoryRandomAccessStream();
+                        session.SubtitleStream = stream;
+                        return stream.WriteAsync(subtitle.Data.AsBuffer()).AsTask(session.Lifetime.Token);
+                    }).ConfigureAwait(false);
+                    await subtitleWrite.ConfigureAwait(false);
+                    await OnDispatcherAsync(() =>
+                    {
+                        EnsureActive(session);
+                        session.SubtitleStream!.Seek(0);
+                        session.TimedText = TimedTextSource.CreateFromStream(session.SubtitleStream);
+                        session.TimedTextResolved = (_, args) => Queue(() => OnTimedTextResolved(session, args));
+                        session.TimedText.Resolved += session.TimedTextResolved;
+                        session.MediaSource!.ExternalTimedTextSources.Add(session.TimedText);
+                    }).ConfigureAwait(false);
+                }
             }
 
             await OnDispatcherAsync(() => BindPlayer(session)).ConfigureAwait(false);
@@ -240,11 +291,13 @@ public sealed partial class NativePlaybackEngine(
     private void BindPlayer(Session session)
     {
         EnsureActive(session);
+        VerifyCurrentHdr10Source(session);
         session.Item ??= new MediaPlaybackItem(session.MediaSource!);
         session.TracksChanged = (_, _) => Queue(() =>
         {
             if (!IsActive(session)) return;
-            ApplySubtitles(session);
+            CompletePendingNativeSubtitleImport(session);
+            ApplySubtitles(session, requireSelectedTrack: session.IsOpened);
         });
         session.Item.TimedMetadataTracksChanged += session.TracksChanged;
         MediaPlayer? player = null;
@@ -263,6 +316,8 @@ public sealed partial class NativePlaybackEngine(
         session.Player.IsMuted = _isMuted;
         session.NativeSession = session.Player.PlaybackSession;
         if (session.DecoderSource is { } decoder) decoder.PlaybackSession = session.NativeSession;
+        InitializePlaybackStatistics(session);
+        InitializeNativeAudioOutput(session);
         InitializeLumenControls(session);
         session.Player.CommandManager.IsEnabled = false;
         InitializeMediaControls(session);
@@ -283,7 +338,7 @@ public sealed partial class NativePlaybackEngine(
         session.Failed = (_, args) => Queue(() =>
         {
             if (!IsActive(session)) return;
-            var code = session.RelayFailureCode ?? (args.Error switch
+            var code = session.RelayFailureCode ?? (HasFailedAssSubtitles(session) ? "UnsupportedSubtitle" : args.Error switch
             {
                 MediaPlayerError.SourceNotSupported or MediaPlayerError.DecodingError => "UnsupportedFormat",
                 MediaPlayerError.NetworkError => "NetworkFailure",
@@ -294,7 +349,9 @@ public sealed partial class NativePlaybackEngine(
         session.StateChanged = (_, _) => Queue(() => OnStateChanged(session));
         session.PositionChanged = (_, _) => Queue(() =>
         {
-            if (IsActive(session)) Publish(session, PlaybackEngineEventKind.PositionChanged);
+            if (!IsActive(session)) return;
+            Publish(session, PlaybackEngineEventKind.PositionChanged);
+            TryCompleteOpen(session);
         });
         session.SeekCompleted = (_, _) => Queue(() => OnSeekCompleted(session));
         session.DurationChanged = (_, _) => Queue(() =>
@@ -318,8 +375,9 @@ public sealed partial class NativePlaybackEngine(
         if (!IsActive(session) || session.IsOpened) return;
         try
         {
+            VerifyCurrentHdr10Source(session);
             ApplyAudioSelection(session);
-            ApplySubtitles(session);
+            ApplySubtitles(session, requireSelectedTrack: true);
             session.IsOpened = true;
             RefreshVideoSize(session);
             RestorePreferredPlaybackRate(session);
@@ -332,7 +390,7 @@ public sealed partial class NativePlaybackEngine(
             }
             else
             {
-                session.Player!.Play();
+                StartSessionAfterOpening(session);
             }
         }
         catch (PlaybackException exception) { Fail(session, exception.ErrorCode); }
@@ -351,9 +409,11 @@ public sealed partial class NativePlaybackEngine(
                 return;
             }
             session.InitialSeekPending = false;
-            session.Player!.Play();
+            StartSessionAfterOpening(session);
         }
         session.UserSeeking = false;
+        RefreshAssSubtitles(session);
+        if (!IsActive(session)) return;
         session.SeekCompletion?.TrySetResult();
         Publish(session, PlaybackEngineEventKind.StateChanged);
         TryCompleteOpen(session);
@@ -368,9 +428,26 @@ public sealed partial class NativePlaybackEngine(
 
     private void TryCompleteOpen(Session session)
     {
-        if (IsActive(session) && session.IsOpened && !session.InitialSeekPending && session.ExternalTextReady
-            && session.NativeSession!.PlaybackState == MediaPlaybackState.Playing)
+        if (!IsActive(session) || !session.IsOpened || session.InitialSeekPending || !session.ExternalTextReady) return;
+        if (session.AudioFallbackTask is { IsCompleted: false }
+            || session.NativeAudioOutputOpened && session.AudioOutputSnapshot?.IsBitstream != true) return;
+        if (session.NativeSession!.PlaybackState == MediaPlaybackState.Playing)
+        {
             session.Started.TrySetResult();
+            session.PlaybackConfirmed.TrySetResult();
+        }
+        else if (session.StartPaused) session.Started.TrySetResult();
+    }
+
+    private void StartSessionAfterOpening(Session session)
+    {
+        if (session.StartPaused)
+        {
+            session.Player!.Pause();
+            Publish(session, PlaybackEngineEventKind.StateChanged, PlaybackEngineState.Paused);
+            TryCompleteOpen(session);
+        }
+        else session.Player!.Play();
     }
 
     private void OnTimedTextResolved(Session session, TimedTextSourceResolveResultEventArgs args)
@@ -397,6 +474,7 @@ public sealed partial class NativePlaybackEngine(
 
     private static void ApplyAudioSelection(Session session)
     {
+        if (session.NativeAudioOutputOpened) return;
         if (session.Request.DeliveryMethod == PlaybackDeliveryMethod.Transcode) return;
         var streams = (session.Request.Source.MediaStreams ?? [])
             .Where(stream => string.Equals(stream.Type, "Audio", StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -439,22 +517,49 @@ public sealed partial class NativePlaybackEngine(
         tracks.SelectedIndex = matching[0];
     }
 
-    private void ApplySubtitles(Session session)
+    private void ApplySubtitles(Session session, bool requireSelectedTrack = false)
     {
         if (session.Item is null) return;
         var tracks = session.Item.TimedMetadataTracks;
+        var nativeTrack = NativePlatformSubtitleTrack(session);
+        var nativeMatches = nativeTrack is null ? 0 : tracks.Count(track => track == nativeTrack);
+        if (nativeTrack is not null && (nativeMatches > 1 || requireSelectedTrack && nativeMatches != 1))
+            throw new PlaybackException("UnsupportedSubtitle");
+        session.NativeSubtitlePresentationActive = nativeTrack is not null && nativeMatches == 1;
+        if (session.NativeSubtitlePresentationActive)
+        {
+            ApplyNativeSubtitleDelay(session, Volatile.Read(ref _subtitleDelaySeconds));
+            // Native captions and the application text overlay must never present the same selection together.
+            PublishSubtitleText(session, string.Empty, force: true);
+        }
         for (uint index = 0; index < tracks.Count; index++)
         {
             var track = tracks[(int)index];
-            var enabled = (session.LocalSubtitle is not null || session.Request.SubtitleStreamIndex != -1) && session.ExternalTextReady
+            // The decoder owns hidden reference tracks which deliver live bitmap cues and delay updates.
+            if ((session.NativeSubtitlePresentationActive || session.NativeEmbeddedSubtitle is not null)
+                && track.TimedMetadataKind == TimedMetadataKind.Custom) continue;
+            var native = session.NativeSubtitlePresentationActive && track == nativeTrack;
+            var enabled = nativeTrack is null && (session.LocalSubtitle is not null || session.Request.SubtitleStreamIndex != -1) && session.ExternalTextReady
                 && session.ExternalTracks.Any(external => external == track);
-            tracks.SetPresentationMode(index, enabled
+            var mode = native ? track.TimedMetadataKind == TimedMetadataKind.ImageSubtitle && NativeAssInterop.IsFrameBridgeAvailable
+                ? TimedMetadataTrackPresentationMode.ApplicationPresented
+                : TimedMetadataTrackPresentationMode.PlatformPresented : enabled
                 ? SubtitleTextChanged is not null
                     ? TimedMetadataTrackPresentationMode.ApplicationPresented
                     : TimedMetadataTrackPresentationMode.PlatformPresented
-                : TimedMetadataTrackPresentationMode.Disabled);
+                : TimedMetadataTrackPresentationMode.Disabled;
+            try { tracks.SetPresentationMode(index, mode); }
+            catch (Exception exception) when (nativeTrack is not null)
+            {
+                RecordSubtitleFailure("NativeSubtitle/Presentation", exception);
+                session.NativeSubtitlePresentationActive = false;
+                throw new PlaybackException("UnsupportedSubtitle");
+            }
+            if (!IsActive(session)) return;
         }
         RefreshSubtitlePresentation(session);
+        if (session.NativeSubtitlePresentationActive && UsesLibassSubtitleStyles(session)) RefreshAssSubtitles(session);
+        RefreshAssSubtitleFramePresentation(session);
     }
 
     private static void ValidateSubtitleDelivery(PlaybackEngineRequest request)
@@ -466,12 +571,14 @@ public sealed partial class NativePlaybackEngine(
             && (string.Equals(selected?.DeliveryMethod, "Encode", StringComparison.OrdinalIgnoreCase)
                 || QueryValue(request.MediaUri, "SubtitleMethod")?.Equals("Encode", StringComparison.OrdinalIgnoreCase) == true))
             return;
+        if (IsNativeEmbeddedSubtitleRequest(request)) return;
         throw new PlaybackException("UnsupportedSubtitle");
     }
 
     private async Task ControlAsync(Guid playbackId, Action<Session> action, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        await WaitForAudioRecoveryAsync(playbackId, cancellationToken).ConfigureAwait(false);
         try
         {
             await OnDispatcherAsync(() =>
@@ -497,19 +604,22 @@ public sealed partial class NativePlaybackEngine(
     private void Fail(Session session, string errorCode)
     {
         if (!IsActive(session)) return;
-        session.Started.TrySetException(new PlaybackException(errorCode));
-        session.SeekCompletion?.TrySetException(new PlaybackException(errorCode));
+        var failure = new PlaybackException(errorCode);
+        session.Started.TrySetException(failure);
+        // A PCM replacement can finish opening while paused, before its first actual Playing confirmation.
+        session.PlaybackConfirmed.TrySetException(failure);
+        session.SeekCompletion?.TrySetException(failure);
         Publish(session, PlaybackEngineEventKind.Failed, PlaybackEngineState.Failed, errorCode);
         // Coordinator owns server cleanup. Stop native activity immediately while it handles the failure.
         RetireNative(session, publishStopped: false);
         _ = RetireAsync(session);
     }
 
-    private async Task RetireAsync(Session session)
+    private async Task RetireAsync(Session session, bool publishStopped = true)
     {
         var retirement = await OnDispatcherAsync(() =>
         {
-            RetireNative(session);
+            RetireNative(session, publishStopped);
             return session.RetirementTask ??= DrainAsync(session);
         }).ConfigureAwait(false);
         await retirement.ConfigureAwait(false);
@@ -520,6 +630,7 @@ public sealed partial class NativePlaybackEngine(
         try { await session.LoadTask.ConfigureAwait(false); }
         catch { }
         await DrainLocalSubtitlesAsync(session).ConfigureAwait(false);
+        await DrainMediaControlsAsync(session).ConfigureAwait(false);
         await OnDispatcherAsync(() => ClearRetiredPlayerSource(session)).ConfigureAwait(false);
         if (session.AdaptiveFilter is not null) await session.AdaptiveFilter.DrainAsync().ConfigureAwait(false);
         if (session.DirectRelay is not null) await session.DirectRelay.DisposeAsync().ConfigureAwait(false);
@@ -548,7 +659,10 @@ public sealed partial class NativePlaybackEngine(
         session.Retired = true;
         session.Lifetime.Cancel();
         session.Started.TrySetCanceled();
+        session.PlaybackConfirmed.TrySetCanceled();
         session.SeekCompletion?.TrySetCanceled();
+        RetirePlaybackStatistics(session);
+        RetireNativeAudioOutput(session);
         RetireLumenControls(session);
         RetireMediaControls(session);
         if (ReferenceEquals(_current, session))
@@ -632,6 +746,9 @@ public sealed partial class NativePlaybackEngine(
         }
         catch { }
         RefreshVideoDecoding(session);
+        RefreshPlaybackStatistics(session);
+        RefreshAudioOutput(session);
+        RecordAcceptanceAssObservation(session);
         var snapshot = new PlaybackEngineSnapshot
         {
             PlaybackId = session.Request.PlaybackId,
@@ -644,6 +761,9 @@ public sealed partial class NativePlaybackEngine(
             PlaybackRate = rate
         };
         Volatile.Write(ref _snapshot, snapshot);
+        RefreshAssSubtitleFramePresentation(session, snapshot.State);
+        // A frame failure can synchronously publish Failed and retire this source.
+        if (!ReferenceEquals(Snapshot, snapshot)) return;
         try { EventReceived?.Invoke(this, new PlaybackEngineEventArgs(kind, snapshot, errorCode)); }
         catch { }
     }
@@ -675,6 +795,7 @@ public sealed partial class NativePlaybackEngine(
 
     private void ClosePlayerOwner()
     {
+        ClearIdleMediaControlsForDisposal();
         var player = _playerOwner;
         _playerOwner = null;
         if (player is null) return;
@@ -761,6 +882,7 @@ public sealed partial class NativePlaybackEngine(
         ref IDisposable? filterOwner);
 
     partial void CreateSessionPlayer(PlaybackEngineRequest request, ref MediaPlayer? player, ref bool ownsPlayer);
+    partial void RecordAcceptanceAssObservation(Session session);
     private static bool HasPreservedTimestamps(Uri uri)
     {
         var value = QueryValue(uri, "CopyTimestamps");
@@ -783,12 +905,14 @@ public sealed partial class NativePlaybackEngine(
         public Session(PlaybackEngineRequest request, CancellationToken cancellationToken)
         {
             Request = request;
+            OwnerCancellationToken = cancellationToken;
             Lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             Transport = new ScopedMediaTransport(request.MediaUri, request.Headers, Lifetime.Token);
             ExternalTextReady = request.ExternalSubtitleUri is null;
         }
 
-        public PlaybackEngineRequest Request { get; }
+        public PlaybackEngineRequest Request { get; set; }
+        public CancellationToken OwnerCancellationToken { get; }
         public CancellationTokenSource Lifetime { get; }
         public ScopedMediaTransport Transport { get; }
         public string? RelayFailureCode => Volatile.Read(ref _relayFailureCode);

@@ -13,6 +13,7 @@ internal sealed partial class PlaybackDisplayRequest : IDisposable
     private Guid? _playbackId;
     private bool _active;
     private bool _releasePending;
+    private bool _enabled = true;
     private bool _suspended = true;
     private bool _disposed;
 
@@ -21,6 +22,13 @@ internal sealed partial class PlaybackDisplayRequest : IDisposable
 
     internal bool NeedsReleaseRetry => _releasePending;
 
+    /// <summary>Releases sleep inhibition immediately when disabled, without changing playback ownership.</summary>
+    public void SetEnabled(bool enabled)
+    {
+        _enabled = enabled;
+        if (!enabled) TryRelease();
+    }
+
     public void ResumeTracking()
     {
         if (!_disposed) _suspended = false;
@@ -28,7 +36,7 @@ internal sealed partial class PlaybackDisplayRequest : IDisposable
 
     public void Update(Guid? currentPlaybackId, Guid? notificationPlaybackId, bool isPlayingVideo)
     {
-        if (_suspended || _disposed)
+        if (!_enabled || _suspended || _disposed)
         {
             TryRelease();
             return;

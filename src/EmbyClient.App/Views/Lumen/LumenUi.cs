@@ -159,6 +159,23 @@ public static class LumenUi
 
     public static Border Divider() => new() { Height = 1, Background = LumenTheme.Brush("Line") };
 
+    /// <summary>Replaces a construction-time resource without duplicate native dictionary insertion.</summary>
+    internal static void SetResource(ResourceDictionary resources, string key, object value)
+    {
+        var local = resources.ToArray();
+        if (local.FirstOrDefault(entry => Equals(entry.Key, key)) is { Key: not null } previous)
+        {
+            if (ReferenceEquals(previous.Value, value)) return;
+            // Native Remove resolves by value identity. Aliased brushes can remove a different key.
+            // These overrides occur before attachment, so reconstruct the local entries explicitly.
+            resources.Clear();
+            foreach (var entry in local)
+                if (!Equals(entry.Key, key)) resources[entry.Key] = entry.Value;
+        }
+        // IDictionary.Add checks inherited theme resources too; Insert is the native override operation.
+        resources[key] = value;
+    }
+
     public static void AnimateEntrance(FrameworkElement element)
     {
         if (!element.IsLoaded)

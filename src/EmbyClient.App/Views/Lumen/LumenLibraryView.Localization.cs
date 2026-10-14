@@ -8,6 +8,12 @@ public sealed partial class LumenLibraryView
     static LumenLibraryView() => LumenText.Register(new Dictionary<string, string>
     {
         ["Person"] = "\u4eba\u7269",
+        ["Featured"] = "\u7cbe\u9009",
+        ["{0} entries"] = "{0} \u9879",
+        ["{0} remaining"] = "\u5269\u4f59 {0}",
+        ["Browse a library to find your next watch."] = "\u6d4f\u89c8\u5a92\u4f53\u5e93\uff0c\u627e\u5230\u4f60\u60f3\u770b\u7684\u5f71\u7247\u3002",
+        ["Your unfinished movies and episodes will appear here."] = "\u770b\u5230\u4e00\u534a\u7684\u5f71\u7247\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc",
+        ["New additions to this library will appear here."] = "\u6700\u65b0\u52a0\u5165\u5a92\u4f53\u5e93\u7684\u5f71\u7247\u4f1a\u51fa\u73b0\u5728\u8fd9\u91cc",
         ["Works"] = "\u4f5c\u54c1",
         ["Read more"] = "\u5c55\u5f00",
         ["Show less"] = "\u6536\u8d77",
@@ -18,6 +24,7 @@ public sealed partial class LumenLibraryView
         ["Watch status"] = "\u89c2\u770b\u72b6\u6001",
         ["Clear filters"] = "\u6e05\u9664\u7b5b\u9009",
         ["{0} items"] = "{0} \u90e8",
+        ["{0}, {1} titles"] = "{0}\uff0c{1} \u90e8",
         ["{0} works"] = "{0} \u90e8\u4f5c\u54c1",
         ["{0} columns"] = "{0} \u5217",
         ["{0} h {1} min"] = "{0} \u5c0f\u65f6 {1} \u5206\u949f",

@@ -65,21 +65,25 @@ public sealed partial class PlayerView
         if (PreviousEpisodeButton is null) return;
         var isEpisode = string.Equals(_item?.Type, "Episode", StringComparison.OrdinalIgnoreCase);
         PreviousEpisodeButton.Visibility = Visibility.Collapsed;
-        NextEpisodeButton.Visibility = EpisodeDrawerButton.Visibility = isEpisode && !_compactOverlay ? Visibility.Visible : Visibility.Collapsed;
-        EpisodeDrawerButton.IsEnabled = isEpisode && _session is not null && !IsModalOpen && _preparationIntent != _playIntent;
+        NextEpisodeButton.Visibility = isEpisode && !_compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+        EpisodeDrawerButton.Visibility = !_compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+        EpisodeDrawerButton.IsEnabled = _session is not null && !IsModalOpen && _preparationIntent != _playIntent;
+        EpisodeDrawerButton.Content = PlayerIcon(isEpisode ? "apps_list_20_regular" : "text_bullet_list_ltr_20_regular", size: 21);
+        SetControlLabel(EpisodeDrawerButton, LumenText.Get(isEpisode ? "Episodes" : "Queue"));
         var neighbors = _episodeNeighborsItemId == _item?.Id ? _episodeNeighbors : null;
         var enabled = CanChangeEpisode();
         PreviousEpisodeButton.IsEnabled = enabled && neighbors?.Previous is not null;
         NextEpisodeButton.IsEnabled = QueueNextEpisodeButton.IsEnabled = enabled && neighbors?.Next is not null;
         SetEpisodeLabel(PreviousEpisodeButton, "Previous episode", neighbors?.Previous, enabled);
         SetEpisodeLabel(NextEpisodeButton, "Next episode", neighbors?.Next, enabled);
-        NextEpisodeSection.Visibility = isEpisode && _queue.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        NextEpisodeSection.Visibility = Visibility.Collapsed;
         NextEpisodeText.Text = neighbors?.Next is { } next ? PlaybackTitle(next, next.Name)
             : LumenText.Get(_resolvingEpisodeNeighbors ? "Finding the next episode…"
             : neighbors is null ? "Episode order is unavailable." : "No next episode is available.");
         QueueAutoPlayDescription.Text = LumenText.Get(_queue.Count > 0 ? "Your queue plays first. The next episode is resolved when the queue is empty."
             : isEpisode ? "Starts the next available episode when this one ends." : "Starts items you add to your queue when this movie ends.");
         UpdateEpisodeDrawerControls();
+        if (_coordinator?.ActiveContext is { } context) UpdateMediaControlsPresentation(context);
     }
 
     private void SetEpisodeLabel(Control button, string label, BaseItemDto? target, bool enabled)

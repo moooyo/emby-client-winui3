@@ -33,7 +33,9 @@ internal sealed record FixtureSubtitle(byte[] Bytes, string Sha256, string? Lang
 
 internal sealed partial class FixtureState
 {
-    private MediaStream[] WithExternalSubtitle(string itemId, string sourceId, MediaStream[] streams) => Options.Subtitle is { } subtitle
+    private MediaStream[] WithExternalSubtitle(string itemId, string sourceId, MediaStream[] streams) => Options.EmbeddedPgs
+        ? [.. streams, Options.Media.EmbeddedSubtitle!]
+        : Options.Subtitle is { } subtitle
         ? [.. streams, new MediaStream
         {
             Index = 2, Type = "Subtitle", Codec = "vtt", Language = subtitle.Language,

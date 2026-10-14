@@ -9,7 +9,7 @@ namespace EmbyClient.AppState.Tests;
 public sealed class LibraryHistoryStateTests
 {
     [Fact]
-    public async Task Back_restores_the_loaded_window_filter_and_viewport_without_refetching()
+    public async Task Back_and_forward_restore_the_loaded_window_filter_and_viewport_without_refetching()
     {
         using var context = await CreateAsync();
         await context.OpenLibraryAsync(Movies(120));
@@ -32,7 +32,10 @@ public sealed class LibraryHistoryStateTests
         await model.ShowItemAsync(cards[67], TestContext.Current.CancellationToken);
         Assert.Equal(1, captures);
         Assert.Equal(new BrowseViewportState(), model.ViewportState);
-        model.ViewportState = new(0, 840, 120, OverviewExpanded: true);
+        var detail = model.Detail;
+        var playable = model.PlayableDetail;
+        var detailViewport = new BrowseViewportState(0, 840, 120, OverviewExpanded: true, DetailPageIndex: 2);
+        model.ViewportState = detailViewport;
         var requestStart = context.Handler.Requests.Length;
         await model.GoBackAsync(TestContext.Current.CancellationToken);
 
@@ -49,6 +52,26 @@ public sealed class LibraryHistoryStateTests
         Assert.Equal(PageLoadOutcome.Succeeded, model.LoadOutcome);
         Assert.True(model.CanLoadMore);
         Assert.False(model.IsBusy);
+        Assert.False(model.CanGoBack);
+        Assert.True(model.CanGoForward);
+
+        await model.GoForwardAsync(TestContext.Current.CancellationToken);
+        Assert.True(model.HasDetails);
+        Assert.Same(detail, model.Detail);
+        Assert.Same(playable, model.PlayableDetail);
+        Assert.Equal(detailViewport, model.ViewportState);
+        Assert.Equal("library-a", model.NavigationLibraryId);
+        Assert.True(model.CanGoBack);
+        Assert.False(model.CanGoForward);
+        Assert.Equal(requestStart, context.Handler.Requests.Length);
+
+        await model.GoBackAsync(TestContext.Current.CancellationToken);
+        AssertSameCards(cards, model.Items);
+        Assert.Equal(viewport, model.ViewportState);
+        Assert.Equal("ProductionYear", model.BrowseSortKey);
+        Assert.True(model.BrowseSortDescending);
+        Assert.Equal(WatchStatusFilter.Unplayed, model.BrowseWatchFilter);
+        Assert.Equal(requestStart, context.Handler.Requests.Length);
 
         await model.LoadMoreAsync(TestContext.Current.CancellationToken);
         var request = Assert.Single(context.Handler.Requests.Skip(requestStart), request => request.IsItems);
@@ -61,7 +84,7 @@ public sealed class LibraryHistoryStateTests
     }
 
     [Fact]
-    public async Task Back_from_a_search_result_restores_search_then_its_original_browse_state()
+    public async Task Back_and_forward_restore_search_and_its_origin_without_adding_query_edits_to_history()
     {
         using var context = await CreateAsync();
         await context.OpenLibraryAsync(Movies(72));
@@ -76,11 +99,15 @@ public sealed class LibraryHistoryStateTests
             ? Task.FromResult(Page([result])) : request.Is("/Users/user-a/Items/search-result")
                 ? Task.FromResult(Item(result)) : Task.FromResult(context.DefaultResponse(request));
 
+        await model.SearchAsync("first query", debounce: false, TestContext.Current.CancellationToken);
         await model.SearchAsync(" Arrival ", debounce: false, TestContext.Current.CancellationToken);
         var searchCards = model.Items.ToArray();
         var searchViewport = new BrowseViewportState(260, AnchorId: result.Id, FocusedItemId: result.Id);
         model.ViewportState = searchViewport;
         await model.ShowItemAsync(Assert.Single(searchCards), TestContext.Current.CancellationToken);
+        var detail = model.Detail;
+        var detailViewport = new BrowseViewportState(DetailOffset: 640, DetailPageIndex: 1);
+        model.ViewportState = detailViewport;
         var requestStart = context.Handler.Requests.Length;
         await model.GoBackAsync(TestContext.Current.CancellationToken);
 
@@ -96,10 +123,30 @@ public sealed class LibraryHistoryStateTests
         AssertSameCards(origin, model.Items);
         Assert.Equal(originViewport, model.ViewportState);
         Assert.Equal(requestStart, context.Handler.Requests.Length);
+        Assert.False(model.CanGoBack);
+        Assert.True(model.CanGoForward);
 
         await model.GoBackAsync(TestContext.Current.CancellationToken);
-        Assert.True(model.IsHome);
+        Assert.False(model.IsHome);
+        Assert.Equal("library-a", model.SelectedLibraryId);
         Assert.False(model.CanGoBack);
+        Assert.Equal(requestStart, context.Handler.Requests.Length);
+
+        await model.GoForwardAsync(TestContext.Current.CancellationToken);
+        Assert.True(model.IsSearch);
+        Assert.Equal("Arrival", model.SearchText);
+        AssertSameCards(searchCards, model.Items);
+        Assert.Equal(searchViewport, model.ViewportState);
+        Assert.Equal("library-a", model.NavigationLibraryId);
+        Assert.True(model.CanGoBack);
+        Assert.True(model.CanGoForward);
+
+        await model.GoForwardAsync(TestContext.Current.CancellationToken);
+        Assert.True(model.HasDetails);
+        Assert.Same(detail, model.Detail);
+        Assert.Equal(detailViewport, model.ViewportState);
+        Assert.Equal("library-a", model.NavigationLibraryId);
+        Assert.False(model.CanGoForward);
         Assert.Equal(requestStart, context.Handler.Requests.Length);
     }
 

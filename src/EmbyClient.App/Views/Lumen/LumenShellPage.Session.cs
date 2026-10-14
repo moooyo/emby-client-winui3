@@ -1,4 +1,6 @@
+using EmbyClient.Api;
 using EmbyClient.App.Services;
+using EmbyClient.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -10,7 +12,35 @@ public sealed partial class LumenShellPage
     private TaskCompletionSource? _sessionExitCompletion;
     private ContentDialog? _resumeDialog;
 
-    private async void LibraryPlayRequested(object? sender, LumenPlayRequestEventArgs args)
+    private async void PlayerItemDetailsRequested(object? sender, BaseItemDto item)
+    {
+        var session = _session;
+        var epoch = _sessionEpoch;
+        if (session is null || string.IsNullOrWhiteSpace(item.Id) || !IsPlayerVisible || _returning || _transitioning || _closing) return;
+        try
+        {
+            await ReturnToLibraryAsync();
+            if (!ReferenceEquals(session, _session) || epoch != _sessionEpoch || _closing || _transitioning || IsPlayerVisible) return;
+            await _library.ViewModel.ShowItemAsync(new MediaCardViewModel(item), _sessionLifetime?.Token ?? CancellationToken.None);
+            if (!ReferenceEquals(session, _session) || epoch != _sessionEpoch || _closing || _transitioning) return;
+            UpdateChrome();
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (ReferenceEquals(session, _session) && epoch == _sessionEpoch && !_closing && !_transitioning)
+                    _library.FocusCurrentDetails();
+            });
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception)
+        {
+            if (ReferenceEquals(session, _session) && !_closing) ShowError(exception);
+        }
+    }
+
+    private async void LibraryPlayRequested(object? sender, LumenPlayRequestEventArgs args) =>
+        await StartLibraryPlaybackAsync(args);
+
+    private async Task StartLibraryPlaybackAsync(LumenPlayRequestEventArgs args)
     {
         var session = _session;
         if (session is null || _transitioning || _returning || _closing || _startingPlayback) return;
@@ -63,7 +93,7 @@ public sealed partial class LumenShellPage
         {
             if (ReferenceEquals(session, _session) && !_closing) ShowError(exception);
         }
-        finally { _startingPlayback = false; }
+        finally { _startingPlayback = false; ResumePendingWindowsActivation(); }
     }
 
     private async Task ReturnToLibraryAsync()
@@ -82,6 +112,7 @@ public sealed partial class LumenShellPage
             _settingsVisible = false;
             UpdateChrome();
             await _library.RefreshAsync(_sessionLifetime?.Token ?? CancellationToken.None);
+            await RefreshWindowsResumeItemsAsync();
             if (ReferenceEquals(session, _session) && !_closing) _library.FocusCurrentDetails();
         }
         catch (OperationCanceledException) { }
@@ -101,16 +132,21 @@ public sealed partial class LumenShellPage
         _sessionExitCompletion = exitCompletion;
         _sessionEpoch++;
         _session = null;
+        _mediaLibrarySelectionAccount = null;
         _resumeDialog?.Hide();
+        _shellDialog?.Hide();
+        _navigation.DismissMenus();
         _sessionLifetime?.Cancel();
         _connectionRequest?.Cancel();
         _notice.IsOpen = false;
         ExitFullscreenRequested?.Invoke(this, EventArgs.Empty);
+        _settings.SetAmbientArtwork(null, null);
         _library.ClearSession();
         _player.Visibility = Visibility.Collapsed;
         _library.Visibility = Visibility.Visible;
         _settings.Visibility = Visibility.Collapsed;
         _settingsVisible = false;
+        _settingsForward = false;
         _connected.Visibility = Visibility.Collapsed;
         _connectionPane.Visibility = Visibility.Visible;
         _password.Password = string.Empty;
@@ -119,6 +155,9 @@ public sealed partial class LumenShellPage
         try
         {
             Exception? localFailure = null;
+            await ClearWindowsSessionActivationAsync(session, signOut || expired);
+            await StopServerIntegrationAsync();
+            if (signOut || expired) _pendingEpisodeNotification = null;
             if (signOut || expired)
             {
                 try { await _connections.ForgetTokenAsync(session.AccountKey); }
@@ -146,6 +185,7 @@ public sealed partial class LumenShellPage
                 if (!_closing)
                 {
                     PopulateSavedAccounts();
+                    _settings.SetSavedAccounts(_connections.Settings.Accounts);
                     SetConnecting(false);
                     _password.Focus(FocusState.Programmatic);
                     UpdateChrome();
@@ -163,7 +203,18 @@ public sealed partial class LumenShellPage
     {
         if (_closing) return;
         _closing = true;
+        CancelServerDiscovery();
         _resumeDialog?.Hide();
+        _shellDialog?.Hide();
+        _navigation.DismissMenus();
+        _notice.IsOpen = false;
+        if (_themeSubscribed) LumenTheme.Changed -= ThemeChanged;
+        _headerTintTransition?.Stop();
+        _headerTintTransition = null;
+        _themeSubscribed = false;
+        UnsubscribeSystemColors();
+        DetachGlobalKeyboardInput();
+        _settings.SetAmbientArtwork(null, null);
         _sessionEpoch++;
         _connectionRequest?.Cancel();
         _sessionLifetime?.Cancel();
@@ -171,9 +222,12 @@ public sealed partial class LumenShellPage
         var sessionExit = _sessionExitCompletion?.Task;
         try
         {
+            await ShutdownServerIntegrationAsync();
+            await ShutdownWindowsActivationAsync();
             if (sessionExit is not null) await sessionExit;
             else await _player.DisconnectAsync();
             await _pendingPreferenceSave.WaitAsync(TimeSpan.FromSeconds(3));
+            await _pendingMediaLibrarySave.WaitAsync(TimeSpan.FromSeconds(3));
         }
         finally
         {

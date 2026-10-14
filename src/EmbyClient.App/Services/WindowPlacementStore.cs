@@ -23,27 +23,42 @@ public sealed partial class WindowPlacementStore : IDictionary<string, object>
     private readonly object _gate = new();
     private Dictionary<string, string> _entries = new(StringComparer.Ordinal);
     private WindowPlacementPersistenceIssue _lastIssue;
+    private bool _enabled;
+    private bool _loaded;
 
-    public WindowPlacementStore(string? filePath = null)
+    public WindowPlacementStore(string? filePath = null, bool enabled = true)
     {
         FilePath = Path.GetFullPath(filePath ?? Path.Combine(AppDataPaths.RootDirectory, "window-placement.json"));
-        Load();
+        _enabled = enabled;
+        if (enabled) { Load(); _loaded = true; }
     }
 
     public string FilePath { get; }
+    public bool IsEnabled { get { lock (_gate) return _enabled; } }
     public WindowPlacementPersistenceIssue LastIssue { get { lock (_gate) return _lastIssue; } }
-    public int Count { get { lock (_gate) return _entries.Count; } }
-    public bool IsReadOnly => false;
-    public ICollection<string> Keys { get { lock (_gate) return Array.AsReadOnly(_entries.Keys.ToArray()); } }
-    public ICollection<object> Values { get { lock (_gate) return Array.AsReadOnly(_entries.Values.Cast<object>().ToArray()); } }
+    public int Count { get { lock (_gate) return _enabled ? _entries.Count : 0; } }
+    public bool IsReadOnly => !IsEnabled;
+    public ICollection<string> Keys { get { lock (_gate) return Array.AsReadOnly(_enabled ? _entries.Keys.ToArray() : []); } }
+    public ICollection<object> Values { get { lock (_gate) return Array.AsReadOnly(_enabled ? _entries.Values.Cast<object>().ToArray() : []); } }
+
+    /// <summary>Disabling hides saved placement and prevents writes; enabling resumes persistence for the current window.</summary>
+    public void SetEnabled(bool enabled)
+    {
+        lock (_gate)
+        {
+            _enabled = enabled;
+            if (enabled && !_loaded) { Load(); _loaded = true; }
+        }
+    }
 
     public object this[string key]
     {
-        get { lock (_gate) return _entries[key]; }
+        get { lock (_gate) return _enabled ? _entries[key] : throw new KeyNotFoundException(); }
         set
         {
             lock (_gate)
             {
+                if (!_enabled) return;
                 if (value is not string placement || !IsValidEntry(key, placement))
                 {
                     _lastIssue = WindowPlacementPersistenceIssue.InvalidData;
@@ -59,18 +74,19 @@ public sealed partial class WindowPlacementStore : IDictionary<string, object>
     {
         lock (_gate)
         {
+            if (!_enabled) return;
             if (_entries.ContainsKey(key)) throw new ArgumentException("The window-placement key already exists.", nameof(key));
             this[key] = value;
         }
     }
 
-    public bool ContainsKey(string key) { lock (_gate) return _entries.ContainsKey(key); }
+    public bool ContainsKey(string key) { lock (_gate) return _enabled && _entries.ContainsKey(key); }
 
     public bool Remove(string key)
     {
         lock (_gate)
         {
-            if (!_entries.ContainsKey(key)) return false;
+            if (!_enabled || !_entries.ContainsKey(key)) return false;
             var updated = new Dictionary<string, string>(_entries, StringComparer.Ordinal);
             updated.Remove(key);
             Commit(updated);
@@ -82,7 +98,7 @@ public sealed partial class WindowPlacementStore : IDictionary<string, object>
     {
         lock (_gate)
         {
-            if (_entries.TryGetValue(key, out var placement))
+            if (_enabled && _entries.TryGetValue(key, out var placement))
             {
                 value = placement;
                 return true;
@@ -92,12 +108,12 @@ public sealed partial class WindowPlacementStore : IDictionary<string, object>
         }
     }
 
-    public void Clear() { lock (_gate) Commit(new Dictionary<string, string>(StringComparer.Ordinal)); }
+    public void Clear() { lock (_gate) { if (_enabled) Commit(new Dictionary<string, string>(StringComparer.Ordinal)); } }
     public void Add(KeyValuePair<string, object> item) => Add(item.Key, item.Value);
 
     public bool Contains(KeyValuePair<string, object> item)
     {
-        lock (_gate) return item.Value is string value && _entries.TryGetValue(item.Key, out var existing) && value == existing;
+        lock (_gate) return _enabled && item.Value is string value && _entries.TryGetValue(item.Key, out var existing) && value == existing;
     }
 
     public bool Remove(KeyValuePair<string, object> item)
@@ -111,7 +127,7 @@ public sealed partial class WindowPlacementStore : IDictionary<string, object>
 
     private KeyValuePair<string, object>[] Snapshot()
     {
-        lock (_gate) return _entries.Select(entry => new KeyValuePair<string, object>(entry.Key, entry.Value)).ToArray();
+        lock (_gate) return _enabled ? _entries.Select(entry => new KeyValuePair<string, object>(entry.Key, entry.Value)).ToArray() : [];
     }
 
     private void Load()

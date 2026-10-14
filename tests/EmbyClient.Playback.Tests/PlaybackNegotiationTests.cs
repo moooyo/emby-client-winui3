@@ -359,6 +359,34 @@ public sealed class PlaybackNegotiationTests
 
     [Theory(Timeout = 15000)]
     [InlineData(null)]
+    [InlineData("SDR")]
+    public async Task Explicit_dolby_vision_profile_five_is_converted_before_the_engine_opens(string? videoRange)
+    {
+        await using var context = new PlaybackTestContext();
+        context.Sources = (_, _) =>
+        {
+            var source = PlaybackTestContext.Source();
+            return [source with
+            {
+                MediaStreams = source.MediaStreams.Select(stream => stream.Type == "Video"
+                    ? stream with { VideoRange = videoRange, ExtendedVideoSubType = "DoviProfile50" }
+                    : stream).ToArray()
+            }];
+        };
+
+        await context.Coordinator.PlayAsync(PlaybackTestContext.Selection(600_000_001), TestContext.Current.CancellationToken);
+
+        var opened = Assert.Single(context.Engine.Opened);
+        Assert.Equal(PlaybackDeliveryMethod.Transcode, opened.DeliveryMethod);
+        Assert.Equal(600_000_001, opened.InitialPositionTicks);
+        var negotiations = context.Handler.At("Items/movie-a/PlaybackInfo");
+        Assert.Equal(2, negotiations.Length);
+        Assert.False(negotiations[1].JsonBody.GetProperty("EnableDirectStream").GetBoolean());
+        Assert.False(negotiations[1].JsonBody.GetProperty("AllowVideoStreamCopy").GetBoolean());
+    }
+
+    [Theory(Timeout = 15000)]
+    [InlineData(null)]
     [InlineData("")]
     [InlineData("SDR")]
     public async Task Missing_or_sdr_metadata_keeps_the_baseline_without_advertising_an_unverified_video_range_condition(string? videoRange)

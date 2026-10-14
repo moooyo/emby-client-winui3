@@ -206,7 +206,7 @@ void MediaSampleProvider::InitializeStreamInfo()
     {
         auto streamDescriptor = StreamDescriptor().as<VideoStreamDescriptor>();
         auto pixelAspect = (double)streamDescriptor.EncodingProperties().PixelAspectRatio().Numerator() / streamDescriptor.EncodingProperties().PixelAspectRatio().Denominator();
-        auto videoAspect = ((double)m_pAvCodecCtx->width / m_pAvCodecCtx->height) / pixelAspect;
+        auto videoAspect = ((double)m_pAvCodecCtx->width / m_pAvCodecCtx->height) * pixelAspect;
         auto bitsPerSample = max(m_pAvStream->codecpar->bits_per_raw_sample, m_pAvStream->codecpar->bits_per_coded_sample);
         auto framesPerSecond = m_pAvStream->avg_frame_rate.num > 0 && m_pAvStream->avg_frame_rate.den > 0 ? av_q2d(m_pAvStream->avg_frame_rate) : 0.0;
 

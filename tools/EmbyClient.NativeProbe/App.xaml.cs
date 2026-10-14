@@ -37,7 +37,12 @@ public sealed partial class App : Application
     {
         var commandLine = Environment.GetCommandLineArgs().Skip(1).ToArray();
         string directory;
-        if (commandLine is ["--output-dir", var multiAudioDirectory, "--hardware-multiaudio", "--media-dir", var multiAudioMediaDirectory, .. var multiAudioOptions])
+        if (commandLine is ["--output-dir", var audioOutputDirectory, "--native-audio-output", "--media-dir", var audioOutputMediaDirectory])
+        {
+            directory = audioOutputDirectory;
+            ConfigureNativeAudioOutputMode(audioOutputMediaDirectory);
+        }
+        else if (commandLine is ["--output-dir", var multiAudioDirectory, "--hardware-multiaudio", "--media-dir", var multiAudioMediaDirectory, .. var multiAudioOptions])
         {
             directory = multiAudioDirectory;
             ConfigureHardwareMultiAudioMode(multiAudioMediaDirectory, multiAudioOptions);
@@ -157,11 +162,12 @@ public sealed partial class App : Application
         }
         if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation && _networkRetryMediaDirectory is null
             && _externalSubtitleCredentialsPath is null && _complexSubtitleCredentialsPath is null && !_hardwareDecodeMode
-            && _hardwareHlsMediaDirectory is null && _hardwareMultiAudioMediaDirectory is null) Save();
+            && _hardwareHlsMediaDirectory is null && _hardwareMultiAudioMediaDirectory is null && _nativeAudioOutputMediaDirectory is null) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };
         _window = new Window
         {
-            Title = _hardwareMultiAudioMediaDirectory is not null ? "SYNTHETIC native audio selection control"
+            Title = _nativeAudioOutputMediaDirectory is not null ? "SYNTHETIC native audio output probe"
+                : _hardwareMultiAudioMediaDirectory is not null ? "SYNTHETIC native audio selection control"
                 : _hardwareHlsMediaDirectory is not null ? "SYNTHETIC native HLS decoding control"
                 : _complexSubtitleCaseId is null ? "SYNTHETIC native playback probe"
                 : (_complexSubtitleHttpProfileControl ? "SYNTHETIC subtitle HTTP profile control: " : "SYNTHETIC complex subtitle: ") + _complexSubtitleCaseId,
@@ -170,7 +176,8 @@ public sealed partial class App : Application
         };
         _window.AppWindow.Resize(_complexSubtitleCaseId is null ? new SizeInt32(480, 300) : new SizeInt32(960, 600));
         _window.AppWindow.Show(activateWindow: false);
-        _ = _hardwareMultiAudioMediaDirectory is not null ? RunHardwareMultiAudioAsync()
+        _ = _nativeAudioOutputMediaDirectory is not null ? RunNativeAudioOutputAsync()
+            : _hardwareMultiAudioMediaDirectory is not null ? RunHardwareMultiAudioAsync()
             : _hardwareHlsMediaDirectory is not null ? RunHardwareHlsAsync()
             : _hardwareDecodeMode ? RunHardwareDecodeAsync()
             : _complexSubtitleCredentialsPath is not null ? RunComplexSubtitleModeAsync()

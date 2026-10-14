@@ -44,6 +44,13 @@ An original-file download and an Emby synchronization job are different workflow
 
 Emby's sync guide requires advertising `SupportsSync` and a `DeviceProfile`, checking the user's `Policy.EnableSync`, and checking item `SupportsSync` when requesting `SyncInfo`. It identifies `TargetId` with the client's `DeviceId`. Those fields and their current permission/feature behavior must be verified on the target server. [Official Sync guide](https://dev.emby.media/doc/restapi/Sync.html), [SyncService](https://dev.emby.media/reference/RestAPI/SyncService.html)
 
+`Policy.EnableSync` is the historical tutorial field, not a current permission
+check to copy into this client. The October 2026 schema audit instead finds
+`EnableContentDownloading` and `EnableSyncTranscoding`; see the
+[versioned support audit](../research/lumen-v2-emby-api-support.md#discovery-navigation-and-offline-boundaries).
+The new disconnected-state banner preserves the current in-memory library view;
+it does not implement synchronized offline media or advertise `SupportsSync`.
+
 The guide leaves several offline-management sections unfinished. The listed routes are an inventory for a later design, not a complete synchronization protocol. Before implementation, specify additional-file/subtitle transfer, cancellation, removal acknowledgements, retention, disk quota, interrupted transfers, user switching, permissions, offline metadata, and conflict resolution for watched state. Do not advertise `SupportsSync=true` until that lifecycle works.
 
 For a basic download feature, use a user-selected destination and a temporary file, inspect response disposition/content, and implement cancellation and atomic completion. HTTP range resume must be verified; it is not guaranteed by an unspecified binary response schema. Respect download permission and server feature availability independently of ordinary playback permission.

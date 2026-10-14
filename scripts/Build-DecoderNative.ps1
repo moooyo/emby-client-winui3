@@ -35,6 +35,7 @@ $dumpbin = Join-Path $vsRoot "VC/Tools/MSVC/$msvcVersion/bin/Hostx64/x64/dumpbin
 $sdkRoot = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots').KitsRoot10
 $sdkMetadata = Join-Path $sdkRoot "UnionMetadata/$($lock.toolchain.windowsSdkVersion)/Windows.winmd"
 if (!(Test-Path -LiteralPath $sdkMetadata)) { throw "Windows SDK $($lock.toolchain.windowsSdkVersion) is required." }
+$assDependencies = & (Join-Path $PSScriptRoot 'Prepare-AssDependencies.ps1') -DependencyRoot $dependencies.DependencyRoot -VisualStudioRoot $vsRoot -MsvcVersion $msvcVersion -WindowsSdkVersion $lock.toolchain.windowsSdkVersion -Force:$Force
 $cppWinRt = Join-Path $dependencies.NuGetRoot "microsoft.windows.cppwinrt/$($lock.toolchain.cppWinRtVersion)/bin/cppwinrt.exe"
 $winmd = Join-Path $dependencies.NuGetRoot 'ffmpeginteropx.desktop.lib/2.1.0/runtimes/win-x64/native/FFmpegInteropX.winmd'
 $interactiveMetadata = Join-Path $dependencies.NuGetRoot "microsoft.windowsappsdk.interactiveexperiences/$($lock.toolchain.windowsAppSdkInteractiveExperiencesVersion)/metadata/10.0.18362.0"
@@ -45,8 +46,11 @@ $metadata += Join-Path $dependencies.NuGetRoot "microsoft.web.webview2/$($lock.t
 $sourceRoot = Join-Path $repositoryRoot 'native/FFmpegInteropX/Source'
 $sourceFiles = @(Get-ChildItem -LiteralPath $sourceRoot -File | Where-Object Extension -in '.cpp', '.h', '.idl', '.def', '.rc', '.vcxproj')
 $sourceFiles += Get-Item (Join-Path $repositoryRoot 'native/FFmpegInteropX/DecoderNative.props'), (Join-Path $repositoryRoot 'native/FFmpegInteropX/dependencies.lock.json'), $PSCommandPath, (Join-Path $PSScriptRoot 'Prepare-DecoderDependencies.ps1')
+$sourceFiles += Get-Item (Join-Path $repositoryRoot 'native/FFmpegInteropX/AssNative.props'), (Join-Path $repositoryRoot 'native/FFmpegInteropX/ass.dependencies.lock.json'), (Join-Path $PSScriptRoot 'Prepare-AssDependencies.ps1')
+$sourceFiles += Get-ChildItem -LiteralPath (Join-Path $repositoryRoot 'native/FFmpegInteropX/AssNative') -Recurse -File
 $fingerprintInput = ($sourceFiles | Sort-Object FullName | ForEach-Object { $_.FullName.Substring($repositoryRoot.Length) + ':' + (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }) -join "`n"
 $fingerprintInput += "`n$Configuration`n$vsRoot`n$($lock.toolchain.windowsSdkVersion)`n$($dependencies.DependencyFingerprint)"
+$fingerprintInput += "`n$($assDependencies.DependencyFingerprint)`n$($assDependencies.LockSha256)`n$($assDependencies.ReceiptSha256)"
 foreach ($path in @($msbuild, $compiler, $cppWinRt, $sdkMetadata, $winmd) + $metadata) {
     $fingerprintInput += "`n$path`:$((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash)"
 }
@@ -91,17 +95,46 @@ foreach ($decoder in $lock.ffmpeg.requiredDecoders) {
 Set-Content -LiteralPath (Join-Path $NativeRoot 'ffmpeg-version.txt') -Value $versionOutput
 Set-Content -LiteralPath (Join-Path $NativeRoot 'ffmpeg-decoders.txt') -Value $decodersOutput
 $logPath = Join-Path $NativeRoot 'native-build.log'
-$arguments = @((Join-Path $sourceRoot 'FFmpegInteropX.vcxproj'), '/m', '/nologo', '/verbosity:minimal', "/p:Configuration=$Configuration", '/p:Platform=x64', "/p:DecoderNativeRoot=$NativeRoot\", "/p:DecoderFFmpegRoot=$($dependencies.FFmpegRoot)\", "/p:WindowsTargetPlatformVersion=$($lock.toolchain.windowsSdkVersion)")
+$arguments = @((Join-Path $sourceRoot 'FFmpegInteropX.vcxproj'), '/m', '/nologo', '/verbosity:minimal', "/p:Configuration=$Configuration", '/p:Platform=x64', "/p:DecoderNativeRoot=$NativeRoot\", "/p:DecoderFFmpegRoot=$($dependencies.FFmpegRoot)\", "/p:AssNativeRoot=$($assDependencies.NativeRoot)\", "/p:WindowsTargetPlatformVersion=$($lock.toolchain.windowsSdkVersion)")
 & $msbuild @arguments 2>&1 | Tee-Object -FilePath $logPath
 if ($LASTEXITCODE -ne 0) { throw "Native decoder build failed. See $logPath" }
 $exports = & $dumpbin /NOLOGO /EXPORTS (Join-Path $runtimeRoot 'FFmpegInteropX.dll') | Out-String
 if ($LASTEXITCODE -ne 0) { throw 'The custom decoder export inventory could not be read.' }
-foreach ($symbol in 'EmbyDecoderApiVersion', 'EmbyConfigureDecoderApi', 'EmbyGetDecoderObservation') {
+foreach ($symbol in @(
+    'EmbyDecoderApiVersion', 'EmbyConfigureDecoderApi', 'EmbyGetDecoderObservation',
+    'EmbySubtitleApiVersion', 'EmbyLibassVersion', 'EmbyValidateAssSubtitleDocument', 'EmbyCreateLocalAssSubtitle',
+    'EmbySetLocalAssSubtitleDelay', 'EmbyRemoveLocalAssSubtitle', 'EmbyRefreshAssSubtitles', 'EmbyGetAssSubtitleFailure', 'EmbyGetAssSubtitleObservation',
+    'EmbyAssSubtitleFrameApiVersion', 'EmbyBitmapSubtitleSelectionApiVersion', 'EmbyGetAssSubtitleFrame', 'EmbyAcquireAssSubtitleFrame',
+    'EmbyAudioApiVersion', 'EmbyTryOpenBitstream', 'EmbyGetAudioObservation', 'EmbySuspendAudioOutput', 'EmbyCloseAudioOutput'
+)) {
     if ($exports -notmatch "(?m)\s$([regex]::Escape($symbol))(?:\s|$)") { throw "The custom native decoder is missing $symbol." }
 }
 Set-Content -LiteralPath (Join-Path $NativeRoot 'native-exports.txt') -Value $exports
+$nativeImports = & $dumpbin /NOLOGO /DEPENDENTS (Join-Path $runtimeRoot 'FFmpegInteropX.dll') | Out-String
+if ($LASTEXITCODE -ne 0 -or $nativeImports -notmatch '(?im)^\s+ass-9\.dll\s*$') { throw 'The custom decoder does not import the separately locked libass renderer DLL.' }
+Set-Content -LiteralPath (Join-Path $NativeRoot 'native-imports.txt') -Value $nativeImports
 # Copy every DLL from this archive and preserve the unchanged managed projection ABI.
 Get-ChildItem (Join-Path $dependencies.FFmpegRoot 'bin') -Filter '*.dll' -File | Copy-Item -Destination $runtimeRoot -Force
+$currentAssNames = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+foreach ($file in $assDependencies.RuntimeFiles) {
+    if ([IO.Path]::GetFileName($file.name) -ne $file.name -or !$currentAssNames.Add($file.name)) { throw 'The libass runtime inventory contains an invalid or duplicate file name.' }
+    if (Test-Path -LiteralPath (Join-Path $dependencies.FFmpegRoot ('bin/' + $file.name))) { throw 'A libass runtime DLL collides with the separately locked FFmpeg payload.' }
+    $path = Join-Path $assDependencies.RuntimeRoot $file.name
+    if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $file.sha256) { throw "A libass runtime DLL changed during the decoder build: $($file.name)" }
+    Copy-Item -LiteralPath $path -Destination $runtimeRoot -Force
+}
+if (Test-Path -LiteralPath $receiptPath) {
+    $previousReceipt = Get-Content -LiteralPath $receiptPath -Raw | ConvertFrom-Json
+    if ($previousReceipt.PSObject.Properties['assRuntimeFiles']) {
+        foreach ($file in $previousReceipt.assRuntimeFiles) {
+            if ([IO.Path]::GetFileName($file.name) -ne $file.name) { throw 'Previous libass runtime inventory file names must be basenames.' }
+            if (!$currentAssNames.Contains($file.name)) {
+                $stalePath = Join-Path $runtimeRoot $file.name
+                if (Test-Path -LiteralPath $stalePath) { Remove-Item -LiteralPath $stalePath }
+            }
+        }
+    }
+}
 Copy-Item -LiteralPath $winmd -Destination $runtimeRoot -Force
 Copy-Item (Join-Path $dependencies.NuGetRoot 'ffmpeginteropx.desktop.lib/2.1.0/runtimes/win-x64/native/FFmpegInteropX.xml') -Destination $runtimeRoot -Force
 $runtimeFiles = @(Get-ChildItem -LiteralPath $runtimeRoot -File | Where-Object Extension -in '.dll', '.winmd', '.xml' | Sort-Object Name | ForEach-Object { [ordered]@{ name = $_.Name; size = $_.Length; sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() } })
@@ -119,8 +152,13 @@ $runtimeFiles = @(Get-ChildItem -LiteralPath $runtimeRoot -File | Where-Object E
     ffmpegArchiveSha256 = $dependencies.ArchiveSha256
     ffmpegDevelopmentArchiveSha256 = $dependencies.DevelopmentArchiveSha256
     ffmpegDependencyFingerprint = $dependencies.DependencyFingerprint
+    assDependencyFingerprint = $assDependencies.DependencyFingerprint
+    assDependencyLockSha256 = $assDependencies.LockSha256
+    assBuildReceiptSha256 = $assDependencies.ReceiptSha256
+    assRuntimeFiles = @($assDependencies.RuntimeFiles)
+    assLibraries = @($assDependencies.Libraries)
     runtimeFiles = $runtimeFiles
-} | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath
+} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $receiptPath
 Write-Output "Native decoder runtime: $runtimeRoot"
 }
 finally {

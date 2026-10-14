@@ -4,4 +4,7 @@
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
+  </ItemGroup>
 </Project>

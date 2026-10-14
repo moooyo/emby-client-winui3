@@ -9,6 +9,7 @@ public sealed partial class PersonCardViewModel
         Name = person.Name!;
         Id = person.Id ?? string.Empty;
         Role = role;
+        Profession = person.Type ?? string.Empty;
         Media = new MediaCardViewModel(new BaseItemDto
         {
             Id = person.Id,
@@ -22,6 +23,7 @@ public sealed partial class PersonCardViewModel
     public string Id { get; }
     public string Name { get; }
     public string Role { get; }
+    public string Profession { get; }
     public MediaCardViewModel Media { get; }
     public bool CanOpen => !string.IsNullOrWhiteSpace(Id);
     public string AutomationName => $"{Name}, {Role}" + (CanOpen ? ". View person and library works." : ". No profile is available.");

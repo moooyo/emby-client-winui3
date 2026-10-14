@@ -27,6 +27,7 @@ public sealed partial class PlayerView
     private long _chapterImageBytes;
     private long? _introSkipHandledIntent;
     private long? _chapterNextSuppressedIntent;
+    private long? _chapterCreditsSuppressedIntent;
     private Guid? _drawnChapterPlayback;
     private ChapterInfo[]? _drawnChapters;
     private long _drawnChapterDuration;
@@ -35,6 +36,15 @@ public sealed partial class PlayerView
 
     private void InitializeChapters()
     {
+        var playLabel = LumenText.Get("Play now");
+        var playContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
+            VerticalAlignment = VerticalAlignment.Center };
+        playContent.Children.Add(PlayerIcon("play_24_filled", dark: true, size: 15));
+        playContent.Children.Add(new TextBlock { Text = playLabel, FontSize = 14,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
+        CountdownPlayButton.Content = playContent;
+        CountdownPlayButton.Height = 38;
+        SetControlLabel(CountdownPlayButton, playLabel);
         ChapterPreview.RenderTransform = _chapterPreviewLift;
         ChapterPreview.SizeChanged += (_, _) => UpdateChapterPreviewClearance();
         SubtitleOverlay.SizeChanged += (_, _) => UpdateChapterPreviewClearance();
@@ -63,6 +73,7 @@ public sealed partial class PlayerView
         _introSkipRequest = null;
         _introSkipHandledIntent = null;
         _chapterNextSuppressedIntent = null;
+        _chapterCreditsSuppressedIntent = null;
         ClearChapterNextPrompt();
         ChapterTicks.Children.Clear();
         _drawnChapterPlayback = null;
@@ -125,16 +136,24 @@ public sealed partial class PlayerView
             .Where(entry => ValidChapterStart(entry.Chapter, duration) && entry.Chapter.StartPositionTicks <= position
                 && (!IsChapterBoundaryMarker(entry.Chapter) || !string.IsNullOrWhiteSpace(entry.Chapter.ImageTag)))
             .OrderByDescending(entry => entry.Chapter.StartPositionTicks).FirstOrDefault();
+        ChapterPreviewText.Text = string.Join(LumenText.Get(" \u00b7 "),
+            new[] { FormatTime(position), candidate.Chapter?.Name }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        PositionChapterPreview(point.X);
         if (candidate.Chapter is null || string.IsNullOrWhiteSpace(candidate.Chapter.ImageTag)
             || (candidate.Chapter.ChapterIndex ?? candidate.Index) < 0)
-        { HideChapterPreview(); return; }
-        ChapterPreviewText.Text = string.Join(LumenText.Get(" \u00b7 "),
-            new[] { FormatTime(position), candidate.Chapter.Name }.Where(value => !string.IsNullOrWhiteSpace(value)));
-        PositionChapterPreview(point.X);
+        {
+            HideChapterPreview(clearCaption: false);
+            ChapterPreviewImageHost.Visibility = Visibility.Collapsed;
+            ChapterPreview.Visibility = Visibility.Visible;
+            UpdateChapterPreviewClearance();
+            return;
+        }
         var key = new ChapterImageKey(session.AccountKey, session.Api.ApiRoot.AbsoluteUri, item.Id,
             candidate.Chapter.ChapterIndex ?? candidate.Index, candidate.Chapter.ImageTag);
         if (_chapterHoverOwner is { } current && current.Key == key && OwnsChapterHover(current)) return;
         HideChapterPreview(clearCaption: false);
+        ChapterPreviewImageHost.Visibility = Visibility.Collapsed;
+        ChapterPreview.Visibility = Visibility.Visible;
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_playRequest?.Token ?? CancellationToken.None);
         _chapterPreviewCancellation = cancellation;
         var owner = new ChapterHoverOwner(session, coordinator!, item, _playIntent, context.PlaybackId, key, cancellation.Token);
@@ -150,6 +169,7 @@ public sealed partial class PlayerView
             {
                 if (!OwnsChapterHover(owner)) return;
                 ChapterPreviewImage.Source = bitmap;
+                ChapterPreviewImageHost.Visibility = Visibility.Visible;
                 ChapterPreview.Visibility = Visibility.Visible;
                 UpdateChapterPreviewClearance();
             });
@@ -300,6 +320,7 @@ public sealed partial class PlayerView
         SkipIntroButton.Visibility = !_compactOverlay && _preferences.IntroSkipMode == "ShowButton" && inIntro && canSeek
             && CanShowChapterPrompt() && NextEpisodeCountdown.Visibility != Visibility.Visible
             ? Visibility.Visible : Visibility.Collapsed;
+        SkipIntroButton.Margin = new Thickness(0, 0, PlayerRoot.ActualWidth < 760 ? 36 : 56, AreControlsVisible ? 132 : 48);
     }
 
     private static ChapterMarkers ReadChapterMarkers(ChapterInfo[] chapters, long duration)
@@ -390,7 +411,8 @@ public sealed partial class PlayerView
         if (_coordinator?.Status == PlaybackStatus.Ended)
         { RefreshChapterNextPrompt(); return; }
         if (creditsStart is null || context.PositionTicks < creditsStart.Value
-            || _chapterNextSuppressedIntent == _playIntent || ChapterNextTarget() is null)
+            || _chapterNextSuppressedIntent == _playIntent || _chapterCreditsSuppressedIntent == _playIntent
+            || ChapterNextTarget() is null)
         { ClearChapterNextPrompt(); return; }
         if (_chapterNextPrompt is null && _session is { } session && _coordinator is { } coordinator && _item is { } item
             && _notificationOwner.Capture(coordinator, context.PlaybackId, context.PlaybackId) is { } ticket)
@@ -404,9 +426,10 @@ public sealed partial class PlayerView
             || _session is not { } session || _coordinator is not { } coordinator || _item is not { } item) return true;
         HideChapterPreview();
         SkipIntroButton.Visibility = Visibility.Collapsed;
-        if (_chapterNextSuppressedIntent == _playIntent || _advancing || !_preferences.AutoPlayNext)
+        if (_chapterNextSuppressedIntent == _playIntent || _advancing || !AutoPlayNext.IsOn)
         { ClearChapterNextPrompt(); return true; }
-        if (_preferences.NextEpisodeCountdownSeconds <= 0 || ChapterNextTarget() is null)
+        // Watching the credits cancels only the early prompt; natural completion still honors auto-play.
+        if (_chapterCreditsSuppressedIntent == _playIntent || _preferences.NextEpisodeCountdownSeconds <= 0 || ChapterNextTarget() is null)
         { ClearChapterNextPrompt(); return false; }
         var prompt = _chapterNextPrompt;
         if (prompt is null || !OwnsChapterNextPrompt(prompt))
@@ -425,15 +448,16 @@ public sealed partial class PlayerView
         && (_coordinator?.Status is PlaybackStatus.Stopping or PlaybackStatus.Ended
             || _coordinator?.ActiveContext?.PlaybackId == prompt.Ticket.PlaybackId);
 
-    private bool ChapterNextAutomatic(ChapterNextPrompt prompt) => _preferences.AutoPlayNext
-        && (prompt.Completion.HasValue || _preferences.IntroSkipMode == "Automatic");
+    private bool ChapterNextAutomatic(ChapterNextPrompt prompt) => AutoPlayNext.IsOn
+        && (prompt.Completion.HasValue || _preferences.NextEpisodeCountdownSeconds > 0);
 
     private void RefreshChapterNextPrompt()
     {
         var prompt = _chapterNextPrompt;
         if (prompt is null) { _nextChapterTimer.Stop(); NextEpisodeCountdown.Visibility = Visibility.Collapsed; return; }
         var target = ChapterNextTarget();
-        if (!OwnsChapterNextPrompt(prompt) || target is null || _chapterNextSuppressedIntent == prompt.Intent)
+        if (!OwnsChapterNextPrompt(prompt) || target is null || _chapterNextSuppressedIntent == prompt.Intent
+            || !prompt.Completion.HasValue && _chapterCreditsSuppressedIntent == prompt.Intent)
         { ClearChapterNextPrompt(); return; }
         if (ChapterNextAutomatic(prompt))
         {
@@ -475,10 +499,28 @@ public sealed partial class PlayerView
     {
         var title = PlaybackTitle(target, target.Name);
         var episode = string.Equals(target.Type, "Episode", StringComparison.OrdinalIgnoreCase);
+        NextEpisodeCode.Text = episode
+            ? LumenText.Get("Up next · S{0} · E{1}", target.ParentIndexNumber ?? 1, (target.IndexNumber ?? 1).ToString("00"))
+            : LumenText.Get("Up next");
+        NextEpisodeTitle.Text = target.Name ?? title;
+        NextEpisodeOverview.Text = target.Overview ?? string.Empty;
+        UpdateNextEpisodeArtwork(target);
         NextCountdownText.Text = prompt.RemainingSeconds is { } remaining
-            ? string.Format(LumenText.Get(episode ? "Next episode in {0} seconds: {1}" : "Up next in {0} seconds: {1}"),
-                (int)Math.Ceiling(remaining), title)
-            : string.Format(LumenText.Get(episode ? "Next episode: {0}" : "Up next: {0}"), title);
+            ? LumenText.Get("Auto-play in {0}s", (int)Math.Ceiling(remaining))
+            : AutoPlayNext.IsOn ? LumenText.Get("After credits") : string.Empty;
+        if (prompt.RemainingSeconds is { } progressRemaining && prompt.ConfiguredSeconds > 0)
+        {
+            NextEpisodeCountdownProgress.Value = Math.Clamp((1 - progressRemaining / prompt.ConfiguredSeconds) * 100, 0, 100);
+            NextEpisodeCountdownProgress.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            NextEpisodeCountdownProgress.Value = 0;
+            NextEpisodeCountdownProgress.Visibility = Visibility.Collapsed;
+        }
+        var cancelLabel = LumenText.Get(prompt.Completion.HasValue ? "Cancel auto-play" : "Watch credits");
+        CountdownKeepWatchingButton.Content = cancelLabel;
+        SetControlLabel(CountdownKeepWatchingButton, cancelLabel);
         NextEpisodeCountdown.Visibility = CanShowChapterPrompt()
             && _coordinator?.Status is PlaybackStatus.Playing or PlaybackStatus.Paused or PlaybackStatus.Ended
             ? Visibility.Visible : Visibility.Collapsed;
@@ -514,7 +556,8 @@ public sealed partial class PlayerView
     private void CountdownCancelClicked(object sender, RoutedEventArgs args)
     {
         if (_chapterNextPrompt is not { } prompt || !OwnsChapterNextPrompt(prompt)) return;
-        _chapterNextSuppressedIntent = prompt.Intent;
+        if (prompt.Completion.HasValue) _chapterNextSuppressedIntent = prompt.Intent;
+        else _chapterCreditsSuppressedIntent = prompt.Intent;
         ClearChapterNextPrompt();
     }
 
@@ -536,6 +579,8 @@ public sealed partial class PlayerView
         _nextChapterTimer.Stop();
         NextEpisodeCountdown.Visibility = Visibility.Collapsed;
         NextCountdownText.Text = string.Empty;
+        NextEpisodeCountdownProgress.Value = 0;
+        NextEpisodeCountdownProgress.Visibility = Visibility.Collapsed;
         UpdateSubtitleOverlayLayout();
     }
 

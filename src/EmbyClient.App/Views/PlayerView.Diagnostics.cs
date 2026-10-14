@@ -15,7 +15,15 @@ public sealed partial class PlayerView
     private DiagnosticBinding? _previousDiagnostic;
     private PlaybackDiagnosticsDialog? _diagnosticsDialog;
 
-    public bool IsModalOpen => _queueDialog is not null || _diagnosticsDialog is not null || _externalSubtitlePickerOpen;
+    public bool IsModalOpen => _queueDialog is not null || _diagnosticsDialog is not null || _externalSubtitlePickerOpen || _playerFileDialogOpen;
+
+    public async Task OpenDiagnosticLogsFolderAsync()
+    {
+        Directory.CreateDirectory(_diagnostics.DirectoryPath);
+        var folder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync(_diagnostics.DirectoryPath);
+        if (!await Windows.System.Launcher.LaunchFolderAsync(folder))
+            throw new IOException("The diagnostic logs folder could not be opened.");
+    }
 
     public async Task ShowDiagnosticsAsync(XamlRoot xamlRoot, ElementTheme theme, Control? trigger = null)
     {

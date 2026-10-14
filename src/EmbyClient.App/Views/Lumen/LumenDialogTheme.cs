@@ -21,8 +21,8 @@ internal static class LumenDialogTheme
         SetBrushes(resources, "Pop", "ContentDialogBackground");
         SetBrushes(resources, "Ink", "ContentDialogForeground");
         SetBrushes(resources, "LineStrong", "ContentDialogBorderBrush", "ContentDialogSeparatorBorderBrush");
-        resources["ContentDialogTopOverlay"] = Transparent;
-        resources["OverlayCornerRadius"] = new CornerRadius(16);
+        LumenUi.SetResource(resources, "ContentDialogTopOverlay", Transparent);
+        LumenUi.SetResource(resources, "OverlayCornerRadius", new CornerRadius(16));
 
         // Native ContentDialog changes the default command to AccentButtonStyle at show time.
         SetBrushes(resources, "Accent", "AccentButtonBackground", "AccentButtonBackgroundPointerOver",
@@ -35,8 +35,8 @@ internal static class LumenDialogTheme
         SetBrushes(resources, "Muted", "AccentButtonForegroundDisabled", "ButtonForegroundDisabled");
         SetBrushes(resources, "LineStrong", "AccentButtonBorderBrushDisabled", "ButtonBorderBrush", "ButtonBorderBrushPointerOver",
             "ButtonBorderBrushPressed", "ButtonBorderBrushDisabled");
-        SetBrushes(resources, "Accent", "SystemControlFocusVisualPrimaryBrush", "FocusStrokeColorOuterBrush");
-        SetBrushes(resources, "Pop", "SystemControlFocusVisualSecondaryBrush", "FocusStrokeColorInnerBrush");
+        SetBrushes(resources, "FocusOuter", "SystemControlFocusVisualPrimaryBrush", "FocusStrokeColorOuterBrush");
+        SetBrushes(resources, "FocusInner", "SystemControlFocusVisualSecondaryBrush", "FocusStrokeColorInnerBrush");
         ApplyTextResources(resources);
         ApplyChoiceResources(resources);
     }
@@ -47,8 +47,8 @@ internal static class LumenDialogTheme
         field.Foreground = LumenTheme.Brush("Ink");
         field.BorderBrush = LumenTheme.Brush("LineStrong");
         field.FontFamily = LumenTheme.SansFont;
-        field.FocusVisualPrimaryBrush = LumenTheme.Brush("Accent");
-        field.FocusVisualSecondaryBrush = LumenTheme.Brush("Pop");
+        field.FocusVisualPrimaryBrush = LumenTheme.Brush("FocusOuter");
+        field.FocusVisualSecondaryBrush = LumenTheme.Brush("FocusInner");
         ApplyTextResources(field.Resources);
     }
 
@@ -109,6 +109,6 @@ internal static class LumenDialogTheme
     private static void SetBrushes(ResourceDictionary resources, string themeKey, params string[] keys)
     {
         var brush = LumenTheme.Brush(themeKey);
-        foreach (var key in keys) resources[key] = brush;
+        foreach (var key in keys) LumenUi.SetResource(resources, key, brush);
     }
 }

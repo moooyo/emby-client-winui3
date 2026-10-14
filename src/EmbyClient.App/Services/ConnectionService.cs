@@ -5,7 +5,7 @@ namespace EmbyClient.App.Services;
 
 public sealed record ConnectedSession(
     EmbyApiClient Api, PublicSystemInfo Server, UserDto User, string AccountKey, string? SessionId,
-    string? PersistenceWarning = null, bool CapabilitiesRegistered = false);
+    string? PersistenceWarning = null, bool CapabilitiesRegistered = false, bool AllowLocalPersistence = true);
 
 public sealed class AccountPolicyException() : Exception("This Emby account is disabled.") { }
 
@@ -66,13 +66,13 @@ public sealed partial class ConnectionService : IDisposable
     }
 
     public async Task<ConnectedSession> SignInAsync(string address, string username, string password,
-        bool remember, CancellationToken cancellationToken)
+        bool remember, CancellationToken cancellationToken, string? expectedServerId = null)
     {
         await InitializeAsync(cancellationToken);
         await _connectionGate.WaitAsync(cancellationToken);
         try
         {
-            return await SignInCoreAsync(address, username, password, remember, cancellationToken);
+            return await SignInCoreAsync(address, username, password, remember, cancellationToken, expectedServerId);
         }
         finally { _connectionGate.Release(); }
     }
@@ -277,6 +277,7 @@ public static class UiErrors
             "Your Emby account does not have permission to do this.",
         EmbyApiException e => $"The server returned HTTP {(int)e.StatusCode}. Try again or check the server.",
         EmbyProtocolException => "The server returned an unexpected response. Check the address and server compatibility.",
+        ServerIdentityMismatchException => "This address belongs to a different server. Select or add the server again before signing in.",
         EmbyTransportException => "Could not reach the Emby server. Check the address and your connection.",
         AccountStoreException e => e.Message,
         TimeoutException => "The request timed out. Check your connection and try again.",

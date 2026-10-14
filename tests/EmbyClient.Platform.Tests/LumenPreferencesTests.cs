@@ -44,6 +44,9 @@ public sealed class LumenPreferencesTests
             Theme = "Light",
             Accent = "Coral",
             HeroRotation = false,
+            HomeScrollMode = "Continuous",
+            PosterWidth = 220,
+            RecentSearches = ["Arrival", "Amelie"],
             PosterColumns = 10,
             ShowWatchedMarks = false,
             AutoPlayNext = false,
@@ -56,7 +59,9 @@ public sealed class LumenPreferencesTests
             HardwareDecoding = false,
             VideoDecoderApi = "Software",
             HdrMode = "Always",
+            AudioPassthrough = "All",
             MatchRefreshRate = true,
+            SystemMediaControls = false,
             SubtitleLanguage = "",
             SubtitleMode = "OnlyForced",
             SubtitleSize = "Small",
@@ -67,11 +72,13 @@ public sealed class LumenPreferencesTests
         await store.SaveAsync(preferences, token);
         var restored = await new LumenPreferenceStore(store.FilePath).LoadAsync(token);
 
-        Assert.Equal(preferences, restored);
+        Assert.Equal(preferences.RecentSearches, restored.RecentSearches);
+        Assert.Equal(preferences with { RecentSearches = restored.RecentSearches }, restored);
         Assert.Equal(LumenPreferencePersistenceIssue.None, store.LastIssue);
         Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
         using var json = JsonDocument.Parse(await File.ReadAllBytesAsync(store.FilePath, token));
-        Assert.Equal(21, json.RootElement.EnumerateObject().Count());
+        Assert.Equal(31, json.RootElement.EnumerateObject().Count());
+        Assert.Equal("All", json.RootElement.GetProperty("AudioPassthrough").GetString());
         Assert.False(json.RootElement.TryGetProperty("Accounts", out _));
         Assert.False(json.RootElement.TryGetProperty("AccessToken", out _));
         Assert.False(json.RootElement.TryGetProperty("DeviceId", out _));
@@ -206,6 +213,7 @@ public sealed class LumenPreferencesTests
     [Theory]
     [InlineData("{\"Theme\":\"Light\",\"Accent\":\"Blue\",\"IntroSkipMode\":\"Off\",\"ResumeMode\":\"Restart\",\"HdrMode\":\"Off\",\"SubtitleMode\":\"None\",\"SubtitleSize\":\"Large\"}")]
     [InlineData("{\"SubtitleMode\":\"Always\"}")]
+    [InlineData("{\"Theme\":\"System\",\"HomeScrollMode\":\"Continuous\",\"PosterWidth\":110,\"SystemMediaControls\":false}")]
     public async Task Other_supported_enum_choices_remain_unchanged_on_load_and_save(string json)
     {
         using var fixture = new TemporaryAccountStore();
@@ -253,7 +261,11 @@ public sealed class LumenPreferencesTests
     }
 
     [Theory]
-    [InlineData("{\"Theme\":\"System\"}")]
+    [InlineData("{\"Theme\":\"Unknown\"}")]
+    [InlineData("{\"HomeScrollMode\":\"Unknown\"}")]
+    [InlineData("{\"PosterWidth\":109}")]
+    [InlineData("{\"PosterWidth\":221}")]
+    [InlineData("{\"RecentSearches\":null}")]
     [InlineData("{\"Theme\":null}")]
     [InlineData("{\"Accent\":\"Unknown\"}")]
     [InlineData("{\"Accent\":null}")]
@@ -604,6 +616,9 @@ public sealed class LumenPreferencesTests
         Assert.Equal("Dark", preferences.Theme);
         Assert.Equal("Gold", preferences.Accent);
         Assert.True(preferences.HeroRotation);
+        Assert.Equal("Paged", preferences.HomeScrollMode);
+        Assert.Equal(160, preferences.PosterWidth);
+        Assert.Empty(preferences.RecentSearches);
         Assert.Equal(8, preferences.PosterColumns);
         Assert.True(preferences.ShowWatchedMarks);
         Assert.True(preferences.AutoPlayNext);
@@ -617,6 +632,7 @@ public sealed class LumenPreferencesTests
         Assert.Equal("Auto", preferences.VideoDecoderApi);
         Assert.Equal("Auto", preferences.HdrMode);
         Assert.False(preferences.MatchRefreshRate);
+        Assert.True(preferences.SystemMediaControls);
         Assert.Equal("chi", preferences.SubtitleLanguage);
         Assert.Equal("Smart", preferences.SubtitleMode);
         Assert.Equal("Medium", preferences.SubtitleSize);
@@ -626,7 +642,12 @@ public sealed class LumenPreferencesTests
 
     private static IEnumerable<LumenPreferences> InvalidPreferences()
     {
-        yield return new() { Theme = "System" };
+        yield return new() { Theme = "Unknown" };
+        yield return new() { HomeScrollMode = "Unknown" };
+        yield return new() { PosterWidth = 109 };
+        yield return new() { PosterWidth = 221 };
+        yield return new() { RecentSearches = null! };
+        yield return new() { RecentSearches = ["same", "same"] };
         yield return new() { Theme = "dark" };
         yield return new() { Theme = null! };
         yield return new() { Accent = "Unknown" };

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using EmbyClient.Api;
 using EmbyClient.Playback;
 using Microsoft.UI.Dispatching;
 using Windows.Foundation;
@@ -19,6 +20,11 @@ public sealed class NativeSubtitleTextChangedEventArgs(
     public double DelaySeconds { get; } = delaySeconds;
 }
 
+/// <summary>Subtitle controls for the actual negotiated source, independent of video conversion.</summary>
+public sealed record NativeSubtitlePlaybackSnapshot(Guid PlaybackId, bool IsBurnedIn, bool IsBitmapSource,
+    bool CanAdjustAppearance, bool CanAdjustTiming, bool UsesNativePresentation = false,
+    bool PreservesSourceStyles = false);
+
 public sealed partial class NativePlaybackEngine
 {
     private const double MinimumPlaybackRate = .5;
@@ -28,12 +34,15 @@ public sealed partial class NativePlaybackEngine
     private long _playbackRateChangeSequence;
     private bool _supportsPlaybackRate;
     private bool _supportsSubtitlePreferences;
+    private NativeSubtitlePlaybackSnapshot? _subtitlePlayback;
     private int _videoWidth;
     private int _videoHeight;
     private double _subtitleFontSize = 30;
     private bool _subtitleOutline = true;
     private string _subtitlePosition = "Bottom";
     private double _subtitleDelaySeconds;
+    private double _desiredSubtitleDelaySeconds;
+    private long _subtitleDelayChangeSequence;
 
     /// <summary>True only when the current native source supports the complete offered rate range.</summary>
     public bool SupportsPlaybackRate => Volatile.Read(ref _supportsPlaybackRate);
@@ -41,8 +50,16 @@ public sealed partial class NativePlaybackEngine
     /// <summary>The actual rate of the current snapshot, or the preferred rate before the first source.</summary>
     public double PlaybackRate => Snapshot?.PlaybackRate ?? Volatile.Read(ref _desiredPlaybackRate);
 
-    /// <summary>Burned subtitles have no editable text. The application must provide a subtitle presenter.</summary>
-    public bool SupportsSubtitlePreferences => Volatile.Read(ref _supportsSubtitlePreferences);
+    /// <summary>True only when the active presenter can edit the offered subtitle appearance controls.</summary>
+    public bool SupportsSubtitleStyling => Volatile.Read(ref _supportsSubtitlePreferences);
+
+    /// <summary>True only when the active independent subtitle track can apply a timing offset.</summary>
+    public bool SupportsSubtitleDelay => SubtitlePlayback?.CanAdjustTiming == true;
+
+    public bool SupportsSubtitlePreferences => SupportsSubtitleStyling;
+    public bool SupportsSubtitleTiming => SupportsSubtitleDelay;
+
+    public NativeSubtitlePlaybackSnapshot? SubtitlePlayback => Volatile.Read(ref _subtitlePlayback);
 
     /// <summary>Current native video width in pixels; zero before opening or when no video is active.</summary>
     public int VideoWidth => Volatile.Read(ref _videoWidth);
@@ -50,17 +67,63 @@ public sealed partial class NativePlaybackEngine
     /// <summary>Current native video height in pixels; zero before opening or when no video is active.</summary>
     public int VideoHeight => Volatile.Read(ref _videoHeight);
 
+    /// <summary>The user timing offset last applied to the active independent subtitle track.</summary>
+    public double SubtitleDelaySeconds => Volatile.Read(ref _subtitleDelaySeconds);
+
+    /// <summary>
+    /// Stages controls for the replacement source. Item changes explicitly reset these values
+    /// instead of inheriting another item's controls.
+    /// </summary>
+    public Task ConfigureNextPlaybackPreferencesAsync(int volumeLevel, bool isMuted, double playbackRate,
+        double audioDelaySeconds, double subtitleDelaySeconds, CancellationToken cancellationToken = default)
+    {
+        if (volumeLevel is < 0 or > 100) throw new ArgumentOutOfRangeException(nameof(volumeLevel));
+        if (!double.IsFinite(playbackRate) || playbackRate is < MinimumPlaybackRate or > MaximumPlaybackRate)
+            throw new ArgumentOutOfRangeException(nameof(playbackRate));
+        if (!double.IsFinite(audioDelaySeconds) || audioDelaySeconds is < -10 or > 10)
+            throw new ArgumentOutOfRangeException(nameof(audioDelaySeconds));
+        if (!double.IsFinite(subtitleDelaySeconds) || subtitleDelaySeconds is < -10 or > 10)
+            throw new ArgumentOutOfRangeException(nameof(subtitleDelaySeconds));
+        return OnDispatcherAsync(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            _volumeLevel = volumeLevel;
+            _isMuted = isMuted;
+            ++_playbackRateChangeSequence;
+            Volatile.Write(ref _desiredPlaybackRate, playbackRate);
+            Volatile.Write(ref _desiredAudioDelaySeconds, Math.Round(audioDelaySeconds, 1, MidpointRounding.AwayFromZero));
+            ++_subtitleDelayChangeSequence;
+            Volatile.Write(ref _desiredSubtitleDelaySeconds, Math.Round(subtitleDelaySeconds, 1, MidpointRounding.AwayFromZero));
+        });
+    }
+
     /// <summary>
     /// The consumer must recheck PlaybackId before updating its subtitle layer. Subscribing before OpenAsync
     /// selects application presentation and prevents Windows from drawing duplicate external subtitles.
     /// </summary>
     public event EventHandler<NativeSubtitleTextChangedEventArgs>? SubtitleTextChanged;
 
-    public Task SetPlaybackRateAsync(Guid playbackId, double rate, CancellationToken cancellationToken = default)
+    public async Task SetPlaybackRateAsync(Guid playbackId, double rate, CancellationToken cancellationToken = default)
     {
         if (!double.IsFinite(rate) || rate is < MinimumPlaybackRate or > MaximumPlaybackRate)
             throw new ArgumentOutOfRangeException(nameof(rate));
-        return ControlAsync(playbackId, session =>
+        if (rate != 1)
+        {
+            await OnPlayerDispatcherAsync(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Find(playbackId) is { NativeAudioOutputOpened: true, NativeSession: { } native } session)
+                {
+                    if (rate > 1 && session.Item?.CanSkip == false || !native.IsSupportedPlaybackRateRange(rate, rate))
+                        throw new PlaybackException("PlaybackRateNotSupported");
+                    Volatile.Write(ref _desiredPlaybackRate, rate);
+                }
+                return true;
+            }).ConfigureAwait(false);
+            await EnsurePcmAudioOutputAsync(playbackId, "RateUnsupported", cancellationToken).ConfigureAwait(false);
+        }
+        await ControlAsync(playbackId, session =>
         {
             var native = session.NativeSession!;
             if (rate > 1 && session.Item?.CanSkip == false || !native.IsSupportedPlaybackRateRange(rate, rate))
@@ -78,7 +141,7 @@ public sealed partial class NativePlaybackEngine
             if (!IsActive(session) || sequence != _playbackRateChangeSequence) return;
             RefreshPlaybackRateSupport(session);
             Publish(session, PlaybackEngineEventKind.StateChanged);
-        }, cancellationToken);
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -94,19 +157,64 @@ public sealed partial class NativePlaybackEngine
             throw new ArgumentOutOfRangeException(nameof(delaySeconds));
         return ControlAsync(playbackId, session =>
         {
-            if (!CanPresentExternalText(session)) throw new PlaybackException("SubtitlePreferencesNotSupported");
+            if (!CanPresentExternalText(session) || IsBitmapSubtitleStream(SelectedServerSubtitle(session))
+                || IsServerBurnedSubtitle(session)) throw new PlaybackException("SubtitlePreferencesNotSupported");
             _subtitleFontSize = fontSize;
             _subtitleOutline = outline;
             _subtitlePosition = position;
-            _subtitleDelaySeconds = Math.Round(delaySeconds, 1, MidpointRounding.AwayFromZero);
-            RefreshSubtitlePresentation(session, force: true);
+            ApplySubtitleDelay(session, delaySeconds);
         }, cancellationToken);
+    }
+
+    /// <summary>Changes independent subtitle timing without requiring editable text appearance.</summary>
+    public Task SetSubtitleDelayAsync(Guid playbackId, double delaySeconds, CancellationToken cancellationToken = default)
+    {
+        if (!double.IsFinite(delaySeconds) || delaySeconds is < -10 or > 10)
+            throw new ArgumentOutOfRangeException(nameof(delaySeconds));
+        return ControlAsync(playbackId, session =>
+        {
+            if (!(CanPresentExternalText(session) || session.NativeSubtitlePresentationActive)
+                || IsServerBurnedSubtitle(session))
+                throw new PlaybackException("SubtitlePreferencesNotSupported");
+            ApplySubtitleDelay(session, delaySeconds);
+        }, cancellationToken);
+    }
+
+    private void ApplySubtitleDelay(Session session, double delaySeconds)
+    {
+        var rounded = Math.Round(delaySeconds, 1, MidpointRounding.AwayFromZero);
+        var previous = _subtitleDelaySeconds;
+        var previousDesired = _desiredSubtitleDelaySeconds;
+        var sequence = ++_subtitleDelayChangeSequence;
+        Volatile.Write(ref _subtitleDelaySeconds, rounded);
+        Volatile.Write(ref _desiredSubtitleDelaySeconds, rounded);
+        try
+        {
+            if (session.NativeSubtitlePresentationActive) ApplyNativeSubtitleDelay(session, rounded);
+        }
+        catch (Exception exception)
+        {
+            if (sequence == _subtitleDelayChangeSequence)
+            {
+                Volatile.Write(ref _subtitleDelaySeconds, previous);
+                Volatile.Write(ref _desiredSubtitleDelaySeconds, previousDesired);
+            }
+            RecordSubtitleFailure("NativeSubtitle/Delay", exception);
+            throw new PlaybackException("SubtitlePreferencesNotSupported");
+        }
+        if (!IsActive(session) || sequence != _subtitleDelayChangeSequence) return;
+        RefreshSubtitlePresentation(session, force: true);
     }
 
     private void InitializeLumenControls(Session session)
     {
+        InitializeAudioDelay(session);
+        ++_subtitleDelayChangeSequence;
+        Volatile.Write(ref _subtitleDelaySeconds, Volatile.Read(ref _desiredSubtitleDelaySeconds));
         Volatile.Write(ref _supportsPlaybackRate, false);
         Volatile.Write(ref _supportsSubtitlePreferences, false);
+        Volatile.Write(ref _subtitlePlayback, null);
+        Volatile.Write(ref _playbackStatistics, null);
         Volatile.Write(ref _videoWidth, 0);
         Volatile.Write(ref _videoHeight, 0);
         session.PlaybackRateChanged = (_, _) => Queue(() =>
@@ -192,6 +300,13 @@ public sealed partial class NativePlaybackEngine
 
     private void InitializeSubtitlePresentation(Session session)
     {
+        if (!CanPresentExternalText(session))
+        {
+            session.SubtitleCues = [];
+            session.SubtitleMaximumEndTicks = [];
+            session.SubtitleCueCount = 0;
+            return;
+        }
         foreach (var track in session.ExternalTracks)
         {
             TypedEventHandler<TimedMetadataTrack, MediaCueEventArgs> changed = (_, _) => Queue(() =>
@@ -226,6 +341,13 @@ public sealed partial class NativePlaybackEngine
     [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors | DynamicallyAccessedMemberTypes.PublicFields, typeof(TimedTextLine))]
     private static void CaptureSubtitleCues(Session session)
     {
+        if (NativePlatformSubtitleTrack(session) is not null)
+        {
+            session.SubtitleCues = [];
+            session.SubtitleMaximumEndTicks = [];
+            session.SubtitleCueCount = 0;
+            return;
+        }
         var cues = new List<SubtitleCue>();
         var count = 0;
         var textCount = 0;
@@ -234,6 +356,8 @@ public sealed partial class NativePlaybackEngine
         {
             foreach (var track in session.ExternalTracks)
             {
+                // Image captions belong to the native renderer and have no application text timeline.
+                if (track.TimedMetadataKind == TimedMetadataKind.ImageSubtitle) continue;
                 count = checked(count + track.Cues.Count);
                 if (count > MaximumSubtitleCues) throw new PlaybackException("UnsupportedSubtitle");
                 foreach (var cue in track.Cues)
@@ -270,13 +394,38 @@ public sealed partial class NativePlaybackEngine
 
     private bool CanPresentExternalText(Session session) => IsActive(session) && SubtitleTextChanged is not null
         && (session.LocalSubtitle is not null || session.Request.SubtitleStreamIndex != -1)
-        && session.ExternalTextReady && session.ExternalTracks.Length > 0;
+        && session.ExternalTextReady && session.ExternalTracks.Length > 0
+        && NativePlatformSubtitleTrack(session) is null;
+
+    private static MediaStream? SelectedServerSubtitle(Session session) => session.LocalSubtitle is not null ? null
+        : (session.Request.Source.MediaStreams ?? []).FirstOrDefault(stream => stream.Index == session.Request.SubtitleStreamIndex
+            && string.Equals(stream.Type, "Subtitle", StringComparison.OrdinalIgnoreCase));
+
+    internal static bool IsBitmapSubtitleStream(MediaStream? stream) => stream is not null
+        && (stream.IsTextSubtitleStream == false || stream.Codec?.ToLowerInvariant() is
+            "pgs" or "pgssub" or "hdmv_pgs_subtitle" or "vobsub" or "dvdsub" or "dvd_subtitle"
+            or "dvbsub" or "dvb_subtitle" or "xsub");
+
+    private static bool IsServerBurnedSubtitle(Session session) => session.LocalSubtitle is null
+        && session.Request.ExternalSubtitleUri is null && session.Request.SubtitleStreamIndex is >= 0
+        && session.Request.DeliveryMethod == PlaybackDeliveryMethod.Transcode
+        && (string.Equals(SelectedServerSubtitle(session)?.DeliveryMethod, "Encode", StringComparison.OrdinalIgnoreCase)
+            || QueryValue(session.Request.MediaUri, "SubtitleMethod")?.Equals("Encode", StringComparison.OrdinalIgnoreCase) == true);
 
     private void RefreshSubtitlePresentation(Session session, bool force = false)
     {
         if (!IsActive(session)) return;
         var supported = CanPresentExternalText(session);
-        Volatile.Write(ref _supportsSubtitlePreferences, supported);
+        var burned = IsServerBurnedSubtitle(session);
+        var native = session.NativeSubtitlePresentationActive && NativePlatformSubtitleTrack(session) is { };
+        var bitmap = native && !UsesLibassSubtitleStyles(session)
+            && NativePlatformSubtitleTrack(session)!.TimedMetadataKind == TimedMetadataKind.ImageSubtitle
+            || burned && IsBitmapSubtitleStream(SelectedServerSubtitle(session));
+        var appearance = supported && !burned && !bitmap;
+        Volatile.Write(ref _supportsSubtitlePreferences, appearance);
+        Volatile.Write(ref _subtitlePlayback, new NativeSubtitlePlaybackSnapshot(session.Request.PlaybackId,
+            burned, bitmap, appearance, (supported || native) && !burned, native,
+            native && (UsesLibassSubtitleStyles(session) || session.LocalSubtitle is { NativeTrack: not null })));
         if (!supported || !session.IsOpened || session.NativeSession is null)
         {
             PublishSubtitleText(session, string.Empty, force);
@@ -332,6 +481,7 @@ public sealed partial class NativePlaybackEngine
 
     private void RetireLumenControls(Session session)
     {
+        StopAssSubtitleFramePresentation(session);
         if (session.NativeSession is { } native)
         {
             Release(session, "UnsubscribePlaybackRate", () => native.PlaybackRateChanged -= session.PlaybackRateChanged);
@@ -340,12 +490,18 @@ public sealed partial class NativePlaybackEngine
         }
         RetireSubtitlePresentation(session);
         RetireLocalSubtitles(session);
+        RetireNativeEmbeddedSubtitles(session);
+        RetireAssSubtitles(session);
         session.PlaybackRateChanged = null;
         session.SupportedPlaybackRatesChanged = null;
         session.VideoSizeChanged = null;
         if (!ReferenceEquals(_current, session)) return;
+        Volatile.Write(ref _supportsAudioDelay, false);
+        Volatile.Write(ref _audioDelaySeconds, 0);
         Volatile.Write(ref _supportsPlaybackRate, false);
         Volatile.Write(ref _supportsSubtitlePreferences, false);
+        Volatile.Write(ref _subtitlePlayback, null);
+        Volatile.Write(ref _playbackStatistics, null);
         Volatile.Write(ref _videoWidth, 0);
         Volatile.Write(ref _videoHeight, 0);
         PublishSubtitleText(session, string.Empty, force: true);
@@ -368,6 +524,7 @@ public sealed partial class NativePlaybackEngine
         session.SubtitleMaximumEndTicks = [];
         session.SubtitleTimer = null;
         session.SubtitleTimerTick = null;
+        session.NativeSubtitlePresentationActive = false;
     }
 
     private readonly record struct SubtitleCue(long StartTicks, long EndTicks, string Text);

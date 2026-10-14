@@ -57,6 +57,9 @@ public sealed class LumenPreferenceStore
                     new JsonDocumentOptions { MaxDepth = 8 });
                 var loaded = document.RootElement.Deserialize(LumenPreferencesJsonContext.Default.LumenPreferences);
                 if (loaded is null) return UseDefaults();
+                // Empty search history has no identity. Preserve the existing scalar record equality on restore.
+                if (loaded.RecentSearches is { Length: 0 })
+                    loaded = loaded with { RecentSearches = Array.Empty<string>() };
                 if (!HasVideoDecoderApi(document.RootElement))
                 {
                     // Migrate the legacy toggle only when the API choice was omitted.
@@ -176,8 +179,11 @@ public sealed class LumenPreferenceStore
             "Auto", "D3D11", "IntelQsv", "AmdAmf", "NvidiaNvdec", "Software");
         return value with
         {
-            Theme = KnownValue(value.Theme, defaults.Theme, "Dark", "Light"),
+            Theme = KnownValue(value.Theme, defaults.Theme, "Dark", "Light", "System"),
             Accent = KnownValue(value.Accent, defaults.Accent, "Gold", "Coral", "Sage", "Blue"),
+            HomeScrollMode = KnownValue(value.HomeScrollMode, defaults.HomeScrollMode, "Paged", "Continuous"),
+            PosterWidth = value.PosterWidth is >= 110 and <= 220 ? value.PosterWidth : defaults.PosterWidth,
+            RecentSearches = NormalizeRecentSearches(value.RecentSearches),
             PosterColumns = value.PosterColumns is >= 6 and <= 10 ? value.PosterColumns : defaults.PosterColumns,
             NextEpisodeCountdownSeconds = value.NextEpisodeCountdownSeconds is 0 or 5 or 10 or 15
                 ? value.NextEpisodeCountdownSeconds : defaults.NextEpisodeCountdownSeconds,
@@ -188,12 +194,26 @@ public sealed class LumenPreferenceStore
             VideoDecoderApi = videoDecoderApi,
             HardwareDecoding = videoDecoderApi != "Software",
             HdrMode = KnownValue(value.HdrMode, defaults.HdrMode, "Auto", "Always", "Off"),
+            AudioPassthrough = KnownValue(value.AudioPassthrough, defaults.AudioPassthrough, "Off", "DolbyDts", "All"),
+            ImageCacheMegabytes = value.ImageCacheMegabytes is >= 0 and <= 512
+                ? value.ImageCacheMegabytes : defaults.ImageCacheMegabytes,
             SubtitleLanguage = IsValidSubtitleLanguage(value.SubtitleLanguage)
                 ? value.SubtitleLanguage.ToLowerInvariant() : defaults.SubtitleLanguage,
             SubtitleMode = KnownValue(value.SubtitleMode, defaults.SubtitleMode, "Default", "Smart", "Always", "OnlyForced", "None", "HearingImpaired"),
             SubtitleSize = KnownValue(value.SubtitleSize, defaults.SubtitleSize, "Small", "Medium", "Large"),
             SubtitlePosition = KnownValue(value.SubtitlePosition, defaults.SubtitlePosition, "Bottom", "BlackBars")
         };
+    }
+
+    private static string[] NormalizeRecentSearches(string[]? searches)
+    {
+        if (searches is null) return [];
+        var normalized = searches.Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
+            .Where(value => value.Length <= 100)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Take(12).ToArray();
+        // Preserve record equality for valid preferences; arrays otherwise compare by reference.
+        return normalized.SequenceEqual(searches, StringComparer.Ordinal) ? searches : normalized;
     }
 
     private static bool HasVideoDecoderApi(JsonElement root)

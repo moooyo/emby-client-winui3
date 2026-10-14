@@ -6,7 +6,7 @@ using EmbyClient.FixtureServer;
 
 FixtureOptions options;
 try { options = FixtureOptions.Parse(args); }
-catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException)
+catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or IOException or UnauthorizedAccessException or JsonException)
 {
     Console.Error.WriteLine("Fixture configuration was rejected. Supply valid measured synthetic media and bounded explicit optional inputs.");
     Environment.ExitCode = 1;
@@ -48,13 +48,21 @@ Console.WriteLine("Read playback counters at /_fixture/stats. Request bodies and
 if (options.LargeLibraryItems > 0)
     Console.WriteLine($"Large-library mode: {options.LargeLibraryItems} synthetic movies in a separate library.");
 if (options.LumenCatalog)
-    Console.WriteLine("Lumen catalog mode: fictional films, series, people, genres, and collections; every playable item uses the generated synthetic MP4.");
+    Console.WriteLine(options.EmbeddedPgs
+        ? "Lumen catalog mode: fictional films, series, people, genres, and collections; every playable item uses the measured synthetic PGS MKV."
+        : "Lumen catalog mode: fictional films, series, people, genres, and collections; every playable item uses the generated synthetic MP4.");
 if (options.LumenDesignCatalog)
-    Console.WriteLine("Design acceptance catalog: handoff titles and artwork order; all playback specifications and durations still describe the synthetic MP4.");
+    Console.WriteLine(options.EmbeddedPgs
+        ? "Design acceptance catalog: handoff titles and artwork order; all playback specifications and durations describe the measured synthetic PGS MKV."
+        : "Design acceptance catalog: handoff titles and artwork order; all playback specifications and durations still describe the synthetic MP4.");
 if (options.ArtworkDirectory is not null)
     Console.WriteLine("External handoff artwork is enabled for this test fixture. No artwork is copied into the application.");
 if (options.Subtitle is not null)
     Console.WriteLine("An explicit real external WebVTT fixture is enabled. Native cue parsing and rendering require separate application verification.");
+if (options.Bif is not null)
+    Console.WriteLine("An explicit bounded BIF snapshot is enabled. Native JPEG decoding and visible thumbnail rendering require separate application verification.");
+if (options.EmbeddedPgs)
+    Console.WriteLine("An explicit measured synthetic MKV with embedded PGS is enabled. Original file bytes and observed native stream indices are preserved.");
 if (options.FailFirstPlaybackInfo)
     Console.WriteLine("The first valid PlaybackInfo POST with IsPlayback=true will return a synthetic HTTP 503.");
 if (options.BoundaryControls is { Enabled: true })
@@ -66,7 +74,7 @@ namespace EmbyClient.FixtureServer
     internal sealed record FixtureOptions(int Port, string MediaPath, MediaFixtureMetadata Media,
         int LargeLibraryItems = 0, int ImageDelayMilliseconds = 0, bool FailFirstPlaybackInfo = false,
         FixtureBoundaryOptions? BoundaryControls = null, bool LumenCatalog = false, string? ArtworkDirectory = null,
-        bool LumenDesignCatalog = false, FixtureSubtitle? Subtitle = null)
+        bool LumenDesignCatalog = false, FixtureSubtitle? Subtitle = null, FixtureBif? Bif = null, bool EmbeddedPgs = false)
     {
         public static FixtureOptions Parse(string[] arguments)
         {
@@ -79,6 +87,8 @@ namespace EmbyClient.FixtureServer
             var lumenDesignCatalog = false;
             string? artworkDirectory = null;
             string? subtitlePath = null;
+            string? bifPath = null;
+            var embeddedPgs = false;
             var boundaryOptions = new FixtureBoundaryOptionsBuilder();
             for (var index = 0; index < arguments.Length; index++)
             {
@@ -126,6 +136,15 @@ namespace EmbyClient.FixtureServer
                             throw new ArgumentException("The subtitle file must be an explicit absolute WebVTT path.");
                         subtitlePath = Path.GetFullPath(subtitlePath);
                         break;
+                    case "--bif-file" when index + 1 < arguments.Length && bifPath is null:
+                        bifPath = arguments[++index];
+                        if (!Path.IsPathFullyQualified(bifPath))
+                            throw new ArgumentException("The BIF file must be an explicit absolute archive path.");
+                        bifPath = Path.GetFullPath(bifPath);
+                        break;
+                    case "--embedded-pgs" when !embeddedPgs:
+                        embeddedPgs = true;
+                        break;
                     case "--item-detail-failure" when index + 1 < arguments.Length:
                         boundaryOptions.AddDetailFailure(arguments[++index]);
                         break;
@@ -142,7 +161,7 @@ namespace EmbyClient.FixtureServer
                         boundaryOptions.LogoutDelayMilliseconds = FixtureBoundaryOptionsBuilder.ParseDelay(arguments[++index]);
                         break;
                     default:
-                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--lumen-catalog | --lumen-design-catalog] [--artwork-directory <absolute-handoff-directory>] [--subtitle-file <absolute-vtt-path>] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
+                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--lumen-catalog | --lumen-design-catalog] [--artwork-directory <absolute-handoff-directory>] [--subtitle-file <absolute-vtt-path> | --embedded-pgs] [--bif-file <absolute-bif-path>] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
                 }
             }
 
@@ -150,28 +169,36 @@ namespace EmbyClient.FixtureServer
                 throw new ArgumentException("External handoff artwork requires --lumen-catalog.");
             if (lumenCatalog && largeLibraryItems > 0)
                 throw new ArgumentException("Use separate fixture instances for the Lumen catalog and the large-library trial.");
-            if (mediaDirectory is null) throw new ArgumentException("--media-dir is required. Generate the synthetic MP4 before starting the fixture server.");
-            var path = Path.Combine(mediaDirectory, "fixture-h264-aac.mp4");
+            if (embeddedPgs && subtitlePath is not null)
+                throw new ArgumentException("The embedded PGS and external WebVTT cases require separate fixture instances.");
+            if (mediaDirectory is null) throw new ArgumentException("--media-dir is required. Prepare the measured synthetic media before starting the fixture server.");
+            var fileName = embeddedPgs ? "fixture-h264-aac-pgs.mkv" : "fixture-h264-aac.mp4";
+            var path = Path.Combine(mediaDirectory, fileName);
             if (!File.Exists(path) || new FileInfo(path).Length < 1024)
-                throw new InvalidOperationException("The generated fixture-h264-aac.mp4 is missing or too small. No empty media fallback is provided.");
+                throw new InvalidOperationException("The selected measured synthetic media is missing or too small. No empty media fallback is provided.");
             using var stream = File.OpenRead(path);
             Span<byte> header = stackalloc byte[12];
             stream.ReadExactly(header);
-            if (!header[4..8].SequenceEqual("ftyp"u8))
-                throw new InvalidOperationException("The fixture media does not have the expected MP4 file header.");
+            if (embeddedPgs ? !header[..4].SequenceEqual(new byte[] { 0x1a, 0x45, 0xdf, 0xa3 })
+                : !header[4..8].SequenceEqual("ftyp"u8))
+                throw new InvalidOperationException("The fixture media does not have the expected container header.");
             var metadataPath = Path.Combine(mediaDirectory, "fixture-h264-aac.json");
             if (!File.Exists(metadataPath))
                 throw new InvalidOperationException("The generated media metadata is missing. Run EmbyClient.MediaFixtures to create the MP4 and its metadata together.");
+            if (embeddedPgs && new FileInfo(metadataPath).Length > FixtureEmbeddedPgs.MaximumProbeBytes)
+                throw new ArgumentException("The explicit PGS metadata exceeds its bounded input size.");
             var metadata = JsonSerializer.Deserialize(File.ReadAllBytes(metadataPath), FixtureJsonContext.Default.MediaFixtureMetadata);
-            if (metadata is null || !metadata.Synthetic || metadata.FileName != "fixture-h264-aac.mp4"
+            if (metadata is null || !metadata.Synthetic || metadata.FileName != fileName
                 || metadata.FileLength != stream.Length || metadata.DurationTicks <= 0
                 || metadata.Width <= 0 || metadata.Height <= 0 || metadata.AudioChannels <= 0
                 || !string.Equals(metadata.VideoCodec, "H264", StringComparison.OrdinalIgnoreCase)
                 || !string.Equals(metadata.AudioCodec, "AAC", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The generated media metadata does not match the synthetic MP4.");
+                throw new InvalidOperationException("The generated media metadata does not match the selected synthetic media.");
+            if (embeddedPgs) FixtureEmbeddedPgs.Validate(mediaDirectory, metadata, stream);
             return new FixtureOptions(port, path, metadata, largeLibraryItems, imageDelayMilliseconds,
                 failFirstPlaybackInfo, boundaryOptions.Build(), lumenCatalog, artworkDirectory, lumenDesignCatalog,
-                subtitlePath is null ? null : FixtureSubtitle.Read(subtitlePath));
+                subtitlePath is null ? null : FixtureSubtitle.Read(subtitlePath),
+                bifPath is null ? null : FixtureBif.Read(bifPath, metadata.DurationTicks), embeddedPgs);
         }
     }
 
@@ -189,5 +216,11 @@ namespace EmbyClient.FixtureServer
         public int AudioSampleRate { get; init; }
         public long FrameRateNumerator { get; init; }
         public long FrameRateDenominator { get; init; }
+        public string? Container { get; init; }
+        public string? FileSha256 { get; init; }
+        public string? ProbeSha256 { get; init; }
+        public int? VideoStreamIndex { get; init; }
+        public int? AudioStreamIndex { get; init; }
+        public MediaStream? EmbeddedSubtitle { get; init; }
     }
 }

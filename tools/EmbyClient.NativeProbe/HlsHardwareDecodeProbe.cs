@@ -363,12 +363,13 @@ internal sealed partial class SyntheticHlsEndpoint : IAsyncDisposable
                 var authentication = lines.Where(line => line.StartsWith("X-Emby-Token:", StringComparison.OrdinalIgnoreCase)).ToArray();
                 var authenticated = authentication.Length == 1 && authentication[0][13..].Trim() == SyntheticHeaderValue;
                 var target = first.Length == 3 ? first[1] : "";
+                var targetPath = target.Split('?', 2)[0];
                 var valid = first.Length == 3 && first[0] == "GET" && first[2] == "HTTP/1.1" && _files.TryGetValue(target, out _);
                 var status = !authenticated ? 403 : !valid ? 404 : 200;
                 observed = new SyntheticHlsRequest
                 {
                     Resource = target == "/index.m3u8" ? "Manifest"
-                        : _files.ContainsKey(target) ? target.EndsWith(".mp4", StringComparison.Ordinal) ? "Mp4" : "Segment" : "Rejected",
+                        : _files.ContainsKey(target) ? targetPath.EndsWith(".mp4", StringComparison.Ordinal) ? "Mp4" : "Segment" : "Rejected",
                     Authenticated = authenticated, StatusCode = status
                 };
                 lock (_gate)
@@ -407,7 +408,7 @@ internal sealed partial class SyntheticHlsEndpoint : IAsyncDisposable
                 observed.StatusCode = status;
                 var reason = status switch { 200 => "OK", 206 => "Partial Content", 403 => "Forbidden", 416 => "Range Not Satisfiable", _ => "Not Found" };
                 var type = target == "/index.m3u8" ? "application/vnd.apple.mpegurl"
-                    : target.EndsWith(".mp4", StringComparison.Ordinal) ? "video/mp4" : "video/mp2t";
+                    : targetPath.EndsWith(".mp4", StringComparison.Ordinal) ? "video/mp4" : "video/mp2t";
                 var response = Encoding.ASCII.GetBytes(FormattableString.Invariant($"HTTP/1.1 {status} {reason}\r\nContent-Length: {length}\r\nContent-Type: {type}\r\nAccept-Ranges: bytes\r\n{contentRange}Connection: close\r\n\r\n"));
                 await stream.WriteAsync(response, deadline.Token).ConfigureAwait(false);
                 if (length > 0) await stream.WriteAsync(body.AsMemory(offset, length), deadline.Token).ConfigureAwait(false);

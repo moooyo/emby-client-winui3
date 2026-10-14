@@ -8,12 +8,14 @@
 #include "VendorVideoSampleProvider.h"
 #include "H264AVCSampleProvider.h"
 #include "UncompressedAudioSampleProvider.h"
+#include "PassthroughAudioSampleProvider.h"
 #include "UncompressedVideoSampleProvider.h"
 #include "HEVCSampleProvider.h"
 #include "NALPacketSampleProvider.h"
 #include "CodecChecker.h"
 #include "MediaSampleProvider.h"
 #include "SubtitleProviderSsaAss.h"
+#include "SubtitleProviderLibass.h"
 #include "SubtitleProviderBitmap.h"
 #include "FFmpegReader.h"
 #include "PlatformInfo.h"
@@ -370,20 +372,30 @@ namespace winrt::FFmpegInteropX::implementation
 
     void FFmpegMediaSource::OnPresentationModeChanged(MediaPlaybackTimedMetadataTrackList const& sender, TimedMetadataPresentationModeChangedEventArgs const& args)
     {
-        UNREFERENCED_PARAMETER(sender);
         std::lock_guard lock(mutex);
         if (isClosed)
         {
             return;
         }
 
-        int index = 0;
+        auto actualMode = TimedMetadataTrackPresentationMode::Disabled;
+        for (uint32_t index = 0; index < sender.Size(); ++index)
+        {
+            if (sender.GetAt(index) == args.Track())
+            {
+                actualMode = sender.GetPresentationMode(index);
+                break;
+            }
+        }
+        EmbySetAssPresentationMode(AssSubtitleState, args.Track(), args.NewPresentationMode());
         for (auto& stream : subtitleStreamProviders)
         {
             if (stream->SubtitleTrack == args.Track())
             {
-                auto mode = args.NewPresentationMode();
-                if (mode == TimedMetadataTrackPresentationMode::Disabled || mode == TimedMetadataTrackPresentationMode::Hidden)
+                // Mode callbacks can be delivered after a newer selection. Use the item's
+                // current mode so a delayed Off cannot disable the reselected decoder.
+                if (actualMode == TimedMetadataTrackPresentationMode::Disabled
+                    || actualMode == TimedMetadataTrackPresentationMode::Hidden)
                 {
                     stream->DisableStream();
                 }
@@ -392,7 +404,6 @@ namespace winrt::FFmpegInteropX::implementation
                     stream->EnableStream();
                 }
             }
-            index++;
         }
     }
 
@@ -425,6 +436,7 @@ namespace winrt::FFmpegInteropX::implementation
 
     void FFmpegMediaSource::InitializePlaybackItem(MediaPlaybackItem const& playbackItem)
     {
+        EmbyAttachAssPlaybackItem(AssSubtitleState, playbackItem);
         audioTracksChangedToken = playbackItem.AudioTracksChanged({ get_weak(), &FFmpegInteropX::implementation::FFmpegMediaSource::OnAudioTracksChanged });
         subtitlePresentationModeChangedToken = playbackItem.TimedMetadataTracks().PresentationModeChanged({ get_weak(), &FFmpegInteropX::implementation::FFmpegMediaSource::OnPresentationModeChanged });
 
@@ -584,6 +596,8 @@ namespace winrt::FFmpegInteropX::implementation
         auto subtitleStreamIndex = av_find_best_stream(avFormatCtx, AVMEDIA_TYPE_SUBTITLE, -1, -1, NULL, 0);
 
         attachedFileHelper = shared_ptr<AttachedFileHelper>(new AttachedFileHelper(config.as<winrt::FFmpegInteropX::MediaSourceConfig>()));
+        if (!config->IsExternalSubtitleParser && !config->IsFrameGrabber)
+            EmbySetAssSourceAttachments(AssSubtitleState, avFormatCtx);
 
         // first parse attached files, so they are available for subtitle streams during initialize
         if (config->Subtitles().UseEmbeddedSubtitleFonts())
@@ -716,7 +730,7 @@ namespace winrt::FFmpegInteropX::implementation
             auto videoDescriptor = (currentVideoStream->StreamDescriptor().as<VideoStreamDescriptor>());
             auto encodingProperties = videoDescriptor.EncodingProperties();
             auto pixelAspect = (double)encodingProperties.PixelAspectRatio().Numerator() / encodingProperties.PixelAspectRatio().Denominator();
-            auto videoAspect = ((double)encodingProperties.Width() / encodingProperties.Height()) / pixelAspect;
+            auto videoAspect = ((double)encodingProperties.Width() / encodingProperties.Height()) * pixelAspect;
             for (auto& stream : subtitleStreamProviders)
             {
                 stream->NotifyVideoFrameSize(encodingProperties.Width(), encodingProperties.Height(), videoAspect);
@@ -786,12 +800,13 @@ namespace winrt::FFmpegInteropX::implementation
     MediaStreamSource FFmpegMediaSource::CreateMediaStreamSource()
     {
         MediaStreamSource mss = nullptr;
+        const bool bitstreamAudio = embyBitstreamProvider && embyBitstreamProvider->IsBitstreamActive();
 
-        if (currentVideoStream && currentAudioStream)
+        if (currentVideoStream && currentAudioStream && !bitstreamAudio)
         {
             mss = MediaStreamSource(currentVideoStream->StreamDescriptor(), currentAudioStream->StreamDescriptor());
         }
-        else if (currentAudioStream)
+        else if (currentAudioStream && !bitstreamAudio)
         {
             mss = MediaStreamSource(currentAudioStream->StreamDescriptor());
         }
@@ -807,7 +822,7 @@ namespace winrt::FFmpegInteropX::implementation
 
         for (auto& stream : audioStreams)
         {
-            if (stream != currentAudioStream)
+            if (!bitstreamAudio && stream != currentAudioStream)
             {
                 mss.AddStreamDescriptor(stream->StreamDescriptor());
             }
@@ -837,6 +852,7 @@ namespace winrt::FFmpegInteropX::implementation
         }
 
         mssWeak = mss;
+        EmbyAttachAssMediaStreamSource(AssSubtitleState, mss);
 
         // using strong reference here would create circle references, since we store MSS and MediaPlaybackItem here.
         startingRequestedToken = mss.Starting({ get_weak(), &FFmpegMediaSource::OnStarting });
@@ -866,7 +882,7 @@ namespace winrt::FFmpegInteropX::implementation
             }
 
             // Apply subtitle characte encoding for external subs
-            if (config->IsExternalSubtitleParser)
+            if (SUCCEEDED(hr) && config->IsExternalSubtitleParser)
             {
                 auto subtitleEncoding = config->Subtitles().ExternalSubtitleEncoding();
                 if (!subtitleEncoding && (streamEncoding == TextEncodingDetect::ANSI || streamEncoding == TextEncodingDetect::ASCII))
@@ -927,13 +943,28 @@ namespace winrt::FFmpegInteropX::implementation
                     }
                     else
                     {
-                        if ((avSubsCodecCtx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB) == AV_CODEC_PROP_TEXT_SUB)
+                        // A constructed provider owns the codec context, including initialization failure cleanup.
+                        if (!config->IsExternalSubtitleParser
+                            && (avSubsCodecCtx->codec_id == AV_CODEC_ID_ASS || avSubsCodecCtx->codec_id == AV_CODEC_ID_SSA))
+                        {
+                            auto provider = std::make_shared<SubtitleProviderLibass>(m_pReader, avFormatCtx, avSubsCodecCtx,
+                                config.as<winrt::FFmpegInteropX::MediaSourceConfig>(), index);
+                            avSubsStream = provider;
+                            avSubsCodecCtx = nullptr;
+                            EmbyRegisterEmbeddedAssSubtitle(AssSubtitleState, provider);
+                        }
+                        else if ((avSubsCodecCtx->codec_descriptor->props & AV_CODEC_PROP_TEXT_SUB) == AV_CODEC_PROP_TEXT_SUB)
                         {
                             avSubsStream = std::shared_ptr<SubtitleProvider>(new SubtitleProviderSsaAss(m_pReader, avFormatCtx, avSubsCodecCtx, config.as<winrt::FFmpegInteropX::MediaSourceConfig>(), index, attachedFileHelper));
+                            avSubsCodecCtx = nullptr;
                         }
                         else if ((avSubsCodecCtx->codec_descriptor->props & AV_CODEC_PROP_BITMAP_SUB) == AV_CODEC_PROP_BITMAP_SUB)
                         {
-                            avSubsStream = std::shared_ptr<SubtitleProvider>(new SubtitleProviderBitmap(m_pReader, avFormatCtx, avSubsCodecCtx, config.as<winrt::FFmpegInteropX::MediaSourceConfig>(), index));
+                            auto provider = std::make_shared<SubtitleProviderBitmap>(m_pReader, avFormatCtx,
+                                avSubsCodecCtx, config.as<winrt::FFmpegInteropX::MediaSourceConfig>(), index);
+                            avSubsStream = provider;
+                            avSubsCodecCtx = nullptr;
+                            EmbyRegisterBitmapSubtitle(AssSubtitleState, provider);
                         }
                         else
                         {
@@ -954,8 +985,8 @@ namespace winrt::FFmpegInteropX::implementation
                 avSubsStream = nullptr;
             }
 
-            // free codec context if failed
-            if (!avSubsStream && avSubsCodecCtx)
+            // Only failures before provider ownership retain a codec context here.
+            if (avSubsCodecCtx)
             {
                 avcodec_free_context(&avSubsCodecCtx);
             }
@@ -1719,7 +1750,7 @@ namespace winrt::FFmpegInteropX::implementation
             {
                 auto encodingProperties = videoDescriptor.EncodingProperties();
                 auto pixelAspect = (double)encodingProperties.PixelAspectRatio().Numerator() / encodingProperties.PixelAspectRatio().Denominator();
-                auto videoAspect = ((double)encodingProperties.Width() / encodingProperties.Height()) / pixelAspect;
+                auto videoAspect = ((double)encodingProperties.Width() / encodingProperties.Height()) * pixelAspect;
                 for (auto& subtitleStream : externalSubsParser->subtitleStreamProviders)
                 {
                     subtitleStream->NotifyVideoFrameSize(encodingProperties.Width(), encodingProperties.Height(), videoAspect);
@@ -1919,6 +1950,101 @@ namespace winrt::FFmpegInteropX::implementation
         return TimeSpan{ 0L };
     }
 
+    HRESULT FFmpegMediaSource::TryOpenEmbyBitstream(int32_t mode, int32_t streamIndex)
+    {
+        std::lock_guard lock(mutex);
+        if (isClosed) return RO_E_CLOSED;
+        if (mode < 0 || mode > 2 || streamIndex < 0) return E_INVALIDARG;
+        if (mssWeak.get() || playbackItemWeak.get()) return E_UNEXPECTED;
+
+        embyAudioObservation = {};
+        embyAudioObservation.Size = sizeof(AudioOutputObservation);
+        embyAudioObservation.Version = 1;
+        embyAudioObservation.RequestedMode = mode;
+        embyAudioObservation.StreamIndex = streamIndex;
+        embyAudioObservation.State = static_cast<int32_t>(EmbyAudioOutputState::Pcm);
+        embyAudioObservation.Reason = static_cast<int32_t>(EmbyAudioFallbackReason::PolicyOff);
+        if (mode == 0) return S_FALSE;
+        if (!currentVideoStream)
+        {
+            embyAudioObservation.Reason = static_cast<int32_t>(EmbyAudioFallbackReason::MetadataUnavailable);
+            return S_FALSE;
+        }
+
+        std::shared_ptr<PassthroughAudioSampleProvider> selected;
+        size_t matching = 0;
+        for (auto const& stream : audioStreams)
+        {
+            if (stream->StreamIndex() != streamIndex) continue;
+            ++matching;
+            selected = std::dynamic_pointer_cast<PassthroughAudioSampleProvider>(stream);
+        }
+        if (matching != 1 || !selected)
+        {
+            embyAudioObservation.Reason = static_cast<int32_t>(EmbyAudioFallbackReason::CodecUnsupported);
+            return S_FALSE;
+        }
+
+        // Opening has no playback clock binding and copies codec parameters before starting its worker.
+        // Keeping the source lock here protects those parameters from concurrent source retirement.
+        const auto result = selected->TryOpenBitstream(mode);
+        embyBitstreamProvider = selected;
+        embyAudioObservation = selected->GetAudioObservation();
+        if (result != S_OK) return result;
+        for (auto const& stream : audioStreams)
+        {
+            if (stream != selected) stream->DisableStream();
+        }
+        selected->EnableStream();
+        currentAudioStream = selected;
+        currentAudioStreamInfo = selected->AudioInfo();
+        // One bounded shared reader supplies both video and encoded audio, including negative audio delay.
+        config->General().ReadAheadBufferEnabled(true);
+        config->General().ReadAheadBufferSize(100 * 1024 * 1024);
+        config->General().ReadAheadBufferDuration(TimeSpan{ 600000000 });
+        return S_OK;
+    }
+
+    AudioOutputObservation FFmpegMediaSource::GetEmbyAudioObservation()
+    {
+        std::shared_ptr<PassthroughAudioSampleProvider> provider;
+        AudioOutputObservation fallback{};
+        {
+            std::lock_guard lock(mutex);
+            provider = embyBitstreamProvider;
+            fallback = embyAudioObservation;
+        }
+        if (provider) return provider->GetAudioObservation();
+        if (fallback.Size == 0)
+        {
+            fallback.Size = sizeof(AudioOutputObservation);
+            fallback.Version = 1;
+            fallback.State = static_cast<int32_t>(EmbyAudioOutputState::Pcm);
+            fallback.StreamIndex = -1;
+        }
+        return fallback;
+    }
+
+    void FFmpegMediaSource::SuspendEmbyAudioOutput()
+    {
+        std::shared_ptr<PassthroughAudioSampleProvider> provider;
+        {
+            std::lock_guard lock(mutex);
+            provider = embyBitstreamProvider;
+        }
+        if (provider) provider->SuspendOutput();
+    }
+
+    HRESULT FFmpegMediaSource::CloseEmbyAudioOutput()
+    {
+        std::shared_ptr<PassthroughAudioSampleProvider> provider;
+        {
+            std::lock_guard lock(mutex);
+            provider = embyBitstreamProvider;
+        }
+        return provider ? provider->CloseOutput() : S_OK;
+    }
+
     MediaPlaybackSession FFmpegMediaSource::PlaybackSession()
     {
         return sessionWeak.get();
@@ -1937,6 +2063,8 @@ namespace winrt::FFmpegInteropX::implementation
             strong.PositionChanged(sessionPositionEvent);
         }
         sessionWeak = value;
+        EmbyAttachAssPlaybackSession(AssSubtitleState, value);
+        if (embyBitstreamProvider) embyBitstreamProvider->BindPlaybackSession(value);
         if (value)
         {
             sessionPositionEvent = value.PositionChanged({ get_weak(), &FFmpegInteropX::implementation::FFmpegMediaSource::OnPositionChanged });
@@ -1952,7 +2080,10 @@ namespace winrt::FFmpegInteropX::implementation
 
     void FFmpegMediaSource::Close(bool onMediaSourceClosed)
     {
+        // A WASAPI worker may be reading the agile playback clock. Never join it under this source lock.
+        CloseEmbyAudioOutput();
         std::lock_guard lock(mutex);
+        EmbyCloseAssSubtitles(AssSubtitleState);
 
 
         if (onMediaSourceClosed)
@@ -1990,6 +2121,7 @@ namespace winrt::FFmpegInteropX::implementation
 
         // Clear our data
         currentAudioStream = nullptr;
+        embyBitstreamProvider = nullptr;
         currentVideoStream = nullptr;
 
         if (m_pReader != nullptr)
@@ -2068,7 +2200,8 @@ namespace winrt::FFmpegInteropX::implementation
         }
         else
         {
-            audioSampleProvider = std::shared_ptr<MediaSampleProvider>(new UncompressedAudioSampleProvider(m_pReader, avFormatCtx, avAudioCodecCtx, config.as<winrt::FFmpegInteropX::MediaSourceConfig>(), index));
+            audioSampleProvider = std::make_shared<PassthroughAudioSampleProvider>(m_pReader, avFormatCtx,
+                avAudioCodecCtx, config.as<winrt::FFmpegInteropX::MediaSourceConfig>(), index);
         }
 
         auto hr = audioSampleProvider->Initialize();
@@ -2467,6 +2600,17 @@ namespace winrt::FFmpegInteropX::implementation
                     sender.NotifyError(MediaStreamSourceErrorStatus::DecodeError);
                 }
                 CheckExtendDuration(sample);
+                if (sample)
+                {
+                    const auto videoIndex = currentVideoStream->StreamIndex();
+                    const auto parameters = avFormatCtx && videoIndex >= 0 && static_cast<unsigned>(videoIndex) < avFormatCtx->nb_streams
+                        ? avFormatCtx->streams[videoIndex]->codecpar : nullptr;
+                    if (FAILED(EmbyRenderAssVideoSample(AssSubtitleState, sample, currentVideoStreamInfo, parameters)))
+                    {
+                        sender.NotifyError(MediaStreamSourceErrorStatus::DecodeError);
+                        return;
+                    }
+                }
                 args.Request().Sample(sample);
                 if (sample)
                 {
@@ -2698,7 +2842,8 @@ namespace winrt::FFmpegInteropX::implementation
         auto diffLast = position - lastPosition;
         bool isSeekBeforeStreamSwitch = allowFastSeek && config->General().FastSeekSmartStreamSwitching() && !isFirstSeekAfterStreamSwitch && diffCurrent.count() > 0 && diffCurrent.count() < 5000000 && diffLast.count() > 0 && diffLast.count() < 10000000;
 
-        bool fastSeek = allowFastSeek && config->General().FastSeek() && currentVideoStream && PlaybackSession() && !isFirstSeekAfterStreamSwitch;
+        const bool bitstreamAudio = embyBitstreamProvider && embyBitstreamProvider->IsBitstreamActive();
+        bool fastSeek = !bitstreamAudio && allowFastSeek && config->General().FastSeek() && currentVideoStream && PlaybackSession() && !isFirstSeekAfterStreamSwitch;
         if (isSeekBeforeStreamSwitch)
         {
             return S_OK;
@@ -2711,7 +2856,12 @@ namespace winrt::FFmpegInteropX::implementation
         else
         {
             lastSeek = position;
-            return m_pReader->Seek(position, actualPosition, lastPosition, fastSeek, currentVideoStream, currentAudioStream);
+            if (bitstreamAudio) embyBitstreamProvider->PrepareSeek(position.count());
+            EmbyFlushAssSubtitles(AssSubtitleState);
+            const auto result = m_pReader->Seek(position, actualPosition, lastPosition, fastSeek, currentVideoStream, currentAudioStream);
+            if (FAILED(result) && bitstreamAudio)
+                embyBitstreamProvider->FailOutput(EmbyAudioFallbackReason::TimingDiscontinuity);
+            return result;
         }
     }
 

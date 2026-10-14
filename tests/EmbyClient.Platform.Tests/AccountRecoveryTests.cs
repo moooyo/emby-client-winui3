@@ -32,6 +32,7 @@ public sealed class AccountRecoveryTests
                 true, cancellationToken);
 
             Assert.Equal("user-a", session.User.Id);
+            Assert.False(session.AllowLocalPersistence);
             await service.SetThemeAsync("Dark");
             Assert.Equal("Dark", service.Settings.Theme);
             await service.InitializeAsync(cancellationToken);

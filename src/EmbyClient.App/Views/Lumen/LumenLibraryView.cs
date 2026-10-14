@@ -26,8 +26,8 @@ public sealed partial class LumenLibraryView : UserControl
     private readonly StackPanel _page = new() { HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly Grid _ambience = new() { Height = 640, VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false };
     private readonly LumenAmbientArtwork _ambienceArtwork = new();
-    private readonly ProgressBar _loading = new() { Height = 2, IsIndeterminate = true, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 64, 0, 0) };
-    private readonly Border _notice = new() { CornerRadius = new CornerRadius(16), Margin = new Thickness(56, 76, 56, 0), Padding = new Thickness(18, 14, 14, 14), VerticalAlignment = VerticalAlignment.Top };
+    private readonly ProgressBar _loading = new() { Height = 2, IsIndeterminate = true, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 84, 0, 0) };
+    private readonly Border _notice = new() { CornerRadius = new CornerRadius(16), Margin = new Thickness(56, 96, 56, 0), Padding = new Thickness(18, 14, 14, 14), VerticalAlignment = VerticalAlignment.Top };
     private readonly TextBlock _noticeText = LumenUi.Text(string.Empty, 13);
     private readonly StackPanel _empty = new() { Spacing = 16, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 560, Margin = new Thickness(32, 160, 32, 48) };
     private readonly TextBlock _emptyTitle = LumenUi.Text(string.Empty, 28, true);
@@ -47,11 +47,14 @@ public sealed partial class LumenLibraryView : UserControl
     private bool _renderQueued;
     private bool _restorePending;
     private bool _autoPageBlocked;
+    private bool _lastHeaderScrolled;
     private int _sessionGeneration;
     private double _pageMargin = 56;
 
     public LumenLibraryView()
     {
+        HorizontalContentAlignment = HorizontalAlignment.Stretch;
+        VerticalContentAlignment = VerticalAlignment.Stretch;
         AutomationProperties.SetAutomationId(this, "LumenLibrary");
         AutomationProperties.SetAutomationId(_scroll, "LumenBrowseScroller");
         _detail = new LumenDetailView(ViewModel);
@@ -95,6 +98,7 @@ public sealed partial class LumenLibraryView : UserControl
         ViewModel.Libraries.CollectionChanged += (_, _) => QueueRender();
         ViewModel.SearchPeople.CollectionChanged += (_, _) => QueueRender();
         ViewModel.SessionExpired += (_, args) => SessionExpired?.Invoke(this, args);
+        ViewModel.MediaLibrarySelectionChanged += (_, args) => MediaLibrarySelectionChanged?.Invoke(this, args);
         ViewModel.BrowseStateCapturing += CaptureViewport;
         ViewModel.BrowseStateRestored += RestoreViewport;
         _scroll.ViewChanged += ScrollChanged;
@@ -112,6 +116,8 @@ public sealed partial class LumenLibraryView : UserControl
             _renderLoaded = false;
             InvalidateRenderLifecycle();
             _heroTimer.Stop();
+            _homeBackgroundFallbackTimer.Stop();
+            foreach (var shelf in _homeShelves) shelf.Stop();
             DetachPerson();
         };
         RegisterPropertyChangedCallback(VisibilityProperty, (_, _) =>
@@ -128,9 +134,30 @@ public sealed partial class LumenLibraryView : UserControl
     public event EventHandler? SessionExpired;
     public event EventHandler? NavigationStateChanged;
     public event EventHandler<LumenPreferences>? PreferencesChanged;
+    public event EventHandler<MediaLibrarySelectionChangedEventArgs>? MediaLibrarySelectionChanged;
     public string ActiveNavigation { get; private set; } = "home";
     public bool IsDetail => ViewModel.HasDetails || ViewModel.IsPerson;
     public bool CanGoBack => ViewModel.CanGoBack;
+    public bool CanGoForward => ViewModel.CanGoForward;
+    public string WindowTitle
+    {
+        get
+        {
+            if (ViewModel.HasDetails || ViewModel.IsPerson) return "Lumen \u00b7 " + ViewModel.Title;
+            var pageTitle = ViewModel.IsHome || ViewModel.IsHomeSection ? "Home" : ViewModel.IsSearch ? "Search"
+                : ViewModel.IsFavorites ? "Favorites" : ViewModel.BrowseMediaType == "Movie" ? "Movies"
+                : ViewModel.BrowseMediaType == "Series" ? "TV shows" : ViewModel.Title;
+            var title = "Lumen \u00b7 " + LumenText.Get(pageTitle);
+            if (!ViewModel.IsHome && !ViewModel.IsFavorites && !ViewModel.IsSearch
+                && ViewModel.SelectedLibraryId is { } libraryId
+                && ViewModel.Libraries.FirstOrDefault(library => library.Id == libraryId) is { } library)
+                title += " \u00b7 " + library.Title;
+            return title;
+        }
+    }
+    public bool IsHeaderScrolled => _renderedPage is "wall" or "search" or "person" && _scroll.VerticalOffset > 8;
+    public bool HandleNavigationKey(KeyRoutedEventArgs args) => ViewModel.HasDetails
+        ? _detail.HandleNavigationKey(args) : HandleHomeNavigationKey(args);
 
     public async Task SetSessionAsync(ConnectedSession session, CancellationToken cancellationToken = default)
     {
@@ -153,21 +180,10 @@ public sealed partial class LumenLibraryView : UserControl
         _sessionGeneration++;
         _session = null;
         ResetLibraryCounts(false);
+        ResetCatalogPresentation();
         DetachSearchCards();
         _searchViewports.Clear();
-        _heroTimer.Stop();
-        _heroArtworkVersion++;
-        foreach (var pair in _heroSourceSubscriptions)
-            pair.Key.Image.UnregisterPropertyChangedCallback(Image.SourceProperty, pair.Value);
-        _heroSourceSubscriptions.Clear();
-        _heroItems = [];
-        _heroIndex = 0;
-        _heroId = null;
-        _homeSignature = string.Empty;
-        _homeBody.Children.Clear();
-        _heroThumbs.Children.Clear();
-        _heroThumbStates.Clear();
-        foreach (var artwork in _heroArtwork) artwork.Image.Source = null;
+        ClearHome();
         _ambienceId = null;
         _ambienceArtwork.Clear();
         DetachPerson();
@@ -200,6 +216,25 @@ public sealed partial class LumenLibraryView : UserControl
         if (_session is null) return;
         CloseBrowseFlyouts();
         _autoPageBlocked = false;
+        if (key.StartsWith("library:", StringComparison.Ordinal))
+        {
+            var libraryId = key["library:".Length..];
+            var library = ViewModel.Libraries.FirstOrDefault(item => item.Id == libraryId);
+            if (library is null) return;
+            ActiveNavigation = LibraryViewModel.PrimaryNavigationForLibrary(library.Item.CollectionType,
+                ViewModel.BrowseMediaType) ?? key;
+            await ViewModel.ShowLibraryAsync(library);
+            QueueRender();
+            NavigationStateChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+        if (key == ActiveNavigation && ViewModel.IsPrimaryNavigationPage(key))
+        {
+            if (key == "home") _homeDeck.GoToPage(0, false);
+            else _scroll.ChangeView(null, 0, null, false);
+            NavigationStateChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
         ActiveNavigation = key;
         switch (key)
         {
@@ -210,11 +245,26 @@ public sealed partial class LumenLibraryView : UserControl
                 if (!ViewModel.IsSearch) _searchTab = "all";
                 await ViewModel.ShowSearchAsync();
                 break;
-            default: ActiveNavigation = "home"; await ViewModel.ShowHomeAsync(); break;
+            default:
+                ActiveNavigation = "home";
+                _homeDeck.GoToPage(0, false);
+                await ViewModel.ShowHomeAsync();
+                break;
         }
         QueueRender();
         NavigationStateChanged?.Invoke(this, EventArgs.Empty);
-        if (key == "search") DispatcherQueue.TryEnqueue(() => _searchInput.Focus(FocusState.Programmatic));
+        if (key == "search") RequestSearchInputFocus();
+    }
+
+    public async Task NavigateLatestMediaAsync(string type)
+    {
+        if (_session is null) return;
+        CloseBrowseFlyouts();
+        _autoPageBlocked = false;
+        ActiveNavigation = type == "Series" ? "series" : "movies";
+        await ViewModel.ShowLatestMediaTypeAsync(type);
+        QueueRender();
+        NavigationStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task NavigateBackAsync()
@@ -225,26 +275,47 @@ public sealed partial class LumenLibraryView : UserControl
         NavigationStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    public async Task NavigateForwardAsync()
+    {
+        CloseBrowseFlyouts();
+        await ViewModel.GoForwardAsync();
+        QueueRender();
+        NavigationStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         ResetLibraryCounts(_session is not null);
         _autoPageBlocked = false;
         await ViewModel.RefreshAsync(cancellationToken);
+        await ViewModel.ReconcileMediaLibrarySelectionAsync(cancellationToken);
         QueueRender();
+        NavigationStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task<bool> RefreshHomeShelvesAsync(CancellationToken cancellationToken = default)
+    {
+        var generation = _sessionGeneration;
+        ResetLibraryCounts(_session is not null);
+        var refreshed = await ViewModel.RefreshHomeShelvesAsync(cancellationToken);
+        if (generation != _sessionGeneration) return false;
+        QueueRender();
+        NavigationStateChanged?.Invoke(this, EventArgs.Empty);
+        return refreshed;
     }
 
     public void FocusCurrentDetails()
     {
         if (ViewModel.HasDetails) _detail.FocusPrimaryAction();
         else if (ViewModel.IsPerson) _scroll.Focus(FocusState.Programmatic);
-        else if (_lastInvokedId is { } itemId && FindItemButton(_page, itemId) is { } button) button.Focus(FocusState.Programmatic);
+        else if (_lastInvokedId is { } itemId && FindItemButton(ViewModel.IsHome ? _home : _page, itemId) is { } button) button.Focus(FocusState.Programmatic);
+        else if (ViewModel.IsHome) _homeDeck.Focus(FocusState.Programmatic);
         else _scroll.Focus(FocusState.Programmatic);
     }
 
     public void ApplyPreferences(LumenPreferences preferences)
     {
         _preferences = preferences;
-        _columns = Math.Clamp(preferences.PosterColumns, 6, 10);
         _root.Background = LumenTheme.Brush("Background");
         _notice.Background = LumenTheme.Brush("Pop");
         _notice.BorderBrush = LumenTheme.Brush("LineStrong");

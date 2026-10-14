@@ -10,8 +10,9 @@ namespace EmbyClient.AppState.Tests;
 
 public sealed class LibraryLumenTests
 {
-    private const string LumenSearchTypes = "Movie,Series,BoxSet";
-    private const string GenericSearchTypes = "Movie,Series,Episode,Video,MusicVideo,Audio,MusicAlbum,BoxSet";
+    private const string LumenSearchTypes = "Movie,Series";
+    private const string GenericSearchTypes = "Movie,Series";
+    private const string CatalogSearchTypes = "Movie,Series,Episode,Video,MusicVideo,Audio,MusicAlbum,BoxSet";
 
     [Theory]
     [InlineData("Movie")]
@@ -100,6 +101,39 @@ public sealed class LibraryLumenTests
 
         await model.ShowMediaTypeAsync(type == "Movie" ? "Series" : "Movie", TestContext.Current.CancellationToken);
         Assert.Empty(model.AvailableGenres);
+    }
+
+    [Theory]
+    [InlineData("Movie", 5)]
+    [InlineData("Series", 7)]
+    public async Task Genre_counts_prefer_the_current_media_type_and_keep_missing_counts_unknown(string type, int typedCount)
+    {
+        using var context = await CreateAsync();
+        var model = context.Model;
+        await model.ShowMediaTypeAsync(type, TestContext.Current.CancellationToken);
+        BaseItemDto[] genres =
+        [
+            new() { Name = "Zulu unknown" },
+            new() { Name = "Drama", ChildCount = 91, RecursiveItemCount = 99, MovieCount = 5, SeriesCount = 7 },
+            new() { Name = "Action", ChildCount = 11, RecursiveItemCount = 22 },
+            new() { Name = "Comedy", RecursiveItemCount = 13 },
+            new() { Name = "Empty", ChildCount = 15, MovieCount = 0, SeriesCount = 0 },
+            new() { Name = "Invalid", ChildCount = -1, RecursiveItemCount = -1, MovieCount = -1, SeriesCount = -1 }
+        ];
+        context.Handler.RespondAsync = request => Task.FromResult(request.Is("/Genres")
+            ? Page(genres) : context.DefaultResponse(request));
+
+        await model.LoadLumenGenresAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(new[] { "Action", "Comedy", "Drama", "Empty", "Invalid", "Zulu unknown" }, model.AvailableGenres);
+        Assert.Equal(typedCount, model.AvailableGenreCounts["Drama"]);
+        Assert.Equal(11, model.AvailableGenreCounts["Action"]);
+        Assert.Equal(13, model.AvailableGenreCounts["Comedy"]);
+        Assert.Equal(0, model.AvailableGenreCounts["Empty"]);
+        Assert.False(model.AvailableGenreCounts.ContainsKey("Zulu unknown"));
+        Assert.False(model.AvailableGenreCounts.ContainsKey("Invalid"));
+        Assert.Equal(4, model.AvailableGenreCounts.Count);
+        Assert.False(model.HasError);
     }
 
     [Fact]
@@ -249,9 +283,9 @@ public sealed class LibraryLumenTests
         Assert.Equal("0", media.Query["StartIndex"]);
         Assert.Equal(term, model.SearchText);
         Assert.Null(model.BrowseSearchType);
-        Assert.Equal(new[] { "Movie", "Series", "BoxSet" }, model.Items.Select(card => card.Item.Type));
+        Assert.Equal(new[] { "Movie", "Series" }, model.Items.Select(card => card.Item.Type));
         Assert.DoesNotContain(model.Items, card => card.Item.Type == "Episode");
-        Assert.Equal(3, model.QueryCount);
+        Assert.Equal(2, model.QueryCount);
         var people = Assert.Single(context.Handler.Requests.Skip(requestStart), request => request.Is("/Persons"));
         Assert.Equal(term, people.Query["SearchTerm"]);
         Assert.False(people.Query.ContainsKey("IncludeItemTypes"));
@@ -264,7 +298,7 @@ public sealed class LibraryLumenTests
     [InlineData("Movie")]
     [InlineData("Series")]
     [InlineData("BoxSet")]
-    public async Task Generic_search_does_not_inherit_Lumen_scopes_and_Lumen_restores_its_own_scope(string? type)
+    public async Task Generic_search_resets_the_typed_Lumen_scope_and_Lumen_restores_people_results(string? type)
     {
         using var context = await CreateAsync();
         context.Catalog = SearchScopeCatalog();
@@ -281,11 +315,11 @@ public sealed class LibraryLumenTests
         var generic = Assert.Single(context.Handler.Requests.Skip(requestStart), request => request.IsItems);
         Assert.Equal(GenericSearchTypes, generic.Query["IncludeItemTypes"]);
         Assert.Equal("shared term", generic.Query["SearchTerm"]);
-        Assert.Contains("Episode", generic.Query["IncludeItemTypes"].Split(','));
+        Assert.DoesNotContain("Episode", generic.Query["IncludeItemTypes"].Split(','));
         Assert.Null(model.BrowseSearchType);
-        Assert.Equal(8, model.QueryCount);
-        Assert.Equal(8, model.Items.Count);
-        Assert.Contains(model.Items, card => card.Id == "match-Episode" && card.Item.Type == "Episode");
+        Assert.Equal(2, model.QueryCount);
+        Assert.Equal(2, model.Items.Count);
+        Assert.Equal(new[] { "Movie", "Series" }, model.Items.Select(card => card.Item.Type));
         Assert.Empty(model.SearchPeople);
         Assert.DoesNotContain(context.Handler.Requests.Skip(requestStart), request => request.Is("/Persons"));
         requestStart = context.Handler.Requests.Length;
@@ -296,8 +330,8 @@ public sealed class LibraryLumenTests
         Assert.Equal(LumenSearchTypes, lumen.Query["IncludeItemTypes"]);
         Assert.Equal("shared term", lumen.Query["SearchTerm"]);
         Assert.Null(model.BrowseSearchType);
-        Assert.Equal(3, model.QueryCount);
-        Assert.Equal(new[] { "Movie", "Series", "BoxSet" }, model.Items.Select(card => card.Item.Type));
+        Assert.Equal(2, model.QueryCount);
+        Assert.Equal(new[] { "Movie", "Series" }, model.Items.Select(card => card.Item.Type));
         Assert.DoesNotContain(model.Items, card => card.Item.Type == "Episode");
         Assert.Single(context.Handler.Requests.Skip(requestStart), request => request.Is("/Persons"));
         Assert.Equal("person-a", Assert.Single(model.SearchPeople).Id);
@@ -333,8 +367,8 @@ public sealed class LibraryLumenTests
         var generic = Assert.Single(context.Handler.Requests.Skip(requestStart), request => request.IsItems);
         Assert.Equal(GenericSearchTypes, generic.Query["IncludeItemTypes"]);
         Assert.Null(model.BrowseSearchType);
-        Assert.Equal(8, model.QueryCount);
-        Assert.Contains(model.Items, card => card.Item.Type == "Episode");
+        Assert.Equal(2, model.QueryCount);
+        Assert.Equal(new[] { "Movie", "Series" }, model.Items.Select(card => card.Item.Type));
         Assert.Empty(model.SearchPeople);
         Assert.DoesNotContain(context.Handler.Requests.Skip(requestStart), request => request.Is("/Persons"));
         Assert.False(model.HasError);
@@ -615,7 +649,7 @@ public sealed class LibraryLumenTests
         var model = context.Model;
         var homeCard = Assert.Single(model.HomeRows.SelectMany(row => row.Items), card => card.Id == "resume-a");
         context.Catalog = [homeCard.Item];
-        await model.ShowMediaTypeAsync("Movie", TestContext.Current.CancellationToken);
+        await model.ShowHomeSectionAsync(HomeSection.ContinueWatching, TestContext.Current.CancellationToken);
         var wallCard = Assert.Single(model.Items);
         var endpoint = favorite ? "FavoriteItems" : "PlayedItems";
         var responses = new Queue<UserItemDataDto>([MutationData(favorite, true), MutationData(favorite, false)]);
@@ -640,6 +674,12 @@ public sealed class LibraryLumenTests
         Assert.Same(wallCard, Assert.Single(model.Items));
         await (favorite ? model.ToggleItemFavoriteAsync(wallCard, TestContext.Current.CancellationToken)
             : model.ToggleItemPlayedAsync(wallCard, TestContext.Current.CancellationToken));
+        Assert.True(model.CanGoForward);
+        await model.GoForwardAsync(TestContext.Current.CancellationToken);
+        Assert.Same(detailCard, model.Detail);
+        Assert.All(new[] { homeCard, wallCard, detailCard, model.PlayableDetail }, card =>
+            Assert.False(favorite ? card.IsFavorite : card.IsPlayed));
+        await model.GoBackAsync(TestContext.Current.CancellationToken);
         await model.GoBackAsync(TestContext.Current.CancellationToken);
 
         Assert.True(model.IsHome);
@@ -714,7 +754,7 @@ public sealed class LibraryLumenTests
         Assert.Equal(1, model.QueryCount);
     }
 
-    private static BaseItemDto[] SearchScopeCatalog() => GenericSearchTypes.Split(',')
+    private static BaseItemDto[] SearchScopeCatalog() => CatalogSearchTypes.Split(',')
         .Select(type => new BaseItemDto { Id = "match-" + type, Name = "Search result " + type, Type = type }).ToArray();
 
     private static HttpResponseMessage SearchScopeResponse(LibraryTestContext context, ObservedRequest request)

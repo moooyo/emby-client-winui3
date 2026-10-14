@@ -4,10 +4,11 @@ namespace EmbyClient.App.Services;
 
 public enum ArtworkKind { Poster, Landscape, Backdrop }
 
+public readonly record struct ImageCacheUsage(long Bytes, int EntryCount, long MaximumBytes);
+
 /// <summary>Caches authenticated image bytes without creating thread-affine UI objects.</summary>
 public sealed class ImageCache
 {
-    private const long MaximumBytes = 32L * 1024 * 1024;
     private const int MaximumEntries = 128;
     private readonly object _sync = new();
     private readonly SemaphoreSlim _requests = new(4, 4);
@@ -15,7 +16,44 @@ public sealed class ImageCache
     private readonly Dictionary<CacheKey, LinkedListNode<CacheEntry>> _entries = [];
     private readonly LinkedList<CacheEntry> _recency = new();
     private long _bytes;
+    private long _maximumBytes = 32L * 1024 * 1024;
     private long _generation;
+
+    /// <summary>Raised on the calling thread after retained artwork or its capacity changes.</summary>
+    public event EventHandler<ImageCacheUsage>? UsageChanged;
+
+    /// <summary>The retained byte budget. Reducing it immediately removes least recently used images.</summary>
+    public long MaximumBytes
+    {
+        get { lock (_sync) return _maximumBytes; }
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            lock (_sync)
+            {
+                if (_maximumBytes == value) return;
+                _maximumBytes = value;
+                if (value == 0)
+                {
+                    // Disabling retention also retires old requests if the user enables it again.
+                    _generation++;
+                    _entries.Clear();
+                    _recency.Clear();
+                    _bytes = 0;
+                }
+                else
+                {
+                    while (_bytes > value) EvictOldest();
+                }
+            }
+            PublishUsage();
+        }
+    }
+
+    public ImageCacheUsage Usage
+    {
+        get { lock (_sync) return new ImageCacheUsage(_bytes, _entries.Count, _maximumBytes); }
+    }
 
     /// <summary>Returns image bytes, or null when the item has no usable image reference.</summary>
     /// <remarks>The returned array is shared by the cache and must not be modified.</remarks>
@@ -111,23 +149,23 @@ public sealed class ImageCache
                     var bytes = await api.GetItemImageAsync(key.ItemId, key.Type, key.Index,
                         new ImageOptions { Tag = key.Tag, MaxWidth = width, MaxHeight = height },
                         cancellationToken).ConfigureAwait(false);
+                    var retained = false;
                     lock (_sync)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        if (generation == _generation && bytes.LongLength <= MaximumBytes)
+                        if (generation == _generation && _maximumBytes > 0 && bytes.LongLength <= _maximumBytes)
                         {
-                            while (_entries.Count >= MaximumEntries || _bytes + bytes.LongLength > MaximumBytes)
+                            while (_entries.Count >= MaximumEntries || _bytes + bytes.LongLength > _maximumBytes)
                             {
-                                var oldest = _recency.Last!;
-                                _entries.Remove(oldest.Value.Key);
-                                _bytes -= oldest.Value.Bytes.LongLength;
-                                _recency.RemoveLast();
+                                EvictOldest();
                             }
                             var node = _recency.AddFirst(new CacheEntry(key, bytes));
                             _entries.Add(key, node);
                             _bytes += bytes.LongLength;
+                            retained = true;
                         }
                     }
+                    if (retained) PublishUsage();
                     completed = bytes;
                     return bytes;
                 }
@@ -156,6 +194,30 @@ public sealed class ImageCache
             _entries.Clear();
             _recency.Clear();
             _bytes = 0;
+        }
+        PublishUsage();
+    }
+
+    private void EvictOldest()
+    {
+        var oldest = _recency.Last!;
+        _entries.Remove(oldest.Value.Key);
+        _bytes -= oldest.Value.Bytes.LongLength;
+        _recency.RemoveLast();
+    }
+
+    private void PublishUsage()
+    {
+        var handlers = UsageChanged;
+        if (handlers is null) return;
+        var usage = Usage;
+        foreach (EventHandler<ImageCacheUsage> handler in handlers.GetInvocationList())
+        {
+            try { handler(this, usage); }
+            catch (Exception)
+            {
+                // Usage feedback is optional and must not turn a successful artwork request into a failure.
+            }
         }
     }
 

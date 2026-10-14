@@ -1,8 +1,12 @@
+using System.Globalization;
+using System.Numerics;
 using EmbyClient.Api;
 using EmbyClient.App.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Color = Windows.UI.Color;
 using Colors = Microsoft.UI.Colors;
@@ -24,6 +28,14 @@ public sealed partial class PlayerView
         SetControlLabel(EpisodeSeasonSelector, LumenText.Get("Season"));
         AutomationProperties.SetLiveSetting(EpisodeDrawerStatus,
             Microsoft.UI.Xaml.Automation.Peers.AutomationLiveSetting.Polite);
+        EpisodeDrawerItems.Spacing = 2;
+        EpisodeDrawerScroll.AddHandler(PointerWheelChangedEvent,
+            new PointerEventHandler((_, _) => SuppressEpisodeDrawerAutoCenter()), true);
+        EpisodeDrawerScroll.AddHandler(PointerPressedEvent,
+            new PointerEventHandler((_, _) => SuppressEpisodeDrawerAutoCenter()), true);
+        EpisodeDrawerScroll.AddHandler(KeyDownEvent,
+            new KeyEventHandler((_, _) => SuppressEpisodeDrawerAutoCenter()), true);
+        _clock.Tick += (_, _) => RefreshCurrentEpisodeDrawerProgress();
         ResetEpisodeDrawer();
     }
 
@@ -83,11 +95,9 @@ public sealed partial class PlayerView
                     _episodeDrawerSeasons[season.Id!] = season;
                     var entry = new ComboBoxItem
                     {
-                        Content = season.IndexNumber is { } number
-                            ? string.Format(LumenText.Get("Season {0}"), number)
-                            : season.Name ?? LumenText.Get("Season"),
                         Tag = season.Id
                     };
+                    UpdateEpisodeSeasonLabel(entry, season);
                     EpisodeSeasonSelector.Items.Add(entry);
                     if (ReferenceEquals(season, selected)) EpisodeSeasonSelector.SelectedItem = entry;
                 }
@@ -116,6 +126,8 @@ public sealed partial class PlayerView
         if (_updatingEpisodeSeasons || _sidePanelMode != PlayerSidePanel.Episodes
             || _episodeDrawerOwner is not { } previous || !OwnsEpisodeDrawerRequest(previous)
             || EpisodeSeasonSelector.SelectedItem is not ComboBoxItem { Tag: string seasonId }) return;
+        if (EpisodeSeasonSelector.SelectedItem is ComboBoxItem selectedSeason)
+            ToolTipService.SetToolTip(EpisodeSeasonSelector, ToolTipService.GetToolTip(selectedSeason));
         var owner = BeginEpisodeDrawerRequest(previous.Session, previous.Item, previous.Intent);
         await LoadEpisodeDrawerSeasonAsync(owner, seasonId);
     }
@@ -136,11 +148,13 @@ public sealed partial class PlayerView
                 var row = CreateEpisodeDrawerRow(episode, owner);
                 _episodeDrawerRows.Add(row);
                 EpisodeDrawerItems.Children.Add(row.Button);
+                if (episode.Id == owner.Item.Id) ArrangeCurrentEpisodeIntoView(row, owner);
             }
             EpisodeCountText.Text = string.Format(LumenText.Get("{0} episodes"), episodes.Length);
             SetEpisodeDrawerStatus(episodes.Length == 0 ? LumenText.Get("No episodes available.") : string.Empty);
             UpdateEpisodeDrawerControls();
-            EpisodeDrawerScroll.ChangeView(null, 0, null, disableAnimation: true);
+            if (!_episodeDrawerRows.Any(row => row.Episode.Id == owner.Item.Id))
+                EpisodeDrawerScroll.ChangeView(null, 0, null, disableAnimation: true);
             await Task.WhenAll(_episodeDrawerRows.Select(row => LoadEpisodeDrawerImageAsync(row, owner)).ToArray());
         }
         catch (EmbyApiException exception) when (exception.IsAuthenticationFailure
@@ -171,6 +185,7 @@ public sealed partial class PlayerView
     private void CancelEpisodeDrawerRequest()
     {
         _episodeDrawerOwner = null;
+        foreach (var row in _episodeDrawerRows) RemoveEpisodeDrawerLoadedHandler(row);
         var cancellation = _episodeDrawerCancellation;
         _episodeDrawerCancellation = null;
         cancellation?.Cancel();
@@ -184,6 +199,7 @@ public sealed partial class PlayerView
 
     private void ClearEpisodeDrawerRows()
     {
+        foreach (var row in _episodeDrawerRows) RemoveEpisodeDrawerLoadedHandler(row);
         _episodeDrawerRows.Clear();
         EpisodeDrawerItems.Children.Clear();
         EpisodeCountText.Text = string.Format(LumenText.Get("{0} episodes"), 0);
@@ -198,44 +214,80 @@ public sealed partial class PlayerView
     private EpisodeDrawerRow CreateEpisodeDrawerRow(BaseItemDto episode, EpisodeDrawerRequest owner)
     {
         var artwork = new Image { Width = 128, Height = 72, Stretch = Stretch.UniformToFill };
-        var imageGrid = new Grid { Width = 128, Height = 72 };
-        imageGrid.Children.Add(new Border { CornerRadius = new CornerRadius(4), Child = artwork });
+        AutomationProperties.SetAccessibilityView(artwork, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        var imageGrid = new Grid
+        {
+            Width = 128, Height = 72, VerticalAlignment = VerticalAlignment.Top,
+            Background = new SolidColorBrush(Color.FromArgb(255, 26, 24, 21))
+        };
+        imageGrid.Children.Add(artwork);
+        imageGrid.Loaded += (_, _) =>
+        {
+            if (!OwnsEpisodeDrawerRequest(owner) || imageGrid.ActualWidth <= 0 || imageGrid.ActualHeight <= 0) return;
+            var visual = ElementCompositionPreview.GetElementVisual(imageGrid);
+            var geometry = visual.Compositor.CreateRoundedRectangleGeometry();
+            geometry.Size = new Vector2((float)imageGrid.ActualWidth, (float)imageGrid.ActualHeight);
+            geometry.CornerRadius = new Vector2(6);
+            visual.Clip = visual.Compositor.CreateGeometricClip(geometry);
+        };
         var progress = new ProgressBar
         {
             Minimum = 0, Maximum = 100, Height = 3, MinHeight = 3,
             VerticalAlignment = VerticalAlignment.Bottom, IsHitTestVisible = false,
             Foreground = Resources["PlayerAccentBrush"] as Brush,
-            Background = new SolidColorBrush(Color.FromArgb(110, 0, 0, 0))
+            Background = new SolidColorBrush(Color.FromArgb(77, 255, 255, 255))
         };
+        AutomationProperties.SetAccessibilityView(progress, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
         imageGrid.Children.Add(progress);
         var watched = new Border
         {
-            Width = 20, Height = 20, CornerRadius = new CornerRadius(10), Margin = new Thickness(4),
+            Width = 18, Height = 18, CornerRadius = new CornerRadius(9), Margin = new Thickness(0, 5, 5, 0),
             VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Right,
-            Background = new SolidColorBrush(Color.FromArgb(184, 0, 0, 0)),
-            Child = PlayerIcon("checkmark_16_filled", size: 12)
+            Background = new SolidColorBrush(Color.FromArgb(140, 0, 0, 0)),
+            Child = PlayerIcon("checkmark_16_filled", size: 10)
         };
         imageGrid.Children.Add(watched);
         var title = new TextBlock
         {
-            Text = EpisodeDrawerTitle(episode), FontSize = 14, FontWeight = FontWeights.SemiBold,
-            Foreground = new SolidColorBrush(Colors.White), TextWrapping = TextWrapping.Wrap,
-            TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1
+            Text = EpisodeDrawerTitle(episode), FontSize = 13, FontWeight = FontWeights.SemiBold,
+            Foreground = new SolidColorBrush(Colors.White), TextWrapping = TextWrapping.NoWrap,
+            TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1, VerticalAlignment = VerticalAlignment.Center
         };
+        var nowPlaying = new Border
+        {
+            Height = 18, CornerRadius = new CornerRadius(9), Padding = new Thickness(7, 0, 7, 0),
+            Background = Resources["PlayerAccentBrush"] as Brush, VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed, IsHitTestVisible = false,
+            Child = new TextBlock
+            {
+                Text = LumenText.Get("Now playing"), FontSize = 10, FontWeight = FontWeights.SemiBold,
+                Foreground = new SolidColorBrush(Color.FromArgb(255, 31, 22, 6)),
+                VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.NoWrap
+            }
+        };
+        AutomationProperties.SetAccessibilityView(nowPlaying, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        var heading = new Grid { ColumnSpacing = 8 };
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        heading.Children.Add(title);
+        Grid.SetColumn(nowPlaying, 1);
+        heading.Children.Add(nowPlaying);
         var detail = new TextBlock
         {
-            FontSize = 12, Foreground = new SolidColorBrush(Color.FromArgb(204, 255, 255, 255)),
-            TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1
+            FontSize = 12, Foreground = new SolidColorBrush(Color.FromArgb(153, 255, 255, 255)),
+            TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 1,
+            Margin = new Thickness(0, 2, 0, 0)
         };
         var overview = new TextBlock
         {
             Text = episode.Overview ?? string.Empty, FontSize = 12,
-            Foreground = new SolidColorBrush(Color.FromArgb(178, 255, 255, 255)),
+            Foreground = new SolidColorBrush(Color.FromArgb(184, 255, 255, 255)),
             TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.CharacterEllipsis, MaxLines = 2,
+            LineHeight = 17.4, Margin = new Thickness(0, 4, 0, 0),
             Visibility = string.IsNullOrWhiteSpace(episode.Overview) ? Visibility.Collapsed : Visibility.Visible
         };
-        var text = new StackPanel { Spacing = 3, VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(title);
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Top };
+        text.Children.Add(heading);
         text.Children.Add(detail);
         text.Children.Add(overview);
         var content = new Grid { ColumnSpacing = 12, MinHeight = 72 };
@@ -246,12 +298,12 @@ public sealed partial class PlayerView
         content.Children.Add(text);
         var button = new Button
         {
-            Content = content, Padding = new Thickness(8), CornerRadius = new CornerRadius(8),
+            Content = content, Padding = new Thickness(8), CornerRadius = new CornerRadius(12),
             HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Center, Style = Resources["PlayerEpisodeRowStyle"] as Style
         };
         button.Click += async (_, _) => await RunAsync(() => PlayEpisodeDrawerItemAsync(episode, owner));
-        return new EpisodeDrawerRow(episode, button, artwork, title, detail, watched, progress);
+        return new EpisodeDrawerRow(episode, button, artwork, title, detail, nowPlaying, watched, progress);
     }
 
     private void UpdateEpisodeDrawerControls()
@@ -261,9 +313,10 @@ public sealed partial class PlayerView
         foreach (var entry in EpisodeSeasonSelector.Items.OfType<ComboBoxItem>())
         {
             if (entry.Tag is not string id || !_episodeDrawerSeasons.TryGetValue(id, out var season)) continue;
-            entry.Content = season.IndexNumber is { } number ? string.Format(LumenText.Get("Season {0}"), number)
-                : season.Name ?? LumenText.Get("Season");
+            UpdateEpisodeSeasonLabel(entry, season);
         }
+        if (EpisodeSeasonSelector.SelectedItem is ComboBoxItem selectedSeason)
+            ToolTipService.SetToolTip(EpisodeSeasonSelector, ToolTipService.GetToolTip(selectedSeason));
         EpisodeCountText.Text = string.Format(LumenText.Get("{0} episodes"), _episodeDrawerRows.Count);
         var available = CanChangeEpisode();
         foreach (var row in _episodeDrawerRows)
@@ -272,16 +325,13 @@ public sealed partial class PlayerView
             var watched = row.Episode.UserData?.Played == true;
             row.Button.IsEnabled = available && !string.IsNullOrWhiteSpace(row.Episode.Id);
             row.Button.Background = new SolidColorBrush(Color.FromArgb(current ? (byte)26 : (byte)0, 255, 255, 255));
-            row.Watched.Visibility = watched && _preferences.ShowWatchedMarks ? Visibility.Visible : Visibility.Collapsed;
-            var progress = EpisodeDrawerProgress(row.Episode);
-            row.Progress.Value = progress * 100;
-            row.Progress.Visibility = progress > 0 ? Visibility.Visible : Visibility.Collapsed;
-            var details = new List<string>();
-            if (row.Episode.IndexNumber is { } number) details.Add(string.Format(LumenText.Get("Episode {0}"), number));
-            if (row.Episode.RunTimeTicks is > 0) details.Add(FormatTime(row.Episode.RunTimeTicks.Value));
-            if (current) details.Add(LumenText.Get("Now playing"));
-            else if (watched) details.Add(LumenText.Get("Watched"));
-            row.Detail.Text = string.Join(LumenText.Get(" \u00b7 "), details);
+            row.Watched.Visibility = !current && watched && _preferences.ShowWatchedMarks ? Visibility.Visible : Visibility.Collapsed;
+            row.NowPlaying.Visibility = current ? Visibility.Visible : Visibility.Collapsed;
+            if (row.NowPlaying.Child is TextBlock badge) badge.Text = LumenText.Get("Now playing");
+            UpdateEpisodeDrawerRowProgress(row, current);
+            row.Detail.Text = row.Episode.RunTimeTicks is > 0
+                ? LumenText.Get("{0} min", Math.Max(1, Math.Round(TimeSpan.FromTicks(row.Episode.RunTimeTicks.Value).TotalMinutes,
+                    MidpointRounding.AwayFromZero))) : LumenText.Get("Unavailable");
             var title = EpisodeDrawerTitle(row.Episode);
             row.Title.Text = title;
             var position = Math.Max(0, row.Episode.UserData?.PlaybackPositionTicks ?? 0);
@@ -289,7 +339,86 @@ public sealed partial class PlayerView
                 : position > 0 ? string.Format(LumenText.Get("Continue {0} from {1}"), title, FormatTime(position))
                 : string.Format(LumenText.Get("Play {0}"), title);
             SetControlLabel(row.Button, label);
+            AutomationProperties.SetHelpText(row.Button, string.Join(" · ", new[] { row.Detail.Text,
+                !current && watched ? LumenText.Get("Watched") : null }.Where(value => !string.IsNullOrEmpty(value))));
         }
+    }
+
+    private static void UpdateEpisodeSeasonLabel(ComboBoxItem entry, BaseItemDto season)
+    {
+        var label = season.IndexNumber is { } number ? LumenText.Get("Season {0}", number)
+            : season.Name ?? LumenText.Get("Season");
+        entry.Content = season.IndexNumber is { } index ? "S" + index.ToString(CultureInfo.InvariantCulture) : label;
+        var description = string.IsNullOrWhiteSpace(season.Name) || string.Equals(season.Name, label, StringComparison.Ordinal)
+            ? label : label + " · " + season.Name;
+        AutomationProperties.SetName(entry, description);
+        ToolTipService.SetToolTip(entry, description);
+    }
+
+    private void RefreshCurrentEpisodeDrawerProgress()
+    {
+        if (_sidePanelMode != PlayerSidePanel.Episodes || !EpisodeDrawerScroll.IsLoaded
+            || _episodeDrawerOwner is not { } owner
+            || !OwnsEpisodeDrawerRequest(owner)) return;
+        var current = _episodeDrawerRows.FirstOrDefault(row => row.Episode.Id == _item?.Id);
+        if (current is not null) UpdateEpisodeDrawerRowProgress(current, current: true);
+    }
+
+    private void UpdateEpisodeDrawerRowProgress(EpisodeDrawerRow row, bool current)
+    {
+        var progress = current ? CurrentEpisodeDrawerProgress(row.Episode) : EpisodeDrawerProgress(row.Episode);
+        row.Progress.Value = progress * 100;
+        row.Progress.Visibility = progress > .01 && (current || row.Episode.UserData?.Played != true)
+            ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private double CurrentEpisodeDrawerProgress(BaseItemDto episode)
+    {
+        var context = _coordinator?.ActiveContext;
+        if (context is null || context.Selection.ItemId != episode.Id) return 0;
+        var duration = context.Source.RunTimeTicks ?? episode.RunTimeTicks;
+        return duration is > 0 ? Math.Clamp((double)context.PositionTicks / duration.Value, 0, 1) : 0;
+    }
+
+    private void SuppressEpisodeDrawerAutoCenter()
+    {
+        if (_episodeDrawerOwner is { } owner) owner.AutoCenterSuppressed = true;
+    }
+
+    private void ArrangeCurrentEpisodeIntoView(EpisodeDrawerRow row, EpisodeDrawerRequest owner)
+    {
+        if (row.Button.IsLoaded) { QueueEpisodeDrawerCenter(row, owner); return; }
+        row.PendingLoaded = (_, _) =>
+        {
+            RemoveEpisodeDrawerLoadedHandler(row);
+            QueueEpisodeDrawerCenter(row, owner);
+        };
+        row.Button.Loaded += row.PendingLoaded;
+    }
+
+    private void QueueEpisodeDrawerCenter(EpisodeDrawerRow row, EpisodeDrawerRequest owner)
+    {
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!OwnsEpisodeDrawerRequest(owner) || owner.AutoCenterSuppressed || owner.CurrentItemCentered
+                || _sidePanelMode != PlayerSidePanel.Episodes || SidePanel.Visibility != Visibility.Visible
+                || EpisodesPanel.Visibility != Visibility.Visible || !_episodeDrawerRows.Contains(row)
+                || row.Episode.Id != _item?.Id || !row.Button.IsLoaded || row.Button.ActualHeight <= 0
+                || EpisodeDrawerScroll.ViewportHeight <= 0) return;
+            owner.CurrentItemCentered = true;
+            row.Button.StartBringIntoView(new BringIntoViewOptions
+            {
+                VerticalAlignmentRatio = .5,
+                AnimationDesired = false
+            });
+        });
+    }
+
+    private static void RemoveEpisodeDrawerLoadedHandler(EpisodeDrawerRow row)
+    {
+        if (row.PendingLoaded is not { } handler) return;
+        row.Button.Loaded -= handler;
+        row.PendingLoaded = null;
     }
 
     private async Task PlayEpisodeDrawerItemAsync(BaseItemDto episode, EpisodeDrawerRequest owner)
@@ -344,8 +473,9 @@ public sealed partial class PlayerView
     }
 
     private static string EpisodeDrawerTitle(BaseItemDto episode) => !string.IsNullOrWhiteSpace(episode.Name)
-        ? episode.Name : episode.IndexNumber is { } number
-            ? string.Format(LumenText.Get("Episode {0}"), number) : LumenText.Get("Untitled episode");
+        ? episode.IndexNumber is { } number ? number.ToString(CultureInfo.CurrentCulture) + ". " + episode.Name : episode.Name
+        : episode.IndexNumber is { } missingTitleNumber ? LumenText.Get("Episode {0}", missingTitleNumber)
+        : LumenText.Get("Untitled episode");
 
     private static double EpisodeDrawerProgress(BaseItemDto episode)
     {
@@ -355,8 +485,15 @@ public sealed partial class PlayerView
         return Math.Clamp(episode.UserData?.PlayedPercentage ?? 0, 0, 100) / 100;
     }
 
-    private sealed record EpisodeDrawerRequest(ConnectedSession Session, BaseItemDto Item, long Intent, CancellationToken Token);
+    private sealed record EpisodeDrawerRequest(ConnectedSession Session, BaseItemDto Item, long Intent, CancellationToken Token)
+    {
+        public bool AutoCenterSuppressed { get; set; }
+        public bool CurrentItemCentered { get; set; }
+    }
 
     private sealed record EpisodeDrawerRow(BaseItemDto Episode, Button Button, Image Artwork,
-        TextBlock Title, TextBlock Detail, Border Watched, ProgressBar Progress);
+        TextBlock Title, TextBlock Detail, Border NowPlaying, Border Watched, ProgressBar Progress)
+    {
+        public RoutedEventHandler? PendingLoaded { get; set; }
+    }
 }

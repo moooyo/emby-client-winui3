@@ -71,7 +71,9 @@ public sealed partial class LibraryViewModel
         var snapshots = _history.ToArray();
         _history.Clear();
         foreach (var snapshot in snapshots.Reverse()) _history.Push(PruneResumeSnapshot(snapshot, itemId));
-        if (_searchOriginSnapshot is { } searchOrigin) _searchOriginSnapshot = PruneResumeSnapshot(searchOrigin, itemId);
+        var forwardSnapshots = _forwardHistory.ToArray();
+        _forwardHistory.Clear();
+        foreach (var snapshot in forwardSnapshots.Reverse()) _forwardHistory.Push(PruneResumeSnapshot(snapshot, itemId));
         NotifyPresentation();
     }
 
@@ -91,8 +93,7 @@ public sealed partial class LibraryViewModel
             HasMore = isResume && total is { } count ? snapshot.HasMore && nextIndex < count : snapshot.HasMore,
             NextIndex = nextIndex,
             TotalCount = total,
-            Subtitle = isResume && (removed > 0 || total != snapshot.TotalCount) ? ResumeCountSubtitle(total, items.Length) : snapshot.Subtitle,
-            SearchOrigin = snapshot.SearchOrigin is { } origin ? PruneResumeSnapshot(origin, itemId) : null
+            Subtitle = isResume && (removed > 0 || total != snapshot.TotalCount) ? ResumeCountSubtitle(total, items.Length) : snapshot.Subtitle
         };
     }
 

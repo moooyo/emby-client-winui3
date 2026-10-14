@@ -1,6 +1,8 @@
 #pragma once
 #include <unknwn.h>
 #include <shcore.h>
+#include <audioclient.h>
+#include <mmdeviceapi.h>
 #include <memory>
 
 // prevent compiler warnings due to name conflicts

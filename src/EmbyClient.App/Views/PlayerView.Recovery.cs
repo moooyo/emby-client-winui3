@@ -169,6 +169,7 @@ public sealed partial class PlayerView
     private void UpdateStageStatus(PlaybackStatus status)
     {
         StageStatus.Visibility = PlaybackNotice.IsOpen || status is PlaybackStatus.Playing or PlaybackStatus.Paused or PlaybackStatus.Seeking
+            || status == PlaybackStatus.Ended && !_compactOverlay
             ? Visibility.Collapsed : Visibility.Visible;
         StageStatusText.Text = LumenText.Get(status switch
         {

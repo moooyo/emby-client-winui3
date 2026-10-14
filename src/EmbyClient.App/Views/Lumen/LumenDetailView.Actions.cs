@@ -11,12 +11,54 @@ namespace EmbyClient.App.Views.Lumen;
 
 public sealed partial class LumenDetailView
 {
+    private CancellationTokenSource? _itemActionCancellation;
+
+    private async Task RunItemActionAsync(MediaCardViewModel item, Func<ConnectedSession, CancellationToken, Task> action)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        var session = _session;
+        if (session is null || string.IsNullOrWhiteSpace(item.Id) || _actionBusy || _activeDialog is not null) return;
+        var lifetime = new CancellationTokenSource();
+        _itemActionCancellation = lifetime;
+        var token = lifetime.Token;
+        _actionBusy = true;
+        UpdateActionState();
+        try
+        {
+            await action(session, token);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception exception) when (ExpectedRequestFailure(exception) || exception is ArgumentException)
+        {
+            if (!token.IsCancellationRequested && ReferenceEquals(_session?.Api, session.Api) && XamlRoot is not null)
+            {
+                var message = LumenUi.Text(DescribeRequestFailure(exception), 14);
+                message.TextWrapping = TextWrapping.Wrap;
+                var dialog = CreateDialog("The operation could not be completed. Try again.", message);
+                dialog.CloseButtonText = LumenText.Get("Close");
+                await ShowDialogAsync(dialog);
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(_itemActionCancellation, lifetime))
+            {
+                _itemActionCancellation = null;
+                _actionBusy = false;
+                UpdateActionState();
+            }
+            lifetime.Dispose();
+        }
+    }
+
     private Button CreateMoreButton()
     {
         var button = LumenUi.IconButton("ellipsis", LumenText.Get("More"), 46, true);
-        var popup = new Flyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft, FlyoutPresenterStyle = PopupStyle(236) };
+        var popup = new Flyout { Placement = FlyoutPlacementMode.TopEdgeAlignedLeft, FlyoutPresenterStyle = PopupStyle(260) };
         popup.Opening += (_, _) =>
         {
+            _hasOpenDetailFlyout = true;
+            UpdateStageInteraction();
             var rows = new StackPanel { Spacing = 2 };
             void Add(string key, string icon, Action action, bool enabled = true)
             {
@@ -25,11 +67,16 @@ public sealed partial class LumenDetailView
                 row.Click += (_, _) => { popup.Hide(); action(); };
                 rows.Children.Add(row);
             }
-            Add("Play from beginning", "rotate-ccw", () => RaisePlay(0), _library.PlayableDetail.CanPlay && _library.IsPlaybackAllowed);
-            Add(_library.Detail.IsPlayed ? "Mark unwatched" : "Mark watched", "check", () => _ = MutateDetailUserDataAsync(false));
-            Add("Add to collection", "plus", () => _ = AddToCollectionAsync(), _library.Detail.Item.Type != "BoxSet");
+            var series = _library.Detail.Item.Type is "Series" or "Season";
+            Add(series ? "Play from the first episode" : "Play from beginning", "rotate-ccw",
+                () => { if (series) _ = PlaySeriesFromBeginningAsync(); else RaisePlay(0); },
+                _library.PlayableDetail.CanPlay && _library.IsPlaybackAllowed);
+            if (!series && _library.PlayableDetail.CanPlay)
+                Add("Add to play queue", "list-video", () => PlayRequested?.Invoke(this,
+                    new LumenPlayRequestEventArgs(_library.PlayableDetail.Item, addToQueue: true)), _library.IsPlaybackAllowed);
             var resumeItem = _library.Detail.IsFolder ? _library.PlayableDetail : _library.Detail;
-            Add("Remove from continue watching", "x", () => _ = RemoveFromContinueWatchingAsync(resumeItem), resumeItem.CanResume);
+            if (resumeItem.CanResume) Add("Remove from continue watching", "x", () => _ = RemoveFromContinueWatchingAsync(resumeItem));
+            Add("Add to collection", "plus", () => _ = AddToCollectionAsync(), _library.Detail.Item.Type != "BoxSet");
             var divider = LumenUi.Divider();
             divider.Margin = new Thickness(10, 5, 10, 5);
             rows.Children.Add(divider);
@@ -38,20 +85,46 @@ public sealed partial class LumenDetailView
             Add("Media information", "info", () => _ = ShowMediaInformationAsync(), SelectedSource is not null || _library.PlayableDetail.CanPlay);
             popup.Content = rows;
         };
+        popup.Closed += (_, _) => { _hasOpenDetailFlyout = false; UpdateStageInteraction(); };
         button.Flyout = popup;
         return button;
     }
 
+    private Task PlaySeriesFromBeginningAsync()
+    {
+        var detail = _library.Detail.Item;
+        var seriesId = detail.Type == "Season" ? detail.SeriesId : detail.Id;
+        if (string.IsNullOrWhiteSpace(seriesId)) return Task.CompletedTask;
+        return RunDetailActionAsync(async (session, token) =>
+        {
+            var seasonId = detail.Type == "Season" ? detail.Id : null;
+            if (seasonId is null)
+            {
+                var seasons = await session.Api.GetSeasonsAsync(seriesId, token);
+                var ordered = seasons.Items.Where(season => !string.IsNullOrWhiteSpace(season.Id))
+                    .OrderBy(season => season.IndexNumber ?? int.MaxValue).ToArray();
+                seasonId = ordered.FirstOrDefault(season => season.IndexNumber is > 0)?.Id ?? ordered.FirstOrDefault()?.Id;
+            }
+            var episodes = await session.Api.GetEpisodesAsync(seriesId, seasonId, token);
+            var first = episodes.Items.OrderBy(episode => episode.IndexNumber ?? int.MaxValue)
+                .Select(episode => new MediaCardViewModel(episode)).FirstOrDefault(episode => episode.CanPlay);
+            token.ThrowIfCancellationRequested();
+            if (_library.Detail.Id != detail.Id || !_library.IsPlaybackAllowed) return;
+            if (first is null) SetNotice(LumenText.Get("No playable media is available."));
+            else PlayRequested?.Invoke(this, new LumenPlayRequestEventArgs(first.Item));
+        });
+    }
+
     private static Button PopupAction(string label, string icon)
     {
-        var row = LumenUi.Button(label, icon, height: 38);
+        var row = LumenUi.Button(label, icon, onImage: true, height: 38);
         row.HorizontalAlignment = HorizontalAlignment.Stretch;
         row.HorizontalContentAlignment = HorizontalAlignment.Left;
         row.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         row.BorderThickness = new Thickness(0);
         row.CornerRadius = new CornerRadius(10);
         row.Padding = new Thickness(12, 0, 12, 0);
-        row.Resources["ButtonBackgroundPointerOver"] = LumenTheme.Brush("ControlStrong");
+        LumenUi.SetResource(row.Resources, "ButtonBackgroundPointerOver", ImageBrush(20));
         return row;
     }
 

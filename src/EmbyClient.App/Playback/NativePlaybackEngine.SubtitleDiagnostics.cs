@@ -14,8 +14,13 @@ public sealed partial class NativePlaybackEngine
     private static void RecordSubtitlePresentation(int characters) => RecordSubtitleDiagnostic(
         FormattableString.Invariant($"Present characters={characters}"));
 
-    private static void RecordSubtitleFailure(string operation, Exception exception) => RecordSubtitleDiagnostic(
-        FormattableString.Invariant($"{SubtitleDiagnosticName(operation)} exception={SubtitleDiagnosticName(exception.GetType().Name)} hresult=0x{exception.HResult:X8}"));
+    private static void RecordSubtitleFailure(string operation, Exception exception)
+    {
+        RecordSubtitleDiagnostic(FormattableString.Invariant($"{SubtitleDiagnosticName(operation)} exception={SubtitleDiagnosticName(exception.GetType().Name)} hresult=0x{exception.HResult:X8}"));
+        RecordAcceptanceSubtitleFailure(exception, operation);
+    }
+
+    static partial void RecordAcceptanceSubtitleFailure(Exception exception, string operation);
 
     private static string SubtitleDiagnosticName(string value) => new(value.Take(80)
         .Select(character => char.IsAsciiLetterOrDigit(character) || character == '_' ? character : '_').ToArray());

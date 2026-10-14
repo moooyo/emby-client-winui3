@@ -38,6 +38,7 @@ public:
     void Start();
     void Stop();
     void Flush();
+    void NotifyConsumerProgress();
     HRESULT Seek(TimeSpan position, TimeSpan& actualPosition, TimeSpan currentPosition, bool allowFastSeek, std::shared_ptr<MediaSampleProvider> videoStream, std::shared_ptr<MediaSampleProvider> audioStream);
 
 private:
@@ -46,6 +47,7 @@ private:
     HRESULT SeekFast(TimeSpan position, TimeSpan& actualPosition, TimeSpan currentPosition, std::shared_ptr<MediaSampleProvider> videoStream, std::shared_ptr<MediaSampleProvider> audioStream);
     void OnTimer(int value);
     void ReadDataLoop();
+    void ResumeReadAhead();
     void FlushCodecs();
     void FlushCodecsAndBuffers();
     bool CheckNeedsSleep(bool wasSleeping);

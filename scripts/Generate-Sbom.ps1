@@ -132,6 +132,34 @@ if (Test-Path -LiteralPath $decoderLockPath) {
     $decoderLock = Get-Content -LiteralPath $decoderLockPath -Raw | ConvertFrom-Json -AsHashtable
     $nativeReceipt = Get-Content -LiteralPath $nativeReceiptPath -Raw | ConvertFrom-Json -AsHashtable
     $nativeRuntimeRoot = Join-Path $workspace 'artifacts/decoder-apis/native/runtime'
+    $assLockPath = Join-Path $workspace 'native/FFmpegInteropX/ass.dependencies.lock.json'
+    $assLock = Get-Content -LiteralPath $assLockPath -Raw | ConvertFrom-Json -AsHashtable
+    $assLockSha256 = (Get-FileHash -LiteralPath $assLockPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($nativeReceipt.assDependencyLockSha256 -cne $assLockSha256 -or -not $nativeReceipt.assRuntimeFiles -or -not $nativeReceipt.assLibraries) {
+        throw 'Rebuild the native decoder with its current libass dependency lock before generating the SBOM.'
+    }
+    $assReceiptPath = Join-Path $workspace ('artifacts/decoder-apis/dependencies/' + $assLock.payloadDirectory + '/build-receipt.json')
+    if (-not (Test-Path -LiteralPath $assReceiptPath) -or (Get-FileHash -LiteralPath $assReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $nativeReceipt.assBuildReceiptSha256) {
+        throw 'The libass source-build receipt does not match the native decoder receipt.'
+    }
+    $assReceipt = Get-Content -LiteralPath $assReceiptPath -Raw | ConvertFrom-Json -AsHashtable
+    if ($assReceipt.sourceFingerprint -cne $nativeReceipt.assDependencyFingerprint -or $assReceipt.lockSha256 -cne $assLockSha256) { throw 'The native decoder and libass dependency fingerprints disagree.' }
+    $assRuntimeByName = @{}
+    $assRefsById = @{}
+    $assLibrariesById = @{}
+    foreach ($library in $assLock.libraries) {
+        $actualLibraries = @($nativeReceipt.assLibraries | Where-Object id -eq $library.id)
+        if ($actualLibraries.Count -ne 1 -or $actualLibraries[0].version -cne $library.version -or $actualLibraries[0].portVersion -ne $library.portVersion -or $actualLibraries[0].license -cne $library.license) {
+            throw "The built libass library identity differs from its dependency lock: $($library.id)"
+        }
+        $assLibrariesById[$library.id] = $actualLibraries[0]
+        $assRefsById[$library.id] = 'pkg:generic/' + [Uri]::EscapeDataString($library.id) + '@' + [Uri]::EscapeDataString($library.version) + '?arch=x64&emby_port_version=' + $library.portVersion
+    }
+    foreach ($file in $nativeReceipt.assRuntimeFiles) {
+        if ([IO.Path]::GetFileName($file.name) -ne $file.name -or $assRuntimeByName.ContainsKey($file.name) -or -not $assRefsById.ContainsKey($file.libraryId)) { throw 'The libass runtime file ownership inventory is invalid.' }
+        $assRuntimeByName[$file.name] = $file
+    }
+    if (-not $assRuntimeByName.ContainsKey($assLock.runtime.name)) { throw 'The libass runtime inventory does not include its renderer DLL.' }
     $wrapperFile = @($nativeReceipt.runtimeFiles | Where-Object name -eq 'FFmpegInteropX.dll')
     if ($wrapperFile.Count -ne 1) { throw 'Exactly one custom decoder wrapper is required.' }
     $wrapperRef = 'urn:emby-client:native-decoder:' + $nativeReceipt.sourceFingerprint
@@ -143,8 +171,9 @@ if (Test-Path -LiteralPath $decoderLockPath) {
         externalReferences = @(@{ type = 'vcs'; url = $decoderLock.wrapper.repository + '/tree/' + $decoderLock.wrapper.commit })
         properties = @(
             @{ name = 'emby:native:sourceFingerprint'; value = $nativeReceipt.sourceFingerprint },
-            @{ name = 'emby:native:sourceChanges'; value = 'Repository native/FFmpegInteropX/Source with session-scoped decoder API extensions.' },
-            @{ name = 'emby:native:buildReceiptSha256'; value = (Get-FileHash -LiteralPath $nativeReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant() }
+            @{ name = 'emby:native:sourceChanges'; value = 'Repository native/FFmpegInteropX/Source with session-scoped decoder APIs and independent libass subtitle rendering.' },
+            @{ name = 'emby:native:buildReceiptSha256'; value = (Get-FileHash -LiteralPath $nativeReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant() },
+            @{ name = 'emby:native:assDependencyLockSha256'; value = $assLockSha256 }
         )
     }
     $components += [ordered]@{
@@ -162,6 +191,9 @@ if (Test-Path -LiteralPath $decoderLockPath) {
         )
     }
     $ffmpegParts = @()
+    $ffmpegNames = @{}
+    foreach ($major in $decoderLock.ffmpeg.expectedMajors.GetEnumerator()) { $ffmpegNames[$major.Key + '-' + $major.Value + '.dll'] = $true }
+    $assFileRefs = @{}
     foreach ($file in $nativeReceipt.runtimeFiles | Where-Object name -like '*.dll') {
         if ([IO.Path]::GetFileName($file.name) -ne $file.name) { throw 'Native inventory file names must be basenames.' }
         $actualFile = Join-Path $nativeRuntimeRoot $file.name
@@ -170,18 +202,69 @@ if (Test-Path -LiteralPath $decoderLockPath) {
         }
         if ($file.name -eq 'FFmpegInteropX.dll') { continue }
         $partRef = 'urn:emby-client:native-file:' + $file.sha256
-        $ffmpegParts += $partRef
+        $partProperties = @(@{ name = 'emby:native:bytes'; value = [string]$file.size })
+        if ($ffmpegNames.ContainsKey($file.name)) {
+            $ffmpegParts += $partRef
+            $partProperties += @{ name = 'emby:native:family'; value = 'ffmpeg' }
+        }
+        elseif ($assRuntimeByName.ContainsKey($file.name)) {
+            $assFile = $assRuntimeByName[$file.name]
+            if ($assFile.sha256 -cne $file.sha256 -or $assFile.size -ne $file.size) { throw "The copied libass DLL differs from its source-build inventory: $($file.name)" }
+            $assFileRefs[$file.name] = $partRef
+            $partProperties += @(
+                @{ name = 'emby:native:family'; value = 'ass' },
+                @{ name = 'emby:native:assLibrary'; value = $assFile.libraryId },
+                @{ name = 'emby:native:peImports'; value = ($assFile.imports -join ';') }
+            )
+        }
+        else { throw "A decoder runtime DLL has no separately locked FFmpeg or libass owner: $($file.name)" }
         $components += [ordered]@{
             type = 'file'; 'bom-ref' = $partRef; name = $file.name
             hashes = @(@{ alg = 'SHA-256'; content = $file.sha256 })
-            properties = @(@{ name = 'emby:native:bytes'; value = [string]$file.size })
+            properties = $partProperties
         }
         $dependencies += @{ ref = $partRef; dependsOn = @() }
     }
     if ($ffmpegParts.Count -ne 7) { throw 'The locked FFmpeg runtime must contain exactly seven shared library components.' }
+    if ($assFileRefs.Count -ne $assRuntimeByName.Count) { throw 'The copied libass runtime does not include its complete source-build DLL inventory.' }
+    foreach ($library in $assLock.libraries) {
+        $assLibrary = $assLibrariesById[$library.id]
+        $libraryFiles = @($assLibrary.runtimeFiles | ForEach-Object {
+            if (-not $assFileRefs.ContainsKey($_) -or $assRuntimeByName[$_].libraryId -cne $library.id) { throw 'The libass library file ownership graph disagrees with the copied runtime.' }
+            $assFileRefs[$_]
+        })
+        $libraryChildren = @($library.dependencies | ForEach-Object {
+            if (-not $assRefsById.ContainsKey($_)) { throw 'A libass library source dependency is absent from its lock.' }
+            $assRefsById[$_]
+        })
+        $components += [ordered]@{
+            type = 'library'; 'bom-ref' = $assRefsById[$library.id]; name = $library.id; version = $library.version
+            purl = $assRefsById[$library.id]
+            hashes = @(@{ alg = 'SHA-512'; content = $library.source.sha512 })
+            licenses = @(@{ expression = $library.license })
+            externalReferences = @(@{ type = 'distribution'; url = $library.source.url }, @{ type = 'vcs'; url = $assLock.vcpkg.repository + '/tree/' + $assLock.vcpkg.commit + '/ports/' + $library.id })
+            properties = @(
+                @{ name = 'emby:native:family'; value = 'ass' },
+                @{ name = 'emby:native:sourceHashScope'; value = 'Pinned source archive; deployed DLL byte hashes are recorded by the dependent file components.' },
+                @{ name = 'emby:native:portVersion'; value = [string]$library.portVersion },
+                @{ name = 'emby:native:vcpkgCommit'; value = $assLock.vcpkg.commit },
+                @{ name = 'emby:native:assDependencyLockSha256'; value = $assLockSha256 },
+                @{ name = 'emby:native:assBuildReceiptSha256'; value = $nativeReceipt.assBuildReceiptSha256 },
+                @{ name = 'emby:native:crtLinkage'; value = $assLock.runtime.crtLinkage },
+                @{ name = 'emby:native:licenseNotices'; value = (($library.notices | ForEach-Object { 'licenses/third-party/AssNative-0.17.5/' + $_ }) -join ';') }
+            )
+        }
+        if ($library.id -eq 'libass') {
+            $components[-1].properties += @(
+                @{ name = 'emby:native:fontProvider'; value = $assLock.runtime.fontProvider },
+                @{ name = 'emby:native:wrapUnicode'; value = $assLock.runtime.wrapUnicode.ToString().ToLowerInvariant() }
+            )
+        }
+        $dependencies += @{ ref = $assRefsById[$library.id]; dependsOn = @(($libraryChildren + $libraryFiles) | Sort-Object -Unique) }
+    }
     $dependencies += @{ ref = $ffmpegRef; dependsOn = $ffmpegParts }
-    $dependencies += @{ ref = $wrapperRef; dependsOn = @($ffmpegRef) }
-    $dependencies[0].dependsOn += @($wrapperRef, $ffmpegRef)
+    $dependencies += @{ ref = $wrapperRef; dependsOn = @($ffmpegRef, $assRefsById['libass']) }
+    $dependencies[0].dependsOn += @($wrapperRef, $ffmpegRef, $assRefsById['libass'])
     foreach ($component in $components | Where-Object name -eq 'FFmpegInteropX.Desktop.FFmpeg') {
         $component.properties += @{ name = 'emby:native:runtimePayloadReplacedBy'; value = $ffmpegRef }
     }
@@ -199,12 +282,12 @@ $bom = [ordered]@{
     metadata = @{
         component = @{ type = 'application'; 'bom-ref' = $rootRef; name = 'EmbyClient.App'; version = $appVersion }
         properties = @(
-            @{ name = 'emby:inventory:scope'; value = 'Resolved App package graph, selected runtime packs, and hash-verified native decoder overrides. External dependency notices within the FFmpeg runtime remain a separate supplier inventory.' },
+            @{ name = 'emby:inventory:scope'; value = 'Resolved App package graph, selected runtime packs, hash-verified native decoder overrides, and the separately source-built libass dependency graph. External dependency notices within the FFmpeg runtime remain a separate supplier inventory.' },
             @{ name = 'emby:inventory:target'; value = $targetKey[0] },
             @{ name = 'emby:inventory:assetsSha256'; value = $assetsHash },
             @{ name = 'emby:inventory:lockSha256'; value = $lockHash },
             @{ name = 'emby:inventory:excludedBuildPackages'; value = ($buildOnly -join ';') },
-            @{ name = 'emby:inventory:hashMeaning'; value = 'Component SHA-512 hashes identify actual cached nupkg archive bytes. NuGet lock content hashes are separately preserved metadata and are not treated as archive hashes.' }
+            @{ name = 'emby:inventory:hashMeaning'; value = 'NuGet component SHA-512 hashes identify actual cached nupkg archive bytes. Native ASS library SHA-512 hashes identify the pinned source archives, with deployed DLL SHA-256 hashes on dependent file components. NuGet lock content hashes remain separate metadata.' }
         )
     }
     components = $components; dependencies = $dependencies

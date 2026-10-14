@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using EmbyClient.Playback;
+using FFmpegInteropX;
 using Windows.Foundation;
 using Windows.Media.Core;
 using Windows.Storage.Streams;
@@ -37,7 +38,20 @@ public sealed partial class NativePlaybackEngine
     /// Loads local WebVTT without uploading it to the server. Select subtitles off through the coordinator first;
     /// server-burned text cannot be removed from an already negotiated video stream. The import belongs to one ID.
     /// </summary>
-    public async Task LoadLocalSubtitleAsync(Guid playbackId, string text, CancellationToken cancellationToken = default)
+    public Task LoadLocalSubtitleAsync(Guid playbackId, string text, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        return LoadLocalTextSubtitleAsync(playbackId, text,
+            new NativePreparedSubtitle(playbackId, "Local.vtt", text, cueCount: 0, usesPlainTextPresentation: false),
+            cancellationToken);
+    }
+
+    private Task LoadPreparedLocalTextSubtitleAsync(Guid playbackId, NativePreparedSubtitle prepared,
+        CancellationToken cancellationToken) =>
+        LoadLocalTextSubtitleAsync(playbackId, prepared.WebVtt, prepared, cancellationToken);
+
+    private async Task LoadLocalTextSubtitleAsync(Guid playbackId, string text, NativePreparedSubtitle recoverySubtitle,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
         if (!text.TrimStart('\uFEFF').StartsWith("WEBVTT", StringComparison.Ordinal)
@@ -57,7 +71,7 @@ public sealed partial class NativePlaybackEngine
                     throw new PlaybackException("SubtitleSourceMustBeDisabled");
                 if (session.MediaSource is null || session.Player is null || SubtitleTextChanged is null)
                     throw new PlaybackException("SubtitlePreferencesNotSupported");
-                var import = new LocalSubtitleImport();
+                var import = new LocalSubtitleImport { RecoverySubtitle = recoverySubtitle };
                 session.PendingLocalSubtitle = import;
                 return session.LocalSubtitleLoadTask = LoadLocalSubtitleCoreAsync(session, import, data, cancellationToken);
             }).ConfigureAwait(false);
@@ -72,6 +86,7 @@ public sealed partial class NativePlaybackEngine
         // Track the operation before a synchronous native event or retirement can observe it.
         await Task.Yield();
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, session.Lifetime.Token);
+        var phase = "SubtitleImport/Stream";
         try
         {
             var writing = await OnPlayerDispatcherAsync(() =>
@@ -82,6 +97,7 @@ public sealed partial class NativePlaybackEngine
                 return import.Stream.WriteAsync(data.AsBuffer()).AsTask(lifetime.Token);
             }).ConfigureAwait(false);
             await writing.ConfigureAwait(false);
+            phase = "SubtitleImport/Attach";
             await OnPlayerDispatcherAsync(() =>
             {
                 EnsureLocalSubtitleActive(session, import);
@@ -96,7 +112,10 @@ public sealed partial class NativePlaybackEngine
                         return;
                     }
                     if (args.Error is not null || args.Tracks.Count == 0)
+                    {
+                        RecordSubtitleDiagnostic(FormattableString.Invariant($"ImportResolved tracks={args.Tracks.Count} hasError={args.Error is not null}"));
                         import.Completion.TrySetException(new PlaybackException("UnsupportedSubtitle"));
+                    }
                     else import.Completion.TrySetResult([.. args.Tracks]);
                 });
                 import.Source.Resolved += import.Resolved;
@@ -108,11 +127,13 @@ public sealed partial class NativePlaybackEngine
                 return true;
             }).ConfigureAwait(false);
             TimedMetadataTrack[] tracks;
+            phase = "SubtitleImport/Resolve";
             try
             {
                 tracks = await import.Completion.Task.WaitAsync(TimeSpan.FromSeconds(15), lifetime.Token).ConfigureAwait(false);
             }
-            catch (TimeoutException) { throw new PlaybackException("UnsupportedSubtitle"); }
+            catch (TimeoutException exception) { RecordSubtitleFailure(phase, exception); throw new PlaybackException("UnsupportedSubtitle"); }
+            phase = "SubtitleImport/Commit";
             await OnPlayerDispatcherAsync(() =>
             {
                 EnsureLocalSubtitleActive(session, import);
@@ -122,8 +143,8 @@ public sealed partial class NativePlaybackEngine
             }).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { throw; }
-        catch (PlaybackException) { throw; }
-        catch { throw new PlaybackException("UnsupportedSubtitle"); }
+        catch (PlaybackException exception) { RecordSubtitleFailure(phase, exception); throw; }
+        catch (Exception exception) { RecordSubtitleFailure(phase, exception); throw new PlaybackException("UnsupportedSubtitle"); }
         finally
         {
             await OnDispatcherAsync(() =>
@@ -138,14 +159,26 @@ public sealed partial class NativePlaybackEngine
     {
         EnsureActive(session);
         if (import.Detached) throw new OperationCanceledException();
+        if (Volatile.Read(ref import.NativeTrackHasFailed)) throw new PlaybackException("UnsupportedSubtitle");
     }
 
     private void CommitLocalSubtitle(Session session, LocalSubtitleImport import, TimedMetadataTrack[] tracks)
     {
+        EnsureLocalSubtitleActive(session, import);
         // Validate native cues while the previous subtitle is still owned and recoverable.
         var previousTracks = session.ExternalTracks;
         session.ExternalTracks = tracks;
-        try { CaptureSubtitleCues(session); }
+        try
+        {
+            if (import.NativeTrack is { } native)
+            {
+                if (tracks.Length != 1 || tracks[0] != native) throw new PlaybackException("UnsupportedSubtitle");
+                if (IsLocalAssSubtitle(session, import)) ValidateLocalAssSubtitleTrack(session, import, native);
+                else ValidateStyledSubtitleCues(native);
+            }
+            else CaptureSubtitleCues(session);
+            EnsureLocalSubtitleActive(session, import);
+        }
         catch
         {
             session.ExternalTracks = previousTracks;
@@ -160,7 +193,9 @@ public sealed partial class NativePlaybackEngine
         {
             InitializeSubtitlePresentation(session);
             EnsureLocalSubtitleActive(session, import);
-            ApplySubtitles(session);
+            ApplySubtitles(session, requireSelectedTrack: true);
+            EnsureLocalSubtitleActive(session, import);
+            if (IsLocalAssSubtitle(session, import)) RefreshAssSubtitles(session);
             EnsureLocalSubtitleActive(session, import);
             import.Committed = true;
             session.PendingLocalSubtitle = null;
@@ -171,6 +206,11 @@ public sealed partial class NativePlaybackEngine
         }
         catch
         {
+            if (import.Committed)
+            {
+                if (IsActive(session)) Fail(session, "UnsupportedSubtitle");
+                throw;
+            }
             if (!IsActive(session) || import.Detached)
             {
                 if (previous is not null) ReleaseLocalSubtitle(session, previous, closeStream: true);
@@ -202,7 +242,13 @@ public sealed partial class NativePlaybackEngine
     {
         try { await session.LocalSubtitleLoadTask.ConfigureAwait(false); }
         catch { }
-        await OnDispatcherAsync(() => session.LocalSubtitleLoadTask = Task.CompletedTask).ConfigureAwait(false);
+        try { await session.LocalSubtitlePreparationTask.ConfigureAwait(false); }
+        catch { }
+        await OnDispatcherAsync(() =>
+        {
+            session.LocalSubtitleLoadTask = Task.CompletedTask;
+            session.LocalSubtitlePreparationTask = Task.CompletedTask;
+        }).ConfigureAwait(false);
     }
 
     private void ReleaseLocalSubtitle(Session session, LocalSubtitleImport import, bool closeStream)
@@ -216,22 +262,56 @@ public sealed partial class NativePlaybackEngine
                     Release(session, "UnsubscribeLocalSubtitle", () => source.Resolved -= resolved);
             }
             import.Resolved = null;
+            if (import.NativeTrack is { } native && import.NativeTrackFailed is { } failed)
+                Release(session, "UnsubscribeLocalNativeSubtitle", () => native.TrackFailed -= failed);
+            import.NativeTrackFailed = null;
         }
         var detach = import.Attached;
         import.Attached = false;
         if (detach && import.Source is { } attached && session.MediaSource is { } media)
             Release(session, "DetachLocalSubtitle", () => media.ExternalTimedTextSources.Remove(attached));
+        if (detach && import.NativeTrack is { } nativeTrack)
+        {
+            if (session.Item is { } item)
+            {
+                for (var index = item.TimedMetadataTracks.Count - 1; index >= 0; index--)
+                {
+                    if (item.TimedMetadataTracks[index] != nativeTrack) continue;
+                    var trackIndex = checked((uint)index);
+                    Release(session, "DisableLocalNativeSubtitle", () =>
+                        item.TimedMetadataTracks.SetPresentationMode(trackIndex, Windows.Media.Playback.TimedMetadataTrackPresentationMode.Disabled));
+                }
+            }
+            if (session.MediaSource is { } source)
+                Release(session, "DetachLocalNativeSubtitle", () => source.ExternalTimedMetadataTracks.Remove(nativeTrack));
+        }
         if (!closeStream) return;
+        ReleaseLocalAssSubtitle(session, import);
+        Release(session, "CloseLocalNativeSubtitleParser", () => import.Parser?.Dispose());
+        if (import.NativeTrack is { } releasedTrack)
+            Release(session, "ClearLocalNativeSubtitleCues", () =>
+            {
+                while (releasedTrack.Cues.Count > 0) releasedTrack.RemoveCue(releasedTrack.Cues[^1]);
+            });
         Release(session, "CloseLocalSubtitleStream", () => import.Stream?.Dispose());
         import.Stream = null;
         import.Source = null;
+        import.Parser = null;
+        import.NativeTrack = null;
+        import.NativeDelayTicks = null;
     }
 
     private sealed class LocalSubtitleImport
     {
+        public NativePreparedSubtitle? RecoverySubtitle { get; set; }
         public TaskCompletionSource<TimedMetadataTrack[]> Completion { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public InMemoryRandomAccessStream? Stream { get; set; }
         public TimedTextSource? Source { get; set; }
+        public SubtitleParser? Parser { get; set; }
+        public TimedMetadataTrack? NativeTrack { get; set; }
+        public TypedEventHandler<TimedMetadataTrack, TimedMetadataTrackFailedEventArgs>? NativeTrackFailed { get; set; }
+        public long? NativeDelayTicks { get; set; }
+        public bool NativeTrackHasFailed;
         public TypedEventHandler<TimedTextSource, TimedTextSourceResolveResultEventArgs>? Resolved { get; set; }
         public bool Attached { get; set; }
         public bool Detached { get; set; }

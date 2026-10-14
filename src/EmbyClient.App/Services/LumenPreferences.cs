@@ -7,6 +7,9 @@ public sealed record LumenPreferences
     public string Theme { get; set; } = "Dark";
     public string Accent { get; set; } = "Gold";
     public bool HeroRotation { get; set; } = true;
+    public string HomeScrollMode { get; set; } = "Paged";
+    public int PosterWidth { get; set; } = 160;
+    public string[] RecentSearches { get; set; } = [];
     public int PosterColumns { get; set; } = 8;
     public bool ShowWatchedMarks { get; set; } = true;
 
@@ -22,7 +25,15 @@ public sealed record LumenPreferences
     public bool HardwareDecoding { get; set; } = true;
     public string VideoDecoderApi { get; set; } = "Auto";
     public string HdrMode { get; set; } = "Auto";
+    public string AudioPassthrough { get; set; } = "Off";
     public bool MatchRefreshRate { get; set; }
+    public bool SystemMediaControls { get; set; } = true;
+    public bool PreventSleepDuringPlayback { get; set; } = true;
+    public bool RememberWindowPlacement { get; set; } = true;
+    public bool AutoReconnect { get; set; } = true;
+    public bool NewEpisodeNotifications { get; set; }
+    // Zero disables retention; image requests still render their downloaded artwork.
+    public int ImageCacheMegabytes { get; set; } = 32;
 
     public string SubtitleLanguage { get; set; } = "chi";
     public string SubtitleMode { get; set; } = "Smart";

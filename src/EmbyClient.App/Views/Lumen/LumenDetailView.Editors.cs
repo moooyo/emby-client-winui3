@@ -1,5 +1,6 @@
 using EmbyClient.Api;
 using EmbyClient.App.Services;
+using EmbyClient.App.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Globalization;
@@ -8,10 +9,16 @@ namespace EmbyClient.App.Views.Lumen;
 
 public sealed partial class LumenDetailView
 {
-    private Task AddToCollectionAsync()
+    public Task AddItemToCollectionAsync(MediaCardViewModel item)
     {
-        var itemId = _library.Detail.Id;
-        return RunDetailActionAsync(async (session, token) =>
+        ArgumentNullException.ThrowIfNull(item);
+        return AddToCollectionAsync(item);
+    }
+
+    private Task AddToCollectionAsync(MediaCardViewModel? selectedItem = null)
+    {
+        var itemId = selectedItem?.Id ?? _library.Detail.Id;
+        async Task AddAsync(ConnectedSession session, CancellationToken token)
         {
             SetNotice(LumenText.Get("Loading collections..."));
             var collections = new List<BaseItemDto>();
@@ -31,7 +38,7 @@ public sealed partial class LumenDetailView
                 if (added == 0 || page.Items.Length < 500 || page.TotalRecordCount is { } count && offset >= count) break;
             }
             token.ThrowIfCancellationRequested();
-            if (_library.Detail.Id != itemId) return;
+            if (!ReferenceEquals(_session?.Api, session.Api) || selectedItem is null && _library.Detail.Id != itemId) return;
             SetNotice(string.Empty);
             var content = new StackPanel { Spacing = 16, MinWidth = 340 };
             var choice = new ComboBox { Header = LumenText.Get("Choose collection"), HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -55,13 +62,14 @@ public sealed partial class LumenDetailView
             UpdateSelection();
             if (await ShowDialogAsync(dialog) != ContentDialogResult.Primary) return;
             token.ThrowIfCancellationRequested();
-            if (_library.Detail.Id != itemId) return;
+            if (!ReferenceEquals(_session?.Api, session.Api) || selectedItem is null && _library.Detail.Id != itemId) return;
             if (choice.SelectedItem is ComboBoxItem { Tag: string collectionId })
                 await session.Api.AddToCollectionAsync(collectionId, [itemId], token);
             else await session.Api.CreateCollectionAsync(name.Text.Trim(), [itemId], cancellationToken: token);
             token.ThrowIfCancellationRequested();
             if (_library.Detail.Id == itemId) SetNotice(LumenText.Get("Saved to collection."));
-        });
+        }
+        return selectedItem is not null ? RunItemActionAsync(selectedItem, AddAsync) : RunDetailActionAsync(AddAsync);
     }
 
     private Task EditMetadataAsync()

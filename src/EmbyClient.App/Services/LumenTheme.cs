@@ -9,10 +9,13 @@ namespace EmbyClient.App.Services;
 public static class LumenTheme
 {
     private static readonly Dictionary<string, SolidColorBrush> Brushes = new(StringComparer.Ordinal);
+    private static bool _focusResourcesInstalled;
     public static bool IsDark { get; private set; } = true;
     public static string AccentName { get; private set; } = "Gold";
     public static FontFamily SerifFont { get; } = new("ms-appx:///Assets/Lumen/Fonts/NotoSerifSC-Variable.ttf#Noto Serif SC");
     public static FontFamily SansFont { get; } = new("ms-appx:///Assets/Lumen/Fonts/Manrope-Variable.ttf#Manrope, Microsoft YaHei UI");
+    public static FontFamily DisplayFont { get; } = new("ms-appx:///Assets/Lumen/Fonts/LeagueGothic-Variable.ttf#League Gothic");
+    public static FontFamily MonoFont { get; } = new("ms-appx:///Assets/Lumen/Fonts/IBMPlexMono-Regular.ttf#IBM Plex Mono");
     public static event EventHandler? Changed;
 
     public static SolidColorBrush Brush(string key)
@@ -25,7 +28,7 @@ public static class LumenTheme
 
     public static void Apply(string theme, string accent)
     {
-        IsDark = theme != "Light";
+        IsDark = theme == "System" ? SystemUsesDarkTheme() : theme != "Light";
         AccentName = accent;
         Set("Background", IsDark ? "#0C0B0A" : "#F4F1EB");
         Set("Ink", IsDark ? "#F6F2EA" : "#1B1815");
@@ -37,7 +40,20 @@ public static class LumenTheme
         Set("Control", IsDark ? "#0FFFFFFF" : "#FFFFFFFF");
         Set("ControlStrong", IsDark ? "#24FFFFFF" : "#12000000");
         Set("Glass", IsDark ? "#9E1E1B18" : "#B8FFFFFF");
-        Set("Pop", IsDark ? "#E61C1A17" : "#F0FFFFFF");
+        Set("Pop", IsDark ? "#F01C1A17" : "#F7FFFFFF");
+        Set("Chip", IsDark ? "#12FFFFFF" : "#0D000000");
+        Set("Hover", IsDark ? "#14FFFFFF" : "#0D000000");
+        Set("Selected", IsDark ? "#14FFFFFF" : "#0D000000");
+        Set("Selection", IsDark ? "#14FFFFFF" : "#0D000000");
+        Set("Avatar", "#80664A");
+        Set("Scrim", IsDark ? "#8C000000" : "#521E1812");
+        Set("BarScrolled", IsDark ? "#CC100E0C" : "#D6F4F1EB");
+        Set("Track", IsDark ? "#38FFFFFF" : "#2E000000");
+        Set("Thumb", IsDark ? "#4A443C" : "#FFFFFF");
+        Set("Knob", IsDark ? "#9A9286" : "#FFFFFF");
+        Set("Skeleton", IsDark ? "#0FFFFFFF" : "#0A000000");
+        Set("FocusOuter", IsDark ? "#FFFFFF" : "#E6000000");
+        Set("FocusInner", IsDark ? "#E6000000" : "#FFFFFF");
         Set("Accent", (IsDark, accent) switch
         {
             (true, "Coral") => "#E8866A", (false, "Coral") => "#A8452A",
@@ -58,11 +74,25 @@ public static class LumenTheme
         Set("ImageInk", "#FFFFFF");
         Set("ImageSub", "#BFFFFFFF");
         Set("ImageGlass", "#61141210");
+        Set("ImageControl", "#24FFFFFF");
         Set("ImageLine", "#29FFFFFF");
         Set("ImageNavSelected", "#F0FFFFFF");
         Set("ImageNavSelectedInk", "#15120F");
         Set("ImageNavSub", "#D1FFFFFF");
+        if (!_focusResourcesInstalled)
+        {
+            Application.Current.Resources["SystemControlFocusVisualPrimaryBrush"] = Brush("FocusOuter");
+            Application.Current.Resources["SystemControlFocusVisualSecondaryBrush"] = Brush("FocusInner");
+            _focusResourcesInstalled = true;
+        }
         Changed?.Invoke(null, EventArgs.Empty);
+    }
+
+    private static bool SystemUsesDarkTheme()
+    {
+        var background = new Windows.UI.ViewManagement.UISettings()
+            .GetColorValue(Windows.UI.ViewManagement.UIColorType.Background);
+        return 0.2126 * background.R + 0.7152 * background.G + 0.0722 * background.B < 128;
     }
 
     public static LinearGradientBrush ImageFade(bool horizontal = false, bool pageBottom = false)
@@ -88,7 +118,7 @@ public static class LumenTheme
         }
         else
         {
-            brush.GradientStops.Add(new() { Color = Parse("#80000000"), Offset = 0 });
+            brush.GradientStops.Add(new() { Color = Parse("#73000000"), Offset = 0 });
             brush.GradientStops.Add(new() { Color = Parse("#00000000"), Offset = 1 });
         }
         return brush;

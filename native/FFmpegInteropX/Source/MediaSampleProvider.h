@@ -111,7 +111,8 @@ public:
     virtual void InitializeStreamInfo();
     virtual void QueuePacket(AVPacket* packet);
     HRESULT GetNextPacket(AVPacket** avPacket, LONGLONG& packetPts, LONGLONG& packetDuration);
-    bool IsBufferFull();
+    virtual bool IsBufferFull();
+    virtual void NotifyEndOfStream() noexcept { }
     virtual HRESULT CreateNextSampleBuffer(winrt::Windows::Storage::Streams::IBuffer* pBuffer, int64_t& samplePts, int64_t& sampleDuration, winrt::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface* surface) = 0;
     HRESULT GetNextPacketTimestamp(TimeSpan& timestamp, TimeSpan& packetDuration);
     HRESULT SkipPacketsUntilTimestamp(TimeSpan const& timestamp);
@@ -171,7 +172,8 @@ public:
 
     LONGLONG ConvertPosition(TimeSpan position)
     {
-        return LONGLONG(((position + streamDelay).count() + m_startOffset) / timeBaseFactor);
+        // Undo the delay applied when converting a packet timestamp to presentation time.
+        return LONGLONG(((position - streamDelay).count() + m_startOffset) / timeBaseFactor);
     }
 
     TimeSpan ConvertDuration(LONGLONG duration)

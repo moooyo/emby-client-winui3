@@ -135,7 +135,7 @@ if ($publishItems | Where-Object { ($_.Attributes -band [IO.FileAttributes]::Rep
     throw 'The publish directory contains a reparse point; use a complete ordinary publish directory.'
 }
 
-foreach ($requiredFile in @('EmbyClient.App.exe', 'EmbyClient.App.pri', 'Microsoft.ui.xaml.dll', 'Microsoft.WindowsAppRuntime.dll')) {
+foreach ($requiredFile in @('EmbyClient.App.exe', 'EmbyClient.App.pri', 'Microsoft.ui.xaml.dll', 'Microsoft.WindowsAppRuntime.dll', 'FFmpegInteropX.dll', 'emby-client-win-x64.cdx.json')) {
     if (-not (Test-Path -LiteralPath (Join-Path $publishRoot $requiredFile) -PathType Leaf)) {
         throw "The publish directory is missing a required application/runtime file: $requiredFile"
     }
@@ -151,6 +151,7 @@ foreach ($reservedFile in @('AppxManifest.xml', 'AppxSignature.p7x', 'AppxBlockM
     }
 }
 Assert-NativeX64Executable (Join-Path $publishRoot 'EmbyClient.App.exe')
+& (Join-Path $PSScriptRoot 'Assert-AssPackageRuntime.ps1') -PublishRoot $publishRoot
 
 if (-not $SdkBinDirectory) {
     $sdkRoot = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Windows Kits/10/bin'

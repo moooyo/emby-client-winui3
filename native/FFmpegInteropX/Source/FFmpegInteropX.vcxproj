@@ -30,11 +30,12 @@
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>FFmpegInteropX.def</ModuleDefinitionFile><AdditionalLibraryDirectories>$(DecoderFFmpegRoot)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;shcore.lib;runtimeobject.lib;mfuuid.lib;dxguid.lib;d3d11.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>avcodec.lib;avdevice.lib;avfilter.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;shcore.lib;runtimeobject.lib;mfuuid.lib;dxguid.lib;d3d11.lib;dxgi.lib;avrt.lib;ole32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation><SubSystem>Console</SubSystem><GenerateWindowsMetadata>false</GenerateWindowsMetadata>
     </Link>
     <ResourceCompile><AdditionalIncludeDirectories>$(DecoderFFmpegRoot)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><PreprocessorDefinitions>LIB_VERSION_NUM=$(LibVersionNum);LIB_VERSION_STR=$(LibVersionStr);%(PreprocessorDefinitions)</PreprocessorDefinitions></ResourceCompile>
   </ItemDefinitionGroup>
+  <Import Project="..\AssNative.props" />
   <ItemGroup>
     <ClInclude Include="*.h" /><ClCompile Include="*.cpp" Exclude="pch.cpp;EmbyDecoderApi.cpp" />
     <ClCompile Include="EmbyDecoderApi.cpp" Condition="Exists('EmbyDecoderApi.cpp')" />

@@ -6,6 +6,7 @@
     <IsTestProject>true</IsTestProject>
     <IsPackable>false</IsPackable>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../src/EmbyClient.App/Services/AppDataPaths.cs" Link="Product/AppDataPaths.cs" />
@@ -14,15 +15,35 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="../../src/EmbyClient.App/Playback/LocalSubtitleTextParser.cs" Link="Product/LocalSubtitleTextParser.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/LocalAssSubtitlePolicy.cs" Link="Product/LocalAssSubtitlePolicy.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/AssSubtitleLayoutPolicy.cs" Link="Product/AssSubtitleLayoutPolicy.cs" />
+    <Compile Include="../../src/EmbyClient.App/Playback/BufferedPlaybackRangePolicy.cs" Link="Product/BufferedPlaybackRangePolicy.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/AccountStore.cs" Link="Product/AccountStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/SettingsJsonContext.cs" Link="Product/SettingsJsonContext.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.cs" Link="Product/ConnectionService.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.PublicDiscovery.cs" Link="Product/ConnectionService.PublicDiscovery.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.LanDiscovery.cs" Link="Product/ConnectionService.LanDiscovery.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/SavedServerStore.cs" Link="Product/SavedServerStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.AccountTransactions.cs" Link="Product/ConnectionService.AccountTransactions.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PlaybackDisplayRequest.cs" Link="Product/PlaybackDisplayRequest.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PlaybackPreferences.cs" Link="Product/PlaybackPreferences.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/PlaybackPreferenceStore.cs" Link="Product/PlaybackPreferenceStore.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/StartupRegistrationService.cs" Link="Product/StartupRegistrationService.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/WindowsActivationRoute.cs" Link="Product/WindowsActivationRoute.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/LastWatchedStore.cs" Link="Product/LastWatchedStore.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ReleaseUpdateModels.cs" Link="Product/ReleaseUpdateModels.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ReleaseUpdateRules.cs" Link="Product/ReleaseUpdateRules.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ReleaseUpdateService.cs" Link="Product/ReleaseUpdateService.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ReleaseUpdateInstallerScript.cs" Link="Product/ReleaseUpdateInstallerScript.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/WindowPlacementStore.cs" Link="Product/WindowPlacementStore.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/LumenPreferences.cs" Link="Product/LumenPreferences.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/LumenSearchCount.cs" Link="Product/LumenSearchCount.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/LumenPreferenceStore.cs" Link="Product/LumenPreferenceStore.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/MediaLibrarySelectionStore.cs" Link="Product/MediaLibrarySelectionStore.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ContentRefreshRatePolicy.cs" Link="Product/ContentRefreshRatePolicy.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ContentRefreshRateService.cs" Link="Product/ContentRefreshRateService.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/EpisodeNotificationEligibility.cs" Link="Product/EpisodeNotificationEligibility.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ImageCache.cs" Link="Product/ImageCache.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PosterBindingLifetime.cs" Link="Product/PosterBindingLifetime.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/PosterWallLayout.cs" Link="Product/PosterWallLayout.cs" />

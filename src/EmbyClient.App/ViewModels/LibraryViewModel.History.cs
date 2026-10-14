@@ -6,27 +6,70 @@ namespace EmbyClient.App.ViewModels;
 public sealed record BrowseViewportState(double VerticalOffset = 0, double DetailOffset = 0,
     double ChildrenOffset = 0, string? AnchorId = null, int AnchorIndex = 0, string? FocusedItemId = null,
     bool OverviewExpanded = false, bool EpisodeList = false, string? NavigationLibraryId = null,
-    double CollectionWidth = 0);
+    double CollectionWidth = 0, int HomePageIndex = 0, int DetailPageIndex = 0);
 
 public sealed partial class LibraryViewModel
 {
-    private BrowseSnapshot? _searchOriginSnapshot;
+    private const int MaximumHistoryEntries = 24;
+    private readonly Stack<BrowseSnapshot> _forwardHistory = new();
+    private string? _navigationLibraryId;
     private readonly HashSet<PersonDetailsViewModel> _people = [];
     public BrowseViewportState ViewportState { get; set; } = new();
     public event EventHandler? BrowseStateCapturing;
     public event EventHandler? BrowseStateRestored;
     public int NavigationRevision => _pageVersion;
+    public bool CanGoForward => _forwardHistory.Count > 0;
+    public string? NavigationLibraryId => _navigationLibraryId;
     public PersonDetailsViewModel? ActivePerson { get; private set; }
     public bool IsPerson => _location.Kind == LocationKind.Person;
     public Visibility PersonVisibility => IsPerson ? Visibility.Visible : Visibility.Collapsed;
+
+    public Task GoForwardAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
+        if (_api is null || _sessionCancellation is null || _forwardHistory.Count == 0) return Task.CompletedTask;
+        var current = CaptureBrowseState();
+        var destination = _forwardHistory.Pop();
+        CancelSearch();
+        PushBoundedHistory(_history, current);
+        return RestoreBrowseStateAsync(destination);
+    }
+
+    private static void PushBoundedHistory(Stack<BrowseSnapshot> history, BrowseSnapshot snapshot)
+    {
+        history.Push(snapshot);
+        if (history.Count <= MaximumHistoryEntries) return;
+        var retained = history.Take(MaximumHistoryEntries).Reverse().ToArray();
+        history.Clear();
+        foreach (var entry in retained) history.Push(entry);
+    }
+
+    private void UpdateNavigationAvailability()
+    {
+        CanGoBack = _history.Count > 0;
+        OnPropertyChanged(nameof(CanGoForward));
+    }
+
+    private void SetNavigationLibraryId(string? libraryId) =>
+        SetProperty(ref _navigationLibraryId, libraryId, nameof(NavigationLibraryId));
+
+    private void InvalidateQualityCatalogs()
+    {
+        foreach (var catalog in _history.Concat(_forwardHistory).Select(state => state.Location.QualityCatalog)
+            .Append(_location.QualityCatalog).Append(_pendingBrowseLocation?.QualityCatalog).OfType<QualityCatalog>().Distinct())
+            catalog.Invalidate();
+    }
 
     private BrowseSnapshot CaptureBrowseState()
     {
         BrowseStateCapturing?.Invoke(this, EventArgs.Empty);
         return new(_location, Items.ToArray(), HomeRows.ToArray(), Seasons.ToArray(), Detail, PlayableDetail,
             NextEpisode, SelectedSeason, Title, Subtitle, EmptyMessage, ErrorMessage, HasError, HasItems,
-            HasMore, HasDetails, DetailItemsAreEpisodes, _nextIndex, _loadOutcome, ViewportState, ActivePerson,
-            _searchOriginSnapshot, TotalItemsCount, CaptureLumenSearchPeopleState());
+            HasMore, HasDetails, DetailItemsAreEpisodes, _nextIndex, _browseWindowStartIndex, _loadOutcome, ViewportState, ActivePerson,
+            TotalItemsCount, CaptureLumenSearchPeopleState(), NavigationLibraryId)
+        {
+            HomeRowsStale = _location.IsHome && _homeRowsStale
+        };
     }
 
     private Task RestoreBrowseStateAsync(BrowseSnapshot state)
@@ -38,10 +81,12 @@ public sealed partial class LibraryViewModel
         CancelAndDispose(ref _pageCancellation);
         _pageCancellation = CancellationTokenSource.CreateLinkedTokenSource(_sessionCancellation.Token);
         _pendingBrowseLocation = null;
+        ResetBrowseNavigationPending();
         _pendingSeasonId = null;
         SetSeriesInitializing(state.HasDetails && state.Detail.Item.Type == "Series");
         _location = state.Location;
-        _searchOriginSnapshot = state.SearchOrigin;
+        _homeRowsStale = state.Location.IsHome && state.HomeRowsStale;
+        SetNavigationLibraryId(state.NavigationLibraryId);
         ActivePerson = state.Person;
         Title = state.Title;
         Subtitle = state.Subtitle;
@@ -66,16 +111,37 @@ public sealed partial class LibraryViewModel
         HasItems = state.HasItems;
         HasMore = state.HasMore;
         _nextIndex = state.NextIndex;
+        _browseWindowStartIndex = state.WindowStartIndex;
         RestoreLumenSearchPeopleState(state.SearchPeople);
         SetLoadOutcome(state.Outcome);
         ViewportState = state.Viewport;
         IsBusy = false;
-        CanGoBack = _history.Count > 0 || _searchOriginSnapshot is not null;
+        SelectedHomeSection = state.Location.Kind switch
+        {
+            LocationKind.NextUp => HomeSection.NextUp,
+            LocationKind.Latest => HomeSection.RecentlyAdded,
+            _ => HomeSection.ContinueWatching
+        };
+        UpdateNavigationAvailability();
         NotifyBrowseOptions();
         NotifyDetailContext();
         NotifyPersonState();
         BrowseStateRestored?.Invoke(this, EventArgs.Empty);
+        if (state.Location.IsHome && state.HomeRowsStale
+            || state.Outcome == PageLoadOutcome.Loading && state.Location.Kind is not (LocationKind.Search or LocationKind.Person))
+            return ResumeRestoredPageAsync(state.Viewport);
         return ResumeLumenRestoredSearchAsync(state.Outcome);
+    }
+
+    private async Task ResumeRestoredPageAsync(BrowseViewportState viewport)
+    {
+        // A page left before its first response needs a new read instead of a permanently empty snapshot.
+        var refresh = RefreshAsync();
+        var revision = _pageVersion;
+        await refresh;
+        if (_api is null || revision != _pageVersion) return;
+        ViewportState = viewport;
+        BrowseStateRestored?.Invoke(this, EventArgs.Empty);
     }
 
     public Task ShowPersonAsync(PersonCardViewModel person, CancellationToken cancellationToken = default)
@@ -99,17 +165,14 @@ public sealed partial class LibraryViewModel
 
     private IEnumerable<MediaCardViewModel> HistoryCards()
     {
-        foreach (var state in _history.Concat(_searchOriginSnapshot is { } searchOrigin ? [searchOrigin] : []))
+        foreach (var current in _history.Concat(_forwardHistory))
         {
-            for (BrowseSnapshot? current = state; current is not null; current = current.SearchOrigin)
-            {
-                yield return current.Detail;
-                yield return current.Playable;
-                if (current.NextEpisode is { } nextEpisode) yield return nextEpisode;
-                foreach (var item in current.Items.Concat(current.Seasons).Concat(current.Rows.SelectMany(row => row.Items)))
-                    yield return item;
-                foreach (var person in current.SearchPeople.Items) yield return person;
-            }
+            yield return current.Detail;
+            yield return current.Playable;
+            if (current.NextEpisode is { } nextEpisode) yield return nextEpisode;
+            foreach (var item in current.Items.Concat(current.Seasons).Concat(current.Rows.SelectMany(row => row.Items)))
+                yield return item;
+            foreach (var person in current.SearchPeople.Items) yield return person;
         }
         foreach (var item in _people.SelectMany(person => person.Works)) yield return item;
     }
@@ -118,7 +181,10 @@ public sealed partial class LibraryViewModel
         MediaShelfViewModel[] Rows, MediaCardViewModel[] Seasons, MediaCardViewModel Detail,
         MediaCardViewModel Playable, MediaCardViewModel? NextEpisode, MediaCardViewModel? Season,
         string Title, string Subtitle, string EmptyMessage, string ErrorMessage, bool HasError,
-        bool HasItems, bool HasMore, bool HasDetails, bool Episodes, int NextIndex, PageLoadOutcome Outcome,
-        BrowseViewportState Viewport, PersonDetailsViewModel? Person, BrowseSnapshot? SearchOrigin,
-        int? TotalCount, LumenSearchPeopleSnapshot SearchPeople);
+        bool HasItems, bool HasMore, bool HasDetails, bool Episodes, int NextIndex, int WindowStartIndex, PageLoadOutcome Outcome,
+        BrowseViewportState Viewport, PersonDetailsViewModel? Person,
+        int? TotalCount, LumenSearchPeopleSnapshot SearchPeople, string? NavigationLibraryId)
+    {
+        public bool HomeRowsStale { get; init; }
+    }
 }

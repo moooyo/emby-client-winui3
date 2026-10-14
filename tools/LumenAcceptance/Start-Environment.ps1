@@ -8,7 +8,9 @@ param(
     [string]$RunDirectory,
     [switch]$FailFirstPlaybackInfo,
     [switch]$DesignCatalog,
-    [string]$SubtitleFile
+    [string]$SubtitleFile,
+    [string]$BifFile,
+    [switch]$EmbeddedPgs
 )
 
 Set-StrictMode -Version Latest
@@ -29,10 +31,27 @@ $mediaPath = Get-LumenAbsolutePath $MediaDirectory
 $artworkPath = Get-LumenAbsolutePath $ArtworkDirectory
 if (-not (Test-Path -LiteralPath $artworkPath -PathType Container)) { throw 'The external artwork directory is unavailable.' }
 $metadataPath = Join-Path $mediaPath 'fixture-h264-aac.json'
-$videoPath = Join-Path $mediaPath 'fixture-h264-aac.mp4'
+$videoPath = Join-Path $mediaPath $(if ($EmbeddedPgs) { 'fixture-h264-aac-pgs.mkv' } else { 'fixture-h264-aac.mp4' })
 $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
 if ($metadata.Synthetic -ne $true -or $metadata.FileLength -ne (Get-Item -LiteralPath $videoPath).Length -or
     $metadata.DurationTicks -le 0) { throw 'The media must be an existing measured synthetic fixture.' }
+$pgsMediaHash = $null
+$pgsProbeHash = $null
+if ($EmbeddedPgs) {
+    if ($SubtitleFile) { throw 'The embedded PGS and external WebVTT cases require separate fixture instances.' }
+    $pgsProbePath = Join-Path $mediaPath 'fixture-h264-aac.ffprobe.json'
+    if ($metadata.FileName -cne 'fixture-h264-aac-pgs.mkv' -or $metadata.Container -cne 'mkv' -or
+        -not (Test-Path -LiteralPath $pgsProbePath -PathType Leaf) -or
+        (Get-Item -LiteralPath $pgsProbePath).Length -gt 64 * 1024 -or
+        (Get-Item -LiteralPath $videoPath).Length -gt 64 * 1024 * 1024) {
+        throw 'The explicit PGS case requires its bounded measured MKV and FFprobe evidence.'
+    }
+    $pgsMediaHash = (Get-FileHash -LiteralPath $videoPath -Algorithm SHA256).Hash
+    $pgsProbeHash = (Get-FileHash -LiteralPath $pgsProbePath -Algorithm SHA256).Hash
+    if ($pgsMediaHash -ine $metadata.FileSha256 -or $pgsProbeHash -ine $metadata.ProbeSha256) {
+        throw 'The explicit PGS case changed after its measured metadata was prepared.'
+    }
+}
 $subtitlePath = $null
 $subtitleHash = $null
 $subtitleBytes = 0
@@ -61,6 +80,26 @@ if ($SubtitleFile) {
     }
     finally { $subtitleStream.Dispose() }
 }
+$bifPath = $null
+$bifHash = $null
+$bifBytes = 0
+if ($BifFile) {
+    $bifPath = Get-LumenAbsolutePath $BifFile
+    if (-not (Test-Path -LiteralPath $bifPath -PathType Leaf) -or
+        [IO.Path]::GetExtension($bifPath) -ine '.bif') { throw 'The explicit thumbnail input must be an existing .bif file.' }
+    $bifStream = [IO.File]::OpenRead($bifPath)
+    try {
+        if ($bifStream.Length -lt 72 -or $bifStream.Length -gt 32 * 1024 * 1024) {
+            throw 'The thumbnail input must fit the supported 32 MiB BIF bound.'
+        }
+        $bifData = [byte[]]::new([int]$bifStream.Length)
+        $bifStream.ReadExactly($bifData, 0, $bifData.Length)
+        if ($bifStream.ReadByte() -ne -1) { throw 'The BIF file changed beyond the bounded startup snapshot.' }
+        $bifHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bifData))
+        $bifBytes = $bifData.Length
+    }
+    finally { $bifStream.Dispose() }
+}
 if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) {
     throw 'The selected port already has a listener. No existing service was stopped.'
 }
@@ -82,6 +121,8 @@ try {
         '--artwork-directory', ('"' + $artworkPath + '"'))
     if ($FailFirstPlaybackInfo) { $fixtureArguments += '--fail-first-playback-info' }
     if ($subtitlePath) { $fixtureArguments += @('--subtitle-file', ('"' + $subtitlePath + '"')) }
+    if ($bifPath) { $fixtureArguments += @('--bif-file', ('"' + $bifPath + '"')) }
+    if ($EmbeddedPgs) { $fixtureArguments += '--embedded-pgs' }
     $fixtureProcess = Start-Process -FilePath $runtimeExecutable -WorkingDirectory $runtimeDirectory `
         -ArgumentList $fixtureArguments -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $runPath 'server.stdout.log') -RedirectStandardError (Join-Path $runPath 'server.stderr.log')
@@ -101,11 +142,24 @@ try {
         BootstrapExecutableSha256 = (Get-FileHash -LiteralPath $bootstrapSource -Algorithm SHA256).Hash
         MediaSha256 = (Get-FileHash -LiteralPath $videoPath -Algorithm SHA256).Hash
         MetadataSha256 = (Get-FileHash -LiteralPath $metadataPath -Algorithm SHA256).Hash
+        EmbeddedPgsEnabled = [bool]$EmbeddedPgs
+        EmbeddedPgsMediaSha256 = $pgsMediaHash
+        EmbeddedPgsProbeSha256 = $pgsProbeHash
+        EmbeddedPgsNativeSubtitleIndex = $(if ($EmbeddedPgs) { $metadata.EmbeddedSubtitle.Index } else { $null })
+        EmbeddedPgsSourceUnchanged = $null
         ExternalSubtitleEnabled = [bool]$subtitlePath
         SubtitleSourcePath = $subtitlePath
         SubtitleSourceSha256 = $subtitleHash
         SubtitleSourceBytes = $subtitleBytes
         SubtitleSourceUnchanged = $null
+        ExternalBifEnabled = [bool]$bifPath
+        BifSourcePath = $bifPath
+        BifSourceSha256 = $bifHash
+        BifSourceBytes = $bifBytes
+        BifSourceUnchanged = $null
+        BifTotalImageCount = $null
+        BifAvailableImageCount = $null
+        BifSelectedImageCount = $null
         CreatedAtUtc = [DateTimeOffset]::UtcNow.ToString('O')
     }
     $ownership | ConvertTo-Json | Set-Content -LiteralPath $ownershipPath -Encoding utf8
@@ -118,16 +172,37 @@ try {
             $stats = Invoke-RestMethod -Uri ("http://127.0.0.1:$Port/_fixture/stats") -TimeoutSec 1 -NoProxy
             $observedDesign = $null -ne $stats.PSObject.Properties['LumenDesignCatalog'] -and $stats.LumenDesignCatalog -eq $true
             $observedSubtitle = $null -ne $stats.PSObject.Properties['ExternalSubtitleConfigured'] -and $stats.ExternalSubtitleConfigured -eq $true
+            $observedBif = $null -ne $stats.PSObject.Properties['ExternalBifConfigured'] -and $stats.ExternalBifConfigured -eq $true
+            $observedEmbeddedPgs = $null -ne $stats.PSObject.Properties['EmbeddedPgsConfigured'] -and $stats.EmbeddedPgsConfigured -eq $true
             $subtitleSnapshotMatches = -not $subtitlePath -or
                 ($null -ne $stats.PSObject.Properties['ExternalSubtitleSha256'] -and $stats.ExternalSubtitleSha256 -ceq $subtitleHash)
+            $bifSnapshotMatches = -not $bifPath -or
+                ($null -ne $stats.PSObject.Properties['ExternalBifSha256'] -and $stats.ExternalBifSha256 -ceq $bifHash -and
+                    $null -ne $stats.PSObject.Properties['ExternalBifBytes'] -and $stats.ExternalBifBytes -eq $bifBytes -and
+                    $null -ne $stats.PSObject.Properties['ExternalBifTotalImageCount'] -and $stats.ExternalBifTotalImageCount -gt 0 -and
+                    $null -ne $stats.PSObject.Properties['ExternalBifAvailableImageCount'] -and $stats.ExternalBifAvailableImageCount -gt 0 -and
+                    $null -ne $stats.PSObject.Properties['ExternalBifSelectedImageCount'] -and $stats.ExternalBifSelectedImageCount -gt 0 -and
+                    $stats.ExternalBifSelectedImageCount -le 12)
+            $pgsSnapshotMatches = -not $EmbeddedPgs -or
+                ($null -ne $stats.PSObject.Properties['MediaContainer'] -and $stats.MediaContainer -ceq 'mkv' -and
+                    $null -ne $stats.PSObject.Properties['EmbeddedPgsMediaSha256'] -and $stats.EmbeddedPgsMediaSha256 -ieq $pgsMediaHash -and
+                    $null -ne $stats.PSObject.Properties['EmbeddedPgsProbeSha256'] -and $stats.EmbeddedPgsProbeSha256 -ieq $pgsProbeHash -and
+                    $null -ne $stats.PSObject.Properties['EmbeddedPgsNativeSubtitleIndex'] -and
+                    $stats.EmbeddedPgsNativeSubtitleIndex -eq $metadata.EmbeddedSubtitle.Index)
             if ($stats.Synthetic -eq $true -and $stats.LumenCatalog -eq $true -and
                 $observedDesign -eq [bool]$DesignCatalog -and $observedSubtitle -eq [bool]$subtitlePath -and
-                $subtitleSnapshotMatches) { $ready = $true; break }
+                $observedBif -eq [bool]$bifPath -and $observedEmbeddedPgs -eq [bool]$EmbeddedPgs -and
+                $subtitleSnapshotMatches -and $bifSnapshotMatches -and $pgsSnapshotMatches) { $ready = $true; break }
         }
         catch { }
         Start-Sleep -Milliseconds 150
     }
     if (-not $ready) { throw 'The owned rich fixture did not become ready. Inspect this run logs.' }
+    if ($bifPath) {
+        $ownership.BifTotalImageCount = $stats.ExternalBifTotalImageCount
+        $ownership.BifAvailableImageCount = $stats.ExternalBifAvailableImageCount
+        $ownership.BifSelectedImageCount = $stats.ExternalBifSelectedImageCount
+    }
     $listeners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop)
     if ($listeners.Count -ne 1 -or $listeners[0].LocalAddress -ne '127.0.0.1' -or
         $listeners[0].OwningProcess -ne $fixtureProcess.Id) {
@@ -152,6 +227,16 @@ try {
         if (-not $ownership.SubtitleSourceUnchanged) { throw 'The explicit subtitle source changed during environment startup.' }
     }
     else { $ownership.SubtitleSourceUnchanged = $null }
+    if ($bifPath) {
+        $ownership.BifSourceUnchanged = (Get-FileHash -LiteralPath $bifPath -Algorithm SHA256).Hash -ceq $bifHash
+        if (-not $ownership.BifSourceUnchanged) { throw 'The explicit BIF source changed during environment startup.' }
+    }
+    else { $ownership.BifSourceUnchanged = $null }
+    if ($EmbeddedPgs) {
+        $ownership.EmbeddedPgsSourceUnchanged = (Get-FileHash -LiteralPath $videoPath -Algorithm SHA256).Hash -ieq $pgsMediaHash -and
+            (Get-FileHash -LiteralPath $pgsProbePath -Algorithm SHA256).Hash -ieq $pgsProbeHash
+        if (-not $ownership.EmbeddedPgsSourceUnchanged) { throw 'The explicit PGS inputs changed during environment startup.' }
+    }
     $ownership | ConvertTo-Json | Set-Content -LiteralPath $ownershipPath -Encoding utf8
     [pscustomobject]@{
         Ready = $true
@@ -163,6 +248,13 @@ try {
         OwnershipReceipt = $ownershipPath
         ExternalSubtitleEnabled = [bool]$subtitlePath
         SubtitleSourceSha256 = $subtitleHash
+        ExternalBifEnabled = [bool]$bifPath
+        BifSourceSha256 = $bifHash
+        BifTotalImageCount = $ownership.BifTotalImageCount
+        BifAvailableImageCount = $ownership.BifAvailableImageCount
+        BifSelectedImageCount = $ownership.BifSelectedImageCount
+        EmbeddedPgsEnabled = [bool]$EmbeddedPgs
+        EmbeddedPgsNativeSubtitleIndex = $ownership.EmbeddedPgsNativeSubtitleIndex
     }
 }
 catch {

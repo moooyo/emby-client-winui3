@@ -1,6 +1,7 @@
 using EmbyClient.App.Services;
 using EmbyClient.App.ViewModels;
 using Microsoft.UI.Composition;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -12,14 +13,18 @@ using Microsoft.UI.Xaml.Media.Animation;
 using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Windows.Foundation;
+using Windows.System;
 using Windows.UI;
+using Windows.UI.Core;
 
 namespace EmbyClient.App.Views.Lumen;
 
 public sealed partial class LumenMediaCard : UserControl
 {
     private readonly bool _landscape;
+    private readonly LibraryViewModel _library;
     private readonly Grid _layout = new();
     private readonly Grid _surface = new();
     private readonly Border _shadowHost = new() { IsHitTestVisible = false };
@@ -42,6 +47,9 @@ public sealed partial class LumenMediaCard : UserControl
     private readonly Button _favorite;
     private readonly Button _played;
     private readonly Button _more;
+    private readonly Grid? _landscapeLabels;
+    private readonly StackPanel? _landscapeTitles;
+    private readonly Border? _landscapeFade;
     private readonly CompositeTransform _hoverTransform = new();
     private Storyboard? _hoverAnimation;
     private SpriteVisual? _shadowVisual;
@@ -57,15 +65,30 @@ public sealed partial class LumenMediaCard : UserControl
     private bool _focused;
     private bool _showWatched = true;
     private bool _subscribed;
+    private bool _homeStripStyle;
+    private bool _recommendationStyle;
+    private bool _searchPosterStyle;
+    private bool _searchDiscoveryStyle;
+    private Grid? _searchSubtitleRow;
+    private FrameworkElement? _subtitleRatingIcon;
+    private bool _selected;
+    private bool _onImage;
+    private bool _primaryActionToPlay;
+    private bool _continueWatchingContext;
     private string? _titleQuery;
+    private string? _subtitleOverride;
     private double _dimensionWidth = double.NaN;
 
     public MediaCardViewModel Item { get; }
+    public string? SearchContext => _titleQuery;
     public event EventHandler<MediaCardViewModel>? OpenRequested;
     public event EventHandler<MediaCardViewModel>? FavoriteRequested;
     public event EventHandler<MediaCardViewModel>? WatchedRequested;
     public event EventHandler<MediaCardViewModel>? HoverRequested;
     public event EventHandler<LumenPlayRequestEventArgs>? PlayRequested;
+    public event EventHandler<MediaCardViewModel>? MediaInformationRequested;
+    public event EventHandler<MediaCardViewModel>? CollectionRequested;
+    public event EventHandler<MediaCardViewModel>? RemoveFromContinueWatchingRequested;
 
     static LumenMediaCard() => LumenText.Register(new Dictionary<string, string>
     {
@@ -73,6 +96,7 @@ public sealed partial class LumenMediaCard : UserControl
         ["More"] = "\u66f4\u591a", ["Remaining {0} min"] = "\u5269\u4f59 {0} \u5206\u949f",
         ["seasons"] = "\u5b63", ["Play from beginning"] = "\u4ece\u5934\u64ad\u653e",
         ["Add to queue"] = "\u6dfb\u52a0\u5230\u64ad\u653e\u961f\u5217",
+        ["Remove from continue watching"] = "\u4ece\u7ee7\u7eed\u89c2\u770b\u4e2d\u79fb\u9664",
         ["Tag"] = "\u6807\u7b7e", ["Overview"] = "\u7b80\u4ecb"
     });
 
@@ -81,7 +105,9 @@ public sealed partial class LumenMediaCard : UserControl
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(library);
         Item = item;
+        _library = library;
         _landscape = landscape;
+        IsTabStop = false;
         HorizontalAlignment = HorizontalAlignment.Stretch;
         VerticalAlignment = VerticalAlignment.Top;
         MinWidth = landscape ? 160 : 88;
@@ -108,7 +134,8 @@ public sealed partial class LumenMediaCard : UserControl
         };
         _open.Resources["ButtonBackgroundPointerOver"] = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
         _open.Resources["ButtonBackgroundPressed"] = new SolidColorBrush(Color.FromArgb(35, 0, 0, 0));
-        _open.Click += (_, _) => OpenRequested?.Invoke(this, Item);
+        _open.Tag = item;
+        _open.Click += (_, _) => InvokePrimaryAction();
         _surface.Children.Add(_open);
 
         _title = LumenUi.Text(item.DisplayTitle, landscape ? 15 : 13);
@@ -126,11 +153,14 @@ public sealed partial class LumenMediaCard : UserControl
 
         if (landscape)
         {
-            _surface.Children.Add(new Border { Background = BottomGradient(), IsHitTestVisible = false, CornerRadius = new CornerRadius(12) });
+            _landscapeFade = new Border { Background = BottomGradient(), IsHitTestVisible = false, CornerRadius = new CornerRadius(12) };
+            _surface.Children.Add(_landscapeFade);
             var labels = new Grid { Margin = new Thickness(14, 0, 14, 20), VerticalAlignment = VerticalAlignment.Bottom, ColumnSpacing = 10, IsHitTestVisible = false };
+            _landscapeLabels = labels;
             labels.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             labels.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var titles = new StackPanel { Spacing = 3, MinWidth = 0 };
+            _landscapeTitles = titles;
             _title.Foreground = LumenUi.WhiteBrush;
             _subtitle.Foreground = LumenUi.WhiteBrush;
             _subtitle.Opacity = .8;
@@ -203,16 +233,14 @@ public sealed partial class LumenMediaCard : UserControl
         Grid.SetColumn(qualityBorder, 1); metrics.Children.Add(qualityBorder);
         if (!landscape) _overlay.Children.Add(metrics);
 
-        _play = LumenUi.IconButton("play", LumenText.Get("Play"), landscape ? 50 : 52, true);
-        _play.Background = LumenUi.WhiteBrush;
-        _play.BorderThickness = new Thickness(0);
+        _play = LumenUi.Button("Play", primary: true, onImage: true, height: landscape ? 50 : 52);
+        _play.Width = landscape ? 50 : 52;
+        _play.Padding = new Thickness(0);
         _play.Content = new Image
         {
             Width = 22, Height = 22, IsHitTestVisible = false,
             Source = new Microsoft.UI.Xaml.Media.Imaging.SvgImageSource(new Uri("ms-appx:///Assets/Lumen/Icons/d/play_24_filled.svg"))
         };
-        _play.Resources["ButtonBackgroundPointerOver"] = LumenUi.WhiteBrush;
-        _play.Resources["ButtonBackgroundPressed"] = LumenUi.WhiteBrush;
         _play.HorizontalAlignment = HorizontalAlignment.Center; _play.VerticalAlignment = VerticalAlignment.Center;
         _play.Click += (_, _) => RequestPlay(Item.CanResume ? Item.ResumeTicks : 0);
         Grid.SetRow(_play, 1); _overlay.Children.Add(_play);
@@ -234,7 +262,7 @@ public sealed partial class LumenMediaCard : UserControl
 
         PointerEntered += (_, _) => { _hovered = true; ShowOverlay(); HoverRequested?.Invoke(this, Item); };
         PointerExited += (_, _) => { _hovered = false; ShowOverlay(); };
-        GotFocus += (_, _) => { _focused = true; ShowOverlay(); };
+        GotFocus += (_, _) => { _focused = true; ShowOverlay(); HoverRequested?.Invoke(this, Item); };
         LostFocus += (_, _) => DispatcherQueue.TryEnqueue(() =>
         {
             _focused = XamlRoot is not null && Contains(FocusManager.GetFocusedElement(XamlRoot) as DependencyObject);
@@ -243,6 +271,11 @@ public sealed partial class LumenMediaCard : UserControl
         RightTapped += (_, e) => { ShowMore(); e.Handled = true; };
         Holding += (_, e) => { if (e.HoldingState == Microsoft.UI.Input.HoldingState.Started) ShowMore(); e.Handled = true; };
         Tapped += CardTapped;
+        PreviewKeyDown += CardKeyDown;
+        PreviewKeyUp += (_, args) =>
+        {
+            if (args.Key == VirtualKey.Space && !_homeStripStyle) args.Handled = true;
+        };
         SizeChanged += (_, args) =>
         {
             if (double.IsNaN(Width) && args.NewSize.Width > 0 && args.NewSize.Width != args.PreviousSize.Width)
@@ -274,11 +307,143 @@ public sealed partial class LumenMediaCard : UserControl
     }
 
     public void SetShowWatched(bool show) { _showWatched = show; Refresh(); }
+    public void SetLibraryWallStyle(bool enabled = true)
+    {
+        if (!_landscape) _title.Margin = new Thickness(0, enabled ? 9 : 10, 0, 0);
+    }
+
+    public void SetRecommendationStyle(bool enabled = true)
+    {
+        var requested = enabled && !_landscape;
+        if (_recommendationStyle == requested) return;
+        _recommendationStyle = requested;
+        _title.FontSize = requested ? 14 : 13;
+        _title.FontWeight = requested ? Microsoft.UI.Text.FontWeights.Bold : Microsoft.UI.Text.FontWeights.SemiBold;
+        _title.Margin = new Thickness(0, requested ? 9 : 10, 0, 0);
+        _subtitle.FontSize = requested ? 12.5 : 12;
+        _subtitle.Opacity = requested ? .5 : _onImage ? .55 : 1;
+        var radius = requested ? 14 : 12;
+        _artwork.CornerRadius = _open.CornerRadius = _hoverShade.CornerRadius = _ring.CornerRadius = new CornerRadius(radius);
+        if (_shadowGeometry is not null) _shadowGeometry.CornerRadius = new Vector2(radius);
+        if (requested)
+        {
+            _surface.ClearValue(RenderTransformProperty);
+            _layout.RenderTransform = _hoverTransform;
+        }
+        else
+        {
+            _layout.ClearValue(RenderTransformProperty);
+            _surface.RenderTransform = _hoverTransform;
+        }
+        Refresh();
+        ShowOverlay(false);
+    }
+
+    public void SetSearchPosterStyle(bool discovery = false)
+    {
+        if (_landscape) return;
+        _searchPosterStyle = true;
+        _searchDiscoveryStyle = discovery;
+        _title.FontSize = 13;
+        _title.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        _title.Margin = new Thickness(0, discovery ? 9 : 10, 0, 0);
+        _subtitle.FontSize = 12;
+        _subtitle.Opacity = 1;
+        _surface.ClearValue(RenderTransformProperty);
+        _layout.RenderTransform = _hoverTransform;
+        if (discovery && _searchSubtitleRow is null)
+        {
+            _layout.Children.Remove(_subtitle);
+            _searchSubtitleRow = new Grid { ColumnSpacing = 4, Margin = new Thickness(0, 2, 0, 0) };
+            _searchSubtitleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            _searchSubtitleRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            _subtitleRatingIcon = LumenUi.Icon("star", 11);
+            _subtitleRatingIcon.VerticalAlignment = VerticalAlignment.Center;
+            _searchSubtitleRow.Children.Add(_subtitleRatingIcon);
+            _subtitle.Margin = new Thickness(0);
+            Grid.SetRow(_subtitle, 0);
+            Grid.SetColumn(_subtitle, 1);
+            _searchSubtitleRow.Children.Add(_subtitle);
+            Grid.SetRow(_searchSubtitleRow, 2);
+            _layout.Children.Add(_searchSubtitleRow);
+        }
+        Refresh();
+        ShowOverlay(false);
+    }
+
+    public void SetHomeStripStyle(bool enabled = true)
+    {
+        var requested = enabled && _landscape;
+        if (_homeStripStyle == requested) return;
+        _homeStripStyle = requested;
+        _title.FontSize = _homeStripStyle ? 14 : _landscape ? 15 : 13;
+        _subtitle.FontSize = _homeStripStyle ? 12.5 : 12;
+        if (_landscapeLabels is not null && _landscapeTitles is not null && _landscapeFade is not null)
+        {
+            _landscapeLabels.Visibility = _landscapeFade.Visibility = requested ? Visibility.Collapsed : Visibility.Visible;
+            if (requested)
+            {
+                _landscapeTitles.Children.Clear();
+                while (_layout.RowDefinitions.Count < 3) _layout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                _title.Margin = new Thickness(0, 10, 0, 0);
+                _subtitle.Margin = new Thickness(0, 3, 0, 0);
+                _subtitle.Opacity = .5;
+                Grid.SetRow(_title, 1);
+                Grid.SetRow(_subtitle, 2);
+                _layout.Children.Add(_title);
+                _layout.Children.Add(_subtitle);
+                _surface.ClearValue(RenderTransformProperty);
+                _layout.RenderTransform = _hoverTransform;
+                _track.Margin = new Thickness(0);
+            }
+            else
+            {
+                _layout.Children.Remove(_title);
+                _layout.Children.Remove(_subtitle);
+                _landscapeTitles.Children.Add(_title);
+                _landscapeTitles.Children.Add(_subtitle);
+                _title.Margin = _subtitle.Margin = new Thickness(0);
+                _subtitle.Opacity = .8;
+                _layout.ClearValue(RenderTransformProperty);
+                _surface.RenderTransform = _hoverTransform;
+                _track.Margin = new Thickness(14, 0, 14, 10);
+            }
+        }
+        ShowOverlay(false);
+    }
+
+    public void SetSelected(bool selected)
+    {
+        if (_selected == selected) return;
+        _selected = selected;
+        ShowOverlay();
+    }
+
+    public void SetOnImage(bool enabled = true)
+    {
+        _onImage = enabled;
+        _title.Foreground = enabled || _landscape ? LumenTheme.Brush("ImageInk") : LumenTheme.Brush("Ink");
+        _subtitle.Foreground = enabled || _landscape ? LumenTheme.Brush("ImageInk") : LumenTheme.Brush("Muted");
+        _subtitle.Opacity = enabled ? .55 : _landscape ? .8 : 1;
+        RefreshTitle();
+    }
+
+    public void SetSubtitleOverride(string? text)
+    {
+        _subtitleOverride = text;
+        _subtitle.Text = text ?? (_landscape ? LandscapeSubtitle() : PosterSubtitle());
+    }
+
+    public bool FocusCard(FocusState state = FocusState.Keyboard) => _open.Focus(state);
+    public void SetTabStop(bool enabled) => _open.IsTabStop = enabled;
+    public void SetPrimaryActionToPlay(bool enabled = true) { _primaryActionToPlay = enabled; Refresh(); }
+    public void SetContinueWatchingContext(bool enabled = true) => _continueWatchingContext = enabled;
     public void SetTitleHighlight(string? query)
     {
+        if (_titleQuery == query) return;
         _titleQuery = query;
         RefreshTitle();
-        _subtitle.Text = _landscape ? LandscapeSubtitle() : PosterSubtitle();
+        _subtitle.Text = _subtitleOverride ?? (_landscape ? LandscapeSubtitle() : PosterSubtitle());
     }
     public void SetSearchContext(string? query) => SetTitleHighlight(query);
 
@@ -319,7 +484,7 @@ public sealed partial class LumenMediaCard : UserControl
         if (e.PropertyName is null or nameof(MediaCardViewModel.Item)) Refresh();
     }
 
-    private void ThemeChanged(object? sender, EventArgs args) => UpdateShadow(_hovered || _focused, false);
+    private void ThemeChanged(object? sender, EventArgs args) => UpdateShadow(!(_recommendationStyle || _searchPosterStyle) && (_hovered || _focused || _selected), false);
 
     private void CreateShadow()
     {
@@ -327,7 +492,7 @@ public sealed partial class LumenMediaCard : UserControl
         var compositor = ElementCompositionPreview.GetElementVisual(_shadowHost).Compositor;
         // An off-tree rounded caster provides an alpha mask without painting over the artwork placeholder.
         _shadowGeometry = compositor.CreateRoundedRectangleGeometry();
-        _shadowGeometry.CornerRadius = new Vector2(12);
+        _shadowGeometry.CornerRadius = new Vector2(_recommendationStyle ? 14 : 12);
         _shadowFill = compositor.CreateColorBrush(Microsoft.UI.Colors.Black);
         _shadowShape = compositor.CreateSpriteShape(_shadowGeometry);
         _shadowShape.FillBrush = _shadowFill;
@@ -392,9 +557,9 @@ public sealed partial class LumenMediaCard : UserControl
     private void UpdateShadow(bool on, bool animate)
     {
         if (_shadow is null) return;
-        var blur = on ? 48f : LumenTheme.IsDark ? 22f : 16f;
-        var opacity = on ? .5f : LumenTheme.IsDark ? .35f : .14f;
-        var offset = new Vector3(0, on ? 24 : LumenTheme.IsDark ? 8 : 6, 0);
+        var blur = _recommendationStyle ? 30f : on ? 48f : LumenTheme.IsDark ? 22f : 16f;
+        var opacity = _recommendationStyle ? .4f : on ? .5f : LumenTheme.IsDark ? .35f : .14f;
+        var offset = new Vector3(0, _recommendationStyle ? 12 : on ? 24 : LumenTheme.IsDark ? 8 : 6, 0);
         if (!animate)
         {
             _shadow.StopAnimation("BlurRadius");
@@ -425,23 +590,26 @@ public sealed partial class LumenMediaCard : UserControl
     private void Refresh()
     {
         RefreshTitle();
-        _subtitle.Text = _landscape ? LandscapeSubtitle() : PosterSubtitle();
+        _subtitle.Text = _subtitleOverride ?? (_landscape ? LandscapeSubtitle() : PosterSubtitle());
+        if (_subtitleRatingIcon is not null)
+            _subtitleRatingIcon.Visibility = _searchDiscoveryStyle && Item.Item.CommunityRating is not null ? Visibility.Visible : Visibility.Collapsed;
         _remaining.Text = Item.Item.RunTimeTicks is > 0 && Item.ResumeTicks > 0
             ? LumenText.Get("Remaining {0} min", Math.Max(0, (int)Math.Ceiling(TimeSpan.FromTicks(Item.Item.RunTimeTicks.Value - Math.Min(Item.ResumeTicks, Item.Item.RunTimeTicks.Value)).TotalMinutes))) : string.Empty;
         _unplayedLabel.Text = Item.UnplayedCountLabel;
-        _unplayed.Visibility = !_landscape && Item.UnplayedCountLabel.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        _watched.Visibility = _showWatched && Item.IsPlayed && Item.UnplayedCountLabel.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        _track.Visibility = Item.ProgressVisibility;
+        _unplayed.Visibility = !_searchPosterStyle && !_landscape && Item.UnplayedCountLabel.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        _watched.Visibility = !_searchPosterStyle && _showWatched && Item.IsPlayed && Item.UnplayedCountLabel.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        _track.Visibility = _recommendationStyle || _searchPosterStyle ? Visibility.Collapsed : Item.ProgressVisibility;
         _rating.Text = Item.Item.CommunityRating?.ToString("0.0", CultureInfo.InvariantCulture) ?? "-";
         _quality.Text = QualityLabel();
         _play.Visibility = Item.CanPlay || Item.Item.Type == "Series" ? Visibility.Visible : Visibility.Collapsed;
+        _play.IsEnabled = _library.IsPlaybackAllowed;
         _favorite.Content = ActionVisual(Item.IsFavorite ? "heart-filled" : "heart");
         _played.Content = ActionVisual(Item.IsPlayed ? "check-filled" : "check");
         UpdateActionLabel(_favorite, LumenText.Get(Item.IsFavorite ? "Remove favorite" : "Add favorite"));
         UpdateActionLabel(_played, LumenText.Get(Item.IsPlayed ? "Mark unplayed" : "Mark played"));
         var identity = Item.SceneIdentity;
         AutomationProperties.SetName(this, identity);
-        AutomationProperties.SetName(_open, $"{identity}, {LumenText.Get("Details")}");
+        AutomationProperties.SetName(_open, $"{identity}, {LumenText.Get(_primaryActionToPlay ? Item.CanResume ? "Resume" : "Play" : "Details")}");
         ToolTipService.SetToolTip(_open, identity);
         UpdateProgress();
     }
@@ -458,7 +626,7 @@ public sealed partial class LumenMediaCard : UserControl
             var hit = text.IndexOf(_titleQuery, position, StringComparison.OrdinalIgnoreCase);
             if (hit < 0) { _title.Inlines.Add(new Run { Text = text[position..] }); break; }
             if (hit > position) _title.Inlines.Add(new Run { Text = text[position..hit] });
-            _title.Inlines.Add(new Run { Text = text.Substring(hit, _titleQuery.Length), Foreground = LumenTheme.Brush("Accent") });
+            _title.Inlines.Add(new Run { Text = text.Substring(hit, _titleQuery.Length), Foreground = LumenTheme.Brush(_onImage || _landscape ? "ImageAccent" : "Accent") });
             position = hit + _titleQuery.Length;
         }
     }
@@ -499,7 +667,17 @@ public sealed partial class LumenMediaCard : UserControl
 
     private void UpdateProgress() => _fill.Width = Math.Max(0, _track.ActualWidth * Math.Clamp(Item.Progress, 0, 100) / 100);
 
-    private void RequestPlay(long position, bool queue = false) => PlayRequested?.Invoke(this, new LumenPlayRequestEventArgs(Item.Item, position, queue));
+    private void RequestPlay(long position, bool queue = false)
+    {
+        if (_library.IsPlaybackAllowed && (Item.CanPlay || Item.Item.Type is "Series" or "Season"))
+            PlayRequested?.Invoke(this, new LumenPlayRequestEventArgs(Item.Item, position, queue));
+    }
+
+    private void InvokePrimaryAction()
+    {
+        if (_primaryActionToPlay) RequestPlay(Item.CanResume ? Item.ResumeTicks : 0);
+        else OpenRequested?.Invoke(this, Item);
+    }
 
     private bool Contains(DependencyObject? node)
     {
@@ -519,12 +697,249 @@ public sealed partial class LumenMediaCard : UserControl
             if (node is Button) return;
             node = VisualTreeHelper.GetParent(node);
         }
-        OpenRequested?.Invoke(this, Item); e.Handled = true;
+        InvokePrimaryAction(); e.Handled = true;
+    }
+
+    private void CardKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Handled || IsKeyDown(VirtualKey.Control) || IsKeyDown(VirtualKey.Menu)) return;
+        var target = args.OriginalSource as DependencyObject;
+        while (target is not null && !ReferenceEquals(target, this))
+        {
+            if (target is Button button && !ReferenceEquals(button, _open)) return;
+            target = VisualTreeHelper.GetParent(target);
+        }
+        if (args.Key == VirtualKey.Enter)
+        {
+            args.Handled = true;
+            InvokePrimaryAction();
+        }
+        else if (args.Key == VirtualKey.Space && !_homeStripStyle)
+        {
+            args.Handled = true;
+            RequestPlay(Item.CanResume ? Item.ResumeTicks : 0);
+        }
+        else if (args.Key == VirtualKey.Application || args.Key == VirtualKey.F10 && IsKeyDown(VirtualKey.Shift))
+        {
+            args.Handled = true;
+            ShowMore();
+        }
+        else if (args.Key == VirtualKey.Escape)
+        {
+            args.Handled = true;
+            if (_openFlyout is not null) _openFlyout.Hide();
+            else
+            {
+                var ancestor = VisualTreeHelper.GetParent(this);
+                while (ancestor is not null && ancestor is not ScrollViewer) ancestor = VisualTreeHelper.GetParent(ancestor);
+                if (ancestor is ScrollViewer scroll) scroll.Focus(FocusState.Programmatic);
+                _focused = false;
+                ShowOverlay();
+            }
+        }
+    }
+
+    private static bool IsKeyDown(VirtualKey key) =>
+        (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) != 0;
+
+    private static readonly ConditionalWeakTable<FrameworkElement, CardNavigationGroup> NavigationGroups = new();
+
+    public static void ConfigureNavigationGroup(FrameworkElement group, bool horizontalOnly = false, bool initialNavigation = true)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        if (NavigationGroups.TryGetValue(group, out var existing))
+        {
+            existing.HorizontalOnly = horizontalOnly;
+            existing.InitialNavigation = initialNavigation;
+            return;
+        }
+        var navigation = new CardNavigationGroup(group, horizontalOnly, initialNavigation);
+        NavigationGroups.Add(group, navigation);
+        group.TabFocusNavigation = KeyboardNavigationMode.Once;
+        group.XYFocusKeyboardNavigation = XYFocusKeyboardNavigationMode.Enabled;
+        group.PreviewKeyDown += navigation.OnKeyDown;
+        group.GotFocus += navigation.OnGotFocus;
+        group.Loaded += (_, _) => navigation.UpdateTabStops();
+        if (group is ItemsRepeater repeater)
+        {
+            repeater.ElementPrepared += (_, _) => navigation.UpdateTabStops();
+            repeater.ElementClearing += (_, _) => group.DispatcherQueue.TryEnqueue(navigation.UpdateTabStops);
+        }
+    }
+
+    public static bool FocusNavigationItem(FrameworkElement group, int index)
+    {
+        if (!NavigationGroups.TryGetValue(group, out var navigation))
+        {
+            ConfigureNavigationGroup(group);
+            NavigationGroups.TryGetValue(group, out navigation);
+        }
+        return navigation?.FocusItem(index) == true;
+    }
+
+    private sealed partial class CardNavigationGroup(FrameworkElement group, bool horizontalOnly, bool initialNavigation)
+    {
+        private int _focusedIndex;
+        public bool HorizontalOnly { get; set; } = horizontalOnly;
+        public bool InitialNavigation { get; set; } = initialNavigation;
+
+        public void OnGotFocus(object sender, RoutedEventArgs args)
+        {
+            var source = args.OriginalSource as DependencyObject;
+            var members = RealizedMembers();
+            foreach (var member in members)
+            {
+                if (!IsWithin(source, member.Element)) continue;
+                _focusedIndex = member.Index;
+                UpdateTabStops();
+                break;
+            }
+        }
+
+        public void UpdateTabStops()
+        {
+            var members = RealizedMembers();
+            if (members.Count == 0) return;
+            if (!members.Any(member => member.Index == _focusedIndex))
+                _focusedIndex = members.Min(member => member.Index);
+            foreach (var member in members)
+                if (NavigationButton(member.Element) is { } button) button.IsTabStop = member.Index == _focusedIndex;
+        }
+
+        public void OnKeyDown(object sender, KeyRoutedEventArgs args)
+        {
+            if (args.Handled || IsKeyDown(VirtualKey.Control) || IsKeyDown(VirtualKey.Menu)) return;
+            var count = ItemCount();
+            if (count == 0) return;
+            var target = _focusedIndex;
+            var columns = ColumnCount();
+            switch (args.Key)
+            {
+                case VirtualKey.Left: target--; break;
+                case VirtualKey.Right: target++; break;
+                case VirtualKey.Up when !HorizontalOnly: target -= columns; break;
+                case VirtualKey.Down when !HorizontalOnly: target += columns; break;
+                case VirtualKey.Home when !HorizontalOnly: target = 0; break;
+                case VirtualKey.End when !HorizontalOnly: target = count - 1; break;
+                default:
+                    if (!InitialNavigation || HorizontalOnly || args.Key < VirtualKey.A || args.Key > VirtualKey.Z) return;
+                    var initial = ((char)('A' + (int)args.Key - (int)VirtualKey.A)).ToString();
+                    target = Enumerable.Range(0, count).FirstOrDefault(index =>
+                    {
+                        var item = ItemAt(index);
+                        return (item?.Item.SortName ?? item?.Title)?.TrimStart().StartsWith(initial, StringComparison.OrdinalIgnoreCase) == true;
+                    }, -1);
+                    if (target < 0) return;
+                    break;
+            }
+            args.Handled = true;
+            FocusItem(Math.Clamp(target, 0, count - 1));
+        }
+
+        public bool FocusItem(int index)
+        {
+            if (index < 0 || index >= ItemCount()) return false;
+            FrameworkElement? element;
+            if (group is ItemsRepeater repeater)
+            {
+                element = repeater.GetOrCreateElement(index) as FrameworkElement;
+                repeater.UpdateLayout();
+            }
+            else element = RealizedMembers().FirstOrDefault(member => member.Index == index).Element;
+            if (element is null || NavigationButton(element) is not { } button) return false;
+            _focusedIndex = index;
+            UpdateTabStops();
+            var focused = button.Focus(FocusState.Keyboard);
+            var bring = new BringIntoViewOptions
+            {
+                AnimationDesired = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled,
+                HorizontalAlignmentRatio = .5
+            };
+            if (!HorizontalOnly) { bring.VerticalAlignmentRatio = .15; bring.VerticalOffset = -100; }
+            element.StartBringIntoView(bring);
+            return focused;
+        }
+
+        private int ItemCount() => group is ItemsRepeater repeater ? repeater.ItemsSourceView?.Count ?? 0 : RealizedMembers().Count;
+
+        private MediaCardViewModel? ItemAt(int index)
+        {
+            if (group is ItemsRepeater repeater) return repeater.ItemsSourceView?.GetAt(index) as MediaCardViewModel;
+            var element = RealizedMembers().FirstOrDefault(member => member.Index == index).Element;
+            return element is LumenMediaCard card ? card.Item : NavigationButton(element)?.Tag as MediaCardViewModel;
+        }
+
+        private int ColumnCount()
+        {
+            if (HorizontalOnly) return 1;
+            if (group is ItemsRepeater { Layout: UniformGridLayout layout })
+            {
+                var minimum = Math.Max(1, layout.MinItemWidth + layout.MinColumnSpacing);
+                return Math.Max(1, (int)Math.Floor((group.ActualWidth + layout.MinColumnSpacing) / minimum));
+            }
+            var members = RealizedMembers();
+            if (members.Count < 2) return 1;
+            var first = members[0].Element.TransformToVisual(group).TransformPoint(new Point());
+            return Math.Max(1, members.Count(member => Math.Abs(member.Element.TransformToVisual(group).TransformPoint(new Point()).Y - first.Y) < 8));
+        }
+
+        private List<(int Index, FrameworkElement Element)> RealizedMembers()
+        {
+            var members = new List<(int, FrameworkElement)>();
+            if (group is ItemsRepeater repeater)
+            {
+                for (var childIndex = 0; childIndex < VisualTreeHelper.GetChildrenCount(repeater); childIndex++)
+                {
+                    if (VisualTreeHelper.GetChild(repeater, childIndex) is not FrameworkElement element) continue;
+                    var index = repeater.GetElementIndex(element);
+                    if (index >= 0 && NavigationButton(element) is not null) members.Add((index, element));
+                }
+                members.Sort((left, right) => left.Item1.CompareTo(right.Item1));
+            }
+            else AddMembers(group, members);
+            return members;
+        }
+
+        private static void AddMembers(DependencyObject parent, List<(int, FrameworkElement)> members)
+        {
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, index);
+                if (child is LumenMediaCard card) members.Add((members.Count, card));
+                else if (child is Button { Tag: MediaCardViewModel } button) members.Add((members.Count, button));
+                else AddMembers(child, members);
+            }
+        }
+
+        private static Button? NavigationButton(DependencyObject? element)
+        {
+            if (element is null) return null;
+            if (element is LumenMediaCard card) return card._open;
+            if (element is Button { Tag: MediaCardViewModel } button) return button;
+            for (var index = 0; index < VisualTreeHelper.GetChildrenCount(element); index++)
+                if (NavigationButton(VisualTreeHelper.GetChild(element, index)) is { } candidate) return candidate;
+            return null;
+        }
+
+        private static bool IsWithin(DependencyObject? child, DependencyObject parent)
+        {
+            while (child is not null)
+            {
+                if (ReferenceEquals(child, parent)) return true;
+                child = VisualTreeHelper.GetParent(child);
+            }
+            return false;
+        }
     }
 
     private void ShowOverlay(bool animateTransition = true)
     {
-        var on = _hovered || _focused;
+        var on = _hovered || _focused || _selected;
+        var simplePoster = _recommendationStyle || _searchPosterStyle;
+        var showActions = on && !_homeStripStyle && !simplePoster;
+        var raisedY = on ? simplePoster ? -5 : -6 : 0;
+        var scale = on && !_homeStripStyle && !simplePoster ? 1.035 : 1;
+        Opacity = _homeStripStyle && !on ? .6 : 1;
         var oldOverlay = _overlay.Opacity;
         var oldShade = _hoverShade.Opacity;
         var oldY = _hoverTransform.TranslateY;
@@ -532,36 +947,37 @@ public sealed partial class LumenMediaCard : UserControl
         var oldScaleY = _hoverTransform.ScaleY;
         _hoverAnimation?.Stop();
         _hoverShade.Visibility = _overlay.Visibility = Visibility.Visible;
-        _overlay.IsHitTestVisible = on;
-        _play.IsTabStop = _favorite.IsTabStop = _played.IsTabStop = _more.IsTabStop = on;
-        _hoverShade.Opacity = _overlay.Opacity = on ? 1 : 0;
-        _ring.BorderBrush = on ? _landscape ? LumenUi.WhiteBrush : LumenTheme.Brush("ImageAccent") : LumenTheme.Brush("Line");
-        _ring.BorderThickness = new Thickness(on ? 2 : 1);
+        _overlay.IsHitTestVisible = showActions;
+        _play.IsTabStop = _favorite.IsTabStop = _played.IsTabStop = _more.IsTabStop = false;
+        _hoverShade.Opacity = _overlay.Opacity = showActions ? 1 : 0;
+        _ring.BorderBrush = _recommendationStyle ? RecommendationStroke
+            : on && !simplePoster ? _landscape ? LumenUi.WhiteBrush : LumenTheme.Brush("ImageAccent") : LumenTheme.Brush("Line");
+        _ring.BorderThickness = new Thickness(on && !simplePoster ? 2 : 1);
         var animate = animateTransition && IsLoaded && new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
-        UpdateShadow(on, animate);
-        if (!_landscape)
+        UpdateShadow(on && !simplePoster, animate);
+        if (!_landscape || _homeStripStyle)
         {
-            _hoverTransform.TranslateY = on ? -6 : 0;
-            _hoverTransform.ScaleX = _hoverTransform.ScaleY = on ? 1.035 : 1;
+            _hoverTransform.TranslateY = raisedY;
+            _hoverTransform.ScaleX = _hoverTransform.ScaleY = scale;
         }
         if (!animate)
         {
-            _hoverShade.Visibility = _overlay.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            _hoverShade.Visibility = _overlay.Visibility = showActions ? Visibility.Visible : Visibility.Collapsed;
             return;
         }
         var storyboard = new Storyboard();
         _hoverAnimation = storyboard;
-        AddOpacityAnimation(storyboard, _hoverShade, oldShade, on ? 1 : 0);
-        AddOpacityAnimation(storyboard, _overlay, oldOverlay, on ? 1 : 0);
-        if (!_landscape)
+        AddOpacityAnimation(storyboard, _hoverShade, oldShade, showActions ? 1 : 0);
+        AddOpacityAnimation(storyboard, _overlay, oldOverlay, showActions ? 1 : 0);
+        if (!_landscape || _homeStripStyle)
         {
-            AddHoverAnimation(storyboard, nameof(CompositeTransform.TranslateY), oldY, on ? -6 : 0);
-            AddHoverAnimation(storyboard, nameof(CompositeTransform.ScaleX), oldScaleX, on ? 1.035 : 1);
-            AddHoverAnimation(storyboard, nameof(CompositeTransform.ScaleY), oldScaleY, on ? 1.035 : 1);
+            AddHoverAnimation(storyboard, nameof(CompositeTransform.TranslateY), oldY, raisedY);
+            AddHoverAnimation(storyboard, nameof(CompositeTransform.ScaleX), oldScaleX, scale);
+            AddHoverAnimation(storyboard, nameof(CompositeTransform.ScaleY), oldScaleY, scale);
         }
         storyboard.Completed += (_, _) =>
         {
-            if (!on && ReferenceEquals(_hoverAnimation, storyboard))
+            if (!showActions && ReferenceEquals(_hoverAnimation, storyboard))
                 _hoverShade.Visibility = _overlay.Visibility = Visibility.Collapsed;
         };
         storyboard.Begin();
@@ -569,7 +985,7 @@ public sealed partial class LumenMediaCard : UserControl
 
     private void AddHoverAnimation(Storyboard storyboard, string property, double from, double value)
     {
-        var animation = new DoubleAnimation { From = from, To = value, Duration = TimeSpan.FromMilliseconds(250), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        var animation = new DoubleAnimation { From = from, To = value, Duration = TimeSpan.FromMilliseconds(_recommendationStyle || _searchPosterStyle ? 200 : 250), EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
         Storyboard.SetTarget(animation, _hoverTransform); Storyboard.SetTargetProperty(animation, property);
         storyboard.Children.Add(animation);
     }
@@ -596,26 +1012,69 @@ public sealed partial class LumenMediaCard : UserControl
         presenter.Setters.Add(new Setter(Control.CornerRadiusProperty, new CornerRadius(16)));
         presenter.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(6)));
         flyout.FlyoutPresenterStyle = presenter;
-        var rows = new StackPanel { MinWidth = 218, Spacing = 2 };
-        void Add(string label, string icon, Action action)
+        var rows = new StackPanel { Width = 244, Spacing = 2, TabFocusNavigation = KeyboardNavigationMode.Cycle };
+        void Add(string label, string icon, Action action, string? shortcut = null, bool enabled = true)
         {
             var button = LumenUi.Button(LumenText.Get(label), icon, height: 38);
+            button.IsEnabled = enabled;
             button.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
             button.BorderThickness = new Thickness(0); button.CornerRadius = new CornerRadius(10);
             button.HorizontalAlignment = HorizontalAlignment.Stretch; button.HorizontalContentAlignment = HorizontalAlignment.Left;
+            if (shortcut is not null)
+            {
+                var content = new Grid { ColumnSpacing = 18 };
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var title = (UIElement)button.Content;
+                button.Content = null;
+                content.Children.Add(title);
+                var hint = LumenUi.Text(shortcut, 11);
+                hint.Foreground = LumenTheme.Brush("Muted");
+                hint.VerticalAlignment = VerticalAlignment.Center;
+                Grid.SetColumn(hint, 1);
+                content.Children.Add(hint);
+                button.Content = content;
+                button.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+            }
             button.Click += (_, _) => { flyout.Hide(); action(); };
             rows.Children.Add(button);
         }
-        Add("Details", "info", () => OpenRequested?.Invoke(this, Item));
-        if (Item.CanPlay)
+        Add("Details", "info", () => OpenRequested?.Invoke(this, Item), "Enter");
+        if (Item.CanPlay || Item.Item.Type is "Series" or "Season")
         {
-            if (Item.CanResume) Add("Resume", "play", () => RequestPlay(Item.ResumeTicks));
-            Add("Play from beginning", "rotate-ccw", () => RequestPlay(0));
-            Add("Add to queue", "list-video", () => RequestPlay(0, true));
+            Add(Item.CanResume ? "Resume" : "Play", "play", () => RequestPlay(Item.CanResume ? Item.ResumeTicks : 0), "Space", _library.IsPlaybackAllowed);
+            if (Item.CanResume) Add("Play from beginning", "rotate-ccw", () => RequestPlay(0), enabled: _library.IsPlaybackAllowed);
+            Add("Add to queue", "list-video", () => RequestPlay(0, true), enabled: _library.IsPlaybackAllowed);
         }
+        rows.Children.Add(LumenUi.Divider());
         Add(Item.IsPlayed ? "Mark unplayed" : "Mark played", "check", () => WatchedRequested?.Invoke(this, Item));
         Add(Item.IsFavorite ? "Remove favorite" : "Add favorite", "heart", () => FavoriteRequested?.Invoke(this, Item));
+        if (_continueWatchingContext && RemoveFromContinueWatchingRequested is not null)
+            Add("Remove from continue watching", "x", () => RemoveFromContinueWatchingRequested?.Invoke(this, Item));
+        if (CollectionRequested is not null && Item.Item.Type != "BoxSet")
+            Add("Add to collection", "plus", () => CollectionRequested?.Invoke(this, Item));
+        if (MediaInformationRequested is not null)
+        {
+            rows.Children.Add(LumenUi.Divider());
+            Add("Media information", "info", () => MediaInformationRequested?.Invoke(this, Item));
+        }
+        rows.PreviewKeyDown += (_, args) =>
+        {
+            if (args.Key == VirtualKey.Escape) { args.Handled = true; flyout.Hide(); return; }
+            if (args.Key is not (VirtualKey.Up or VirtualKey.Down or VirtualKey.Home or VirtualKey.End)) return;
+            var buttons = rows.Children.OfType<Button>().Where(button => button.IsEnabled).ToArray();
+            var current = Array.IndexOf(buttons, FocusManager.GetFocusedElement(XamlRoot) as Button);
+            var next = args.Key switch
+            {
+                VirtualKey.Home => 0, VirtualKey.End => buttons.Length - 1,
+                VirtualKey.Up => (current + buttons.Length - 1) % buttons.Length,
+                _ => (current + 1) % buttons.Length
+            };
+            args.Handled = true;
+            if (buttons.Length > 0) buttons[next].Focus(FocusState.Keyboard);
+        };
         flyout.Content = rows;
+        flyout.Opened += (_, _) => rows.Children.OfType<Button>().FirstOrDefault()?.Focus(FocusState.Keyboard);
         flyout.ShowAt(_more.IsLoaded && _overlay.IsHitTestVisible ? _more : _open);
     }
 
@@ -633,6 +1092,8 @@ public sealed partial class LumenMediaCard : UserControl
         BorderBrush = LumenUi.ImageStrokeBrush, BorderThickness = new Thickness(1),
         Child = LumenUi.Icon(icon, 15, true), IsHitTestVisible = false
     };
+
+    private static readonly SolidColorBrush RecommendationStroke = new(Color.FromArgb(20, 255, 255, 255));
 
     private static void UpdateActionLabel(Button button, string label)
     {

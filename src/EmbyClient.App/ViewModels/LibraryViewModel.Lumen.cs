@@ -8,10 +8,11 @@ public sealed partial class LibraryViewModel
     private static readonly string[] LumenMovieTypes = ["Movie"];
     private static readonly string[] LumenSeriesTypes = ["Series"];
     private static readonly string[] LumenBoxSetTypes = ["BoxSet"];
-    private static readonly string[] LumenAllSearchTypes = ["Movie", "Series", "BoxSet"];
+    private static readonly string[] LumenAllSearchTypes = ["Movie", "Series"];
     private const int GenrePageSize = 500;
     private int? _totalItemsCount;
     private string[] _availableGenres = [];
+    private IReadOnlyDictionary<string, int> _availableGenreCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     private string? _lumenGenresContext;
     private bool _lumenGenresLoaded;
     private CancellationTokenSource? _lumenGenresCancellation;
@@ -27,9 +28,11 @@ public sealed partial class LibraryViewModel
 
     public string? BrowseGenre => (_pendingBrowseLocation ?? _location).Genre;
     public string? BrowseNameStartsWith => (_pendingBrowseLocation ?? _location).NameStartsWith;
+    public string? BrowseQualityFilter => (_pendingBrowseLocation ?? _location).QualityFilter;
     public string? BrowseMediaType => !IsSearch && (_pendingBrowseLocation ?? _location).ItemTypes is [var type] ? type : null;
     public string? BrowseSearchType => IsSearch && (_pendingBrowseLocation ?? _location).ItemTypes is [var type] ? type : null;
     public IReadOnlyList<string> AvailableGenres => _availableGenres;
+    public IReadOnlyDictionary<string, int> AvailableGenreCounts => _availableGenreCounts;
     public ObservableCollection<MediaCardViewModel> SearchPeople { get; } = [];
 
     public int? TotalItemsCount
@@ -47,21 +50,8 @@ public sealed partial class LibraryViewModel
     public int? SearchPeopleTotal { get => _searchPeopleTotal; private set => SetProperty(ref _searchPeopleTotal, value); }
     public string SearchPeopleError { get => _searchPeopleError; private set => SetProperty(ref _searchPeopleError, value); }
 
-    public Task ShowMediaTypeAsync(string type, CancellationToken cancellationToken = default)
-    {
-        var itemTypes = type switch
-        {
-            "Movie" => LumenMovieTypes,
-            "Series" => LumenSeriesTypes,
-            _ => throw new ArgumentException("The media type must be Movie or Series.", nameof(type))
-        };
-        CancelSearch();
-        if (_location.Kind == LocationKind.Library && _location.ItemId is null
-            && _location.ItemTypes is [var currentType] && currentType == type
-            && _loadOutcome == PageLoadOutcome.Succeeded) return Task.CompletedTask;
-        return NavigateAsync(new(LocationKind.Library, null, type == "Movie" ? "Movies" : "TV shows", ItemTypes: itemTypes),
-            true, cancellationToken);
-    }
+    public Task ShowMediaTypeAsync(string type, CancellationToken cancellationToken = default) =>
+        NavigateMediaTypeAsync(type, cancellationToken);
 
     public Task SetLumenBrowseFiltersAsync(string? genre, WatchStatusFilter filter, string? prefix = null,
         CancellationToken cancellationToken = default)
@@ -89,6 +79,39 @@ public sealed partial class LibraryViewModel
             _ => throw new ArgumentException("The search type must be Movie, Series, BoxSet, or null.", nameof(type))
         };
         return SetLumenBrowseLocationAsync((_pendingBrowseLocation ?? _location) with { ItemTypes = itemTypes }, cancellationToken);
+    }
+
+    public Task SetLumenQualityFilterAsync(string? quality, CancellationToken cancellationToken = default)
+    {
+        if (_location.Kind is not (LocationKind.Library or LocationKind.Favorites or LocationKind.Search or LocationKind.Latest))
+            return Task.CompletedTask;
+        var normalized = quality switch
+        {
+            null or "" => null,
+            "4K" => "4K",
+            "1080p" => "1080p",
+            _ => throw new ArgumentException("The quality filter must be 4K, 1080p, or null.", nameof(quality))
+        };
+        var current = _pendingBrowseLocation ?? _location;
+        return SetLumenBrowseLocationAsync(current with
+        {
+            QualityFilter = normalized,
+            QualityCatalog = normalized is null ? null : current.QualityCatalog ?? new QualityCatalog()
+        }, cancellationToken);
+    }
+
+    public Task ClearLumenBrowseFiltersAsync(CancellationToken cancellationToken = default)
+    {
+        if (_location.Kind is not (LocationKind.Library or LocationKind.Favorites or LocationKind.Search or LocationKind.Latest))
+            return Task.CompletedTask;
+        return SetLumenBrowseLocationAsync((_pendingBrowseLocation ?? _location) with
+        {
+            Genre = null,
+            NameStartsWith = null,
+            WatchFilter = WatchStatusFilter.All,
+            QualityFilter = null,
+            QualityCatalog = null
+        }, cancellationToken);
     }
 
     public Task SearchLumenAsync(string text, bool debounce = true, CancellationToken cancellationToken = default) =>
@@ -134,6 +157,7 @@ public sealed partial class LibraryViewModel
         var token = source.Token;
         var api = _api;
         _pendingBrowseLocation = location;
+        ResetBrowseNavigationPending();
         _isLoadingMore = false;
         IsBusy = true;
         HasError = false;
@@ -146,6 +170,7 @@ public sealed partial class LibraryViewModel
             // Preserve the committed query and loaded window until the replacement page is available.
             _location = location;
             _pendingBrowseLocation = null;
+            ResetBrowseWindow();
             SetLumenGenreContext(location);
             ReconcileItems(PreserveNewerUserData(result.Items, userDataRevision));
             _nextIndex = result.Items.Length;
@@ -191,15 +216,15 @@ public sealed partial class LibraryViewModel
             if (debounce) await Task.Delay(350, token);
             token.ThrowIfCancellationRequested();
             var term = text.Trim();
-            if (!IsSearch) _searchOriginSnapshot = CaptureBrowseState();
+            var rememberOrigin = !IsSearch;
             var itemTypes = includePeople
                 ? IsSearch && _location.ItemTypes is [var selected] && selected is "Movie" or "Series" or "BoxSet"
                     ? _location.ItemTypes : LumenAllSearchTypes
                 : null;
             var destination = IsSearch
                 ? _location with { Title = "Search", SearchTerm = term, ItemTypes = itemTypes }
-                : new BrowseLocation(LocationKind.Search, null, "Search", SearchTerm: term, SearchOrigin: _location, ItemTypes: itemTypes);
-            var mediaTask = NavigateAsync(destination, false, token);
+                : new BrowseLocation(LocationKind.Search, null, "Search", SearchTerm: term, ItemTypes: itemTypes);
+            var mediaTask = NavigateAsync(destination, rememberOrigin, token);
             var pageVersion = _pageVersion;
             var peopleTask = includePeople && term.Length > 0 && IsCurrentSession(sessionVersion)
                 && IsSearch && _location.SearchTerm == term
@@ -345,6 +370,7 @@ public sealed partial class LibraryViewModel
         try
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var offset = 0;
             bool hasMore;
             do
@@ -353,12 +379,19 @@ public sealed partial class LibraryViewModel
                 var result = await api.GetGenresAsync(new ItemQuery
                 {
                     ParentId = location.Kind is LocationKind.Library or LocationKind.Item or LocationKind.Latest ? location.ItemId : null,
-                    IncludeItemTypes = location.ItemTypes ?? SearchTypes, Recursive = true,
+                    IncludeItemTypes = location.ItemTypes ?? (location.Kind == LocationKind.Search ? LumenAllSearchTypes : SearchTypes), Recursive = true,
+                    Fields = ["ItemCounts"],
                     StartIndex = offset, Limit = GenrePageSize, EnableImages = false, EnableUserData = false
                 }, token);
                 token.ThrowIfCancellationRequested();
                 foreach (var genre in result.Items)
-                    if (!string.IsNullOrWhiteSpace(genre.Name)) names.Add(genre.Name.Trim());
+                {
+                    if (string.IsNullOrWhiteSpace(genre.Name)) continue;
+                    var name = genre.Name.Trim();
+                    names.Add(name);
+                    if (GenreItemCount(genre, location) is { } count)
+                        counts[name] = Math.Max(counts.GetValueOrDefault(name), count);
+                }
                 offset += result.Items.Length;
                 hasMore = result.Items.Length > 0 && (result.TotalRecordCount is { } total
                     ? offset < total : result.Items.Length == GenrePageSize);
@@ -367,8 +400,10 @@ public sealed partial class LibraryViewModel
             if (!IsCurrentSession(sessionVersion) || !CanCommitPage(pageVersion, token)
                 || !ReferenceEquals(_lumenGenresCancellation, source) || context != _lumenGenresContext || HasPendingSearch) return;
             _availableGenres = names.Order(StringComparer.CurrentCultureIgnoreCase).ToArray();
+            _availableGenreCounts = counts;
             _lumenGenresLoaded = true;
             OnPropertyChanged(nameof(AvailableGenres));
+            OnPropertyChanged(nameof(AvailableGenreCounts));
         }
         catch (OperationCanceledException) when (source.IsCancellationRequested) { }
         catch (Exception exception) when (IsExpectedFailure(exception))
@@ -381,13 +416,32 @@ public sealed partial class LibraryViewModel
 
     private void SetLumenGenreContext(BrowseLocation location)
     {
-        var context = $"{location.Kind}:{location.ItemId}:{string.Join(',', location.ItemTypes ?? SearchTypes)}";
+        var itemTypes = location.ItemTypes ?? (location.Kind == LocationKind.Search ? LumenAllSearchTypes : SearchTypes);
+        var context = $"{location.Kind}:{location.ItemId}:{string.Join(',', itemTypes)}";
         if (_lumenGenresContext == context) return;
         CancelAndDispose(ref _lumenGenresCancellation);
         _lumenGenresContext = context;
         _lumenGenresLoaded = false;
         _availableGenres = [];
+        _availableGenreCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         OnPropertyChanged(nameof(AvailableGenres));
+        OnPropertyChanged(nameof(AvailableGenreCounts));
+    }
+
+    private static int? GenreItemCount(BaseItemDto genre, BrowseLocation location)
+    {
+        var typedCount = location.ItemTypes switch
+        {
+            ["Movie"] => genre.MovieCount,
+            ["Series"] => genre.SeriesCount,
+            _ => null
+        };
+        if (typedCount is >= 0) return typedCount;
+        if (genre.ChildCount is >= 0) return genre.ChildCount;
+        if (genre.RecursiveItemCount is >= 0) return genre.RecursiveItemCount;
+        if (genre.MovieCount is >= 0 || genre.SeriesCount is >= 0)
+            return (int)Math.Min(int.MaxValue, (long)Math.Max(0, genre.MovieCount ?? 0) + Math.Max(0, genre.SeriesCount ?? 0));
+        return null;
     }
 
     private async Task MutateLumenUserDataAsync(MediaCardViewModel item, bool favorite, CancellationToken cancellationToken)
@@ -407,6 +461,9 @@ public sealed partial class LibraryViewModel
             var result = favorite ? await api.SetFavoriteAsync(id, desired, linked.Token)
                 : await api.SetPlayedAsync(id, desired, linked.Token);
             if (!IsCurrentSession(version) || linked.IsCancellationRequested) return;
+            InvalidateQualityCatalogs();
+            ResetBrowseAlphabet();
+            NotifyAlphabetNavigation();
             _userDataChanges[id] = (++_userDataRevision, result);
             var cards = Items.Concat(Libraries).Concat(Seasons).Concat(HomeRows.SelectMany(row => row.Items))
                 .Concat(SearchPeople).Concat(HistoryCards()).Append(item).Append(Detail).Append(PlayableDetail);
@@ -447,12 +504,15 @@ public sealed partial class LibraryViewModel
 
     private void ResetLumenState()
     {
+        _mediaLibraryLocations.Clear();
         ResetLumenSearchPeople();
         CancelAndDispose(ref _lumenGenresCancellation);
         _lumenGenresContext = null;
         _lumenGenresLoaded = false;
         _availableGenres = [];
+        _availableGenreCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         OnPropertyChanged(nameof(AvailableGenres));
+        OnPropertyChanged(nameof(AvailableGenreCounts));
     }
 
     private LumenSearchPeopleSnapshot CaptureLumenSearchPeopleState() =>
@@ -522,8 +582,10 @@ public sealed partial class LibraryViewModel
 
     private void NotifyLumenBrowseOptions()
     {
+        RememberMediaLibraryLocation();
         OnPropertyChanged(nameof(BrowseGenre));
         OnPropertyChanged(nameof(BrowseNameStartsWith));
+        OnPropertyChanged(nameof(BrowseQualityFilter));
         OnPropertyChanged(nameof(BrowseMediaType));
         OnPropertyChanged(nameof(BrowseSearchType));
     }

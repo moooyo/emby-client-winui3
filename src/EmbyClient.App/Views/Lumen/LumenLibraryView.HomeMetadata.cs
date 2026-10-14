@@ -18,7 +18,7 @@ public sealed partial class LumenLibraryView
         var values = new[]
         {
             item.Item.ProductionYear?.ToString(CultureInfo.InvariantCulture),
-            item.Item.Genres is { Length: > 0 } genres ? string.Join(" / ", genres.Take(2)) : null,
+            item.Item.Genres is { Length: > 0 } genres ? string.Join(" / ", genres) : null,
             item.Item.Type == "Series" && item.Item.SeasonCount is { } seasons
                 ? LumenText.Get("{0} seasons", seasons) : RuntimeText(item.Item.RunTimeTicks)
         }.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
@@ -31,8 +31,8 @@ public sealed partial class LumenLibraryView
         {
             if (line.Inlines.Count > 0) line.Inlines.Add(new Run { Text = "  " });
             var score = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            score.Children.Add(LumenUi.Icon("star", 14, true));
-            var label = LumenUi.Text(rating.ToString("0.0", CultureInfo.InvariantCulture), 13);
+            score.Children.Add(LumenUi.Icon("star", 15, true));
+            var label = LumenUi.Text(rating.ToString("0.0", CultureInfo.InvariantCulture), _heroMetadata.FontSize);
             label.Foreground = LumenTheme.Brush("ImageInk");
             label.TextWrapping = TextWrapping.NoWrap;
             score.Children.Add(label);
@@ -41,7 +41,7 @@ public sealed partial class LumenLibraryView
         foreach (var tag in HeroTechnicalTags(item.Item))
         {
             if (line.Inlines.Count > 0) line.Inlines.Add(new Run { Text = "  " });
-            var label = LumenUi.Text(tag, 11);
+            var label = LumenUi.Text(tag, 12);
             label.Foreground = LumenTheme.Brush("ImageInk");
             label.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
             label.TextWrapping = TextWrapping.NoWrap;
@@ -50,9 +50,9 @@ public sealed partial class LumenLibraryView
             {
                 Child = new Border
                 {
-                    BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(128, 255, 255, 255)),
-                    BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(3),
-                    Padding = new Thickness(6, 1, 6, 1), MaxWidth = 220, Child = label
+                    BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(115, 255, 255, 255)),
+                    BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(5),
+                    Padding = new Thickness(7, 1, 7, 1), MaxWidth = 220, Child = label
                 }
             });
         }

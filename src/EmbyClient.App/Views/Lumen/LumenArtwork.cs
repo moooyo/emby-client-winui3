@@ -87,6 +87,15 @@ public sealed partial class LumenArtwork : UserControl
         }
     }
 
+    public void Clear()
+    {
+        Unsubscribe();
+        CancelRequest(true);
+        _item = null;
+        _library = null;
+        _reference = null;
+    }
+
     private void ArtworkLoaded(object sender, RoutedEventArgs e)
     {
         if (_item is not null) _reference = ImageCache.SelectImage(_item.Item, _kind);

@@ -4,6 +4,7 @@ namespace EmbyClient.Playback;
 
 public enum PlaybackDeliveryMethod { DirectStream, Transcode }
 public enum PlaybackTimelineKind { FullSource, ProgressiveSegment }
+public enum AudioPassthroughMode { Off = 0, DolbyDts = 1, All = 2 }
 public enum PlaybackEngineState { Idle, Opening, Playing, Paused, Buffering, Seeking, Stopped, Ended, Failed }
 public enum PlaybackEngineEventKind { StateChanged, PositionChanged, Ended, Failed }
 public enum PlaybackStatus { Idle, Negotiating, Opening, Playing, Paused, Buffering, Seeking, Stopping, Ended, Failed }
@@ -24,9 +25,22 @@ public sealed record PlaybackEngineRequest
     public long InitialPositionTicks { get; init; }
     public long TimelineOffsetTicks { get; init; }
     public long? ItemRunTimeTicks { get; init; }
+    /// <summary>Requires the direct HDR10 source to retain HDR metadata on an eligible display.</summary>
+    public bool RequiresHdr10Output { get; init; }
+    /// <summary>Permits delivered HDR10 only for an eligible, non-forced opening with explicitly identified input.</summary>
+    public bool Hdr10OutputAllowed { get; init; }
+    /// <summary>Permits a validated embedded bitmap track in an unchanged original container.</summary>
+    public bool NativeEmbeddedSubtitlesEligible { get; init; }
+    /// <summary>Permits original ASS/SSA delivery only when the full native renderer is available.</summary>
+    public bool NativeAssSubtitlesEligible { get; init; }
+    /// <summary>Identifies an available native output API; endpoint format support is checked when opening.</summary>
+    public bool NativeAudioPassthroughEligible { get; init; }
+    public AudioPassthroughMode AudioPassthroughMode { get; init; }
     public int? AudioStreamIndex { get; init; }
     public int? SubtitleStreamIndex { get; init; }
     public Uri? ExternalSubtitleUri { get; init; }
+    /// <summary>The authenticated external subtitle's negotiated format, rather than a guessed conversion.</summary>
+    public string? ExternalSubtitleFormat { get; init; }
     public IReadOnlyDictionary<string, string> ExternalSubtitleHeaders { get; init; } = new Dictionary<string, string>();
     public override string ToString() => $"{nameof(PlaybackEngineRequest)} {{ PlaybackId = {PlaybackId}, DeliveryMethod = {DeliveryMethod} }}";
 }
@@ -72,6 +86,17 @@ public interface IPlaybackEngine : IAsyncDisposable
     Task StopAsync(Guid playbackId, CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Optionally changes a previously mapped embedded bitmap subtitle without replacing its decoder.
+/// Returning false must leave the current selection untouched. Implementations retain the same playback
+/// clock and source, ignore retired IDs, and never synthesize an image for an unread subtitle interval.
+/// </summary>
+public interface IPlaybackSubtitleSelectionEngine
+{
+    Task<bool> TrySelectEmbeddedBitmapSubtitleAsync(Guid playbackId, int subtitleStreamIndex,
+        CancellationToken cancellationToken = default);
+}
+
 public sealed record PlaybackSelection
 {
     public required string ItemId { get; init; }
@@ -81,6 +106,16 @@ public sealed record PlaybackSelection
     public int? SubtitleStreamIndex { get; init; }
     public long MaxStreamingBitrate { get; init; } = 20_000_000;
     public bool ForceTranscoding { get; init; }
+
+    /// <summary>A current, window-specific output capability supplied before negotiation; never a saved preference.</summary>
+    public bool Hdr10OutputEligible { get; init; }
+
+    /// <summary>Allows the native subtitle interface; opening must still verify the actual embedded stream mapping.</summary>
+    public bool NativeEmbeddedSubtitlesEligible { get; init; }
+    public bool NativeAssSubtitlesEligible { get; init; }
+    /// <summary>Allows native bitstream attempts; this flag never asserts that an endpoint accepts a codec.</summary>
+    public bool NativeAudioPassthroughEligible { get; init; }
+    public AudioPassthroughMode AudioPassthroughMode { get; init; }
 
     /// <summary>
     /// Requests server-rendered subtitles for the current source and track after external delivery fails.
@@ -102,6 +137,11 @@ public sealed record PlaybackSelectionChange
     public int? SubtitleStreamIndex { get; init; }
     public long? MaxStreamingBitrate { get; init; }
     public bool? ForceTranscoding { get; init; }
+    public bool? Hdr10OutputEligible { get; init; }
+    public bool? NativeEmbeddedSubtitlesEligible { get; init; }
+    public bool? NativeAssSubtitlesEligible { get; init; }
+    public bool? NativeAudioPassthroughEligible { get; init; }
+    public AudioPassthroughMode? AudioPassthroughMode { get; init; }
 }
 
 public sealed record PlaybackContext

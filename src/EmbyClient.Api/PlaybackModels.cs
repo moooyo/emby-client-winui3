@@ -97,6 +97,8 @@ public sealed record MediaStream
     public string? ColorPrimaries { get; init; }
     public string? CodecTag { get; init; }
     public int? RefFrames { get; init; }
+    public string? ExtendedVideoType { get; init; }
+    public string? ExtendedVideoSubType { get; init; }
     public string? ExtendedVideoSubTypeDescription { get; init; }
     public string? DeliveryMethod { get; init; }
     public string? DeliveryUrl { get; init; }

@@ -13,6 +13,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 
 namespace EmbyClient.App.Views;
 
@@ -31,6 +32,9 @@ public sealed partial class PlayerView
     private string _subtitleText = string.Empty;
     private string? _localSubtitleName;
     private Guid? _localSubtitlePlaybackId;
+    private readonly List<NativePreparedSubtitle> _localSubtitleChoices = [];
+    private NativePreparedSubtitle? _selectedLocalSubtitle;
+    private Guid? _localSubtitleRestorePlaybackId;
     private readonly Dictionary<StackPanel, TrackRowsSnapshot> _trackRowsSnapshots = [];
 
     private sealed record TrackRowSnapshot(ComboBoxItem Option, object? Content, object? Tag, string Label);
@@ -44,10 +48,16 @@ public sealed partial class PlayerView
         ArgumentNullException.ThrowIfNull(preferences);
         _preferences = preferences;
         _engine?.ConfigureVideoDecoderApi(preferences.VideoDecoderApi);
+        _engine?.ConfigureHdrOutput(preferences.HdrMode,
+            App.CurrentWindow is MainWindow window ? window.AppWindow.Id.Value : 0);
+        _engine?.SetSystemMediaControlsEnabled(preferences.SystemMediaControls);
+        _displayRequest.SetEnabled(preferences.PreventSleepDuringPlayback);
+        UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId, useCurrentPlayback: true);
         _synchronizingAutoPlay = true;
         AutoPlayNext.IsOn = QueueAutoPlayNext.IsOn = preferences.AutoPlayNext;
         _synchronizingAutoPlay = false;
         FontFamily = LumenTheme.SansFont;
+        PlaybackEndedTitle.FontFamily = LumenTheme.SerifFont;
         var accentColor = preferences.Accent switch
         {
             "Coral" => Windows.UI.Color.FromArgb(255, 232, 134, 106),
@@ -70,6 +80,8 @@ public sealed partial class PlayerView
         QueueCaptionLayout();
         ApplySubtitlePreferencesToEngine();
         RefreshChapterControls();
+        UpdateTaskbarState();
+        _ = RefreshHdrDisplayEligibilityAsync();
     }
 
     private static bool IsLocalServer(Uri? uri)
@@ -130,15 +142,16 @@ public sealed partial class PlayerView
 
     private void EpisodeDrawerClicked(object sender, RoutedEventArgs args)
     {
-        if (_sidePanelMode == PlayerSidePanel.Episodes) { CloseSidePanel(); return; }
-        OpenSidePanel(PlayerSidePanel.Episodes, EpisodeDrawerButton);
+        if (_sidePanelMode is PlayerSidePanel.Episodes or PlayerSidePanel.Queue) { CloseSidePanel(); return; }
+        OpenSidePanel(string.Equals(_item?.Type, "Episode", StringComparison.OrdinalIgnoreCase)
+            ? PlayerSidePanel.Episodes : PlayerSidePanel.Queue, EpisodeDrawerButton);
     }
 
     private void UpdatePanelButtonStates()
     {
         SubtitleButton.Background = new SolidColorBrush(_sidePanelMode == PlayerSidePanel.Tracks
             ? Windows.UI.Color.FromArgb(41, 255, 255, 255) : Colors.Transparent);
-        EpisodeDrawerButton.Background = new SolidColorBrush(_sidePanelMode == PlayerSidePanel.Episodes
+        EpisodeDrawerButton.Background = new SolidColorBrush(_sidePanelMode is PlayerSidePanel.Episodes or PlayerSidePanel.Queue
             ? Windows.UI.Color.FromArgb(41, 255, 255, 255) : Colors.Transparent);
     }
 
@@ -196,9 +209,14 @@ public sealed partial class PlayerView
             button.Click += async (_, _) =>
             {
                 if (!selector.IsEnabled && !(isSubtitle && option.Tag is -1 && CanClearCurrentLocalSubtitle())) return;
-                if (isSubtitle && ReferenceEquals(selector.SelectedItem, option) && _localSubtitleName is not null)
+                if (isSubtitle && ReferenceEquals(selector.SelectedItem, option))
                 {
-                    await ClearCurrentLocalSubtitleAsync();
+                    BeginExplicitSubtitleSelection();
+                    if (option.Tag is -1 || _localSubtitleName is not null || _selectedLocalSubtitle is not null)
+                        await ClearCurrentLocalSubtitleAsync();
+                    if (option.Tag is int selectedIndex && _coordinator?.ActiveContext is { } active
+                        && (active.Selection.SubtitleStreamIndex ?? active.Source.DefaultSubtitleStreamIndex ?? -1) == selectedIndex)
+                        RememberServerSubtitleSelection(selectedIndex);
                     RebuildTrackPanel();
                     return;
                 }
@@ -209,15 +227,29 @@ public sealed partial class PlayerView
         }
         if (host.Children.Count == 0)
             host.Children.Add(new TextBlock { Text = LumenText.Get(empty), FontSize = 12, Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 142, 135, 124)), Margin = new Thickness(12, 10, 12, 10), TextWrapping = TextWrapping.Wrap });
-        if (ReferenceEquals(selector, SubtitleSelector) && _localSubtitleName is { } localName)
+        if (ReferenceEquals(selector, SubtitleSelector))
         {
-            var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-            content.Children.Add(PlayerIcon("checkmark_16_filled", size: 14));
-            content.Children.Add(new TextBlock { Text = localName, FontSize = 13, MaxWidth = 172, TextTrimming = TextTrimming.CharacterEllipsis });
-            var local = new Button { Style = (Style)Resources["PlayerTrackRowStyle"], Content = content, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(20, 255, 255, 255)) };
-            SetControlLabel(local, LumenText.Get("Local subtitles: {0}", localName));
-            local.Click += ExternalSubtitleClicked;
-            host.Children.Add(local);
+            foreach (var prepared in _localSubtitleChoices)
+            {
+                var selected = IsLocalSubtitleChoiceSelected(prepared);
+                var content = new Grid { ColumnSpacing = 10 };
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
+                content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                if (selected) content.Children.Add(PlayerIcon("checkmark_16_filled", size: 14));
+                var label = new TextBlock { Text = LocalSubtitleDisplayName(prepared.FileName), FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis };
+                Grid.SetColumn(label, 1);
+                content.Children.Add(label);
+                var local = new Button { Style = (Style)Resources["PlayerTrackRowStyle"], Content = content,
+                    IsEnabled = CanLoadLocalSubtitle(),
+                    Background = new SolidColorBrush(Windows.UI.Color.FromArgb(selected ? (byte)20 : (byte)0, 255, 255, 255)) };
+                SetControlLabel(local, LumenText.Get("Local subtitles: {0}", label.Text));
+                ToolTipService.SetToolTip(local, LocalSubtitleDisplayName(LocalSubtitleChoicePath(prepared) ?? prepared.FileName));
+                local.Click += async (_, _) =>
+                {
+                    if (CanLoadLocalSubtitle()) await ActivateLocalSubtitleChoiceAsync(prepared);
+                };
+                host.Children.Add(local);
+            }
         }
         _trackRowsSnapshots[host] = snapshot;
     }
@@ -228,21 +260,27 @@ public sealed partial class PlayerView
         StateText.Text = LumenText.Get(direct ? "Direct play" : "Transcoding");
         StreamOnlineDot.Fill = direct ? LumenTheme.Brush("Online") : Resources["PlayerAccentBrush"] as Brush;
         var video = context.Source.MediaStreams?.FirstOrDefault(value => string.Equals(value.Type, "Video", StringComparison.OrdinalIgnoreCase));
+        var currentEngine = _engine?.Snapshot?.PlaybackId == context.PlaybackId;
+        var decoding = currentEngine ? _engine?.VideoDecoding : null;
+        var serverTranscoding = CurrentServerTranscodingInformation(context);
         var format = new List<string>();
-        if (_engine?.VideoHeight is > 0) format.Add($"{_engine.VideoHeight}p");
+        if (currentEngine && _engine?.VideoHeight is > 0) format.Add($"{_engine.VideoHeight}p");
         else if (direct && video?.Height is > 0) format.Add($"{video.Height}p");
-        if (direct && !string.IsNullOrWhiteSpace(video?.Codec)) format.Add(video.Codec.ToUpperInvariant());
-        if (direct && !string.IsNullOrWhiteSpace(video?.VideoRange) && video.VideoRange != "SDR") format.Add(video.VideoRange);
+        else if (!direct && serverTranscoding?.Height is > 0) format.Add($"{serverTranscoding.Height}p");
+        var codec = direct ? video?.Codec : decoding is { ActualApi: not "Pending", Codec: not "Unknown" }
+            ? decoding.Codec : serverTranscoding?.VideoCodec;
+        if (!string.IsNullOrWhiteSpace(codec)) format.Add(codec.ToUpperInvariant());
+        if (direct && !string.IsNullOrWhiteSpace(video?.VideoRange) && video.VideoRange != "SDR")
+            format.Add(LumenText.Get("Source {0}", video.VideoRange));
         StreamInfoText.Text = string.Join(" \u00b7 ", format);
         if (direct && context.Source.Bitrate is > 0)
             StreamInfoText.Text += $" | {context.Source.Bitrate.Value / 1_000_000d:0.#} Mbps";
-        else if (!direct)
+        if (decoding is { ActualApi: not "Pending" })
         {
-            var limit = context.Selection.MaxStreamingBitrate == int.MaxValue ? LumenText.Get("No client bitrate cap")
-                : LumenText.Get("{0} Mbps limit", $"{context.Selection.MaxStreamingBitrate / 1_000_000d:0.#}");
-            StreamInfoText.Text = string.Join(" | ", new[] { StreamInfoText.Text, limit }.Where(value => !string.IsNullOrWhiteSpace(value)));
+            StreamInfoText.Text = string.Join(" | ", new[] { StreamInfoText.Text, DecoderApiName(decoding.ActualApi) }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
         }
-        ToolTipService.SetToolTip(StreamInfoPill, $"{StateText.Text} | {StreamInfoText.Text}");
+        ToolTipService.SetToolTip(StreamInfoPill, $"{StateText.Text} | {StreamInfoText.Text} | {PlaybackBitrateInformation(context, video)}");
     }
 
     private void RateMenuOpening(object sender, object args)
@@ -265,7 +303,12 @@ public sealed partial class PlayerView
                 {
                     if (!ReferenceEquals(engine, _engine) || _coordinator?.ActiveContext?.PlaybackId != playbackId) return;
                     await engine.SetPlaybackRateAsync(playbackId.Value, rate);
-                    if (ReferenceEquals(engine, _engine)) RateText.Text = FormatPlaybackRate(engine.PlaybackRate);
+                    if (ReferenceEquals(engine, _engine))
+                    {
+                        RateText.Text = FormatPlaybackRate(engine.PlaybackRate);
+                        SavePlaybackPreferences();
+                        ShowPlayerOsd("top_speed_24_regular", LumenText.Get("Speed {0}", RateText.Text));
+                    }
                 });
             };
             RateMenu.Items.Add(entry);
@@ -281,7 +324,7 @@ public sealed partial class PlayerView
 
     private void PictureInPictureClicked(object sender, RoutedEventArgs args) => CompactOverlayRequested?.Invoke(this, EventArgs.Empty);
 
-    private static string FormatPlaybackRate(double rate) => rate.ToString(rate == 1 ? "0.0" : "0.##", CultureInfo.InvariantCulture) + "\u00d7";
+    private static string FormatPlaybackRate(double rate) => rate.ToString("0.##", CultureInfo.InvariantCulture) + "\u00d7";
 
     private double PreferredSubtitleFontSize => _preferences.SubtitleSize switch { "Small" => 24, "Large" => 38, _ => 30 };
 
@@ -290,7 +333,8 @@ public sealed partial class PlayerView
         if (!ReferenceEquals(sender, _engine)) return;
         if (_coordinator?.ActiveContext?.PlaybackId != args.PlaybackId)
         {
-            if (args.Text.Length == 0 && _subtitlePlaybackId == args.PlaybackId) ClearSubtitleOverlay();
+            if (args.Text.Length == 0 && _subtitlePlaybackId == args.PlaybackId)
+                ClearSubtitleOverlay(preserveLocalPresentation: _localSubtitlePlaybackId is { } localId && localId != args.PlaybackId);
             return;
         }
         _subtitlePlaybackId = args.PlaybackId;
@@ -325,11 +369,14 @@ public sealed partial class PlayerView
         else target.Text = text;
     }
 
-    private void ClearSubtitleOverlay()
+    private void ClearSubtitleOverlay(bool preserveLocalPresentation = false)
     {
         _subtitlePlaybackId = _appliedSubtitlePlaybackId = null;
-        _localSubtitlePlaybackId = null;
-        _localSubtitleName = null;
+        if (!preserveLocalPresentation)
+        {
+            _localSubtitlePlaybackId = null;
+            _localSubtitleName = null;
+        }
         _subtitleText = string.Empty;
         SubtitleText.Text = string.Empty;
         foreach (var outline in SubtitleOutlineLayers()) outline.Text = string.Empty;
@@ -347,21 +394,21 @@ public sealed partial class PlayerView
     private void UpdateSubtitleOverlayLayout()
     {
         if (SubtitleOverlay is null || VideoSurface is null) return;
-        var editable = _engine?.SupportsSubtitlePreferences == true;
+        var editable = _engine?.SupportsSubtitleStyling == true;
         var blackBars = editable && _preferences.SubtitlePosition == "BlackBars";
         // A real black band is reserved for the explicit black-bar setting, never for transport controls.
         var band = _compactOverlay ? _preferences.SubtitleSize == "Large" ? 112 : 96 : _preferences.SubtitleSize == "Large" ? 240 : 208;
         var videoMargin = new Thickness(0, 0, 0, blackBars ? band : 0);
         if (!VideoSurface.Margin.Equals(videoMargin)) VideoSurface.Margin = videoMargin;
-        double bottom = _compactOverlay ? AreControlsVisible ? 64 : 16 : blackBars ? AreControlsVisible ? 114 : 36 : AreControlsVisible ? PlayerRoot.ActualWidth < 780 ? 236 : 190 : 40;
-        var gutter = _compactOverlay ? 16d : PlayerRoot.ActualWidth < 640 ? 24d : 64d;
+        double bottom = _compactOverlay ? AreControlsVisible ? 64 : 16 : blackBars ? AreControlsVisible ? 114 : 26 : AreControlsVisible ? 150 : 64;
+        var gutter = _compactOverlay ? 16d : PlayerRoot.ActualWidth < 640 ? 24d : 40d;
         var alignment = HorizontalAlignment.Center;
         var maxWidth = Math.Max(0, Math.Min(1100, PlayerRoot.ActualWidth - 2 * gutter));
         if (!_compactOverlay && !UsesNarrowCaptionBand)
         {
             double? obstacle = _sidePanelMode != PlayerSidePanel.None
                 ? PlayerRoot.ActualWidth - SidePanel.Margin.Right - SidePanel.Width
-                : NextEpisodeCountdown.Visibility == Visibility.Visible ? PlayerRoot.ActualWidth - 56 - 320 : null;
+                : NextEpisodeCountdown.Visibility == Visibility.Visible ? PlayerRoot.ActualWidth - 48 - NextEpisodeCountdown.Width : null;
             if (obstacle is { } left)
             {
                 var centeredRoom = (left - PlayerRoot.ActualWidth / 2 - 16) * 2;
@@ -399,7 +446,8 @@ public sealed partial class PlayerView
         if (Math.Abs(SubtitleOverlay.MaxWidth - maxWidth) > .01) SubtitleOverlay.MaxWidth = maxWidth;
         var subtitleMargin = new Thickness(gutter, 0, gutter, bottom);
         if (!SubtitleOverlay.Margin.Equals(subtitleMargin)) SubtitleOverlay.Margin = subtitleMargin;
-        var fontSize = _compactOverlay ? _preferences.SubtitleSize switch { "Small" => 14, "Large" => 18, _ => 16 } : PreferredSubtitleFontSize;
+        var fontSize = _compactOverlay ? _preferences.SubtitleSize switch { "Small" => 14, "Large" => 18, _ => 16 }
+            : Math.Round(PreferredSubtitleFontSize * Math.Clamp(PlayerRoot.ActualWidth / 1440, .72, 1));
         foreach (var target in SubtitleOutlineLayers().Append(SubtitleText))
             if (Math.Abs(target.FontSize - fontSize) > .01) SetSubtitleText(target, _subtitleText, fontSize);
         foreach (var outline in SubtitleOutlineLayers()) outline.Visibility = _preferences.SubtitleOutline ? Visibility.Visible : Visibility.Collapsed;
@@ -447,46 +495,55 @@ public sealed partial class PlayerView
     private void UpdateSubtitleControls()
     {
         if (SubtitleSmallButton is null) return;
-        var editable = _engine?.SupportsSubtitlePreferences == true && _coordinator?.Status is PlaybackStatus.Playing or PlaybackStatus.Paused;
-        SubtitleSmallButton.IsEnabled = SubtitleMediumButton.IsEnabled = SubtitleLargeButton.IsEnabled = editable;
-        SubtitleDelayBackward.IsEnabled = editable && _subtitleDelay > -10;
-        SubtitleDelayForward.IsEnabled = editable && _subtitleDelay < 10;
+        var controls = CurrentSubtitleControls();
+        SubtitleSmallButton.IsEnabled = SubtitleMediumButton.IsEnabled = SubtitleLargeButton.IsEnabled = controls.CanAdjustAppearance;
+        SubtitleSizeOptions.Opacity = controls.CanAdjustAppearance ? 1 : .35;
+        SubtitleTimingOptions.Opacity = controls.CanAdjustTiming ? 1 : .35;
+        SubtitleDelayBackward.IsEnabled = controls.CanAdjustTiming && _subtitleDelay > -10;
+        SubtitleDelayForward.IsEnabled = controls.CanAdjustTiming && _subtitleDelay < 10;
+        SetControlLabel(SubtitleDelayBackward, LumenText.Get("Show subtitles 0.1 seconds earlier"));
+        SetControlLabel(SubtitleDelayForward, LumenText.Get("Show subtitles 0.1 seconds later"));
+        AutomationProperties.SetHelpText(SubtitleDelayBackward, controls.Notice ?? string.Empty);
+        AutomationProperties.SetHelpText(SubtitleDelayForward, controls.Notice ?? string.Empty);
         foreach (var button in new[] { SubtitleSmallButton, SubtitleMediumButton, SubtitleLargeButton })
         {
             var selected = button.Tag as string == _preferences.SubtitleSize;
             button.Background = new SolidColorBrush(selected ? Windows.UI.Color.FromArgb(41, 255, 255, 255) : Colors.Transparent);
-            ToolTipService.SetToolTip(button, editable ? button.Content : LumenText.Get("Subtitle appearance is unavailable for server-rendered subtitles."));
+            ToolTipService.SetToolTip(button, controls.Notice ?? button.Content);
         }
-        SubtitleDelayText.Text = LumenText.Get("{0}s", _subtitleDelay.ToString("+0.0;-0.0;0.0", CultureInfo.InvariantCulture));
-        SubtitleRenderingNotice.Text = LumenText.Get(editable
-            ? "Subtitle adjustments apply to this external text track."
-            : "Subtitle appearance and timing are controlled by the server.");
-        SubtitleRenderingNotice.Visibility = editable ? Visibility.Collapsed : Visibility.Visible;
-        ExternalSubtitleButton.IsEnabled = !_externalSubtitlePickerOpen && !_advancing
-            && _coordinator?.ActiveContext is not null && _coordinator.Status is PlaybackStatus.Playing or PlaybackStatus.Paused;
-        SetControlLabel(ExternalSubtitleButton, LumenText.Get("Open local WebVTT subtitles"));
-        if (editable) ApplySubtitlePreferencesToEngine();
+        SubtitleDelayText.Text = LumenText.Get("{0}s", (controls.IsBurnedIn ? 0 : _subtitleDelay).ToString("+0.0;-0.0;0.0", CultureInfo.InvariantCulture));
+        SubtitleRenderingNotice.Text = controls.Notice ?? string.Empty;
+        SubtitleRenderingNoticeContainer.Visibility = controls.Notice is null ? Visibility.Collapsed : Visibility.Visible;
+        AutomationProperties.SetHelpText(SubtitleSizeOptions, controls.Notice ?? string.Empty);
+        AutomationProperties.SetHelpText(SubtitleTimingOptions, controls.Notice ?? string.Empty);
+        ExternalSubtitleButton.IsEnabled = CanLoadLocalSubtitle();
+        SetControlLabel(ExternalSubtitleButton, LumenText.Get("Load local subtitles..."));
+        if (controls.CanAdjustTiming) ApplySubtitlePreferencesToEngine();
     }
 
     private async void ApplySubtitlePreferencesToEngine()
     {
         var engine = _engine;
         var playbackId = _coordinator?.ActiveContext?.PlaybackId;
-        if (engine?.SupportsSubtitlePreferences != true || playbackId is null || _appliedSubtitlePlaybackId == playbackId) return;
+        var controls = CurrentSubtitleControls();
+        if (engine is null || !controls.CanAdjustTiming || playbackId is null || _appliedSubtitlePlaybackId == playbackId) return;
         _appliedSubtitlePlaybackId = playbackId;
         var preferences = _preferences;
         var delay = _subtitleDelay;
         await RunAsync(async () =>
         {
             if (!ReferenceEquals(engine, _engine) || _coordinator?.ActiveContext?.PlaybackId != playbackId) return;
-            await engine.ApplySubtitlePreferencesAsync(playbackId.Value, preferences.SubtitleSize switch { "Small" => 24, "Large" => 38, _ => 30 },
-                preferences.SubtitleOutline, preferences.SubtitlePosition == "BlackBars" ? "BlackBars" : "Bottom", delay);
+            if (controls.CanAdjustAppearance)
+                await engine.ApplySubtitlePreferencesAsync(playbackId.Value, preferences.SubtitleSize switch { "Small" => 24, "Large" => 38, _ => 30 },
+                    preferences.SubtitleOutline, preferences.SubtitlePosition == "BlackBars" ? "BlackBars" : "Bottom", delay);
+            else await engine.SetSubtitleDelayAsync(playbackId.Value, delay);
+            RememberAppliedSubtitleDelay(engine, playbackId.Value, engine.SubtitleDelaySeconds);
         });
     }
 
     private void SubtitleSizeClicked(object sender, RoutedEventArgs args)
     {
-        if (_engine?.SupportsSubtitlePreferences != true || sender is not Button { Tag: string size }) return;
+        if (!CurrentSubtitleControls().CanAdjustAppearance || sender is not Button { Tag: string size }) return;
         _preferences = _preferences with { SubtitleSize = size };
         _appliedSubtitlePlaybackId = null;
         UpdateSubtitleOverlayLayout();
@@ -498,12 +555,27 @@ public sealed partial class PlayerView
     private void SubtitleDelayBackwardClicked(object sender, RoutedEventArgs args) => AdjustSubtitleDelay(-.1);
     private void SubtitleDelayForwardClicked(object sender, RoutedEventArgs args) => AdjustSubtitleDelay(.1);
 
-    private void AdjustSubtitleDelay(double delta)
+    private async void AdjustSubtitleDelay(double delta)
     {
-        if (_engine?.SupportsSubtitlePreferences != true) return;
-        _subtitleDelay = Math.Clamp(Math.Round(_subtitleDelay + delta, 1), -10, 10);
-        _appliedSubtitlePlaybackId = null;
+        var controls = CurrentSubtitleControls();
+        if (!controls.CanAdjustTiming)
+        {
+            ShowPlayerOsd("closed_caption_24_regular", LumenText.Get(controls.IsBurnedIn
+                ? "Burned-in subtitles cannot adjust delay" : "Subtitle timing is unavailable for this track"));
+            return;
+        }
+        var engine = _engine;
+        var playbackId = _coordinator?.ActiveContext?.PlaybackId;
+        if (engine is null || playbackId is null) return;
+        var delay = Math.Clamp(Math.Round(_subtitleDelay + delta, 1), -10, 10);
+        if (!await TryRunPlayerAdjustmentAsync(() => engine.SetSubtitleDelayAsync(playbackId.Value, delay))) return;
+        if (!ReferenceEquals(engine, _engine) || _coordinator?.ActiveContext?.PlaybackId != playbackId) return;
+        _subtitleDelay = engine.SubtitleDelaySeconds;
+        _appliedSubtitlePlaybackId = playbackId;
+        RememberAppliedSubtitleDelay(engine, playbackId.Value, _subtitleDelay);
         UpdateSubtitleControls();
+        ShowPlayerOsd("closed_caption_24_regular", LumenText.Get("Subtitle delay {0}s",
+            _subtitleDelay.ToString("+0.0;-0.0;0.0", CultureInfo.InvariantCulture)));
     }
 
     private async void ExternalSubtitleClicked(object sender, RoutedEventArgs args)
@@ -516,6 +588,7 @@ public sealed partial class PlayerView
         var playbackId = coordinator?.ActiveContext?.PlaybackId;
         if (_externalSubtitlePickerOpen || session is null || coordinator is null || engine is null
             || playbackId is null || App.CurrentWindow is null) return;
+        BeginExplicitSubtitleSelection();
         bool OwnsItem() => ReferenceEquals(session, _session) && ReferenceEquals(coordinator, _coordinator)
             && ReferenceEquals(engine, _engine) && intent == _playIntent && _item?.Id == itemId;
         _externalSubtitlePickerOpen = true;
@@ -530,26 +603,12 @@ public sealed partial class PlayerView
             {
                 SuggestedStartLocation = Microsoft.Windows.Storage.Pickers.PickerLocationId.VideosLibrary
             };
-            picker.FileTypeFilter.Add(".vtt");
+            foreach (var extension in NativePlaybackEngine.SupportedLocalSubtitleExtensions) picker.FileTypeFilter.Add(extension);
             var result = await picker.PickSingleFileAsync();
             if (result is null || !OwnsItem() || coordinator.ActiveContext?.PlaybackId != playbackId) return;
             var file = await StorageFile.GetFileFromPathAsync(result.Path);
             if (!OwnsItem() || coordinator.ActiveContext?.PlaybackId != playbackId) return;
-            var properties = await file.GetBasicPropertiesAsync();
-            if (!OwnsItem() || coordinator.ActiveContext?.PlaybackId != playbackId) return;
-            if (properties.Size > 4 * 1024 * 1024) throw new PlaybackException("UnsupportedSubtitle");
-            var text = await FileIO.ReadTextAsync(file);
-            if (!OwnsItem() || coordinator.ActiveContext?.PlaybackId != playbackId) return;
-            if (!OwnsItem() || coordinator.ActiveContext?.PlaybackId != playbackId) return;
-            await coordinator.ChangeSelectionAsync(new PlaybackSelectionChange { SubtitleStreamIndex = -1 });
-            if (!OwnsItem() || coordinator.ActiveContext is not { } active) return;
-            await engine.LoadLocalSubtitleAsync(active.PlaybackId, text, _playRequest?.Token ?? CancellationToken.None);
-            if (!OwnsItem() || coordinator.ActiveContext?.PlaybackId != active.PlaybackId) return;
-            _localSubtitleName = file.Name;
-            _localSubtitlePlaybackId = active.PlaybackId;
-            _appliedSubtitlePlaybackId = null;
-            UpdateSubtitleControls();
-            RebuildTrackPanel();
+            await LoadLocalSubtitleFileAsync(file, ownsBusyState: false);
         }
         catch (OperationCanceledException) { }
         catch (EmbyApiException exception) when (exception.IsAuthenticationFailure && exception.ApplicationErrorCode != "ParentalControl")
@@ -560,8 +619,131 @@ public sealed partial class PlayerView
             _externalSubtitlePickerOpen = false;
             UpdateQueueControls();
             UpdateSubtitleControls();
+            _trackRowsSnapshots.Remove(SubtitleTrackItems);
             if (OwnsItem() && _sidePanelMode == PlayerSidePanel.Tracks) RebuildTrackPanel();
             RevealControls();
+        }
+    }
+
+    private async Task LoadLocalSubtitleFileAsync(StorageFile file, bool ownsBusyState = true)
+    {
+        var session = _session;
+        var coordinator = _coordinator;
+        var engine = _engine;
+        var intent = _playIntent;
+        var playbackId = coordinator?.ActiveContext?.PlaybackId;
+        if (session is null || coordinator is null || engine is null || playbackId is null) return;
+        var revision = BeginExplicitSubtitleSelection();
+        var token = SubtitleSelectionToken;
+        bool OwnsRequest() => ReferenceEquals(session, _session) && ReferenceEquals(coordinator, _coordinator)
+            && ReferenceEquals(engine, _engine) && intent == _playIntent && revision == _subtitleSelectionRevision
+            && coordinator.ActiveContext?.PlaybackId == playbackId;
+        if (ownsBusyState)
+        {
+            if (!CanLoadLocalSubtitle()) return;
+            _externalSubtitlePickerOpen = true;
+            UpdateQueueControls();
+            UpdateSubtitleControls();
+        }
+        try
+        {
+            var properties = await file.GetBasicPropertiesAsync();
+            if (!OwnsRequest()) return;
+            if (properties.Size is 0 or > 4 * 1024 * 1024) throw new PlaybackException("UnsupportedSubtitle");
+            var buffer = await FileIO.ReadBufferAsync(file);
+            if (!OwnsRequest()) return;
+            var data = new byte[checked((int)buffer.Length)];
+            using (var reader = DataReader.FromBuffer(buffer)) reader.ReadBytes(data);
+            NativePlaybackEngine.ValidateLocalSubtitleData(file.Name, data);
+            var prepared = await engine.PrepareLocalSubtitleAsync(playbackId.Value, file.Name, data, token);
+            if (!OwnsRequest()) return;
+            RegisterLocalSubtitleFile(prepared, file.Path, data);
+            await ApplyPreparedLocalSubtitleAsync(prepared, token, revision);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            AcceptanceDiagnostics.Record(exception, "SubtitlePreparation/File");
+            throw;
+        }
+        finally
+        {
+            if (ownsBusyState)
+            {
+                _externalSubtitlePickerOpen = false;
+                UpdateQueueControls();
+                UpdateSubtitleControls();
+                _trackRowsSnapshots.Remove(SubtitleTrackItems);
+                RebuildTrackPanel();
+                RevealControls();
+            }
+        }
+    }
+
+    private async Task ActivateLocalSubtitleChoiceAsync(NativePreparedSubtitle prepared)
+    {
+        if (!CanLoadLocalSubtitle()) return;
+        var revision = BeginExplicitSubtitleSelection();
+        var token = SubtitleSelectionToken;
+        _externalSubtitlePickerOpen = true;
+        UpdateQueueControls();
+        UpdateSubtitleControls();
+        try { await TryRunPlayerAdjustmentAsync(() => ApplyPreparedLocalSubtitleAsync(prepared, token, revision)); }
+        finally
+        {
+            _externalSubtitlePickerOpen = false;
+            UpdateQueueControls();
+            UpdateSubtitleControls();
+            _trackRowsSnapshots.Remove(SubtitleTrackItems);
+            RebuildTrackPanel();
+            RevealControls();
+        }
+    }
+
+    private async Task ApplyPreparedLocalSubtitleAsync(NativePreparedSubtitle prepared,
+        CancellationToken? cancellationToken = null, long? expectedSubtitleRevision = null)
+    {
+        var session = _session;
+        var coordinator = _coordinator;
+        var engine = _engine;
+        var itemId = _item?.Id;
+        var intent = _playIntent;
+        var context = coordinator?.ActiveContext;
+        var token = cancellationToken ?? SubtitleSelectionToken;
+        var ownerToken = _playRequest?.Token ?? CancellationToken.None;
+        var revision = expectedSubtitleRevision ?? _subtitleSelectionRevision;
+        if (session is null || coordinator is null || engine is null || context is null) return;
+        bool OwnsItem() => ReferenceEquals(session, _session) && ReferenceEquals(coordinator, _coordinator)
+            && ReferenceEquals(engine, _engine) && intent == _playIntent && _item?.Id == itemId
+            && revision == _subtitleSelectionRevision && !token.IsCancellationRequested;
+        if (!OwnsItem()) return;
+        var previousSubtitle = context.Selection.SubtitleStreamIndex ?? context.Source.DefaultSubtitleStreamIndex ?? -1;
+        if (context.Selection.SubtitleStreamIndex != -1)
+            // A replacement source belongs to the item, not the cancellable subtitle preparation.
+            await coordinator.ChangeSelectionAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange { SubtitleStreamIndex = -1 }), ownerToken);
+        if (!OwnsItem() || coordinator.ActiveContext is not { } active) return;
+        try
+        {
+            await engine.LoadLocalSubtitleAsync(active.PlaybackId, prepared, token);
+            if (!OwnsItem() || coordinator.ActiveContext?.PlaybackId != active.PlaybackId) return;
+            AddLocalSubtitleChoice(prepared);
+            _localSubtitleName = prepared.FileName;
+            _localSubtitlePlaybackId = active.PlaybackId;
+            _selectedLocalSubtitle = prepared;
+            _localSubtitleRestorePlaybackId = active.PlaybackId;
+            _appliedSubtitlePlaybackId = null;
+            _trackRowsSnapshots.Remove(SubtitleTrackItems);
+            UpdateSubtitleControls();
+            RebuildTrackPanel();
+            RememberLocalSubtitleSelection(prepared);
+            ShowPlayerOsd("closed_caption_24_regular", LumenText.Get("Subtitles loaded: {0}", prepared.FileName));
+        }
+        catch
+        {
+            // Invalid data is rejected before selection changes; a later native failure restores the previous server track.
+            if (OwnsItem() && coordinator.ActiveContext?.PlaybackId == active.PlaybackId
+                && previousSubtitle != -1 && !token.IsCancellationRequested)
+                await coordinator.ChangeSelectionAsync(WithCurrentNativeCapabilities(new PlaybackSelectionChange { SubtitleStreamIndex = previousSubtitle }), ownerToken);
+            throw;
         }
     }
 
@@ -570,14 +752,60 @@ public sealed partial class PlayerView
         && _preparationIntent != _playIntent && _coordinator is { ActiveContext: { } context,
             Status: PlaybackStatus.Playing or PlaybackStatus.Paused } && _localSubtitlePlaybackId == context.PlaybackId;
 
-    private Task ClearCurrentLocalSubtitleAsync()
+    private async Task ClearCurrentLocalSubtitleAsync()
     {
         var engine = _engine;
+        var coordinator = _coordinator;
+        var intent = _playIntent;
         var playbackId = _coordinator?.ActiveContext?.PlaybackId;
-        _localSubtitleName = null;
-        _localSubtitlePlaybackId = null;
-        if (engine is null || playbackId is null) return Task.CompletedTask;
-        return RunAsync(() => engine.ClearLocalSubtitleAsync(playbackId.Value));
+        var revision = BeginExplicitSubtitleSelection();
+        var token = SubtitleSelectionToken;
+        if (engine is null || playbackId is null) return;
+        await RunAsync(async () =>
+        {
+            await engine.ClearLocalSubtitleAsync(playbackId.Value, token);
+            if (!ReferenceEquals(engine, _engine) || !ReferenceEquals(coordinator, _coordinator)
+                || intent != _playIntent || revision != _subtitleSelectionRevision
+                || coordinator?.ActiveContext?.PlaybackId != playbackId) return;
+            _localSubtitleName = null;
+            _localSubtitlePlaybackId = null;
+            _selectedLocalSubtitle = null;
+            _localSubtitleRestorePlaybackId = null;
+            RememberServerSubtitleSelection(-1);
+        });
+    }
+
+    private async void RestoreLocalSubtitleForContext(PlaybackContext context)
+    {
+        var prepared = _selectedLocalSubtitle;
+        var engine = _engine;
+        var coordinator = _coordinator;
+        var session = _session;
+        var intent = _playIntent;
+        var revision = _subtitleSelectionRevision;
+        var token = SubtitleSelectionToken;
+        if (prepared is null || engine is null || coordinator is null || session is null
+            || _externalSubtitlePickerOpen || _localSubtitleRestorePlaybackId == context.PlaybackId
+            || context.Selection.SubtitleStreamIndex != -1
+            || coordinator.Status is not (PlaybackStatus.Playing or PlaybackStatus.Paused)) return;
+        _localSubtitleRestorePlaybackId = context.PlaybackId;
+        bool OwnsRequest() => ReferenceEquals(session, _session) && ReferenceEquals(engine, _engine)
+            && ReferenceEquals(coordinator, _coordinator) && ReferenceEquals(prepared, _selectedLocalSubtitle)
+            && intent == _playIntent && revision == _subtitleSelectionRevision
+            && coordinator.ActiveContext?.PlaybackId == context.PlaybackId;
+        try
+        {
+            await engine.LoadLocalSubtitleAsync(context.PlaybackId, prepared, token);
+            if (!OwnsRequest()) return;
+            _localSubtitleName = prepared.FileName;
+            _localSubtitlePlaybackId = context.PlaybackId;
+            _appliedSubtitlePlaybackId = null;
+            _trackRowsSnapshots.Remove(SubtitleTrackItems);
+            UpdateSubtitleControls();
+            RebuildTrackPanel();
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception exception) { if (OwnsRequest()) ShowOperationError(exception); }
     }
 
     private void LocalizePlayerTree(DependencyObject root)

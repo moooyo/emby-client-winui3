@@ -52,6 +52,7 @@ void FFmpegReader::Start()
             return;
         }
 
+        isSleeping = false;
         readTask = create_task([this]() { this->ReadDataLoop(); });
         isActive = true;
     }
@@ -62,6 +63,7 @@ void FFmpegReader::Stop()
     bool wait = false;
     {
         std::lock_guard lock(mutex);
+        isSleeping = false;
         if (isActive)
         {
             isActive = false;
@@ -426,6 +428,16 @@ void FFmpegReader::ReadDataLoop()
 
     while (true)
     {
+        {
+            std::lock_guard lock(mutex);
+            if (!isActive) break;
+            if (CheckNeedsSleep(sleep))
+            {
+                isSleeping = true;
+                sleepTimer->start();
+                break;
+            }
+        }
         // Read next packet
         ReadPacket();
 
@@ -440,6 +452,7 @@ void FFmpegReader::ReadDataLoop()
         {
             // Self stop. Cleanup.
             isActive = false;
+            isSleeping = false;
             sleepTimer->stop();
             delete sleepTimer;
             delete sleepTimerTarget;
@@ -469,47 +482,46 @@ void FFmpegReader::OnTimer(int value)
 {
     UNREFERENCED_PARAMETER(value);
     std::lock_guard lock(mutex);
-    if (isActive)
+    ResumeReadAhead();
+}
+
+void FFmpegReader::NotifyConsumerProgress()
+{
+    std::lock_guard lock(mutex);
+    ResumeReadAhead();
+}
+
+void FFmpegReader::ResumeReadAhead()
+{
+    // The caller holds mutex. Publish the running state before scheduling work.
+    if (isActive && isSleeping)
     {
-        readTask = create_task([this]() { ReadDataLoop(); });
+        sleepTimer->pause();
         isSleeping = false;
+        readTask = create_task([this]() { ReadDataLoop(); });
     }
-    sleepTimer->pause();
 }
 
 bool FFmpegReader::CheckNeedsSleep(bool wasSleeping)
 {
+    UNREFERENCED_PARAMETER(wasSleeping);
     bool force = forceReadStream >= 0;
     if (force)
     {
         return false;
     }
 
-    bool sleep = wasSleeping;
-
-    // check if we need to start sleeping
-    if (!sleep && lastStream && lastStream->IsBufferFull())
+    if (fullStream && fullStream->IsEnabled() && fullStream->IsBufferFull()) return true;
+    fullStream = nullptr;
+    for (auto const& stream : *sampleProviders)
     {
-        sleep = true;
-        fullStream = lastStream;
-    }
-    // check if we can stop sleeping
-    else if (sleep && !fullStream && !fullStream->IsBufferFull())
-    {
-        sleep = false;
-        fullStream = nullptr;
-        for (auto& stream : *sampleProviders)
+        if (stream && stream->IsEnabled() && stream->IsBufferFull())
         {
-            if (stream && stream->IsBufferFull())
-            {
-                sleep = true;
-                fullStream = stream;
-                break;
-            }
+            fullStream = stream;
+            return true;
         }
     }
-
-    return sleep;
+    return false;
 }
 
 // Read the next packet from the stream and push it into the appropriate
@@ -535,6 +547,10 @@ int FFmpegReader::ReadPacket()
         {
             DebugMessage(L"End of stream reached. Stop reading packets.\n");
             isEof = true;
+            for (auto const& provider : *sampleProviders)
+            {
+                if (provider && provider->IsEnabled()) provider->NotifyEndOfStream();
+            }
         }
         else if (errorCount++ <= config.General().SkipErrors())
         {

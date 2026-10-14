@@ -15,6 +15,8 @@
     <Compile Include="../../src/EmbyClient.App/Services/SettingsJsonContext.cs" Link="Product/SettingsJsonContext.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.cs" Link="Product/ConnectionService.cs" />
     <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.AccountTransactions.cs" Link="Product/ConnectionService.AccountTransactions.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/ConnectionService.LanDiscovery.cs" Link="Product/ConnectionService.LanDiscovery.cs" />
+    <Compile Include="../../src/EmbyClient.App/Services/SavedServerStore.cs" Link="Product/SavedServerStore.cs" />
     <ProjectReference Include="../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
   </ItemGroup>
 </Project>

@@ -8,6 +8,12 @@ public static class LumenText
     private static readonly Dictionary<string, string> Strings = new(StringComparer.Ordinal)
     {
         ["Home"] = "\u9996\u9875",
+        ["Home / Movies / TV shows"] = "\u9996\u9875 / \u7535\u5f71 / \u5267\u96c6",
+        ["Next page"] = "\u4e0b\u4e00\u9875",
+        ["Next page: {0}"] = "\u4e0b\u4e00\u9875\uff1a{0}",
+        ["Back to top"] = "\u56de\u5230\u9876\u90e8",
+        ["Page navigation"] = "\u9875\u9762\u5bfc\u822a",
+        ["Current page"] = "\u5f53\u524d\u9875\u9762",
         ["Selected"] = "\u5df2\u9009\u4e2d",
         ["Some preferences could not be read. Defaults are used without changing the saved file."] = "\u90e8\u5206\u504f\u597d\u65e0\u6cd5\u8bfb\u53d6\uff0c\u6682\u65f6\u4f7f\u7528\u9ed8\u8ba4\u503c\uff0c\u5df2\u4fdd\u5b58\u7684\u6587\u4ef6\u4fdd\u6301\u4e0d\u53d8\u3002",
         ["Closing the current session..."] = "\u6b63\u5728\u5173\u95ed\u5f53\u524d\u4f1a\u8bdd...",
@@ -21,6 +27,8 @@ public static class LumenText
         ["Season"] = "\u5b63",
         ["Favorites"] = "\u6536\u85cf",
         ["Search"] = "\u641c\u7d22",
+        ["Search media library"] = "\u641c\u7d22\u5a92\u4f53\u5e93",
+        ["Switch server or user"] = "\u5207\u6362\u670d\u52a1\u5668\u6216\u7528\u6237",
         ["Settings"] = "\u8bbe\u7f6e",
         ["Back"] = "\u8fd4\u56de",
         ["Play"] = "\u64ad\u653e",
@@ -42,6 +50,10 @@ public static class LumenText
         ["Continue watching"] = "\u7ee7\u7eed\u89c2\u770b",
         ["Next up"] = "\u5373\u5c06\u89c2\u770b",
         ["My media"] = "\u6211\u7684\u5a92\u4f53",
+        ["Media library"] = "\u5a92\u4f53\u5e93",
+        ["This activation belongs to another account."] = "\u6b64\u64cd\u4f5c\u5c5e\u4e8e\u53e6\u4e00\u4e2a\u8d26\u6237\u3002",
+        ["The last-watched item is no longer available."] = "\u4e0a\u6b21\u89c2\u770b\u7684\u5185\u5bb9\u5df2\u4e0d\u53ef\u7528\u3002",
+        ["HDR10 metadata requires an HDR-enabled display. End-to-end HDR output is not verified."] = "HDR10 \u5143\u6570\u636e\u9700\u8981\u5df2\u542f\u7528 HDR \u7684\u663e\u793a\u5668\uff0c\u5b8c\u6574 HDR \u8f93\u51fa\u5c1a\u672a\u5b8c\u6210\u9a8c\u8bc1\u3002",
         ["Latest movies"] = "\u6700\u65b0\u7535\u5f71",
         ["Latest series"] = "\u6700\u65b0\u5267\u96c6",
         ["Recently added"] = "\u6700\u65b0\u5165\u5e93",
@@ -72,6 +84,11 @@ public static class LumenText
         ["List view"] = "\u5217\u8868\u89c6\u56fe",
         ["Poster size"] = "\u6d77\u62a5\u5c3a\u5bf8",
         ["Load more"] = "\u52a0\u8f7d\u66f4\u591a",
+        ["Loading library position..."] = "\u6b63\u5728\u5b9a\u4f4d\u5a92\u4f53\u5e93...",
+        ["Jump to the first title"] = "\u8df3\u8f6c\u5230\u9996\u4e2a\u6807\u9898",
+        ["Jump to titles beginning with {0}"] = "\u8df3\u8f6c\u5230\u4ee5 {0} \u5f00\u5934\u7684\u6807\u9898",
+        ["Showing titles {0}\u2013{1} of {2}. Press Home to return to the start."] = "\u663e\u793a\u7b2c {0}\u2013{1} \u9879\uff0c\u5171 {2} \u9879\u3002\u6309 Home \u8fd4\u56de\u5f00\u5934\u3002",
+        ["Showing titles from {0}. Press Home to return to the start."] = "\u4ece\u7b2c {0} \u9879\u5f00\u59cb\u663e\u793a\u3002\u6309 Home \u8fd4\u56de\u5f00\u5934\u3002",
         ["View all"] = "\u67e5\u770b\u5168\u90e8",
         ["Playback"] = "\u64ad\u653e",
         ["Subtitles"] = "\u5b57\u5e55",
@@ -128,5 +145,12 @@ public static class LumenText
     {
         lock (Strings)
             foreach (var entry in entries) Strings[entry.Key] = entry.Value;
+    }
+
+    /// <summary>Registers a translation for the current Chinese interface and returns it.</summary>
+    public static string Localize(string english, string chinese)
+    {
+        lock (Strings) Strings[english] = chinese;
+        return chinese;
     }
 }

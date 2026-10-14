@@ -334,8 +334,8 @@ private:
                 }
             }
 
-            TimeSpan originalStartPosition = TimeSpan(cStartTime.count() - streamDelay.count());
-            TimeSpan newStartPosition = TimeSpan(originalStartPosition.count() + actualSubtitleDelay.count());
+            TimeSpan originalStartPosition = TimeSpan(cStartTime.count() - actualSubtitleDelay.count());
+            TimeSpan newStartPosition = TimeSpan(originalStartPosition.count() + streamDelay.count());
             //start time cannot be negative.
             if (newStartPosition.count() < 0)
             {

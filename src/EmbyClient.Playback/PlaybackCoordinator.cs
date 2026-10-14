@@ -129,6 +129,9 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         ThrowIfDisposed();
         // Capture before cancellation: the worker may retire the old session before this call gets the gate.
         var observed = Volatile.Read(ref _current) ?? throw new InvalidOperationException("There is no active playback to change.");
+        if (await TryChangeBitmapSubtitleAsync(observed, change, cancellationToken).ConfigureAwait(false)) return;
+        // A capability check can await the dispatcher or output recovery. Restart from the
+        // latest confirmed engine position if that check declines the in-place operation.
         CaptureEngineSnapshot(observed);
         var restorePaused = ShouldPauseAfterRestart(observed);
         var selection = ApplySelectionChange(observed.Selection with
@@ -138,7 +141,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         }, change, observed.Request?.SubtitleStreamIndex ?? observed.Source?.DefaultSubtitleStreamIndex);
         ValidateSelection(selection);
         var ownerToken = cancellationToken.CanBeCanceled ? cancellationToken : observed.OwnerCancellationToken;
-        var intent = BeginIntent();
+        var intent = BeginSelectionIntent(observed);
         await _gate.WaitAsync().ConfigureAwait(false);
         try
         {
@@ -152,10 +155,76 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         finally { _gate.Release(); }
     }
 
-    public Task ReplayAsync(CancellationToken cancellationToken = default)
+    private async Task<bool> TryChangeBitmapSubtitleAsync(Session observed, PlaybackSelectionChange change,
+        CancellationToken cancellationToken)
     {
+        if (_engine is not IPlaybackSubtitleSelectionEngine subtitleEngine || change.SubtitleStreamIndex is not { } index
+            || !observed.StartReported || observed.Request is not { NativeEmbeddedSubtitlesEligible: true })
+            return false;
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // This is a control on the existing decoder. BeginIntent would cancel that decoder before
+            // the platform can restore its already decoded composition at the paused media position.
+            if (_current != observed || observed.Retired || observed.Lifetime.IsCancellationRequested)
+                throw new OperationCanceledException("Playback was superseded by a newer request.");
+            var request = observed.Request;
+            if (!observed.StartReported || request is not
+                { DeliveryMethod: PlaybackDeliveryMethod.DirectStream, TimelineKind: PlaybackTimelineKind.FullSource,
+                    TimelineOffsetTicks: 0, NativeEmbeddedSubtitlesEligible: true, ExternalSubtitleUri: null })
+                return false;
+            var selection = ApplySelectionChange(observed.Selection, change, request.SubtitleStreamIndex);
+            ValidateSelection(selection);
+            if (selection.ForceTranscoding || selection.ForceSubtitleBurnIn
+                || (selection with { SubtitleStreamIndex = observed.Selection.SubtitleStreamIndex }) != observed.Selection)
+                return false;
+            if (index != -1)
+            {
+                var matching = (request.Source.MediaStreams ?? []).Where(stream => stream.Index == index
+                    && NativeSubtitlePlaybackPolicy.IsSupportedEmbeddedBitmap(stream)
+                    && string.Equals(stream.DeliveryMethod, "Embed", StringComparison.OrdinalIgnoreCase)).ToArray();
+                if (matching.Length != 1) return false;
+            }
+            CaptureEngineSnapshot(observed);
+            if (observed.LatestSnapshot?.State is not (PlaybackEngineState.Playing or PlaybackEngineState.Paused))
+                return false;
+            using var operation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, observed.Lifetime.Token);
+            try
+            {
+                var changed = await subtitleEngine.TrySelectEmbeddedBitmapSubtitleAsync(observed.Id, index, operation.Token)
+                    .ConfigureAwait(false);
+                operation.Token.ThrowIfCancellationRequested();
+                if (!changed) return false;
+                if (_current != observed || observed.Intent != Volatile.Read(ref _intent))
+                    throw new OperationCanceledException("Playback was superseded by a newer request.");
+                observed.Selection = selection with { StartPositionTicks = AbsolutePosition(observed) };
+                Volatile.Write(ref observed.Request, request with { SubtitleStreamIndex = index });
+                Volatile.Write(ref _lastSelection, observed.Selection);
+                CaptureEngineSnapshot(observed);
+                await ReportProgressAsync(observed, "SubtitleTrackChange").ConfigureAwait(false);
+                operation.Token.ThrowIfCancellationRequested();
+                PublishEngineStatus(observed);
+                return true;
+            }
+            catch (Exception exception)
+            {
+                await HandleControlFailureAsync(observed, exception).ConfigureAwait(false);
+                if (exception is OperationCanceledException) throw;
+                throw new PlaybackException(ErrorCode(exception));
+            }
+        }
+        finally { _gate.Release(); }
+    }
+
+    public Task ReplayAsync(CancellationToken cancellationToken = default) => ReplayAsync(new PlaybackSelectionChange(), cancellationToken);
+
+    /// <summary>Replays the retained selection while refreshing window-scoped capabilities without guessing UI choices.</summary>
+    public Task ReplayAsync(PlaybackSelectionChange capabilityChange, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(capabilityChange);
         var selection = Volatile.Read(ref _lastSelection)
             ?? throw new InvalidOperationException("There is no playback to replay.");
+        selection = ApplySelectionChange(selection, capabilityChange, null);
         return PlayAsync(selection with { StartPositionTicks = 0 }, cancellationToken);
     }
 
@@ -302,7 +371,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                 StartTimeTicks = selection.StartPositionTicks,
                 AudioStreamIndex = selection.AudioStreamIndex,
                 SubtitleStreamIndex = selection.SubtitleStreamIndex,
-                MaxAudioChannels = 2,
+                MaxAudioChannels = NativeAudioChannelLimit(selection),
                 DeviceProfile = profile,
                 EnableDirectPlay = false,
                 EnableDirectStream = !selection.ForceTranscoding && !selection.ForceSubtitleBurnIn && !selection.AudioStreamIndex.HasValue,
@@ -333,7 +402,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
                     StartTimeTicks = selection.StartPositionTicks,
                     AudioStreamIndex = selection.AudioStreamIndex,
                     SubtitleStreamIndex = selection.SubtitleStreamIndex,
-                    MaxAudioChannels = 2,
+                    MaxAudioChannels = request.MaxAudioChannels,
                     EnableDirectPlay = false,
                     EnableDirectStream = request.EnableDirectStream,
                     EnableTranscoding = true,
@@ -443,7 +512,7 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
 
     private DeviceProfile BuildProfile(PlaybackSelection selection)
     {
-        var profile = _deviceProfile ?? ConservativeDeviceProfile.Create(selection.MaxStreamingBitrate, _options.EnableExternalWebVtt);
+        var profile = _deviceProfile ?? DeviceProfileFactory.Create(selection, _options.EnableExternalWebVtt);
         profile = profile with
         {
             MaxStreamingBitrate = selection.MaxStreamingBitrate,
@@ -850,6 +919,18 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         return intent;
     }
 
+    private long BeginSelectionIntent(Session observed)
+    {
+        // A failed in-place attempt can yield to a newer Play/Stop while awaiting the engine.
+        // Its fallback must never cancel the newer request or apply an old source's track index.
+        var intent = unchecked(observed.Intent + 1);
+        if (Interlocked.CompareExchange(ref _intent, intent, observed.Intent) != observed.Intent)
+            throw new OperationCanceledException("Playback was superseded by a newer request.");
+        Interlocked.Exchange(ref _recovery, null);
+        CancelSession(observed);
+        return intent;
+    }
+
     private RecoveryTarget? GetRecoveryTarget()
     {
         var recovery = Volatile.Read(ref _recovery);
@@ -930,6 +1011,11 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
             SubtitleStreamIndex = change.SubtitleStreamIndex ?? (changesSource ? null : selection.SubtitleStreamIndex),
             MaxStreamingBitrate = change.MaxStreamingBitrate ?? selection.MaxStreamingBitrate,
             ForceTranscoding = change.ForceTranscoding ?? selection.ForceTranscoding,
+            Hdr10OutputEligible = change.Hdr10OutputEligible ?? selection.Hdr10OutputEligible,
+            NativeEmbeddedSubtitlesEligible = change.NativeEmbeddedSubtitlesEligible ?? selection.NativeEmbeddedSubtitlesEligible,
+            NativeAssSubtitlesEligible = change.NativeAssSubtitlesEligible ?? selection.NativeAssSubtitlesEligible,
+            NativeAudioPassthroughEligible = change.NativeAudioPassthroughEligible ?? selection.NativeAudioPassthroughEligible,
+            AudioPassthroughMode = change.AudioPassthroughMode ?? selection.AudioPassthroughMode,
             ForceSubtitleBurnIn = !changesSource && !changesSubtitle && selection.ForceSubtitleBurnIn
         };
     }
@@ -943,7 +1029,12 @@ public sealed class PlaybackCoordinator : IAsyncDisposable
         if (selection.AudioStreamIndex is < 0 || selection.SubtitleStreamIndex is < -1)
             throw new ArgumentOutOfRangeException(nameof(selection), "Stream indexes are invalid.");
         if (selection.MediaSourceId is not null) ArgumentException.ThrowIfNullOrWhiteSpace(selection.MediaSourceId);
+        if (!Enum.IsDefined(selection.AudioPassthroughMode))
+            throw new ArgumentOutOfRangeException(nameof(selection), "The audio output policy is invalid.");
     }
+
+    private static int NativeAudioChannelLimit(PlaybackSelection selection) => selection.NativeAudioPassthroughEligible
+        && !selection.ForceTranscoding && selection.AudioPassthroughMode is AudioPassthroughMode.DolbyDts or AudioPassthroughMode.All ? 8 : 2;
 
     private static void ValidateInterval(TimeSpan value, string name)
     {

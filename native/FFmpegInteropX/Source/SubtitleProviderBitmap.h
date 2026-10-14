@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SubtitleProvider.h"
+#include <limits>
 #include <winrt/FFmpegInteropX.h>
 
 using namespace winrt::Windows::Graphics::Imaging;
@@ -19,6 +20,11 @@ public:
     {
     }
 
+    ~SubtitleProviderBitmap() override
+    {
+        ReleaseDecodedSubtitles();
+    }
+
     virtual HRESULT Initialize() override
     {
         auto hr = SubtitleProvider::Initialize();
@@ -34,6 +40,7 @@ public:
 
     virtual void NotifyVideoFrameSize(int width, int height, double aspectRatio) override
     {
+        std::lock_guard lock(mutex);
         videoWidth = width;
         videoHeight = height;
         if (isnormal(aspectRatio) && aspectRatio > 0)
@@ -46,8 +53,70 @@ public:
         }
     }
 
+    void QueuePacket(AVPacket* packet) override
+    {
+        // A seek must not clear a newly decoded composition between its map insertion and
+        // the base provider's addition of the corresponding timed cue.
+        std::lock_guard lock(mutex);
+        SubtitleProvider::QueuePacket(packet);
+    }
+
+    // Presentation-mode changes need not emit CueEntered while paused. Only a composition
+    // already decoded by this provider may be restored, at the real playback-session clock.
+    ImageCue ReadImageCueAtPosition(TimeSpan mediaPosition, SoftwareBitmap& bitmap, TimedTextPoint& position,
+        TimedTextSize& extent, TimeSpan& startTime)
+    {
+        std::lock_guard lock(mutex);
+        bitmap = nullptr;
+        startTime = TimeSpan{ -1 };
+        ImageCue current{ nullptr };
+        DecodedSubtitle const* composition = nullptr;
+        int64_t currentStartTicks = (std::numeric_limits<int64_t>::min)();
+        for (auto const& item : SubtitleTrack.Cues())
+        {
+            auto cue = item.try_as<ImageCue>();
+            if (!cue) continue;
+            auto decoded = map.find(cue.Id());
+            if (decoded == map.end() || decoded->second.SourceStartTicks < 0) continue;
+            const auto sourceStart = decoded->second.SourceStartTicks;
+            const auto delay = streamDelay.count();
+            // The platform can defer applying a new delay until a reference cue enters.
+            // Keep the same decoded source timestamp and apply the current requested delay once.
+            const auto shiftedStart = delay > 0 && sourceStart > (std::numeric_limits<int64_t>::max)() - delay
+                ? (std::numeric_limits<int64_t>::max)() : sourceStart + delay;
+            const auto duration = cue.Duration().count();
+            if (duration <= 0 || mediaPosition.count() < 0 || mediaPosition.count() < shiftedStart)
+                continue;
+            // Preserve the unclipped start when testing expiry. Moving a negative start to zero
+            // must not extend that cue. Unsigned subtraction also handles the full signed range.
+            const auto elapsed = static_cast<uint64_t>(mediaPosition.count()) - static_cast<uint64_t>(shiftedStart);
+            if (elapsed >= static_cast<uint64_t>(duration)) continue;
+            if (!current || shiftedStart >= currentStartTicks)
+            {
+                current = cue;
+                composition = &decoded->second;
+                currentStartTicks = shiftedStart;
+                startTime = TimeSpan{ (std::max)(int64_t{ 0 }, shiftedStart) };
+            }
+        }
+        if (!current) return nullptr;
+        bitmap = current.SoftwareBitmap();
+        if (!bitmap || bitmap == dummyBitmap)
+        {
+            // CueExited releases its pixels when Off is selected. Materialize the same decoded
+            // composition again; do not read packets, seek, or run another subtitle decoder.
+            CreateSubtitleImage(current, composition->Subtitle);
+            bitmap = current.SoftwareBitmap();
+        }
+        if (bitmap == dummyBitmap) bitmap = nullptr;
+        position = current.Position();
+        extent = current.Extent();
+        return current;
+    }
+
     virtual IMediaCue CreateCue(AVPacket* packet, TimeSpan* position, TimeSpan* duration) override
     {
+        std::lock_guard lock(mutex);
         AVSubtitle* subtitle = (AVSubtitle*)av_mallocz(sizeof(AVSubtitle));
         if (!subtitle)
         {
@@ -67,6 +136,8 @@ public:
             if (subtitle->num_rects <= 0)
             {
                 // return empty cue to force clear previous
+                avsubtitle_free(subtitle);
+                av_freep(&subtitle);
                 return nullptr;
             }
             else
@@ -77,7 +148,7 @@ public:
                 if (subtitle->num_rects > 0 && CheckSize(subtitle, width, height, offsetX, offsetY, cueSize, cuePosition))
                 {
                     auto id = winrt::to_hstring(nextId++);
-                    map[id] = subtitle;
+                    map[id] = { subtitle, position->count() };
 
                     ImageCue cue;
                     cue.Id(id);
@@ -85,19 +156,20 @@ public:
                 }
                 else
                 {
+                    const auto hadRects = subtitle->num_rects > 0;
                     avsubtitle_free(subtitle);
-                    av_freep(subtitle);
-                    if (subtitle->num_rects > 0)
+                    av_freep(&subtitle);
+                    if (hadRects)
                     {
                         OutputDebugString(L"Error: Invalid subtitle size received.");
                     }
                 }
             }
         }
-        else if (result <= 0)
+        else
         {
             avsubtitle_free(subtitle);
-            av_freep(subtitle);
+            av_freep(&subtitle);
             OutputDebugString(L"Failed to decode subtitle.");
         }
         return nullptr;
@@ -107,17 +179,12 @@ public:
 
     void Flush(bool flushBuffers) override
     {
+        std::lock_guard lock(mutex);
         SubtitleProvider::Flush(flushBuffers);
 
         if (!m_config.as<implementation::MediaSourceConfig>()->IsExternalSubtitleParser && flushBuffers)
         {
-            for (const auto& entry : map)
-            {
-                auto subtitle = entry.second;
-                avsubtitle_free(subtitle);
-                av_freep(subtitle);
-            }
-            map.clear();
+            ReleaseDecodedSubtitles();
         }
     }
 
@@ -138,7 +205,7 @@ private:
                     auto subtitle = map.find(cue.Id());
                     if (subtitle != map.end())
                     {
-                        CreateSubtitleImage(cue, subtitle->second);
+                        CreateSubtitleImage(cue, subtitle->second.Subtitle);
                     }
                 }
             }
@@ -319,6 +386,23 @@ private:
     }
 
 private:
+    struct DecodedSubtitle
+    {
+        AVSubtitle* Subtitle;
+        int64_t SourceStartTicks;
+    };
+
+    void ReleaseDecodedSubtitles() noexcept
+    {
+        for (const auto& entry : map)
+        {
+            auto subtitle = entry.second.Subtitle;
+            avsubtitle_free(subtitle);
+            av_freep(&subtitle);
+        }
+        map.clear();
+    }
+
     int videoWidth = 0;
     int videoHeight = 0;
     double videoAspectRatio = 0.0;
@@ -327,6 +411,6 @@ private:
     int subtitleHeight = 0;
     int optimalHeight = 0;
     SoftwareBitmap dummyBitmap = { nullptr };
-    std::map<winrt::hstring, AVSubtitle*> map;
+    std::map<winrt::hstring, DecodedSubtitle> map;
     int nextId = 0;
 };
