@@ -230,7 +230,7 @@ public sealed partial class LumenShellPage : Page
             ApplyPreferences(preferences);
             _pendingPreferenceSave = SavePreferencesAsync(previous, preferences);
         };
-        _settings.SignOutRequested += async (_, _) => await LeaveSessionAsync(true);
+        _settings.SignOutRequestedAsync = () => LeaveSessionAsync(true);
         _settings.SwitchAccountRequested += async (_, _) => await LeaveSessionAsync(false);
         _settings.KeyboardShortcutsRequested += async (_, _) => await ShowKeyboardShortcutsAsync();
         _settings.HeaderScrollChanged += (_, _) => UpdateChrome();
@@ -451,12 +451,18 @@ public sealed partial class LumenShellPage : Page
             DefaultButton = ContentDialogButton.Close
         };
         LumenDialogTheme.Apply(dialog);
+        Task? signOutTask = null;
+        dialog.PrimaryButtonClick += (_, _) =>
+        {
+            // Register session cleanup before dialog dismissal can race window shutdown.
+            if (ReferenceEquals(_shellDialog, dialog)) _shellDialog = null;
+            signOutTask ??= LeaveSessionAsync(true);
+        };
         _shellDialog = dialog;
         try
         {
-            var result = await dialog.ShowAsync();
-            if (ReferenceEquals(_shellDialog, dialog)) _shellDialog = null;
-            if (result == ContentDialogResult.Primary) await LeaveSessionAsync(true);
+            try { await dialog.ShowAsync(); }
+            finally { if (signOutTask is not null) await signOutTask; }
         }
         catch (Exception exception) { if (!_closing) ShowError(exception); }
         finally { if (ReferenceEquals(_shellDialog, dialog)) _shellDialog = null; ResumePendingWindowsActivation(); _ = OpenPendingEpisodeNotificationAsync(); }
@@ -725,15 +731,15 @@ public sealed partial class LumenShellPage : Page
         return modifiers;
     }
 
-    public bool EnsureContentKeyboardFocus()
+    public bool EnsureContentKeyboardFocus(bool reassertNativeFocus = false)
     {
         if (_closing || XamlRoot?.ContentIsland is not { } island) return false;
         try
         {
             var focus = _contentInputFocus ??= InputFocusController.GetForIsland(island);
             var hadFocus = focus.HasFocus;
-            var acquired = hadFocus || focus.TrySetFocus();
-            if (_acceptanceTraceEnabled) AcceptanceDiagnostics.Trace($"shell-content-focus hadFocus={hadFocus} acquired={acquired}");
+            var acquired = (!reassertNativeFocus && hadFocus) || focus.TrySetFocus();
+            if (_acceptanceTraceEnabled) AcceptanceDiagnostics.Trace($"shell-content-focus hadFocus={hadFocus} reassert={reassertNativeFocus} acquired={acquired}");
             return acquired;
         }
         catch (Exception exception)

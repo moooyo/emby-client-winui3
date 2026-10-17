@@ -111,8 +111,27 @@ public sealed partial class MainWindow : WindowEx
         _contentFocusQueued = true;
         if (_chromeDispatcher.TryEnqueue(() =>
         {
-            _contentFocusQueued = false;
-            if (!_closing && _windowActive) _page.EnsureContentKeyboardFocus();
+            try
+            {
+                if (_closing || !_windowActive) return;
+                var rootWindow = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                var nativeFocus = GetFocus();
+                var foregroundRoot = rootWindow != 0 && GetForegroundWindow() == rootWindow;
+                var nativeRoot = rootWindow != 0 && nativeFocus == rootWindow;
+                // Island focus can remain reported while activation leaves native focus on the host.
+                var reassertNativeFocus = foregroundRoot && nativeRoot;
+                if (_acceptanceWindowInputTraceEnabled)
+                {
+                    var nativeChild = rootWindow != 0 && nativeFocus != 0 && IsChild(rootWindow, nativeFocus);
+                    AcceptanceDiagnostics.Trace($"window-content-focus foregroundRoot={foregroundRoot} nativeRoot={nativeRoot} nativeChild={nativeChild} reassert={reassertNativeFocus}");
+                }
+                _page.EnsureContentKeyboardFocus(reassertNativeFocus);
+            }
+            finally
+            {
+                // Keep focus messages raised by this attempt coalesced until the handoff returns.
+                _contentFocusQueued = false;
+            }
         })) return;
         _contentFocusQueued = false;
     }

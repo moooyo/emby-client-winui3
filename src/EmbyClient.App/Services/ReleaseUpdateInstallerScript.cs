@@ -83,13 +83,13 @@ internal static class ReleaseUpdateInstallerScript
         [long]$updateTotal = 0
         foreach ($updateFile in $Files) {
             $updatePath = Get-PayloadPath $Root ([string]$updateFile.path)
-            if (-not $updateExpected.Add([string]$updateFile.path) -or [long]$updateFile.length -lt 0 -or [long]$updateFile.length -gt 536870912
-                -or [string]$updateFile.sha256 -notmatch '^[0-9a-f]{64}$') { throw 'The receipt file inventory is invalid.' }
+            if (-not $updateExpected.Add([string]$updateFile.path) -or [long]$updateFile.length -lt 0 -or [long]$updateFile.length -gt 536870912 -or
+                [string]$updateFile.sha256 -notmatch '^[0-9a-f]{64}$') { throw 'The receipt file inventory is invalid.' }
             $updateTotal += [long]$updateFile.length
             if ($updateTotal -gt 2147483648) { throw 'The payload exceeds the expanded size limit.' }
             Assert-OrdinaryPath $updatePath
-            if (-not [IO.File]::Exists($updatePath) -or ([IO.FileInfo]::new($updatePath)).Length -ne [long]$updateFile.length
-                -or (Get-UpdateHash $updatePath) -ne [string]$updateFile.sha256) { throw 'A payload file changed after verification.' }
+            if (-not [IO.File]::Exists($updatePath) -or ([IO.FileInfo]::new($updatePath)).Length -ne [long]$updateFile.length -or
+                (Get-UpdateHash $updatePath) -ne [string]$updateFile.sha256) { throw 'A payload file changed after verification.' }
         }
         $updateFound = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
         $updatePending = [Collections.Generic.Stack[string]]::new()
@@ -131,9 +131,9 @@ internal static class ReleaseUpdateInstallerScript
                 $updateOldLink = $updateShell.CreateShortcut($script:updateShortcutPath)
                 $updateOldTarget = [IO.Path]::GetFullPath([string]$updateOldLink.TargetPath)
                 $updateInstalledPrefix = [IO.Path]::GetFullPath($InstallRoot).TrimEnd('\') + '\'
-                if (-not $updateOldTarget.Equals($PreviousExecutable, [StringComparison]::OrdinalIgnoreCase)
-                    -and -not ($updateOldTarget.StartsWith($updateInstalledPrefix, [StringComparison]::OrdinalIgnoreCase)
-                        -and [IO.Path]::GetFileName($updateOldTarget).Equals('EmbyClient.App.exe', [StringComparison]::OrdinalIgnoreCase))) {
+                if (-not $updateOldTarget.Equals($PreviousExecutable, [StringComparison]::OrdinalIgnoreCase) -and
+                    -not ($updateOldTarget.StartsWith($updateInstalledPrefix, [StringComparison]::OrdinalIgnoreCase) -and
+                        [IO.Path]::GetFileName($updateOldTarget).Equals('EmbyClient.App.exe', [StringComparison]::OrdinalIgnoreCase))) {
                     throw 'An unrelated shortcut already uses the reserved Lumen Start Menu name.'
                 }
                 $updateOldHash = Get-UpdateHash $script:updateShortcutPath
@@ -154,7 +154,13 @@ internal static class ReleaseUpdateInstallerScript
             $updateNewHash = Get-UpdateHash $updateTemporaryShortcut
             if ($updateOldHash) {
                 if ((Get-UpdateHash $script:updateShortcutPath) -ne $updateOldHash) { throw 'The existing Start Menu shortcut changed during installation.' }
-                [IO.File]::Replace($updateTemporaryShortcut, $script:updateShortcutPath, $script:updateShortcutBackup)
+                # The update stage may be on another volume; Replace requires its backup to share the target volume.
+                [IO.File]::Copy($script:updateShortcutPath, $script:updateShortcutBackup, $false)
+                if ((Get-UpdateHash $script:updateShortcutBackup) -ne $updateOldHash -or
+                    (Get-UpdateHash $script:updateShortcutPath) -ne $updateOldHash) {
+                    throw 'The existing Start Menu shortcut changed while its recovery copy was created.'
+                }
+                [IO.File]::Replace($updateTemporaryShortcut, $script:updateShortcutPath, [NullString]::Value)
             }
             else { [IO.File]::Move($updateTemporaryShortcut, $script:updateShortcutPath) }
             $script:updateShortcutChanged = $true
@@ -197,40 +203,40 @@ internal static class ReleaseUpdateInstallerScript
         Assert-OrdinaryPath $updateStage
         Assert-OrdinaryPath $PlanPath
         $updatePlanFullPath = [IO.Path]::GetFullPath($PlanPath)
-        if (-not [IO.Path]::GetDirectoryName($updatePlanFullPath).Equals($updateStage, [StringComparison]::OrdinalIgnoreCase)
-            -or [IO.Path]::GetFileName($updatePlanFullPath) -notmatch '^install-plan-[0-9a-f]{32}\.json$'
-            -or ([IO.FileInfo]::new($PlanPath)).Length -gt 4194304) { throw 'The installation plan path or size is invalid.' }
+        if (-not [IO.Path]::GetDirectoryName($updatePlanFullPath).Equals($updateStage, [StringComparison]::OrdinalIgnoreCase) -or
+            [IO.Path]::GetFileName($updatePlanFullPath) -notmatch '^install-plan-[0-9a-f]{32}\.json$' -or
+            ([IO.FileInfo]::new($PlanPath)).Length -gt 4194304) { throw 'The installation plan path or size is invalid.' }
         $updatePlan = [IO.File]::ReadAllText($PlanPath, [Text.Encoding]::UTF8) | ConvertFrom-Json
-        if ($updatePlan.schemaVersion -ne 1 -or [string]$updatePlan.launchId -notmatch '^[0-9a-f]{32}$'
-            -or -not ([IO.Path]::GetFullPath([string]$updatePlan.stageDirectory)).Equals($updateStage, [StringComparison]::OrdinalIgnoreCase)) {
+        if ($updatePlan.schemaVersion -ne 1 -or [string]$updatePlan.launchId -notmatch '^[0-9a-f]{32}$' -or
+            -not ([IO.Path]::GetFullPath([string]$updatePlan.stageDirectory)).Equals($updateStage, [StringComparison]::OrdinalIgnoreCase)) {
             throw 'The installation plan is invalid.'
         }
-        if (-not $updatePlanFullPath.Equals([IO.Path]::Combine($updateStage, 'install-plan-' + [string]$updatePlan.launchId + '.json'), [StringComparison]::OrdinalIgnoreCase)
-            -or -not ([IO.Path]::GetFullPath($PSCommandPath)).Equals([IO.Path]::Combine($updateStage, 'Install-ReleaseUpdate-' + [string]$updatePlan.launchId + '.ps1'), [StringComparison]::OrdinalIgnoreCase)) {
+        if (-not $updatePlanFullPath.Equals([IO.Path]::Combine($updateStage, 'install-plan-' + [string]$updatePlan.launchId + '.json'), [StringComparison]::OrdinalIgnoreCase) -or
+            -not ([IO.Path]::GetFullPath($PSCommandPath)).Equals([IO.Path]::Combine($updateStage, 'Install-ReleaseUpdate-' + [string]$updatePlan.launchId + '.ps1'), [StringComparison]::OrdinalIgnoreCase)) {
             throw 'The installation plan and helper must belong to the same unique launch attempt.'
         }
         $updatePayload = [IO.Path]::Combine($updateStage, 'payload')
         $updateRoot = [IO.Path]::GetDirectoryName([IO.Path]::GetDirectoryName($updateStage))
         $updateInstallRoot = [IO.Path]::Combine($updateRoot, 'installed')
         $updateInstallDirectory = [IO.Path]::Combine($updateInstallRoot, [IO.Path]::GetFileName($updateStage))
-        if (-not $updatePayload.Equals([IO.Path]::GetFullPath([string]$updatePlan.payloadDirectory), [StringComparison]::OrdinalIgnoreCase)
-            -or -not $updateInstallRoot.Equals([IO.Path]::GetFullPath([string]$updatePlan.installRoot), [StringComparison]::OrdinalIgnoreCase)
-            -or -not $updateInstallDirectory.Equals([IO.Path]::GetFullPath([string]$updatePlan.installDirectory), [StringComparison]::OrdinalIgnoreCase)
-            -or [IO.Directory]::Exists($updateInstallDirectory) -or [IO.File]::Exists($updateInstallDirectory)) {
+        if (-not $updatePayload.Equals([IO.Path]::GetFullPath([string]$updatePlan.payloadDirectory), [StringComparison]::OrdinalIgnoreCase) -or
+            -not $updateInstallRoot.Equals([IO.Path]::GetFullPath([string]$updatePlan.installRoot), [StringComparison]::OrdinalIgnoreCase) -or
+            -not $updateInstallDirectory.Equals([IO.Path]::GetFullPath([string]$updatePlan.installDirectory), [StringComparison]::OrdinalIgnoreCase) -or
+            [IO.Directory]::Exists($updateInstallDirectory) -or [IO.File]::Exists($updateInstallDirectory)) {
             throw 'The installation destination must be a new owned version directory.'
         }
         Assert-OrdinaryPath $updatePayload
         Assert-OrdinaryPath $updateInstallDirectory
         $updateReceiptPath = [IO.Path]::Combine($updateStage, 'stage-receipt.json')
-        if (([IO.FileInfo]::new($updateReceiptPath)).Length -gt 4194304
-            -or (Get-UpdateHash $updateReceiptPath) -ne [string]$updatePlan.receiptSha256) { throw 'The stage receipt changed.' }
+        if (([IO.FileInfo]::new($updateReceiptPath)).Length -gt 4194304 -or
+            (Get-UpdateHash $updateReceiptPath) -ne [string]$updatePlan.receiptSha256) { throw 'The stage receipt changed.' }
         $updateReceipt = [IO.File]::ReadAllText($updateReceiptPath, [Text.Encoding]::UTF8) | ConvertFrom-Json
         $updateFiles = @($updateReceipt.files)
         if ($updateReceipt.schemaVersion -ne 1 -or $updateFiles.Count -eq 0 -or $updateFiles.Count -gt 8192) { throw 'The receipt is invalid.' }
         $updatePreviousExecutable = [IO.Path]::GetFullPath([string]$updatePlan.previousExecutable)
         Assert-OrdinaryPath $updatePreviousExecutable
-        if (-not [IO.File]::Exists($updatePreviousExecutable)
-            -or -not [IO.Path]::GetFileName($updatePreviousExecutable).Equals('EmbyClient.App.exe', [StringComparison]::OrdinalIgnoreCase)) {
+        if (-not [IO.File]::Exists($updatePreviousExecutable) -or
+            -not [IO.Path]::GetFileName($updatePreviousExecutable).Equals('EmbyClient.App.exe', [StringComparison]::OrdinalIgnoreCase)) {
             throw 'The previous application path is invalid.'
         }
         $updateCancelPath = [IO.Path]::Combine($updateStage, 'install-cancel-' + [string]$updatePlan.launchId)

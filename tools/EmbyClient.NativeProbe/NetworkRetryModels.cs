@@ -12,7 +12,8 @@ internal sealed class NetworkRetryMediaMetadata
 
 internal sealed class NetworkRetryReport
 {
-    public string Scope { get; init; } = "SYNTHETIC 180-second media on the fixed owned loopback fixture, with a bounded cold-range HTTP proxy. The proxy injects HTTP 503 responses, never engine failure events. Explicit RetryAsync recovery is separate from prior twenty-loop resource results.";
+    public string Scope { get; init; } = "SYNTHETIC 180-second media on the fixed owned loopback fixture. A real cold-range HTTP 503 must cause NetworkFailure while the original native source remains bound. Explicit RetryAsync is followed by replay of seven captured retired handlers and nine old-ID commands against the paused replacement. Separate from resource acceptance.";
+    public string PostBindLateFailureGateStatus { get; set; } = "NotRun";
     public string Status { get; set; } = "Running";
     public string Stage { get; set; } = "ValidateFixture";
     public string? ErrorCode { get; set; }
@@ -30,6 +31,15 @@ internal sealed class NetworkRetryReport
     public long MetadataRangeEndExclusive { get; set; }
     public long ColdByteProbe { get; set; }
     public bool ColdByteUndeliveredBeforeFault { get; set; }
+    public bool OriginalSourceBoundBeforeFault { get; set; }
+    public bool OriginalSourceBoundAtFailedEvent { get; set; }
+    public bool FailedEventMatchedOriginalPlayback { get; set; }
+    public string? NativeFailureObservationStage { get; set; }
+    public string? NativeFailureObservationErrorCode { get; set; }
+    public bool CallbacksCapturedBeforeFault { get; set; }
+    public string? CallbackCaptureStage { get; set; }
+    public string? OriginalPlaybackHash { get; set; }
+    public string? OriginalSessionHash { get; set; }
     public long PlayingNativeTicksBeforeFault { get; set; }
     public long PausedNativeTicksBeforeFault { get; set; }
     public int? OriginalRequestedAudioIndex { get; set; }
@@ -69,10 +79,60 @@ internal sealed class NetworkRetryReport
     public bool FinalMediaRequestsQuiet { get; set; }
     public int ProxyBindings { get; set; }
     public int CredentialRejections { get; set; }
+    public bool CoordinatorDisposed { get; set; }
+    public bool NativeDisposed { get; set; }
+    public bool NativeOwnerCleared { get; set; }
+    public bool LogoutCompleted { get; set; }
+    public bool ProxyDisposed { get; set; }
+    public NetworkRetryIsolation RetiredIsolation { get; init; } = new();
+    public List<IsolationEngineEvent> EngineEvents { get; init; } = [];
+    public List<string> CleanupErrors { get; init; } = [];
     public List<ColdRangeRecord> Ranges { get; set; } = [];
     public List<HlsApiEvent> ApiEvents { get; set; } = [];
     public List<string> Diagnostics { get; init; } = [];
-    public string[] Limitations { get; init; } = ["A failed seek may update the native Position cursor without a decoded frame; recovery-target provenance is recorded separately", "Native open/clock/dimensions and pause are observed; presented pixels and audible output are not", "This single bounded recovery scenario is not a resource test or broad network-fault certification"];
+    public string[] Limitations { get; init; } = ["The original failure must be caused by real HTTP 503; retired-handler replay occurs only after successful explicit retry and is deliberate injection, not naturally observed late callbacks", "A failed seek may update the native Position cursor without a decoded frame; recovery-target provenance is recorded separately", "Native open/clock/dimensions and pause are observed; presented pixels and audible output are not", "This single bounded recovery and isolation scenario is not a resource test or broad network-fault certification"];
+}
+
+internal sealed class NetworkRetryIsolation
+{
+    public string Status { get; set; } = "NotRun";
+    public string Stage { get; set; } = "NotRun";
+    public string? ErrorCode { get; set; }
+    public string? ReplacementPlaybackHash { get; set; }
+    public string? ReplacementSessionHash { get; set; }
+    public int ExpectedReplayedCallbacks { get; init; } = 7;
+    public int ReplayedCallbacks { get; set; }
+    public int StaleIdCommands { get; set; }
+    public bool ApiSettledBeforeReplay { get; set; }
+    public int ApiReplayStartCount { get; set; }
+    public int EngineReplayStartCount { get; set; }
+    public int CompletedRequestsBeforeReplay { get; set; }
+    public int CompletedRequestsAfterReplay { get; set; }
+    public int NegotiationsBeforeReplay { get; set; }
+    public int NegotiationsAfterReplay { get; set; }
+    public long? NativeBeforeTicks { get; set; }
+    public long? NativeAfterTicks { get; set; }
+    public long? PausedDriftTicks { get; set; }
+    public long? SnapshotBeforeTicks { get; set; }
+    public long? SnapshotAfterTicks { get; set; }
+    public bool LogicalSessionPreserved { get; set; }
+    public bool PlayerIdentityPreserved { get; set; }
+    public bool SourceIdentityPreserved { get; set; }
+    public bool PausedStatePreserved { get; set; }
+    public bool SnapshotPositionPreserved { get; set; }
+    public bool VolumeAndMutePreserved { get; set; }
+    public bool RecoveryStillConsumed { get; set; }
+    public bool NoRetiredEngineEvents { get; set; }
+    public bool NoEngineEventsDuringReplay { get; set; }
+    public int TotalEngineEventsDuringReplay { get; set; }
+    public int AllowedEngineNotifications { get; set; }
+    public int UnexpectedEngineNotifications { get; set; }
+    public bool NoFailedOrEndedEngineEvents { get; set; }
+    public bool NoUnexpectedEngineEvents { get; set; }
+    public List<HlsApiEvent> ApiEventsDuringReplay { get; set; } = [];
+    public bool NoUnexpectedApiControls { get; set; }
+    public bool NoPlaybackNegotiationDuringReplay { get; set; }
+    public bool ApiCompletionDeltaMatchesObservedProgress { get; set; }
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNameCaseInsensitive = true)]

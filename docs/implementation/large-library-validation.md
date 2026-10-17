@@ -1,5 +1,29 @@
 # Large-library Native AOT validation: limited results
 
+The [2026-10-17 code closeout](current-code-closeout-20261017.md) records final16's
+Home focus-anchor and scroller-navigation repair, successful build/package/schema
+checks and a bounded three-round End/Home/next-Right regression result.
+DataTemplate host pooling and virtualization remain in place. The short check
+is not a substitute for the original performance workload.
+
+Formal06 completed the predeclared 14-phase coordinator sequence on one App
+process, with 178 continuous five-second samples and normal exit 0 inside the
+original close window. **OriginalFiniteUiWorkloadCovered_WithObservationLimit**
+covers the finite UI sequence and fixed idle windows. Tail warm returned to
+the real first viewport before the cutoff, without a repeated numeric tooltip.
+The resource result remains **InvestigateHighRetention / PerformanceNotAccepted**:
+two private-memory increments exceed the unchanged 32 MiB investigation
+threshold, and library-cycle handles rise monotonically with attribution
+unresolved. The later bounded Home interval does not explain that retention.
+Final owned fixture cleanup and system restoration are complete. See the
+current closeout for the independent UI/resource reports and final receipts.
+
+The user renewed unattended testing; the earlier physical-Escape stop is
+historical. LAN discovery and dependent public Save/account restoration remain
+user-deferred. Formal01-05 and older failed/aborted runs retain their actual
+outcomes and original evidence. The historical reports below are preserved
+with their own inputs, workloads, failures and gaps.
+
 Initial report date: 2026-09-09. The first five finite Native AOT UI captures each loaded six initial pages, or 288 records, from a 5,000-item synthetic library. **Targeted collection Reset cleanup was observed in an instrumented build, but private bytes still increased in the later normal AOT build.** That normal build completed five revisits and a separate Home-idle sampling period, during which private bytes rose from 294.13 to 302.65 MiB while image-request counters stayed unchanged. The 2026-09-10 normal 779B follow-up below also retains an unresolved memory result. The earlier cleanup evidence remains valid, and memory stability remains unverified. These observations do not establish a memory plateau, a leak-free implementation, full-library loading, or a realized-container count. Different input timing, starting states, and instrumentation prevent a controlled performance comparison across runs.
 
 ## Initial trial: identity and evidence boundaries

@@ -322,7 +322,7 @@ public sealed partial class LumenLibraryView
         var media = _searchTab == "people" ? Array.Empty<MediaCardViewModel>() : candidates.Where(item => best is null || item.Id != best.Id).ToArray();
         ReconcileMedia(_searchMedia, media);
         for (var index = 0; index < _searchMedia.Count; index++)
-            if (_searchRepeater.TryGetElement(index) is LumenMediaCard card) card.SetSearchContext(ViewModel.SearchText);
+            if (LumenMediaCard.UnwrapNavigationElement(_searchRepeater.TryGetElement(index)) is LumenMediaCard card) card.SetSearchContext(ViewModel.SearchText);
         if (_searchPeopleRenderQuery != ViewModel.SearchText)
         {
             _searchPeopleRenderQuery = ViewModel.SearchText;

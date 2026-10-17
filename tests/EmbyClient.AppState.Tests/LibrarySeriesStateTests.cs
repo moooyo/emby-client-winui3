@@ -26,7 +26,7 @@ public sealed class LibrarySeriesStateTests
         using var nextUp = new RequestGate();
         context.Handler.RespondAsync = request =>
         {
-            if (request.Is("/Shows/series-a/Episodes")) return episodes.RespondAsync(request);
+            if (request.Is("/Shows/series-a/Episodes") && request.Query.ContainsKey("SeasonId")) return episodes.RespondAsync(request);
             if (request.Is("/Users/user-a/Items/Resume")) return resume.RespondAsync(request);
             if (request.Is("/Shows/NextUp")) return nextUp.RespondAsync(request);
             return Task.FromResult(SeriesResponse(context, request));
@@ -172,6 +172,8 @@ public sealed class LibrarySeriesStateTests
     {
         if (request.Is("/Users/user-a/Items/series-a")) return Item(Series());
         if (request.Is("/Shows/series-a/Seasons")) return Page([Season(1), Season(2)]);
+        if (request.Is("/Shows/series-a/Episodes") && !request.Query.ContainsKey("SeasonId")
+            && request.Query.GetValueOrDefault("Limit") == "1") return Page([Episode(1, 1)], 3);
         if (request.Is("/Shows/series-a/Episodes"))
             return request.Query.GetValueOrDefault("SeasonId") == "season-2"
                 ? Page([Episode(2, 1)]) : Page([Episode(1, 1), Episode(1, 2)]);

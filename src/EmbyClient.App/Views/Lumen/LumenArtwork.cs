@@ -66,6 +66,7 @@ public sealed partial class LumenArtwork : UserControl
             UpdateCoverTransform();
         };
         Image.ImageOpened += (_, _) => UpdateCoverTransform();
+        InitializeMemoryDiagnostics();
     }
 
     public void Set(MediaCardViewModel item, LibraryViewModel library, ArtworkKind kind = ArtworkKind.Poster, int decodeWidth = 480)
@@ -76,6 +77,7 @@ public sealed partial class LumenArtwork : UserControl
         CancelRequest(true);
         _item = item;
         _library = library;
+        ObserveMemoryCache(library);
         _kind = kind;
         _decodeWidth = Math.Clamp(decodeWidth, 64, 1920);
         _reference = ImageCache.SelectImage(item.Item, kind);
@@ -157,6 +159,7 @@ public sealed partial class LumenArtwork : UserControl
                     || !ReferenceEquals(_item, item) || !ReferenceEquals(_library, library)
                     || !ReferenceEquals(_request, source)) return;
                 Image.Source = bitmap;
+                ObserveMemorySourceBound();
                 UpdateCoverTransform();
                 _placeholder.Visibility = Visibility.Collapsed;
             });
@@ -181,6 +184,7 @@ public sealed partial class LumenArtwork : UserControl
         _request = null;
         request?.Cancel();
         if (!clear) return;
+        ObserveMemorySourceClearing();
         Image.Source = null;
         UpdateCoverTransform();
         _placeholder.Visibility = Visibility.Visible;

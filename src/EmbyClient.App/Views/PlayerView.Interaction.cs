@@ -40,12 +40,15 @@ public sealed partial class PlayerView
     private string? _nextArtworkItemId;
     private IReadOnlyList<(string Name, string Value)> _playbackInfoValues = [];
 
-    public IReadOnlyList<FrameworkElement> CaptionInteractiveElements => [BackButton, StreamInfoButton, MoreButton];
+    public IReadOnlyList<FrameworkElement> CaptionInteractiveElements => _compactOverlay
+        ? [CompactRestoreButton, CompactStopButton] : [BackButton, StreamInfoButton, MoreButton];
 
     public void SetCaptionPointerActive(bool active)
     {
         if (_captionPointerActive == active) return;
         _captionPointerActive = active;
+        UpdateVideoHitTargetBounds();
+        TracePlayerInput("caption-active");
         if (active) RevealControls();
         else ScheduleChromeAutoHide();
     }
@@ -67,7 +70,12 @@ public sealed partial class PlayerView
         _videoTapTimer.Tick += async (_, _) =>
         {
             _videoTapTimer.Stop();
-            if (!IsLoaded || Visibility != Visibility.Visible) return;
+            TracePlayerInput("video-tap-timer-fire", includeTimerElapsed: true);
+            if (!IsLoaded || Visibility != Visibility.Visible)
+            {
+                TracePlayerInput("video-tap-timer-return", reason: "not-loaded-or-visible", includeTimerElapsed: true);
+                return;
+            }
             await TogglePauseAsync();
         };
         VideoFocusTarget.PointerEntered += (_, _) => ScheduleChromeAutoHide();
@@ -151,10 +159,17 @@ public sealed partial class PlayerView
 
     private void VideoSurfaceDoubleTapped(object sender, DoubleTappedRoutedEventArgs args)
     {
+        if (_acceptanceInputTraceEnabled)
+            TracePlayerInput("video-double-tap", source: args.OriginalSource,
+                pointerDevice: args.PointerDeviceType);
         _videoTapTimer.Stop();
         _suppressVideoClickUntil = Stopwatch.GetTimestamp() + Stopwatch.Frequency / 3;
         args.Handled = true;
-        if (!IsModalOpen) FullscreenRequested?.Invoke(this, EventArgs.Empty);
+        if (!IsModalOpen)
+        {
+            if (_compactOverlay) CompactOverlayRequested?.Invoke(this, EventArgs.Empty);
+            else FullscreenRequested?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void VideoSurfaceWheelChanged(object sender, PointerRoutedEventArgs args)

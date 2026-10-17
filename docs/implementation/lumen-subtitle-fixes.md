@@ -1,9 +1,36 @@
 # Lumen bitmap subtitle reselection and HUD fixes
 
-Updated: 2026-10-14. Status: source frozen; native-06, the two selected managed
-test projects, Debug/AOT06 and published-package readback passed their recorded
-checks. Actual subtitle/UI runtime acceptance is **Paused/Pending** at the
-user's request to stop computer use.
+Current authority: the [2026-10-17 code closeout](current-code-closeout-20261017.md).
+Final16 is **BuildPassed**: Release/Debug, fresh Native AOT, package/runtime and
+offline schema checks have actual exit 0. Its 30,613,504-byte EXE is
+D72B6237...4651; inventories are 675/260/24/595. All 2,430 product cases and the
+114-input NativeProbe compilation use matching complete prior compiled-closure
+evidence, with no reruns for this UI-only delta.
+
+**BoundedNavigationObserved** covers three short 005000/000001 End/Home rounds,
+the next Right action and normal exit 0 after the Home anchor/scroller repair.
+Formal06 is **OriginalFiniteUiWorkloadCovered_WithObservationLimit**: its finite
+UI sequence, fixed idle windows and in-cap sign-out/normal exit are covered;
+tail warm returned to the real first viewport without repeating its numeric
+tooltip. The resource result is **InvestigateHighRetention / PerformanceNotAccepted**:
+two increments exceed the 32 MiB investigation threshold and library-cycle
+handles keep rising, with attribution unresolved. Final owned cleanup and
+system restoration are complete.
+
+The user renewed unattended continuation. The earlier physical-Escape stop and
+goal-service blocked receipt are historical; no new goal-service status is
+claimed. **LANDeferred** still covers discovery, public Save and account
+restoration. Earlier candidates and all failed/aborted attempts retain their
+own scope. CI, release, licensing/signing and installation/distribution remain
+outside this acceptance scope. The user separately authorized committing and
+pushing the current source snapshot to `main`; source publication does not change
+the recorded acceptance results.
+
+The remainder preserves the **2026-10-14 frozen checkpoint**: native-06, two
+selected managed test projects, Debug/AOT06 and package readback passed.
+Its 1,509 cases and Paused/Pending rows are historical, not the latest project
+total or the current authorization state. The new ledger keeps the different
+native binary identities and all original failures explicit.
 
 This is a separate follow-up to the
 [Windows continuation](lumen-windows-continuation.md). Its native-05/publish-05
@@ -141,7 +168,9 @@ separate from that managed total. The
 and [Playback execution](../../artifacts/lumen-subtitle-fixes-20261014/run-01/verification/embyclient.playback.tests-release-06.execution.json)
 retain the corresponding actual process results.
 
-## Paused runtime acceptance and final resource state
+<a id="paused-runtime-acceptance-and-final-resource-state"></a>
+
+## Historical paused runtime acceptance and final resource state
 
 The fresh owned App, PID 45292, reached Home only. No playback or PGS/ASS/HUD
 fix pixels have been accepted for this candidate. The user explicitly paused
@@ -171,7 +200,7 @@ was not retried. No rereading or regeneration of that raster is used for
 acceptance. The earlier UI-pause receipt is a historical pre-exit-poll checkpoint,
 not a replacement for the actual final process result.
 
-| Current acceptance scope | Status | Required observed boundary |
+| Historical 2026-10-14 acceptance scope | Status at that checkpoint | Required observed boundary |
 | --- | --- | --- |
 | Paused bitmap Off/reselection | **Paused/Pending** | Same mapped source/track must visibly clear on Off and restore the actual overlapping decoded cue at unchanged paused clock, without a new decoder/playback ID/server session. |
 | Bitmap HUD intersection and hide/fade | **Paused/Pending** | Actual wide/fullscreen overlap must clear with unchanged image size; non-overlapping narrow and source-styled ASS placement, HUD hide/fade and restoration need their own saved pixels. |
@@ -181,7 +210,7 @@ not a replacement for the actual final process result.
 
 The prior native-05 PCM policy/rejection cases remain historical; successful
 receiver/carrier output, bitstream-to-PCM software-volume replacement and
-physical HDR are not established for this new DLL. The broader renderer,
-font/SAR/script, real-server and device boundaries remain explicit. Runtime
-rows will change only when root supplies this candidate's actual observations
-and final owned-resource receipts after the applicable authorization.
+physical HDR were not established by this checkpoint. The broader renderer,
+font/SAR/script, real-server and device boundaries remain explicit. The table
+preserves its original state; later observations and owned-resource receipts
+are recorded in the current closeout instead of rewriting historical rows.

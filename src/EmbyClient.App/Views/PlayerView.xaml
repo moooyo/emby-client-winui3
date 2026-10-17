@@ -37,6 +37,19 @@
                     </Border>
                 </ControlTemplate></Setter.Value></Setter>
             </Style>
+            <Style x:Key="CompactStopButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayerCommandStyle}">
+                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                    <Border x:Name="StopSurface" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <VisualStateManager.VisualStateGroups><VisualStateGroup x:Name="CommonStates">
+                            <VisualState x:Name="Normal" />
+                            <VisualState x:Name="PointerOver"><VisualState.Setters><Setter Target="StopSurface.Background" Value="#C42B1C" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="Pressed"><VisualState.Setters><Setter Target="StopSurface.Background" Value="#A8261B" /></VisualState.Setters></VisualState>
+                            <VisualState x:Name="Disabled"><VisualState.Setters><Setter Target="StopSurface.Opacity" Value="0.35" /></VisualState.Setters></VisualState>
+                        </VisualStateGroup></VisualStateManager.VisualStateGroups>
+                        <ContentPresenter Content="{TemplateBinding Content}" Padding="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate></Setter.Value></Setter>
+            </Style>
             <Style x:Key="PlayerTrackRowStyle" TargetType="Button" BasedOn="{StaticResource PlayerCommandStyle}">
                 <Setter Property="Width" Value="Auto" /><Setter Property="Height" Value="36" />
                 <Setter Property="Padding" Value="12,8" /><Setter Property="CornerRadius" Value="10" />
@@ -95,6 +108,11 @@
         <Grid x:Name="PlayerMain" Grid.ColumnSpan="2" SizeChanged="PlayerMainSizeChanged">
             <Grid x:Name="VideoStage" Background="Black">
                 <MediaPlayerElement x:Name="VideoSurface" AreTransportControlsEnabled="False" IsHitTestVisible="False" Stretch="Uniform" SizeChanged="NativeSubtitleViewportChanged" />
+                <!-- Keep the compact HUD shade behind both subtitle presentations. -->
+                <Grid x:Name="CompactBackground" Visibility="Collapsed" IsHitTestVisible="False">
+                    <Border x:Name="CompactShade" Background="#4D000000" IsHitTestVisible="False" />
+                    <Border Height="96" VerticalAlignment="Bottom" IsHitTestVisible="False"><Border.Background><LinearGradientBrush StartPoint="0,1" EndPoint="0,0"><GradientStop Color="#CC000000" Offset="0" /><GradientStop Color="#00000000" Offset="1" /></LinearGradientBrush></Border.Background></Border>
+                </Grid>
                 <Canvas x:Name="NativeSubtitleLayer" Visibility="Collapsed" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" SizeChanged="NativeSubtitleViewportChanged">
                     <Image x:Name="NativeSubtitleImage" Stretch="Fill" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
                 </Canvas>
@@ -116,6 +134,16 @@
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
+            <Grid x:Name="CompactChrome" Canvas.ZIndex="3" Visibility="Collapsed">
+                <Grid x:Name="CompactHeader" MinHeight="32" Margin="12,6,6,0" VerticalAlignment="Top" ColumnSpacing="12" SizeChanged="CompactOverlayMeasured">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <TextBlock x:Name="CompactTitleText" FontSize="12" FontWeight="SemiBold" Foreground="#EBFFFFFF" VerticalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" IsHitTestVisible="False" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                        <Button x:Name="CompactRestoreButton" Width="32" Height="32" Padding="8" CornerRadius="8" Background="#59000000" Style="{StaticResource PlayerCommandStyle}" Click="PictureInPictureClicked" AutomationProperties.Name="Return to full window" ToolTipService.ToolTip="Return to full window"><Image Width="16" Height="16"><Image.Source><SvgImageSource UriSource="ms-appx:///Assets/Lumen/Icons/w/picture_in_picture_24_regular.svg" /></Image.Source></Image></Button>
+                        <Button x:Name="CompactStopButton" Width="32" Height="32" Padding="9.5" CornerRadius="8" Background="#59000000" Style="{StaticResource CompactStopButtonStyle}" Click="BackClicked" AutomationProperties.Name="Stop playback" ToolTipService.ToolTip="Stop playback"><Image Width="13" Height="13"><Image.Source><SvgImageSource UriSource="ms-appx:///Assets/Lumen/Icons/w/dismiss_16_regular.svg" /></Image.Source></Image></Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
             <Grid x:Name="PlayerHeader" Canvas.ZIndex="3" Height="170" VerticalAlignment="Top" SizeChanged="PlayerHeaderSizeChanged">
                 <Border x:Name="HeaderSurface" Visibility="Collapsed" Background="#EB0C0B0A" IsHitTestVisible="False" />
                 <Border x:Name="HeaderGradient" IsHitTestVisible="False"><Border.Background><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#B8000000" Offset="0" /><GradientStop Color="#00000000" Offset="1" /></LinearGradientBrush></Border.Background></Border>
@@ -131,11 +159,14 @@
                 </Grid>
             </Grid>
             <Grid x:Name="ControlDock" Canvas.ZIndex="3" Height="320" VerticalAlignment="Bottom" Padding="44,0,44,22" SizeChanged="NativeSubtitleViewportChanged">
-                <Border x:Name="DockSurface" Margin="-44,0,-44,-22" Visibility="Collapsed" Background="#EB0C0B0A" IsHitTestVisible="False" />
-                <Border x:Name="DockGradient" Margin="-44,0,-44,-22" IsHitTestVisible="False"><Border.Background><LinearGradientBrush StartPoint="0,1" EndPoint="0,0"><GradientStop Color="#E6000000" Offset="0" /><GradientStop Color="#8C000000" Offset="0.4" /><GradientStop Color="#00000000" Offset="1" /></LinearGradientBrush></Border.Background></Border>
-                <Border x:Name="ChapterPreview" Width="176" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12,0,0,114" Background="Transparent" IsHitTestVisible="False"><StackPanel Spacing="6"><Border x:Name="ChapterPreviewImageHost" Height="99" Background="#FF111111" BorderBrush="#38FFFFFF" BorderThickness="1" CornerRadius="8"><Image x:Name="ChapterPreviewImage" Stretch="UniformToFill" /></Border><Border CornerRadius="12" Background="#CC141210" Padding="10,4"><TextBlock x:Name="ChapterPreviewText" Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis" /></Border></StackPanel></Border>
-                <Grid x:Name="TimelineHost" Height="28" Margin="12,0,12,60" VerticalAlignment="Bottom" SizeChanged="NativeSubtitleViewportChanged"><Slider x:Name="Timeline" Minimum="0" Maximum="1" IsEnabled="False" AutomationProperties.Name="Playback position" Style="{StaticResource PlayerSliderStyle}" LostFocus="TimelineLostFocus" PointerMoved="TimelinePointerMoved" PointerExited="TimelinePointerExited"><Slider.Resources><x:Double x:Key="SliderTrackThemeHeight">4</x:Double></Slider.Resources></Slider><Canvas x:Name="ChapterTicks" Margin="8,0" IsHitTestVisible="False" VerticalAlignment="Center" Height="4" /></Grid>
-                <Grid x:Name="TransportRow" Height="52" VerticalAlignment="Bottom" ColumnSpacing="8" RowSpacing="6" SizeChanged="NativeSubtitleViewportChanged">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Border x:Name="DockSurface" Grid.ColumnSpan="3" Margin="-44,0,-44,-22" Visibility="Collapsed" Background="#EB0C0B0A" IsHitTestVisible="False" />
+                <Border x:Name="DockGradient" Grid.ColumnSpan="3" Margin="-44,0,-44,-22" IsHitTestVisible="False"><Border.Background><LinearGradientBrush StartPoint="0,1" EndPoint="0,0"><GradientStop Color="#E6000000" Offset="0" /><GradientStop Color="#8C000000" Offset="0.4" /><GradientStop Color="#00000000" Offset="1" /></LinearGradientBrush></Border.Background></Border>
+                <Border x:Name="ChapterPreview" Grid.ColumnSpan="3" Width="176" Visibility="Collapsed" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12,0,0,114" Background="Transparent" IsHitTestVisible="False"><StackPanel Spacing="6"><Border x:Name="ChapterPreviewImageHost" Height="99" Background="#FF111111" BorderBrush="#38FFFFFF" BorderThickness="1" CornerRadius="8"><Image x:Name="ChapterPreviewImage" Stretch="UniformToFill" /></Border><Border CornerRadius="12" Background="#CC141210" Padding="10,4"><TextBlock x:Name="ChapterPreviewText" Foreground="#FFFFFF" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis" /></Border></StackPanel></Border>
+                <Grid x:Name="CompactElapsedHost" Grid.Column="0" MinHeight="28" Visibility="Collapsed" VerticalAlignment="Bottom" SizeChanged="CompactOverlayMeasured"><TextBlock x:Name="CompactElapsedText" Text="0:00" FontSize="11" Foreground="#FFFFFF" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular" /></Grid>
+                <Grid x:Name="TimelineHost" Grid.Column="1" Height="28" Margin="12,0,12,60" VerticalAlignment="Bottom" SizeChanged="NativeSubtitleViewportChanged"><Slider x:Name="Timeline" Minimum="0" Maximum="1" IsEnabled="False" AutomationProperties.Name="Playback position" Style="{StaticResource PlayerSliderStyle}" LostFocus="TimelineLostFocus" PointerMoved="TimelinePointerMoved" PointerExited="TimelinePointerExited"><Slider.Resources><x:Double x:Key="SliderTrackThemeHeight">4</x:Double></Slider.Resources></Slider><Canvas x:Name="ChapterTicks" Margin="8,0" IsHitTestVisible="False" VerticalAlignment="Center" Height="4" /></Grid>
+                <Grid x:Name="CompactDurationHost" Grid.Column="2" MinHeight="28" Visibility="Collapsed" VerticalAlignment="Bottom" SizeChanged="CompactOverlayMeasured"><TextBlock x:Name="CompactDurationText" Text="--:--" FontSize="11" Foreground="#99FFFFFF" VerticalAlignment="Center" Typography.NumeralAlignment="Tabular" /></Grid>
+                <Grid x:Name="TransportRow" Grid.ColumnSpan="3" Height="52" VerticalAlignment="Bottom" ColumnSpacing="8" RowSpacing="6" SizeChanged="NativeSubtitleViewportChanged">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <StackPanel x:Name="TransportButtons" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                         <Button x:Name="PauseButton" Width="52" Height="52" CornerRadius="26" Padding="14" Margin="0,0,6,0" Click="PauseClicked" Style="{StaticResource PlayerPrimaryButtonStyle}" AutomationProperties.Name="Pause" ToolTipService.ToolTip="Pause"><Image Width="24" Height="24"><Image.Source><SvgImageSource UriSource="ms-appx:///Assets/Lumen/Icons/d/pause_24_filled.svg" /></Image.Source></Image></Button>
@@ -162,6 +193,7 @@
                     </StackPanel>
                 </Grid>
             </Grid>
+            <ProgressBar x:Name="CompactThinProgress" Canvas.ZIndex="4" Visibility="Collapsed" Minimum="0" Maximum="1" Value="0" Height="2" MinHeight="2" VerticalAlignment="Bottom" Foreground="{StaticResource PlayerAccentBrush}" Background="#33FFFFFF" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw" />
             <Grid x:Name="SubtitleOverlay" Canvas.ZIndex="2" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="40,0,40,150" IsHitTestVisible="False" MaxWidth="1100" SizeChanged="CaptionLayoutSizeChanged">
                 <TextBlock x:Name="SubtitleOutlineText" TextAlignment="Center" TextWrapping="Wrap" FontSize="30" FontWeight="SemiBold" Foreground="#F0000000" Margin="1,2,-1,-2" />
                 <TextBlock x:Name="SubtitleOutlineLeft" TextAlignment="Center" TextWrapping="Wrap" FontSize="30" FontWeight="SemiBold" Foreground="Black" Margin="-1,0,1,0" />

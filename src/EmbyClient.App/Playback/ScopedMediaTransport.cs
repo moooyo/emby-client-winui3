@@ -65,7 +65,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
         ArgumentNullException.ThrowIfNull(requiredOrigin);
         ValidateUri(requiredOrigin);
         return DownloadCoreAsync(uri, rangeOffset, rangeLength, maximumBytes, null, null, null, ct,
-            requiredOrigin, preserveUnsatisfiableRange: true);
+            requiredOrigin, preserveUnsatisfiableRange: true, allowFullHlsResponse: true);
     }
 
     internal Task<MediaResource> DownloadRangeAsync(Uri uri, long offset, int length,
@@ -145,7 +145,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
     private async Task<MediaResource> DownloadCoreAsync(Uri uri, long? rangeOffset,
         long? rangeLength, int maximumBytes, long? expectedTotalLength, string? entityTag,
         DateTimeOffset? lastModified, CancellationToken ct, Uri? requiredOrigin = null,
-        bool preserveUnsatisfiableRange = false)
+        bool preserveUnsatisfiableRange = false, bool allowFullHlsResponse = false)
     {
         ct.ThrowIfCancellationRequested();
         _lifetimeToken.ThrowIfCancellationRequested();
@@ -161,7 +161,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
         {
             using var response = await SendAsync(uri, rangeOffset, rangeLength, entityTag,
                 lastModified, operation.Token, requiredOrigin: requiredOrigin,
-                preserveUnsatisfiableRange: preserveUnsatisfiableRange).ConfigureAwait(false);
+                preserveUnsatisfiableRange: preserveUnsatisfiableRange, allowFullHlsResponse: allowFullHlsResponse).ConfigureAwait(false);
             var content = response.Content.Headers;
             if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable && preserveUnsatisfiableRange)
             {
@@ -216,7 +216,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
     private async Task<HttpResponseMessage> SendAsync(Uri uri, long? rangeOffset, long? rangeLength,
         string? entityTag, DateTimeOffset? lastModified, CancellationToken ct,
         HttpMethod? method = null, RangeHeaderValue? streamingRange = null, bool streaming = false,
-        Uri? requiredOrigin = null, bool preserveUnsatisfiableRange = false)
+        Uri? requiredOrigin = null, bool preserveUnsatisfiableRange = false, bool allowFullHlsResponse = false)
     {
         var current = ScopeUri(uri);
         for (var redirects = 0; ; redirects++)
@@ -264,7 +264,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
                 }
 
                 if (streaming) ValidateStreamingResponse(response, streamingRange, method == HttpMethod.Head);
-                else ValidateResponse(response, rangeOffset, rangeLength, preserveUnsatisfiableRange);
+                else ValidateResponse(response, rangeOffset, rangeLength, preserveUnsatisfiableRange, allowFullHlsResponse);
                 return response;
             }
             catch
@@ -280,21 +280,7 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
         // Error bodies are never read or forwarded. In particular, 416 is a legitimate range response,
         // not evidence of a network failure; preserve its actual status and Content-Range metadata.
         if (!response.IsSuccessStatusCode) return;
-        // HttpClient removes chunk framing but preserves Content-Length and does not decode
-        // arbitrary transfer codings. Never turn ambiguous or still-encoded bytes into media.
-        if (response.Headers.NonValidated.TryGetValues("Transfer-Encoding", out var unfilteredTransferEncoding))
-        {
-            // The typed collection skips invalid appended values. NonValidated retains them,
-            // including an illegal second field following an otherwise valid chunked field.
-            if (response.Content.Headers.Contains("Content-Length") || unfilteredTransferEncoding.Count != 1
-                || !unfilteredTransferEncoding.Single().Trim(' ', '\t').Equals("chunked", StringComparison.OrdinalIgnoreCase))
-                throw new PlaybackException("UnsupportedFormat");
-            var transferEncoding = response.Headers.TransferEncoding;
-            if (transferEncoding.Count != 1
-                || !transferEncoding.Single().Value.Equals("chunked", StringComparison.OrdinalIgnoreCase)
-                || transferEncoding.Single().Parameters.Count != 0)
-                throw new PlaybackException("UnsupportedFormat");
-        }
+        ValidateTransferFraming(response);
         if (response.StatusCode is not (HttpStatusCode.OK or HttpStatusCode.PartialContent)
             || response.Content.Headers.ContentEncoding.Any(value => !value.Equals("identity", StringComparison.OrdinalIgnoreCase)))
             throw new PlaybackException("UnsupportedFormat");
@@ -324,8 +310,27 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
             throw new PlaybackException("UnsupportedFormat");
     }
 
+    private static void ValidateTransferFraming(HttpResponseMessage response)
+    {
+        // HttpClient removes chunk framing but preserves Content-Length and does not decode
+        // arbitrary transfer codings. Never turn ambiguous or still-encoded bytes into media.
+        if (response.Headers.NonValidated.TryGetValues("Transfer-Encoding", out var unfilteredTransferEncoding))
+        {
+            // The typed collection skips invalid appended values. NonValidated retains them,
+            // including an illegal second field following an otherwise valid chunked field.
+            if (response.Content.Headers.Contains("Content-Length") || unfilteredTransferEncoding.Count != 1
+                || !unfilteredTransferEncoding.Single().Trim(' ', '\t').Equals("chunked", StringComparison.OrdinalIgnoreCase))
+                throw new PlaybackException("UnsupportedFormat");
+            var transferEncoding = response.Headers.TransferEncoding;
+            if (transferEncoding.Count != 1
+                || !transferEncoding.Single().Value.Equals("chunked", StringComparison.OrdinalIgnoreCase)
+                || transferEncoding.Single().Parameters.Count != 0)
+                throw new PlaybackException("UnsupportedFormat");
+        }
+    }
+
     private static void ValidateResponse(HttpResponseMessage response, long? rangeOffset, long? rangeLength,
-        bool preserveUnsatisfiableRange = false)
+        bool preserveUnsatisfiableRange = false, bool allowFullHlsResponse = false)
     {
         if (response.StatusCode == HttpStatusCode.Unauthorized)
             throw new PlaybackException("AuthenticationRequired");
@@ -344,11 +349,24 @@ internal sealed partial class ScopedMediaTransport : IDisposable, IAsyncDisposab
         if (!response.IsSuccessStatusCode) throw new PlaybackException("NetworkFailure");
         if (response.Content.Headers.ContentEncoding.Any(value => !value.Equals("identity", StringComparison.OrdinalIgnoreCase)))
             throw new PlaybackException("UnsupportedFormat");
+        if (allowFullHlsResponse)
+        {
+            ValidateTransferFraming(response);
+            if (response.StatusCode == HttpStatusCode.OK && response.Content.Headers.Contains("Content-Range"))
+                throw new PlaybackException("UnsupportedFormat");
+        }
 
         if (!rangeOffset.HasValue)
         {
             if (response.StatusCode == HttpStatusCode.PartialContent || response.Content.Headers.ContentRange is not null)
                 throw new PlaybackException("UnsupportedFormat");
+            return;
+        }
+
+        if (allowFullHlsResponse && response.StatusCode == HttpStatusCode.OK)
+        {
+            // Dynamic HLS segments can legitimately ignore Range. The bounded complete body is
+            // returned unchanged; only the HLS relay may apply a local range after full drainage.
             return;
         }
 

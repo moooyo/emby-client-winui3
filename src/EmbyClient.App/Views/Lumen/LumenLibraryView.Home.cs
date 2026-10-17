@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System.Numerics;
 using Windows.Foundation;
+using Windows.UI.ViewManagement;
 
 namespace EmbyClient.App.Views.Lumen;
 
@@ -51,12 +52,15 @@ public sealed partial class LumenLibraryView
     private readonly StackPanel _heroThumbs = new() { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 7, 0, 0) };
     private readonly StackPanel _heroSegments = new() { Orientation = Orientation.Horizontal, Spacing = 6, Margin = new Thickness(0, 14, 0, -10) };
     private readonly DispatcherTimer _heroTimer = new() { Interval = TimeSpan.FromSeconds(8) };
+    private readonly UISettings _homeAnimationSettings = new();
     private readonly List<HeroThumbnailState> _heroThumbStates = [];
     private readonly List<HomeShelfState> _homeShelves = [];
     private MediaCardViewModel[] _heroItems = [];
     private int _heroIndex;
     private string? _heroId;
     private bool _heroHasFocus;
+    private bool _homeAnimationSettingsSubscribed;
+    private long _homeAnimationSettingsEpoch;
     private string _homeSignature = string.Empty;
 
     public Func<bool>? HomeInteractionBlocked { get; set; }
@@ -153,6 +157,11 @@ public sealed partial class LumenLibraryView
         };
         _heroTimer.Tick += (_, _) =>
         {
+            if (!_homeAnimationSettings.AnimationsEnabled)
+            {
+                UpdateHomeAnimationPreference();
+                return;
+            }
             if (HomeInteractionBlocked?.Invoke() == true || XamlRoot?.IsHostVisible != true) return;
             SelectHero((_heroIndex + 1) % Math.Max(1, _heroItems.Length));
         };
@@ -425,11 +434,45 @@ public sealed partial class LumenLibraryView
         storyboard.Begin();
     }
 
+    private void SubscribeHomeAnimationSettings()
+    {
+        if (_homeAnimationSettingsSubscribed) return;
+        _homeAnimationSettingsEpoch++;
+        _homeAnimationSettings.AnimationsEnabledChanged += HomeAnimationsChanged;
+        _homeAnimationSettingsSubscribed = true;
+    }
+
+    private void UnsubscribeHomeAnimationSettings()
+    {
+        _homeAnimationSettingsEpoch++;
+        if (!_homeAnimationSettingsSubscribed) return;
+        _homeAnimationSettingsSubscribed = false;
+        _homeAnimationSettings.AnimationsEnabledChanged -= HomeAnimationsChanged;
+    }
+
+    private void HomeAnimationsChanged(UISettings sender, UISettingsAnimationsEnabledChangedEventArgs args)
+    {
+        var epoch = _homeAnimationSettingsEpoch;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!_renderLoaded || !_homeAnimationSettingsSubscribed || epoch != _homeAnimationSettingsEpoch) return;
+            UpdateHomeAnimationPreference();
+        });
+    }
+
+    private void UpdateHomeAnimationPreference()
+    {
+        UpdateHeroTimer();
+        if (_homeAnimationSettings.AnimationsEnabled) return;
+        StopHeroThumbnailAnimations();
+        foreach (var state in _heroThumbStates) AnimateHeroProgress(state.Progress, false);
+    }
+
     private void UpdateHeroTimer()
     {
         var shouldRun = IsLoaded && Visibility == Visibility.Visible && _renderedPage == "home"
             && _homeDeck.SelectedIndex == 0 && _preferences.HeroRotation && !_heroHasFocus
-            && new Windows.UI.ViewManagement.UISettings().AnimationsEnabled && _heroItems.Length > 1;
+            && _homeAnimationSettings.AnimationsEnabled && _heroItems.Length > 1;
         if (shouldRun && !_heroTimer.IsEnabled)
         {
             _heroTimer.Start();

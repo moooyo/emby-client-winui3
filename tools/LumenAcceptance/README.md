@@ -2,7 +2,7 @@
 
 This Windows-only helper prepares a fresh task-owned synthetic fixture and a normal Windows-user-protected saved account. It links the production `AccountStore`, `ConnectionService`, and their generated settings JSON context. It does not add a test credential bypass to the application, automate authentication dialogs, inspect real saved accounts, install services, or control the desktop.
 
-Only the rich fixture's explicit IPv4 loopback identity is accepted. The helper checks the synthetic response header, bounded statistics, server ID, version, and public name before sending the fixed development `demo` credentials. A normal `ConnectionService.SignInAsync` protects the token, and a second production `RestoreAsync` verifies the saved account. Tokens and exception payloads are never printed. The profile and credential-free receipt stay under a fresh `artifacts/lumen-acceptance/<run>/` directory.
+Synthetic mode accepts only the explicitly selected rich, design, or large-library fixture's IPv4 loopback identity. The helper checks the synthetic response header, bounded statistics, exact catalog flags/count, server ID, version, and public name before sending the fixed development `demo` credentials. A normal `ConnectionService.SignInAsync` protects the token, and a second production `RestoreAsync` verifies the saved account. Tokens and exception payloads are never printed. The profile and credential-free receipt stay under a fresh `artifacts/lumen-acceptance/<run>/` directory.
 
 ## Build
 
@@ -40,6 +40,35 @@ with official credentials. Ordinary rich-fixture mode remains unchanged and
 rejects a design-mode endpoint. This is test data selection, not a production
 authentication bypass or proof of visual fidelity.
 
+`-LargeLibraryItems 5000` selects the independent paged large-library catalog.
+The explicit count accepts 1 through 10,000, requires the matching
+`synthetic-large-server-<count>` identity and public name, and requires
+`LumenCatalog=false`, `LumenDesignCatalog=false`, and the exact `LargeLibraryItems`
+statistics value. It cannot combine with design mode, artwork, subtitle options,
+or official credentials. Omit `-ArtworkDirectory` in this mode. The bootstrap
+receives the same `--large-library-items` value and records it in its normal
+protected-account restore receipt. For a separate task-owned loopback instance:
+
+```powershell
+./tools/LumenAcceptance/Start-Environment.ps1 `
+    -FixtureExecutable (Join-Path $workspace 'artifacts/lumen-acceptance/tool-build/fixture/EmbyClient.FixtureServer.exe') `
+    -BootstrapExecutable (Join-Path $workspace 'artifacts/lumen-acceptance/tool-build/bootstrap/EmbyClient.LumenAcceptance.exe') `
+    -MediaDirectory 'D:/Code/emby-client-winui3/tools/EmbyClient.MediaFixtures/artifacts/sixty-seconds' `
+    -Port 19010 -LargeLibraryItems 5000 -ImageDelayMilliseconds 100 `
+    -FailFirstPlaybackInfo -ItemDetailDelay 'large-000001:1:12000'
+```
+
+The launcher can forward the existing fixture boundary controls through
+`-ItemDetailFailure`, `-ItemDetailDelay`, `-FirstMediaDelayMilliseconds`,
+`-StopDelayMilliseconds`, and `-LogoutDelayMilliseconds`. Delays remain bounded
+to 30 seconds; image delays are bounded to one second. The fixture validates
+item IDs, attempt counts, and conflicting controls before listening. The owned
+receipt records the requested controls, and readiness verifies effective delay
+settings. Read `/_fixture/stats` to establish which attempt or playback session
+actually entered a boundary. See `../EmbyClient.FixtureServer/Boundary-Controls.md`
+and `../EmbyClient.FixtureServer/Large-Library-Acceptance.md` for the separate
+native UI observations; a successful bootstrap does not complete those checks.
+
 `-SubtitleFile '<absolute-owned-file.zh.vtt>'` forwards an optional real external
 WebVTT snapshot to the fixture. It is off by default. The launcher checks an
 existing absolute `.vtt` file, the 4 MiB bound, strict UTF-8, header/separator/cue
@@ -49,6 +78,18 @@ hash, size, and unchanged-source check after bootstrap. The bootstrap's normal
 synthetic identity/account validation does not assume a two-track source, so an
 honest optional third external subtitle stream does not bypass or weaken it.
 Native cue parsing and visible rendering remain separate application checks.
+
+`-EmbeddedPgs` selects the existing measured 59-to-61-second embedded bitmap case.
+For a separately measured hundred-second PGS case, pass both `-EmbeddedPgs` and
+`-AllowLongEmbeddedPgs`. This forwards the distinct server opt-in and accepts only
+99 to 101 seconds, at most 1920 by 1080 and 64 MiB, with the same media/probe hash
+and native stream checks. The server independently compares Matroska Info duration
+with the measured JSON and FFprobe evidence. The launcher records the mode and
+duration and requires matching live statistics before the usual account bootstrap.
+The switch alone, a sixty-second input in long mode, and a hundred-second input
+without the switch are rejected. Use a fresh run directory and leave any existing
+fixture instance unchanged. See `../EmbyClient.FixtureServer/Embedded-Pgs.md` for
+the separate HTTP contract scope; these checks do not establish native PGS pixels.
 
 Launch the normal application with process-only `EMBY_CLIENT_DATA_ROOT` pointing to the returned `ProfileDirectory`. Keep the entire published application folder together and use that folder as its working directory. The application should restore its normal last-used account; this helper does not drive the application or claim UI acceptance.
 

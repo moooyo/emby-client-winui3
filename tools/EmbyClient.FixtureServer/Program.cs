@@ -63,6 +63,8 @@ if (options.Bif is not null)
     Console.WriteLine("An explicit bounded BIF snapshot is enabled. Native JPEG decoding and visible thumbnail rendering require separate application verification.");
 if (options.EmbeddedPgs)
     Console.WriteLine("An explicit measured synthetic MKV with embedded PGS is enabled. Original file bytes and observed native stream indices are preserved.");
+if (options.AllowLongEmbeddedPgs)
+    Console.WriteLine("The explicit long-PGS acceptance case requires a measured 99-to-101-second MKV with matching container duration.");
 if (options.FailFirstPlaybackInfo)
     Console.WriteLine("The first valid PlaybackInfo POST with IsPlayback=true will return a synthetic HTTP 503.");
 if (options.BoundaryControls is { Enabled: true })
@@ -74,7 +76,8 @@ namespace EmbyClient.FixtureServer
     internal sealed record FixtureOptions(int Port, string MediaPath, MediaFixtureMetadata Media,
         int LargeLibraryItems = 0, int ImageDelayMilliseconds = 0, bool FailFirstPlaybackInfo = false,
         FixtureBoundaryOptions? BoundaryControls = null, bool LumenCatalog = false, string? ArtworkDirectory = null,
-        bool LumenDesignCatalog = false, FixtureSubtitle? Subtitle = null, FixtureBif? Bif = null, bool EmbeddedPgs = false)
+        bool LumenDesignCatalog = false, FixtureSubtitle? Subtitle = null, FixtureBif? Bif = null, bool EmbeddedPgs = false,
+        bool AllowLongEmbeddedPgs = false)
     {
         public static FixtureOptions Parse(string[] arguments)
         {
@@ -89,6 +92,7 @@ namespace EmbyClient.FixtureServer
             string? subtitlePath = null;
             string? bifPath = null;
             var embeddedPgs = false;
+            var allowLongEmbeddedPgs = false;
             var boundaryOptions = new FixtureBoundaryOptionsBuilder();
             for (var index = 0; index < arguments.Length; index++)
             {
@@ -145,6 +149,9 @@ namespace EmbyClient.FixtureServer
                     case "--embedded-pgs" when !embeddedPgs:
                         embeddedPgs = true;
                         break;
+                    case "--allow-long-embedded-pgs" when !allowLongEmbeddedPgs:
+                        allowLongEmbeddedPgs = true;
+                        break;
                     case "--item-detail-failure" when index + 1 < arguments.Length:
                         boundaryOptions.AddDetailFailure(arguments[++index]);
                         break;
@@ -161,7 +168,7 @@ namespace EmbyClient.FixtureServer
                         boundaryOptions.LogoutDelayMilliseconds = FixtureBoundaryOptionsBuilder.ParseDelay(arguments[++index]);
                         break;
                     default:
-                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--lumen-catalog | --lumen-design-catalog] [--artwork-directory <absolute-handoff-directory>] [--subtitle-file <absolute-vtt-path> | --embedded-pgs] [--bif-file <absolute-bif-path>] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
+                        throw new ArgumentException("Usage: EmbyClient.FixtureServer --media-dir <directory> [--port 18960] [--lumen-catalog | --lumen-design-catalog] [--artwork-directory <absolute-handoff-directory>] [--subtitle-file <absolute-vtt-path> | --embedded-pgs [--allow-long-embedded-pgs]] [--bif-file <absolute-bif-path>] [--large-library-items 5000] [--image-delay-ms 100] [--fail-first-playback-info] [--item-detail-failure <id>:<attempt>] [--item-detail-delay <id>:<attempt>:<ms>] [--first-media-delay-ms <ms>] [--stop-delay-ms <ms>] [--logout-delay-ms <ms>]");
                 }
             }
 
@@ -171,6 +178,8 @@ namespace EmbyClient.FixtureServer
                 throw new ArgumentException("Use separate fixture instances for the Lumen catalog and the large-library trial.");
             if (embeddedPgs && subtitlePath is not null)
                 throw new ArgumentException("The embedded PGS and external WebVTT cases require separate fixture instances.");
+            if (allowLongEmbeddedPgs && !embeddedPgs)
+                throw new ArgumentException("The long-PGS acceptance case requires the separate --embedded-pgs opt-in.");
             if (mediaDirectory is null) throw new ArgumentException("--media-dir is required. Prepare the measured synthetic media before starting the fixture server.");
             var fileName = embeddedPgs ? "fixture-h264-aac-pgs.mkv" : "fixture-h264-aac.mp4";
             var path = Path.Combine(mediaDirectory, fileName);
@@ -194,11 +203,11 @@ namespace EmbyClient.FixtureServer
                 || !string.Equals(metadata.VideoCodec, "H264", StringComparison.OrdinalIgnoreCase)
                 || !string.Equals(metadata.AudioCodec, "AAC", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The generated media metadata does not match the selected synthetic media.");
-            if (embeddedPgs) FixtureEmbeddedPgs.Validate(mediaDirectory, metadata, stream);
+            if (embeddedPgs) FixtureEmbeddedPgs.Validate(mediaDirectory, metadata, stream, allowLongEmbeddedPgs);
             return new FixtureOptions(port, path, metadata, largeLibraryItems, imageDelayMilliseconds,
                 failFirstPlaybackInfo, boundaryOptions.Build(), lumenCatalog, artworkDirectory, lumenDesignCatalog,
                 subtitlePath is null ? null : FixtureSubtitle.Read(subtitlePath),
-                bifPath is null ? null : FixtureBif.Read(bifPath, metadata.DurationTicks), embeddedPgs);
+                bifPath is null ? null : FixtureBif.Read(bifPath, metadata.DurationTicks), embeddedPgs, allowLongEmbeddedPgs);
         }
     }
 

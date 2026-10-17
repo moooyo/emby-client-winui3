@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
@@ -386,6 +387,89 @@ public sealed class ReleaseUpdateTests
         await Assert.ThrowsAsync<ReleaseUpdateException>(() => service.CheckLatestAsync(new Version(1, 0, 0)));
 
         Assert.Equal(0, handler.RequestCount);
+    }
+
+    [Fact]
+    public async Task Installer_helper_parses_with_the_Windows_PowerShell_runtime_used_for_handoff()
+    {
+        using var directory = new UpdateTestDirectory();
+        Directory.CreateDirectory(directory.UpdateRoot);
+        var helperPath = Path.Combine(directory.UpdateRoot, "trusted-installer.ps1");
+        var parserPath = Path.Combine(directory.UpdateRoot, "parse-installer.ps1");
+        await File.WriteAllTextAsync(helperPath, ReleaseUpdateInstallerScript.Content, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(parserPath, """
+            param([Parameter(Mandatory=$true)][string]$HelperPath)
+            $tokens = $null
+            $errors = $null
+            [void][Management.Automation.Language.Parser]::ParseFile($HelperPath, [ref]$tokens, [ref]$errors)
+            if ($errors.Count -gt 0) {
+                foreach ($error in $errors) { [Console]::Error.WriteLine($error.Message) }
+                exit 1
+            }
+            exit 0
+            """, TestContext.Current.CancellationToken);
+
+        var result = await RunWindowsPowerShellAsync(parserPath, "-HelperPath", helperPath);
+
+        Assert.True(result.ExitCode == 0, result.StandardError);
+    }
+
+    [Fact]
+    public async Task Invalid_installer_plan_is_rejected_before_acknowledging_application_shutdown()
+    {
+        using var directory = new UpdateTestDirectory();
+        Directory.CreateDirectory(directory.UpdateRoot);
+        var launch = ReleaseUpdateRules.CreateInstallLaunchFiles(directory.UpdateRoot);
+        await File.WriteAllTextAsync(launch.HelperPath, ReleaseUpdateInstallerScript.Content, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(launch.PlanPath, "{}", TestContext.Current.CancellationToken);
+
+        var result = await RunWindowsPowerShellAsync(launch.HelperPath, "-PlanPath", launch.PlanPath);
+
+        Assert.Equal(1, result.ExitCode);
+        Assert.False(File.Exists(launch.ReadyPath));
+        Assert.False(Directory.Exists(Path.Combine(directory.UpdateRoot, "installed")));
+        var log = await File.ReadAllTextAsync(Path.Combine(directory.UpdateRoot, "install.log"), TestContext.Current.CancellationToken);
+        Assert.Contains("Installation failed:", log);
+        Assert.DoesNotContain("Installation accepted.", log);
+        Assert.True(File.Exists(directory.PreviousMarker));
+    }
+
+    private static async Task<(int ExitCode, string StandardError)> RunWindowsPowerShellAsync(
+        string scriptPath, params string[] arguments)
+    {
+        var executable = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System),
+            "WindowsPowerShell", "v1.0", "powershell.exe");
+        Assert.True(File.Exists(executable), "This regression requires the Windows PowerShell runtime used by the installer.");
+        var start = new ProcessStartInfo(executable)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            WorkingDirectory = Path.GetDirectoryName(scriptPath)!
+        };
+        foreach (var argument in new[] { "-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", scriptPath }.Concat(arguments))
+            start.ArgumentList.Add(argument);
+        using var process = Process.Start(start) ?? throw new InvalidOperationException("The owned PowerShell process did not start.");
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+            await standardOutput;
+            return (process.ExitCode, await standardError);
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill();
+                await process.WaitForExitAsync(CancellationToken.None);
+            }
+        }
     }
 
     private static byte[] ReleaseJson(params (string Name, long Size, string? Digest)[] assets) => Json(writer =>

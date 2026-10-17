@@ -7,6 +7,10 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Reuse the empty host while item controls retain their existing unload cleanup. -->
+            <DataTemplate x:Key="LumenLibraryItemHostTemplate">
+                <Border />
+            </DataTemplate>
             <!-- These brushes retain their identity while the window appearance changes. -->
             <SolidColorBrush x:Key="DetailCardBackgroundBrush" Color="#0DFFFFFF" />
             <SolidColorBrush x:Key="DetailCardStrokeBrush" Color="#19000000" />

@@ -207,7 +207,10 @@ public sealed partial class PlayerView
     private AssSubtitleRectangle? NativeSubtitleBottomControls()
     {
         Rect? bounds = null;
-        foreach (var element in new FrameworkElement[] { TimelineHost, TransportRow })
+        var controls = _compactOverlay
+            ? new FrameworkElement[] { TimelineHost, CompactElapsedHost, CompactDurationHost }
+            : new FrameworkElement[] { TimelineHost, TransportRow };
+        foreach (var element in controls)
         {
             if (element.Visibility != Visibility.Visible || element.ActualWidth <= 0 || element.ActualHeight <= 0) continue;
             // All geometry is measured in the current video viewport's DIPs, including letterboxing.

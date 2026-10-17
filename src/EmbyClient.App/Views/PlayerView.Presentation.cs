@@ -21,8 +21,37 @@ public sealed partial class PlayerView
 {
     private enum PlayerSidePanel { None, Queue, Settings, Tracks, Episodes }
 
+    private enum InputMessageDeviceType : uint
+    {
+        Unavailable = 0,
+        Keyboard = 1,
+        Mouse = 2,
+        Touch = 4,
+        Pen = 8,
+        Touchpad = 16
+    }
+
+    private enum InputMessageOriginId : uint
+    {
+        Unavailable = 0,
+        Hardware = 1,
+        Injected = 2,
+        System = 4
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct InputMessageSource
+    {
+        public InputMessageDeviceType DeviceType;
+        public InputMessageOriginId OriginId;
+    }
+
     private readonly DispatcherTimer _chromeTimer = new() { Interval = TimeSpan.FromSeconds(3) };
     private readonly Windows.UI.ViewManagement.AccessibilitySettings _accessibilitySettings = new();
+    private readonly bool _acceptanceInputTraceEnabled = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppDataPaths.RootEnvironmentVariable));
+    private long _playerInputTraceSequence;
+    private long _videoTapTraceSequence;
+    private long _videoTapTraceStartedAt;
     private PlayerSidePanel _sidePanelMode;
     private FlyoutBase? _openQuickFlyout;
     private Control? _sidePanelTrigger;
@@ -54,6 +83,7 @@ public sealed partial class PlayerView
         InitializeEpisodeDrawer();
         InitializeChapters();
         InitializeV2Interaction();
+        InitializeCompactOverlay();
         _chromeTimer.Tick += (_, _) =>
         {
             _chromeTimer.Stop();
@@ -156,6 +186,8 @@ public sealed partial class PlayerView
     public void SetCompactOverlayState(bool compactOverlay)
     {
         if (_compactOverlay == compactOverlay) return;
+        PrepareCompactFocus(compactOverlay);
+        ClearTimelineInteraction();
         _compactOverlay = compactOverlay;
         if (compactOverlay)
         {
@@ -167,20 +199,44 @@ public sealed partial class PlayerView
         }
         UpdateTransportLayout(PlayerMain.ActualWidth);
         UpdatePlayerLayout();
+        UpdateCompactLabels();
+        UpdateCompactTitle();
+        UpdateCompactClock();
         SetControlLabel(PictureInPictureButton, LumenText.Get(compactOverlay ? "Exit picture in picture" : "Picture in picture"));
         PictureInPictureButton.Background = new SolidColorBrush(compactOverlay ? Windows.UI.Color.FromArgb(41, 255, 255, 255) : Microsoft.UI.Colors.Transparent);
         RevealControls();
+        RestoreCompactTransitionFocus(compactOverlay);
     }
 
-    private void PlayerRootSizeChanged(object sender, SizeChangedEventArgs args) => UpdatePlayerLayout();
+    private void PlayerRootSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        TracePlayerInput("size-changed");
+        UpdatePlayerLayout();
+    }
+
+    private void UpdateVideoHitTargetBounds()
+    {
+        if (VideoFocusTarget is null || HeaderContentGrid is null) return;
+        var captionVisible = _windowTitleBarIntegrated && !_fullscreen && !_compactOverlay
+            && (AreControlsVisible || _captionPointerActive);
+        // Reserve the existing caption-height contract only in the transparent video button.
+        var margin = new Thickness(0, captionVisible ? HeaderContentGrid.Height : 0, 0, 0);
+        if (VideoFocusTarget.Margin.Equals(margin)) return;
+        VideoFocusTarget.Margin = margin;
+        TracePlayerInput("video-hit-target");
+    }
 
     private void UpdatePlayerLayout()
     {
         if (VideoStage is null || SidePanel is null) return;
         PlayerHeader.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
-        var dockHeight = _compactOverlay ? 120d : 320d;
+        CompactChrome.Visibility = _compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+        CompactBackground.Visibility = _compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+        var dockHeight = _compactOverlay ? Math.Max(0, PlayerMain.ActualHeight) : 320d;
         if (ControlDock.Height != dockHeight) ControlDock.Height = dockHeight;
+        UpdateCompactOverlayLayout();
         HeaderContentGrid.Margin = new Thickness(12, 0, _windowTitleBarIntegrated && !_fullscreen ? 150 : 12, 0);
+        UpdateVideoHitTargetBounds();
         var sideOpen = _sidePanelMode != PlayerSidePanel.None;
         SideColumn.Width = new GridLength(0);
         Grid.SetColumn(SidePanel, 0);
@@ -218,8 +274,10 @@ public sealed partial class PlayerView
         var overlay = !_accessibilitySettings.HighContrast;
         HeaderSurface.Visibility = overlay ? Visibility.Collapsed : Visibility.Visible;
         HeaderGradient.Visibility = overlay ? Visibility.Visible : Visibility.Collapsed;
-        DockSurface.Visibility = overlay ? Visibility.Collapsed : Visibility.Visible;
-        DockGradient.Visibility = overlay ? Visibility.Visible : Visibility.Collapsed;
+        DockSurface.Visibility = !_compactOverlay && !overlay ? Visibility.Visible : Visibility.Collapsed;
+        DockGradient.Visibility = !_compactOverlay && overlay ? Visibility.Visible : Visibility.Collapsed;
+        if (CompactShade.Background is SolidColorBrush shade)
+            shade.Color = Windows.UI.Color.FromArgb(overlay ? (byte)77 : (byte)230, 0, 0, 0);
         if (!narrowCaptionBand) UpdateSubtitleOverlayLayout();
         else UpdateChapterPreviewClearance();
         NextEpisodeCountdown.VerticalAlignment = _compactOverlay ? VerticalAlignment.Top : VerticalAlignment.Bottom;
@@ -267,38 +325,59 @@ public sealed partial class PlayerView
     private void UpdateTransportLayout(double width)
     {
         var narrow = width < 980;
-        TransportRow.Height = _compactOverlay ? 40 : 52;
+        TransportRow.Height = _compactOverlay ? 48 : 52;
+        TransportRow.VerticalAlignment = _compactOverlay ? VerticalAlignment.Top : VerticalAlignment.Bottom;
+        if (!_compactOverlay) TransportRow.Margin = new Thickness(0);
         TransportRow.RowDefinitions.Clear();
-        TransportRow.RowDefinitions.Add(new RowDefinition { Height = new GridLength(_compactOverlay ? 40 : 52) });
+        TransportRow.RowDefinitions.Add(new RowDefinition { Height = new GridLength(_compactOverlay ? 48 : 52) });
+        Grid.SetColumnSpan(TransportButtons, _compactOverlay ? 4 : 1);
+        TransportButtons.HorizontalAlignment = _compactOverlay ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        TransportButtons.Spacing = _compactOverlay ? 14 : 2;
+        var rewindIndex = TransportButtons.Children.IndexOf(RewindButton);
+        if (_compactOverlay ? rewindIndex != 0 : rewindIndex != TransportButtons.Children.IndexOf(PreviousEpisodeButton) + 1)
+        {
+            TransportButtons.Children.Remove(RewindButton);
+            TransportButtons.Children.Insert(_compactOverlay ? 0 : TransportButtons.Children.IndexOf(PreviousEpisodeButton) + 1, RewindButton);
+        }
         Grid.SetRow(UtilityButtons, 0);
         Grid.SetColumn(UtilityButtons, 3);
         Grid.SetColumnSpan(UtilityButtons, 1);
         UtilityButtons.HorizontalAlignment = HorizontalAlignment.Right;
+        UtilityButtons.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
         TransportRow.ColumnSpacing = width < 760 ? 4 : 8;
         VolumeGroup.Visibility = !_compactOverlay && width >= 460 ? Visibility.Visible : Visibility.Collapsed;
         Volume.Visibility = !narrow ? Visibility.Visible : Visibility.Collapsed;
         TimeReadout.HorizontalAlignment = HorizontalAlignment.Left;
         TimeReadout.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
-        TimelineHost.Visibility = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
-        RewindButton.Visibility = ForwardButton.Visibility = _compactOverlay || narrow ? Visibility.Collapsed : Visibility.Visible;
+        CompactElapsedHost.Visibility = CompactDurationHost.Visibility = _compactOverlay ? Visibility.Visible : Visibility.Collapsed;
+        TimelineHost.Visibility = Visibility.Visible;
+        RewindButton.Visibility = ForwardButton.Visibility = _compactOverlay || !narrow ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var button in new[] { RewindButton, ForwardButton })
+        {
+            button.Width = button.Height = _compactOverlay ? 36 : 44;
+            button.CornerRadius = new CornerRadius(_compactOverlay ? 18 : 22);
+            button.Padding = new Thickness(_compactOverlay ? 8 : 10);
+        }
         SubtitleButton.Visibility = RateButton.Visibility = FullscreenButton.Visibility = EpisodeDrawerButton.Visibility
             = _compactOverlay ? Visibility.Collapsed : Visibility.Visible;
         NextEpisodeButton.Visibility = !_compactOverlay && string.Equals(_item?.Type, "Episode", StringComparison.OrdinalIgnoreCase)
             ? Visibility.Visible : Visibility.Collapsed;
-        PauseButton.Width = PauseButton.Height = _compactOverlay ? 40 : 52;
-        PauseButton.CornerRadius = new CornerRadius(_compactOverlay ? 20 : 26);
-        PauseButton.Padding = new Thickness(_compactOverlay ? 8 : 14);
+        PauseButton.Width = PauseButton.Height = _compactOverlay ? 48 : 52;
+        PauseButton.CornerRadius = new CornerRadius(_compactOverlay ? 24 : 26);
+        PauseButton.Padding = new Thickness(_compactOverlay ? 15 : 14);
         PauseButton.Margin = new Thickness(0, 0, _compactOverlay ? 0 : 6, 0);
         PictureInPictureButton.Width = PictureInPictureButton.Height = _compactOverlay ? 40 : 44;
         foreach (var button in new[] { EpisodeDrawerButton, SubtitleButton, RateButton, PictureInPictureButton, FullscreenButton })
             button.Width = button.Height = width < 760 ? 40 : 44;
+        UpdateCompactCommandIcons();
         TitleText.MaxWidth = Math.Max(80, Math.Min(320, width * .3));
         StreamInfoButton.Visibility = !narrow ? Visibility.Visible : Visibility.Collapsed;
-        var gutter = _compactOverlay ? 16d : width < 760 ? 24d : 44d;
-        var bottom = _compactOverlay ? 16d : 22d;
+        var gutter = _compactOverlay ? 12d : width < 760 ? 24d : 44d;
+        var bottom = _compactOverlay ? 10d : 22d;
         ControlDock.Padding = new Thickness(gutter, 0, gutter, bottom);
+        ControlDock.ColumnSpacing = _compactOverlay ? 10 : 0;
         DockSurface.Margin = DockGradient.Margin = new Thickness(-gutter, 0, -gutter, -bottom);
-        TimelineHost.Margin = new Thickness(12, 0, 12, 60);
+        TimelineHost.Margin = _compactOverlay ? new Thickness(0) : new Thickness(12, 0, 12, 60);
         ChapterPreview.Margin = new Thickness(ChapterPreview.Margin.Left, 0, 0, 114);
         UpdatePlayerLayout();
     }
@@ -314,8 +393,10 @@ public sealed partial class PlayerView
     {
         var source = args.OriginalSource as DependencyObject;
         var point = args.GetCurrentPoint(PlayerMain).Position;
-        _pointerOnChrome = PlayerHeader.Visibility == Visibility.Visible && point.Y <= 48 || point.Y >= PlayerMain.ActualHeight - (_compactOverlay ? 60 : 132)
-            || IsWithin(source, SidePanel) || IsWithin(source, PlaybackInfoPanel);
+        _pointerOnChrome = _compactOverlay
+            ? IsWithin(source, CompactHeader) || IsWithin(source, TransportRow) || point.Y >= PlayerMain.ActualHeight - CompactSubtitleBottom
+            : PlayerHeader.Visibility == Visibility.Visible && point.Y <= 48 || point.Y >= PlayerMain.ActualHeight - 132;
+        _pointerOnChrome |= IsWithin(source, SidePanel) || IsWithin(source, PlaybackInfoPanel);
         RevealControls();
     }
 
@@ -328,20 +409,20 @@ public sealed partial class PlayerView
             || _engine?.Snapshot?.State != PlaybackEngineState.Playing) return false;
         var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
         return focused is not Control { FocusState: FocusState.Keyboard }
-            || !(IsWithin(focused, PlayerHeader) || IsWithin(focused, ControlDock) || IsWithin(focused, SidePanel));
+            || !(IsWithin(focused, PlayerHeader) || IsWithin(focused, ControlDock) || IsWithin(focused, CompactChrome) || IsWithin(focused, SidePanel));
     }
 
     private void SetControlsVisible(bool visible)
     {
         // Opacity keeps the layout and keyboard order stable; focus immediately reveals the controls.
-        PlayerHeader.Opacity = ControlDock.Opacity = visible ? 1 : 0;
-        PlayerHeader.IsHitTestVisible = ControlDock.IsHitTestVisible = visible;
+        PlayerHeader.Opacity = ControlDock.Opacity = CompactChrome.Opacity = CompactBackground.Opacity = visible ? 1 : 0;
+        PlayerHeader.IsHitTestVisible = ControlDock.IsHitTestVisible = CompactChrome.IsHitTestVisible = visible;
         if (AreControlsVisible != visible)
         {
             var animated = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled;
             if (animated)
             {
-                foreach (var element in new FrameworkElement[] { PlayerHeader, ControlDock })
+                foreach (var element in new FrameworkElement[] { PlayerHeader, ControlDock, CompactChrome, CompactBackground })
                 {
                     var visual = ElementCompositionPreview.GetElementVisual(element);
                     var animation = visual.Compositor.CreateScalarKeyFrameAnimation();
@@ -357,6 +438,8 @@ public sealed partial class PlayerView
             UpdateSubtitleOverlayLayout();
             PresentationChanged?.Invoke(this, EventArgs.Empty);
         }
+        UpdateVideoHitTargetBounds();
+        UpdateCompactProgressVisibility();
     }
 
     private void RevealControls()
@@ -381,12 +464,73 @@ public sealed partial class PlayerView
 
     private void VideoSurfaceClicked(object sender, RoutedEventArgs args)
     {
-        if (_sidePanelMode != PlayerSidePanel.None) { CloseSidePanel(restoreFocus: false); return; }
-        if (_playbackInfoOpen) { ClosePlaybackInformation(); return; }
-        if (Stopwatch.GetTimestamp() < _suppressVideoClickUntil) return;
+        var inputSource = default(InputMessageSource);
+        var inputSourceRead = _acceptanceInputTraceEnabled && TryReadCurrentInputMessageSource(out inputSource);
+        var traceSequence = _acceptanceInputTraceEnabled ? ++_playerInputTraceSequence : 0;
+        TracePlayerInput("video-click", traceSequence, args.OriginalSource,
+            inputSourceRead: inputSourceRead, messageSource: inputSource);
+        if (_sidePanelMode != PlayerSidePanel.None)
+        {
+            TracePlayerInput("video-click-return", traceSequence, reason: "side-panel");
+            CloseSidePanel(restoreFocus: false);
+            return;
+        }
+        if (_playbackInfoOpen)
+        {
+            TracePlayerInput("video-click-return", traceSequence, reason: "playback-information");
+            ClosePlaybackInformation();
+            return;
+        }
+        if (Stopwatch.GetTimestamp() < _suppressVideoClickUntil)
+        {
+            TracePlayerInput("video-click-return", traceSequence, reason: "suppressed-double-tap");
+            return;
+        }
         _videoTapTimer.Stop();
+        if (_acceptanceInputTraceEnabled)
+        {
+            _videoTapTraceSequence = traceSequence;
+            _videoTapTraceStartedAt = Stopwatch.GetTimestamp();
+        }
         _videoTapTimer.Start();
+        TracePlayerInput("video-tap-timer-start", traceSequence);
         RevealControls();
+    }
+
+    private static bool TryReadCurrentInputMessageSource(out InputMessageSource source)
+    {
+        source = default;
+        try
+        {
+            if (GetCurrentInputMessageSource(out source)) return true;
+        }
+        catch (Exception) { }
+        // Unknown input must retain the normal button activation path.
+        source = default;
+        return false;
+    }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetCurrentInputMessageSource(out InputMessageSource source);
+
+    private void TracePlayerInput(string phase, long? sequence = null, object? source = null, string reason = "none", bool includeTimerElapsed = false,
+        bool? inputSourceRead = null, InputMessageSource? messageSource = null, object? pointerDevice = null)
+    {
+        if (!_acceptanceInputTraceEnabled) return;
+        try
+        {
+            var sourceName = source is FrameworkElement element && !string.IsNullOrEmpty(element.Name) ? element.Name : "none";
+            var elapsed = includeTimerElapsed && _videoTapTraceStartedAt != 0
+                ? Stopwatch.GetElapsedTime(_videoTapTraceStartedAt).TotalMilliseconds : -1;
+            var inputDevice = messageSource is { } deviceSource
+                ? FormattableString.Invariant($"{deviceSource.DeviceType}(0x{(uint)deviceSource.DeviceType:X})") : "none";
+            var inputOrigin = messageSource is { } originSource
+                ? FormattableString.Invariant($"{originSource.OriginId}(0x{(uint)originSource.OriginId:X})") : "none";
+            AcceptanceDiagnostics.Trace(FormattableString.Invariant(
+                $"player-input phase={phase} seq={sequence ?? _videoTapTraceSequence} elapsedMs={elapsed:0.###} status={_coordinator?.Status} engine={_engine?.Snapshot?.State} caption={_captionPointerActive} width={PlayerRoot?.ActualWidth ?? 0:0.##} height={PlayerRoot?.ActualHeight ?? 0:0.##} hitTargetTop={VideoFocusTarget?.Margin.Top ?? 0:0.##} sourceType={source?.GetType().Name ?? "none"} sourceName={sourceName} reason={reason} loaded={IsLoaded} visibility={Visibility} inputSourceRead={inputSourceRead?.ToString() ?? "none"} inputDevice={inputDevice} inputOrigin={inputOrigin} pointerDevice={pointerDevice?.ToString() ?? "none"}"));
+        }
+        catch (Exception) { }
     }
 
     private async void PlayerKeyDown(object sender, KeyRoutedEventArgs args)

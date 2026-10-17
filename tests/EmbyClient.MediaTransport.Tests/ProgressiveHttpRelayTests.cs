@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -430,6 +431,180 @@ public sealed class ProgressiveHttpRelayTests
         Assert.Empty(failures);
     }
 
+    [Fact(Timeout = 150000)]
+    public async Task A_paused_body_consumer_can_resume_after_sixty_seconds_without_losing_the_tail()
+    {
+        var data = CreateBackpressureBody();
+        var bodyStarted = Signal();
+        var bodyWritten = Signal();
+        var requests = 0;
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new StreamingServer(async (_, stream, token) =>
+        {
+            Interlocked.Increment(ref requests);
+            await WriteAsciiAsync(stream, FormattableString.Invariant(
+                $"HTTP/1.1 200 OK\r\nContent-Length: {data.Length}\r\nContent-Type: video/mp4\r\nConnection: close\r\n\r\n"), token);
+            bodyStarted.TrySetResult();
+            await stream.WriteAsync(data, token);
+            bodyWritten.TrySetResult();
+        });
+        var transport = CreateTransport(upstream.BaseUri);
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        ProgressiveHttpRelay? relay = null;
+        try
+        {
+            relay = await ProgressiveHttpRelay.OpenAsync(transport, upstream.BaseUri, "mp4", lifetime.Token, failures.Enqueue);
+            using var client = await ConnectAsync(relay.LocalUri, Request(relay.LocalUri));
+            var stream = client.GetStream();
+            var headers = await ReadHeadersAsync(stream);
+            Assert.Equal(200, headers.Status);
+            Assert.Equal(data.Length.ToString(CultureInfo.InvariantCulture), headers.Headers["Content-Length"]);
+            Assert.False(headers.Headers.ContainsKey("Transfer-Encoding"));
+            await bodyStarted.Task.WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            var sourceBodyWrittenBeforePause = bodyWritten.Task.IsCompleted;
+
+            // Header reads consume one byte at a time, leaving the tiny receive window full of body bytes.
+            var pauseStarted = Stopwatch.GetTimestamp();
+            await Task.Delay(TimeSpan.FromSeconds(65), TestContext.Current.CancellationToken);
+            var paused = Stopwatch.GetElapsedTime(pauseStarted);
+            var sourceBodyWrittenAfterPause = bodyWritten.Task.IsCompleted;
+
+            client.ReceiveBufferSize = 1024 * 1024;
+            using var reading = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            reading.CancelAfter(TimeSpan.FromSeconds(30));
+            var buffer = new byte[64 * 1024];
+            var delivered = 0;
+            var socketError = 0;
+            try
+            {
+                while (true)
+                {
+                    var read = await stream.ReadAsync(buffer, reading.Token);
+                    if (read == 0) break;
+                    Assert.InRange(read, 1, data.Length - delivered);
+                    Assert.True(data.AsSpan(delivered, read).SequenceEqual(buffer.AsSpan(0, read)),
+                        FormattableString.Invariant($"The resumed response differs at byte offset {delivered}."));
+                    delivered += read;
+                }
+            }
+            catch (IOException exception) when (exception.InnerException is SocketException socket)
+            {
+                socketError = socket.ErrorCode;
+            }
+            finally
+            {
+                TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant(
+                    $"declaredBytes={data.Length} deliveredBytes={delivered} pausedSeconds={paused.TotalSeconds:F3} upstreamRequests={Volatile.Read(ref requests)} socketError={socketError} sourceBodyWrittenBeforePause={sourceBodyWrittenBeforePause} sourceBodyWrittenAfterPause={sourceBodyWrittenAfterPause}"));
+            }
+
+            Assert.Equal(data.Length, delivered);
+            Assert.Equal(1, Volatile.Read(ref requests));
+            Assert.Empty(failures);
+            await upstream.WaitForClosedAsync(1);
+        }
+        finally
+        {
+            lifetime.Cancel();
+            try
+            {
+                if (relay is not null)
+                    await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                await transport.DisposeAsync().AsTask().WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            }
+        }
+    }
+
+    [Theory(Timeout = 20000)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Stopping_a_backpressured_response_is_bounded_and_not_an_upstream_failure(bool cancelLifetime)
+    {
+        var data = CreateBackpressureBody();
+        var bodyStarted = Signal();
+        var bodyWritten = Signal();
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new StreamingServer(async (_, stream, token) =>
+        {
+            await WriteAsciiAsync(stream, FormattableString.Invariant(
+                $"HTTP/1.1 200 OK\r\nContent-Length: {data.Length}\r\nContent-Type: video/mp4\r\nConnection: close\r\n\r\n"), token);
+            bodyStarted.TrySetResult();
+            await stream.WriteAsync(data, token);
+            bodyWritten.TrySetResult();
+        });
+        var transport = CreateTransport(upstream.BaseUri);
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        ProgressiveHttpRelay? relay = null;
+        try
+        {
+            relay = await ProgressiveHttpRelay.OpenAsync(transport, upstream.BaseUri, "mp4", lifetime.Token, failures.Enqueue);
+            using var client = await ConnectAsync(relay.LocalUri, Request(relay.LocalUri));
+            var stream = client.GetStream();
+            Assert.Equal(200, (await ReadHeadersAsync(stream)).Status);
+            await bodyStarted.Task.WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            var firstByte = new byte[1];
+            await stream.ReadExactlyAsync(firstByte, TestContext.Current.CancellationToken).AsTask()
+                .WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            Assert.Equal(data[0], firstByte[0]);
+            await Task.Delay(TimeSpan.FromMilliseconds(250), TestContext.Current.CancellationToken);
+            var sourceBodyWritten = bodyWritten.Task.IsCompleted;
+
+            if (cancelLifetime)
+            {
+                lifetime.Cancel();
+                await upstream.WaitForClosedAsync(1);
+            }
+            await Task.WhenAll(relay.DisposeAsync().AsTask(), relay.DisposeAsync().AsTask())
+                .WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            if (!cancelLifetime) await upstream.WaitForClosedAsync(1);
+            await transport.DisposeAsync().AsTask().WaitAsync(Deadline, TestContext.Current.CancellationToken);
+
+            client.ReceiveBufferSize = 1024 * 1024;
+            using var reading = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+            reading.CancelAfter(Deadline);
+            var buffer = new byte[64 * 1024];
+            var delivered = 1;
+            var socketError = 0;
+            try
+            {
+                while (true)
+                {
+                    var read = await stream.ReadAsync(buffer, reading.Token);
+                    if (read == 0) break;
+                    Assert.InRange(read, 1, data.Length - delivered);
+                    Assert.True(data.AsSpan(delivered, read).SequenceEqual(buffer.AsSpan(0, read)),
+                        FormattableString.Invariant($"The canceled response differs at byte offset {delivered}."));
+                    delivered += read;
+                }
+            }
+            catch (IOException exception) when (exception.InnerException is SocketException socket)
+            {
+                socketError = socket.ErrorCode;
+            }
+
+            TestContext.Current.TestOutputHelper?.WriteLine(FormattableString.Invariant(
+                $"declaredBytes={data.Length} deliveredBytes={delivered} cancelLifetime={cancelLifetime} socketError={socketError} sourceBodyWritten={sourceBodyWritten}"));
+            Assert.InRange(delivered, 1, data.Length - 1);
+            Assert.Equal(0, upstream.ActiveConnections);
+            Assert.Empty(failures);
+        }
+        finally
+        {
+            lifetime.Cancel();
+            try
+            {
+                if (relay is not null)
+                    await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            }
+            finally
+            {
+                await transport.DisposeAsync().AsTask().WaitAsync(Deadline, TestContext.Current.CancellationToken);
+            }
+        }
+    }
+
     [Fact(Timeout = 15000)]
     public async Task Redirects_scope_credentials_at_every_hop_and_do_not_forward_downstream_identity()
     {
@@ -520,6 +695,32 @@ public sealed class ProgressiveHttpRelayTests
         Assert.Empty(failures);
     }
 
+    [Theory(Timeout = 15000)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Disposal_or_lifetime_cancellation_closes_incomplete_headers_without_an_upstream_request_or_failure(bool cancelLifetime)
+    {
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new LoopbackServer((_, _) => Task.FromResult(new LoopbackResponse(200, [1])));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        await using var relay = await ProgressiveHttpRelay.OpenAsync(transport, upstream.BaseUri, "mp4", lifetime.Token, failures.Enqueue);
+        using var client = await ConnectAsync(relay.LocalUri,
+            $"GET {relay.LocalUri.AbsolutePath} HTTP/1.1\r\nHost: {relay.LocalUri.Authority}\r\nX-Pending: ");
+        var connectionEnd = ReadToEndAsync(client.GetStream());
+
+        if (cancelLifetime)
+        {
+            lifetime.Cancel();
+            Assert.Empty(await connectionEnd.WaitAsync(Deadline, TestContext.Current.CancellationToken));
+        }
+        await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestContext.Current.CancellationToken);
+
+        Assert.Empty(await connectionEnd.WaitAsync(Deadline, TestContext.Current.CancellationToken));
+        Assert.Empty(upstream.Requests);
+        Assert.Empty(failures);
+    }
+
     [Fact(Timeout = 15000)]
     public async Task Four_streams_fill_capacity_and_downstream_resets_release_a_slot_without_an_upstream_failure()
     {
@@ -576,6 +777,13 @@ public sealed class ProgressiveHttpRelayTests
     }, TestContext.Current.CancellationToken);
 
     private static TaskCompletionSource Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    private static byte[] CreateBackpressureBody()
+    {
+        var data = new byte[16 * 1024 * 1024];
+        for (var index = 0; index < data.Length; index++) data[index] = (byte)((index * 17 + index / 997) % 251);
+        return data;
+    }
 
     private static string Request(Uri uri, string method = "GET", string? headers = null, string? target = null,
         string? host = null, string version = "HTTP/1.1")

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Xunit;
 
 namespace EmbyClient.LumenAcceptance.Tests;
@@ -93,6 +94,98 @@ public sealed class BootstrapOptionsTests
         var credentials = Path.Combine(Workspace, "artifacts", "lumen-official-validation", "credentials.json");
         Assert.Throws<ArgumentException>(() => BootstrapOptions.Parse(
             [.. Arguments(), "--design-catalog", "true", "--official-credentials-file", credentials]));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5000)]
+    [InlineData(10000)]
+    public void Large_library_mode_requires_an_explicit_bounded_count(int count)
+    {
+        var value = count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        var options = BootstrapOptions.Parse([.. Arguments(), "--large-library-items", value]);
+        Assert.Equal(count, options.LargeLibraryItems);
+        Assert.False(options.DesignCatalog);
+        Assert.Null(options.OfficialCredentialsFile);
+        Assert.Equal("synthetic-large-server-" + value, options.ExpectedFixtureServerId);
+        Assert.Equal("SYNTHETIC Large Library (" + value + ")", options.ExpectedFixtureServerName);
+        Assert.Equal(0, BootstrapOptions.Parse(Arguments()).LargeLibraryItems);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("10001")]
+    [InlineData("5,000")]
+    [InlineData(" 5000")]
+    [InlineData("5000.0")]
+    [InlineData("5000x")]
+    public void Invalid_large_library_counts_are_rejected(string count) =>
+        Assert.Throws<ArgumentException>(() => BootstrapOptions.Parse([.. Arguments(), "--large-library-items", count]));
+
+    [Fact]
+    public void Large_library_mode_cannot_mix_with_design_or_official_modes()
+    {
+        var credentials = Path.Combine(Workspace, "artifacts", "lumen-official-validation", "credentials.json");
+        Assert.Throws<ArgumentException>(() => BootstrapOptions.Parse(
+            [.. Arguments(), "--large-library-items", "5000", "--design-catalog", "true"]));
+        Assert.Throws<ArgumentException>(() => BootstrapOptions.Parse(
+            [.. Arguments(), "--large-library-items", "5000", "--official-credentials-file", credentials]));
+        Assert.Throws<ArgumentException>(() => BootstrapOptions.Parse(
+            [.. Arguments(), "--large-library-items", "5000", "--large-library-items", "5000"]));
+    }
+
+    [Theory]
+    [InlineData("http://localhost:19010")]
+    [InlineData("http://127.0.0.1:19010?api_key=test-only")]
+    [InlineData("http://192.0.2.1:19010")]
+    public void Large_library_mode_preserves_the_loopback_URL_boundary(string address) =>
+        Assert.Throws<ArgumentException>(() => BootstrapOptions.Parse(
+            [.. Arguments(address), "--large-library-items", "5000"]));
+
+    [Theory]
+    [InlineData(false, 0, "synthetic-lumen-server-0001", true)]
+    [InlineData(true, 0, "synthetic-lumen-design-server-0001", true)]
+    [InlineData(false, 5000, "synthetic-large-server-5000", false)]
+    public void Synthetic_catalog_statistics_must_match_the_selected_mode(bool design, int count, string serverId, bool lumen)
+    {
+        var arguments = Arguments().ToList();
+        if (design) arguments.AddRange(["--design-catalog", "true"]);
+        if (count > 0) arguments.AddRange(["--large-library-items", count.ToString(System.Globalization.CultureInfo.InvariantCulture)]);
+        var options = BootstrapOptions.Parse([.. arguments]);
+        using var statistics = JsonDocument.Parse($$"""
+            {"Synthetic":true,"LumenCatalog":{{lumen.ToString().ToLowerInvariant()}},
+             "LumenDesignCatalog":{{design.ToString().ToLowerInvariant()}},
+             "LargeLibraryItems":{{count}},"ServerId":"{{serverId}}"}
+            """);
+        options.VerifySyntheticCatalogStatistics(statistics.RootElement);
+    }
+
+    [Theory]
+    [InlineData("""{"Synthetic":false,"LumenCatalog":false,"LumenDesignCatalog":false,"LargeLibraryItems":5000,"ServerId":"synthetic-large-server-5000"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":true,"LumenDesignCatalog":false,"LargeLibraryItems":5000,"ServerId":"synthetic-large-server-5000"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":false,"LumenDesignCatalog":true,"LargeLibraryItems":5000,"ServerId":"synthetic-large-server-5000"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":false,"LumenDesignCatalog":false,"LargeLibraryItems":4999,"ServerId":"synthetic-large-server-5000"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":false,"LumenDesignCatalog":false,"LargeLibraryItems":5000,"ServerId":"synthetic-lumen-server-0001"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":false,"LumenDesignCatalog":false,"LargeLibraryItems":"5000","ServerId":"synthetic-large-server-5000"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":"false","LumenDesignCatalog":false,"LargeLibraryItems":5000,"ServerId":"synthetic-large-server-5000"}""")]
+    [InlineData("""{"Synthetic":true,"LumenCatalog":false,"LumenDesignCatalog":false,"ServerId":"synthetic-large-server-5000"}""")]
+    public void Large_library_statistics_reject_changed_identity_count_and_catalog_flags(string json)
+    {
+        var options = BootstrapOptions.Parse([.. Arguments(), "--large-library-items", "5000"]);
+        using var statistics = JsonDocument.Parse(json);
+        Assert.Throws<InvalidOperationException>(() => options.VerifySyntheticCatalogStatistics(statistics.RootElement));
+    }
+
+    [Fact]
+    public void A_large_library_is_not_silently_accepted_by_rich_mode()
+    {
+        using var statistics = JsonDocument.Parse("""
+            {"Synthetic":true,"LumenCatalog":false,"LumenDesignCatalog":false,
+             "LargeLibraryItems":5000,"ServerId":"synthetic-large-server-5000"}
+            """);
+        Assert.Throws<InvalidOperationException>(() => BootstrapOptions.Parse(Arguments())
+            .VerifySyntheticCatalogStatistics(statistics.RootElement));
     }
 
     [Fact]

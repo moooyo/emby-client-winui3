@@ -1,14 +1,21 @@
+using System.Globalization;
+using System.Text.Json;
+
 namespace EmbyClient.LumenAcceptance;
 
 public sealed record BootstrapOptions(string WorkspaceRoot, string RunDirectory, Uri ServerUrl, string Theme,
-    string? OfficialCredentialsFile = null, bool DesignCatalog = false)
+    string? OfficialCredentialsFile = null, bool DesignCatalog = false, int LargeLibraryItems = 0)
 {
     public const string FixtureServerId = "synthetic-lumen-server-0001";
     public const string FixtureVersion = "synthetic-1.0";
     public const string FixtureHeader = "EmbyClient development data; not Emby Server";
     public const string DesignFixtureServerId = "synthetic-lumen-design-server-0001";
-    public string ExpectedFixtureServerId => DesignCatalog ? DesignFixtureServerId : FixtureServerId;
-    public string ExpectedFixtureServerName => DesignCatalog ? "SYNTHETIC Lumen Design Catalog" : "SYNTHETIC Lumen Library";
+    public string ExpectedFixtureServerId => LargeLibraryItems > 0
+        ? FormattableString.Invariant($"synthetic-large-server-{LargeLibraryItems}")
+        : DesignCatalog ? DesignFixtureServerId : FixtureServerId;
+    public string ExpectedFixtureServerName => LargeLibraryItems > 0
+        ? FormattableString.Invariant($"SYNTHETIC Large Library ({LargeLibraryItems})")
+        : DesignCatalog ? "SYNTHETIC Lumen Design Catalog" : "SYNTHETIC Lumen Library";
 
     public string ProfileDirectory => Path.Combine(RunDirectory, "profile");
     public string ReceiptPath => Path.Combine(RunDirectory, "bootstrap.json");
@@ -21,6 +28,7 @@ public sealed record BootstrapOptions(string WorkspaceRoot, string RunDirectory,
         string? officialCredentialsFile = null;
         var theme = "Dark";
         var designCatalog = false;
+        var largeLibraryItems = 0;
         var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var index = 0; index < arguments.Length; index++)
         {
@@ -36,6 +44,9 @@ public sealed record BootstrapOptions(string WorkspaceRoot, string RunDirectory,
                 case "--official-credentials-file": officialCredentialsFile = NormalizeAbsolutePath(value); break;
                 case "--theme" when value is "Dark" or "Light": theme = value; break;
                 case "--design-catalog" when value is "true" or "false": designCatalog = value == "true"; break;
+                case "--large-library-items" when int.TryParse(value, NumberStyles.None,
+                    CultureInfo.InvariantCulture, out var count) && count is >= 1 and <= 10000:
+                    largeLibraryItems = count; break;
                 default: throw new ArgumentException("Unknown bootstrap option or unsupported value.");
             }
         }
@@ -50,7 +61,24 @@ public sealed record BootstrapOptions(string WorkspaceRoot, string RunDirectory,
             throw new ArgumentException("Official test credentials must stay inside the dedicated owned backend artifacts.");
         if (designCatalog && officialCredentialsFile is not null)
             throw new ArgumentException("Design fixtures cannot be combined with official server credentials.");
-        return new(workspaceRoot, runDirectory, NormalizeFixtureUrl(serverUrl), theme, officialCredentialsFile, designCatalog);
+        if (largeLibraryItems > 0 && (designCatalog || officialCredentialsFile is not null))
+            throw new ArgumentException("Large-library fixtures cannot be combined with design or official server modes.");
+        return new(workspaceRoot, runDirectory, NormalizeFixtureUrl(serverUrl), theme, officialCredentialsFile,
+            designCatalog, largeLibraryItems);
+    }
+
+    public void VerifySyntheticCatalogStatistics(JsonElement statistics)
+    {
+        if (!statistics.TryGetProperty("Synthetic", out var synthetic) || synthetic.ValueKind != JsonValueKind.True
+            || !statistics.TryGetProperty("LumenCatalog", out var lumen)
+            || lumen.ValueKind != (LargeLibraryItems == 0 ? JsonValueKind.True : JsonValueKind.False)
+            || !statistics.TryGetProperty("LumenDesignCatalog", out var design)
+            || design.ValueKind != (DesignCatalog ? JsonValueKind.True : JsonValueKind.False)
+            || !statistics.TryGetProperty("LargeLibraryItems", out var large) || large.ValueKind != JsonValueKind.Number
+            || !large.TryGetInt32(out var count) || count != LargeLibraryItems
+            || !statistics.TryGetProperty("ServerId", out var server) || server.ValueKind != JsonValueKind.String
+            || server.GetString() != ExpectedFixtureServerId)
+            throw new InvalidOperationException("The selected synthetic catalog does not match the explicit acceptance mode.");
     }
 
     public static bool IsStrictChild(string path, string parent)

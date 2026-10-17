@@ -15,12 +15,29 @@ namespace EmbyClient.NativeProbe;
 public sealed partial class App
 {
     private string? _hardwareHlsMediaDirectory;
+    private long _hardwareHlsSeekTargetTicks = TimeSpan.FromSeconds(20).Ticks;
 
     private void ConfigureHardwareHlsMode(string mediaDirectory, string[] arguments)
     {
         if (!Path.IsPathFullyQualified(mediaDirectory))
             throw new ArgumentException("The generated HLS directory must be an explicit absolute path.");
-        ConfigureHardwareDecodeMode(arguments);
+        var decoderOptions = new List<string>();
+        var seekSpecified = false;
+        for (var index = 0; index < arguments.Length; index++)
+        {
+            if (arguments[index] != "--seek-target-seconds")
+            {
+                decoderOptions.Add(arguments[index]);
+                continue;
+            }
+            if (seekSpecified || index + 1 >= arguments.Length
+                || !int.TryParse(arguments[++index], NumberStyles.None, CultureInfo.InvariantCulture, out var seconds)
+                || seconds is < 1 or > 58)
+                throw new ArgumentException("The synthetic HLS seek target must be an integer from 1 through 58 seconds.");
+            seekSpecified = true;
+            _hardwareHlsSeekTargetTicks = TimeSpan.FromSeconds(seconds).Ticks;
+        }
+        ConfigureHardwareDecodeMode(decoderOptions.ToArray());
         _hardwareDecodeMode = false;
         _hardwareHlsMediaDirectory = Path.GetFullPath(mediaDirectory);
     }
@@ -31,7 +48,7 @@ public sealed partial class App
         {
             HardwareRequested = _hardwareDecodeRequested, HardwareRequired = _requireHardwareDecode,
             RequiredVendor = _requireHardwareVendor, RequestedApi = _decoderApiRequested,
-            ExpectedApiFallback = _expectDecoderApiFallback
+            ExpectedApiFallback = _expectDecoderApiFallback, SeekTargetTicks = _hardwareHlsSeekTargetTicks
         };
         using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(3));
         SyntheticHlsEndpoint? upstream = null;

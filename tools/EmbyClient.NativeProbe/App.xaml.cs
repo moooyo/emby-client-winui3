@@ -22,6 +22,8 @@ public sealed partial class App : Application
     private string? _controlMode;
     private string? _controlMediaDirectory;
     private string? _realHlsCredentialsPath;
+    private string? _realHlsExpectedServerId;
+    private string? _realHlsItemId;
     private bool _realHlsDiagnostic;
     private bool _nativeHlsHttpControl;
     private bool _sharedNativeHlsPlayerControl;
@@ -68,6 +70,26 @@ public sealed partial class App : Application
             directory = isolationDirectory;
             _lifecycleIsolation = true;
         }
+        else if (commandLine is ["--output-dir", var plainTimingDirectory, "--plain-subtitle-timing", "--media-dir", var plainTimingMediaDirectory])
+        {
+            directory = plainTimingDirectory;
+            ConfigurePlainSubtitleTimingMode(plainTimingMediaDirectory);
+        }
+        else if (commandLine is ["--output-dir", var bitmapCaseDirectory, "--bitmap-subtitle-seek", "--media-dir", var bitmapCaseMediaDirectory,
+            "--fixture-root", var bitmapCaseFixtureRoot, "--case", var bitmapSeekCase, "--delay-seconds", var bitmapSeekDelay])
+        {
+            directory = bitmapCaseDirectory;
+            ConfigureBitmapSubtitleSelectionMode(bitmapCaseMediaDirectory, bitmapCaseFixtureRoot);
+            ConfigureBitmapSubtitleSeekCase(bitmapSeekCase, bitmapSeekDelay);
+            _bitmapSubtitleSeekMode = true;
+        }
+        else if (commandLine is ["--output-dir", var bitmapDirectory, var bitmapMode, "--media-dir", var bitmapMediaDirectory,
+            "--fixture-root", var bitmapFixtureRoot] && bitmapMode is "--bitmap-subtitle-selection" or "--bitmap-subtitle-seek")
+        {
+            directory = bitmapDirectory;
+            ConfigureBitmapSubtitleSelectionMode(bitmapMediaDirectory, bitmapFixtureRoot);
+            _bitmapSubtitleSeekMode = bitmapMode == "--bitmap-subtitle-seek";
+        }
         else if (commandLine is ["--output-dir", var networkDirectory, "--network-retry", "--media-dir", var networkMediaDirectory])
         {
             directory = networkDirectory;
@@ -77,6 +99,23 @@ public sealed partial class App : Application
         {
             directory = subtitleDirectory;
             _externalSubtitleCredentialsPath = Path.GetFullPath(subtitleCredentials);
+        }
+        else if (commandLine is ["--output-dir", var timedReboundDirectory, var timedReboundMode, "--credentials-file", var timedReboundCredentials,
+            "--fixture-manifest", var timedReboundManifest, "--case", var timedReboundCase, "--expected-server-id", var timedReboundServerId,
+            "--visual-wait-seconds", var timedReboundWait]
+            && timedReboundMode is "--complex-subtitle" or "--complex-subtitle-http-profile-control")
+        {
+            directory = timedReboundDirectory;
+            ConfigureComplexSubtitleMode(timedReboundCredentials, timedReboundManifest, timedReboundCase,
+                timedReboundMode, timedReboundServerId, ParseComplexSubtitleVisualWait(timedReboundWait));
+        }
+        else if (commandLine is ["--output-dir", var timedLegacyDirectory, var timedLegacyMode, "--credentials-file", var timedLegacyCredentials,
+            "--fixture-manifest", var timedLegacyManifest, "--case", var timedLegacyCase, "--visual-wait-seconds", var timedLegacyWait]
+            && timedLegacyMode is "--complex-subtitle" or "--complex-subtitle-http-profile-control")
+        {
+            directory = timedLegacyDirectory;
+            ConfigureComplexSubtitleMode(timedLegacyCredentials, timedLegacyManifest, timedLegacyCase,
+                timedLegacyMode, visualWaitSeconds: ParseComplexSubtitleVisualWait(timedLegacyWait));
         }
         else if (commandLine is ["--output-dir", var reboundDirectory, var reboundMode, "--credentials-file", var reboundCredentials,
             "--fixture-manifest", var reboundManifest, "--case", var reboundCase, "--expected-server-id", var reboundServerId]
@@ -98,6 +137,12 @@ public sealed partial class App : Application
             _report.ExecutionMode = "InstrumentationSmoke";
             _report.RequiredLoops = 1;
             _report.Scope = "One synthetic product lifecycle to validate probe instrumentation. Not a 20-loop resource regression result.";
+        }
+        else if (commandLine is ["--output-dir", var boundHlsDirectory, "--real-hls", "--credentials-file", var boundHlsCredentialPath,
+            "--expected-server-id", var boundHlsServerId, "--item-id", var boundHlsItemId])
+        {
+            directory = boundHlsDirectory;
+            ConfigureExplicitRealHlsBinding(boundHlsCredentialPath, boundHlsServerId, boundHlsItemId);
         }
         else if (commandLine is ["--output-dir", var realDirectory, "--real-hls", "--credentials-file", var credentialPath])
         {
@@ -150,7 +195,7 @@ public sealed partial class App : Application
             directory = controlDirectory;
             _controlMode = mode;
         }
-        else throw new ArgumentException("Usage: EmbyClient.NativeProbe --output-dir <directory> [--no-inflight-gc | --control <mode> [--media-dir <synthetic-directory>]]. See README for supported modes.");
+        else throw new ArgumentException("Usage: EmbyClient.NativeProbe --output-dir <directory> [--no-inflight-gc | --control <mode> [--media-dir <synthetic-directory>]]. Explicit HLS binding: --output-dir <fresh-directory> --real-hls --credentials-file <owned-credentials> --expected-server-id <32-lowercase-hex> --item-id <ASCII-identifier>. See README for other supported modes.");
         Directory.CreateDirectory(Path.GetFullPath(directory));
         _resultPath = Path.Combine(Path.GetFullPath(directory), "result.json");
         if (File.Exists(_resultPath))
@@ -162,11 +207,14 @@ public sealed partial class App : Application
         }
         if (_controlMode is null && _realHlsCredentialsPath is null && !_lifecycleIsolation && _networkRetryMediaDirectory is null
             && _externalSubtitleCredentialsPath is null && _complexSubtitleCredentialsPath is null && !_hardwareDecodeMode
-            && _hardwareHlsMediaDirectory is null && _hardwareMultiAudioMediaDirectory is null && _nativeAudioOutputMediaDirectory is null) Save();
+            && _hardwareHlsMediaDirectory is null && _hardwareMultiAudioMediaDirectory is null && _nativeAudioOutputMediaDirectory is null
+            && _bitmapSubtitleMediaDirectory is null && _plainSubtitleTimingMediaDirectory is null) Save();
         _element = new MediaPlayerElement { AreTransportControlsEnabled = false };
         _window = new Window
         {
-            Title = _nativeAudioOutputMediaDirectory is not null ? "SYNTHETIC native audio output probe"
+            Title = _plainSubtitleTimingMediaDirectory is not null ? "SYNTHETIC native plain subtitle timing probe"
+                : _bitmapSubtitleMediaDirectory is not null ? _bitmapSubtitleSeekMode ? "SYNTHETIC native PGS seek probe" : "SYNTHETIC native PGS identity probe"
+                : _nativeAudioOutputMediaDirectory is not null ? "SYNTHETIC native audio output probe"
                 : _hardwareMultiAudioMediaDirectory is not null ? "SYNTHETIC native audio selection control"
                 : _hardwareHlsMediaDirectory is not null ? "SYNTHETIC native HLS decoding control"
                 : _complexSubtitleCaseId is null ? "SYNTHETIC native playback probe"
@@ -174,9 +222,12 @@ public sealed partial class App : Application
             Content = _controlMode is null or "file-playback" or "file-stream-playback" or "file-managed-stream-playback" or "native-http-playback"
                 ? _element : new TextBlock { Text = "Isolated native resource control: " + _controlMode }
         };
-        _window.AppWindow.Resize(_complexSubtitleCaseId is null ? new SizeInt32(480, 300) : new SizeInt32(960, 600));
+        _window.AppWindow.Resize(_complexSubtitleCaseId is null ? new SizeInt32(480, 300) : new SizeInt32(1280, 800));
         _window.AppWindow.Show(activateWindow: false);
-        _ = _nativeAudioOutputMediaDirectory is not null ? RunNativeAudioOutputAsync()
+        _ = _plainSubtitleTimingMediaDirectory is not null ? RunPlainSubtitleTimingAsync()
+            : _bitmapSubtitleSeekMode ? RunBitmapSubtitleSeekAsync()
+            : _bitmapSubtitleMediaDirectory is not null ? RunBitmapSubtitleSelectionAsync()
+            : _nativeAudioOutputMediaDirectory is not null ? RunNativeAudioOutputAsync()
             : _hardwareMultiAudioMediaDirectory is not null ? RunHardwareMultiAudioAsync()
             : _hardwareHlsMediaDirectory is not null ? RunHardwareHlsAsync()
             : _hardwareDecodeMode ? RunHardwareDecodeAsync()

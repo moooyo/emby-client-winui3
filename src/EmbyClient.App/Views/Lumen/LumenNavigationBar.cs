@@ -29,6 +29,7 @@ public sealed partial class LumenNavigationBar : UserControl
         public SolidColorBrush Pressed { get; } = new();
     }
     private readonly Grid _layout = new() { Height = 32, HorizontalAlignment = HorizontalAlignment.Left, Margin = new(4) };
+    private readonly Border _glassSurface = new() { CornerRadius = new(20), IsHitTestVisible = false };
     private readonly Border _surface = new() { CornerRadius = new(20), BorderThickness = new(1), IsHitTestVisible = false };
     private readonly Border _indicator;
     private readonly Border _divider = new() { Width = 1, Height = 18, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
@@ -56,6 +57,8 @@ public sealed partial class LumenNavigationBar : UserControl
     private bool _themeSubscribed;
     private bool _highContrastSubscribed;
     private bool _systemColorsSubscribed;
+    private bool _textScaleSubscribed;
+    private long _textScalePreferenceEpoch;
 
     public event EventHandler<string>? NavigationRequested;
     public event EventHandler<string>? AccountActionRequested;
@@ -73,7 +76,8 @@ public sealed partial class LumenNavigationBar : UserControl
             RenderTransform = new TranslateTransform(), IsHitTestVisible = false
         };
         var layers = new Grid();
-        layers.Children.Add(new Border { CornerRadius = new(20), Background = _glass, IsHitTestVisible = false });
+        _glassSurface.Background = _glass;
+        layers.Children.Add(_glassSurface);
         layers.Children.Add(_surface);
         layers.Children.Add(_layout);
         Content = layers;
@@ -82,7 +86,7 @@ public sealed partial class LumenNavigationBar : UserControl
             if (!_themeSubscribed) LumenTheme.Changed += ThemeChanged;
             _themeSubscribed = true;
             SubscribeSystemPreferences();
-            UpdateAppearance();
+            RebuildTabs();
         };
         Unloaded += (_, _) =>
         {
@@ -154,9 +158,28 @@ public sealed partial class LumenNavigationBar : UserControl
             new NavigationEntry("movies", LumenText.Get("Movies")),
             new NavigationEntry("series", Tr("TV shows"))
         };
-        var widths = entries.Select(entry => LabelWidth(entry.Title)).ToArray();
         var keys = entries.Select(entry => entry.Key).Concat(["search", "settings"]).ToArray();
         var replaceButtons = !_buttons.Keys.SequenceEqual(keys, StringComparer.Ordinal);
+        var labels = new TextBlock[entries.Length];
+        var widths = new double[entries.Length];
+        var buttonHeight = 32d;
+        for (var index = 0; index < entries.Length; index++)
+        {
+            var entry = entries[index];
+            var label = !replaceButtons && _buttons[entry.Key].Content is TextBlock existing
+                ? existing : LumenUi.Text(entry.Title, 14);
+            label.Text = entry.Title;
+            label.TextWrapping = TextWrapping.NoWrap;
+            label.TextTrimming = TextTrimming.CharacterEllipsis;
+            label.VerticalAlignment = VerticalAlignment.Center;
+            label.MaxWidth = double.PositiveInfinity;
+            // Reserve the selected label's natural size at the current system text scale.
+            label.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
+            label.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            widths[index] = Math.Max(LabelWidth(entry.Title), Math.Ceiling(label.DesiredSize.Width) + 20);
+            buttonHeight = Math.Max(buttonHeight, Math.Ceiling(label.DesiredSize.Height) + 8);
+            labels[index] = label;
+        }
         _movement?.Stop();
         if (replaceButtons)
         {
@@ -171,12 +194,10 @@ public sealed partial class LumenNavigationBar : UserControl
             var entry = entries[index];
             var button = replaceButtons ? CreateButton(entry.Key, entry.Title, left, widths[index]) : _buttons[entry.Key];
             button.Width = widths[index];
+            button.Height = buttonHeight;
+            button.CornerRadius = new(buttonHeight / 2);
             button.Margin = new(left, 0, 0, 0);
-            var label = button.Content as TextBlock ?? LumenUi.Text(entry.Title, 14);
-            label.Text = entry.Title;
-            label.TextWrapping = TextWrapping.NoWrap;
-            label.TextTrimming = TextTrimming.CharacterEllipsis;
-            label.VerticalAlignment = VerticalAlignment.Center;
+            var label = labels[index];
             label.MaxWidth = Math.Max(20, widths[index] - 20);
             button.Content = label;
             AutomationProperties.SetName(button, entry.Title);
@@ -187,18 +208,29 @@ public sealed partial class LumenNavigationBar : UserControl
         }
         left -= 2;
         _divider.Margin = new(left + 6, 0, 0, 0);
+        var searchLeft = left + 13;
+        var accountLeft = searchLeft + buttonHeight + 2;
         if (replaceButtons)
         {
             _layout.Children.Add(_divider);
-            _layout.Children.Add(CreateButton("search", LumenText.Get("Search") + " (Ctrl+F)", left + 13, 32));
-            _layout.Children.Add(CreateButton("settings", Tr("Account"), left + 47, 32));
+            _layout.Children.Add(CreateButton("search", LumenText.Get("Search") + " (Ctrl+F)", searchLeft, buttonHeight));
+            _layout.Children.Add(CreateButton("settings", Tr("Account"), accountLeft, buttonHeight));
         }
         else
         {
-            _buttons["search"].Margin = new(left + 13, 0, 0, 0);
-            _buttons["settings"].Margin = new(left + 47, 0, 0, 0);
+            _buttons["search"].Margin = new(searchLeft, 0, 0, 0);
+            _buttons["settings"].Margin = new(accountLeft, 0, 0, 0);
         }
-        Width = left + 87;
+        foreach (var key in new[] { "search", "settings" })
+        {
+            _buttons[key].Width = _buttons[key].Height = buttonHeight;
+            _buttons[key].CornerRadius = new(buttonHeight / 2);
+        }
+        Height = buttonHeight + 8;
+        _layout.Height = _indicator.Height = buttonHeight;
+        _indicator.CornerRadius = new(buttonHeight / 2);
+        _glassSurface.CornerRadius = _surface.CornerRadius = new(Height / 2);
+        Width = accountLeft + buttonHeight + 8;
         _layout.Width = Width - 8;
         UpdateIndicator(false);
         if (replaceButtons && focusedNavigation.Key is not null) RestoreNavigationFocus(focusedNavigation.Key, focusedNavigation.State);
@@ -424,7 +456,7 @@ public sealed partial class LumenNavigationBar : UserControl
         var popup = new Popup
         {
             XamlRoot = XamlRoot, Child = frame, IsLightDismissEnabled = true,
-            HorizontalOffset = Math.Clamp(left, 8, Math.Max(8, XamlRoot.Size.Width - width - 8)), VerticalOffset = 76
+            HorizontalOffset = Math.Clamp(left, 8, Math.Max(8, XamlRoot.Size.Width - width - 8)), VerticalOffset = bounds.Bottom + 10
         };
         _popup = popup;
         _popupTrigger = trigger;
@@ -481,6 +513,17 @@ public sealed partial class LumenNavigationBar : UserControl
     private void SystemColorsChanged(UISettings sender, object args) => QueueAppearanceUpdate();
     private void QueueAppearanceUpdate() => DispatcherQueue.TryEnqueue(() => { if (IsLoaded) UpdateAppearance(); });
 
+    private void TextScaleFactorChanged(UISettings sender, object args)
+    {
+        var epoch = _textScalePreferenceEpoch;
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        {
+            if (!IsLoaded || !_textScaleSubscribed || epoch != _textScalePreferenceEpoch) return;
+            DismissMenus();
+            RebuildTabs();
+        });
+    }
+
     private void SubscribeSystemPreferences()
     {
         if (!_highContrastSubscribed)
@@ -493,10 +536,22 @@ public sealed partial class LumenNavigationBar : UserControl
             try { _uiSettings.ColorValuesChanged += SystemColorsChanged; _systemColorsSubscribed = true; }
             catch (Exception ex) when (IsOptionalPreferenceUnavailable(ex)) { }
         }
+        if (!_textScaleSubscribed)
+        {
+            _textScalePreferenceEpoch++;
+            try { _uiSettings.TextScaleFactorChanged += TextScaleFactorChanged; _textScaleSubscribed = true; }
+            catch (Exception ex) when (IsOptionalPreferenceUnavailable(ex)) { }
+        }
     }
 
     private void UnsubscribeSystemPreferences()
     {
+        _textScalePreferenceEpoch++;
+        if (_textScaleSubscribed)
+        {
+            try { _uiSettings.TextScaleFactorChanged -= TextScaleFactorChanged; _textScaleSubscribed = false; }
+            catch (Exception ex) when (IsOptionalPreferenceUnavailable(ex)) { }
+        }
         if (_highContrastSubscribed)
         {
             try { _accessibilitySettings.HighContrastChanged -= HighContrastChanged; _highContrastSubscribed = false; }

@@ -23,6 +23,8 @@ For deterministic detail-loading, media-opening, and account-cleanup boundaries,
 
 For the redesigned Lumen browsing and detail workflows, see [Lumen catalog](Lumen-Catalog.md). The opt-in `--lumen-catalog` mode adds a richer fictional catalog, two-season episode navigation, cast, genres, collections, local trailers, measured media information, and chapter markers. The optional `--artwork-directory <absolute-handoff-directory>` serves external design-handoff JPEGs through the ordinary authenticated image routes. It does not copy those files into production application assets. This mode uses a distinct synthetic server identity and cannot be combined with the separate large-library mode.
 
+For explicitly measured embedded bitmap subtitles, see [Embedded PGS](Embedded-Pgs.md). `--embedded-pgs` retains its 59-to-61-second duration bound. The additional `--allow-long-embedded-pgs` flag selects a separate bounded 99-to-101-second acceptance case with an independent Matroska duration check; it does not widen the default mode. Item, source, PlaybackInfo, and `MediaDurationTicks` statistics all report the selected media's measured timeline.
+
 The project excludes local `artifacts/**`, `bin/**`, `obj/**`, and the independent `Tests/**` harness from default SDK item discovery. This prevents generated assembly files, published payloads, or the harness entry point from being compiled or copied by later normal solution builds. Do not remove a running artifact directory to work around build errors; retain the project exclusions and use a separate output directory for each active fixture instance.
 
 ## Implemented development routes

@@ -87,4 +87,14 @@ public sealed partial class MainWindow
 
     [LibraryImport("user32.dll")]
     private static partial int SetForegroundWindow(nint window);
+
+    [LibraryImport("user32.dll")]
+    private static partial nint GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    private static partial nint GetFocus();
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsChild(nint parent, nint window);
 }

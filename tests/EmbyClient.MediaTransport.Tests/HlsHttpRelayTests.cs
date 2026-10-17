@@ -274,6 +274,239 @@ public sealed class HlsHttpRelayTests
     }
 
     [Theory]
+    [InlineData(false, "bytes=0-", 0, 64)]
+    [InlineData(false, "bytes=4-11", 4, 8)]
+    [InlineData(false, "bytes=4-", 4, 60)]
+    [InlineData(false, "bytes=60-999", 60, 4)]
+    [InlineData(true, "bytes=13-21", 13, 9)]
+    public async Task A_complete_200_segment_ignoring_range_is_sliced_into_the_requested_206(
+        bool chunked, string range, int start, int length)
+    {
+        var failures = new ConcurrentQueue<string>();
+        var data = Enumerable.Range(0, 64).Select(index => (byte)index).ToArray();
+        var headers = new Dictionary<string, string> { ["Content-Type"] = "video/mp2t" };
+        if (chunked) headers["Transfer-Encoding"] = "chunked";
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(200, chunked ? ChunkedBody(data) : data, headers,
+                    DeclaredContentLength: chunked ? -1 : null)));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment, extraHeaders: $"Range: {range}\r\n"));
+
+        Assert.Equal(206, response.StatusCode);
+        Assert.Equal($"bytes {start}-{start + length - 1}/64", response.Headers["Content-Range"]);
+        Assert.Equal(length.ToString(CultureInfo.InvariantCulture), response.Headers["Content-Length"]);
+        Assert.Equal("bytes", response.Headers["Accept-Ranges"]);
+        Assert.Equal("video/mp2t", response.Headers["Content-Type"]);
+        Assert.False(response.Headers.ContainsKey("Transfer-Encoding"));
+        Assert.Equal(data.AsSpan(start, length).ToArray(), response.Body);
+        Assert.Empty(failures);
+        Assert.Equal(2, upstream.Requests.Count);
+        var segmentRequest = upstream.Requests.Last();
+        Assert.Equal("/segment.ts", segmentRequest.Target);
+        Assert.Equal(range, segmentRequest.Headers["Range"]);
+        Assert.All(upstream.Requests, request =>
+        {
+            Assert.Equal("header-secret", request.Headers["X-Emby-Token"]);
+            Assert.Equal("Bearer authorization-secret", request.Headers["Authorization"]);
+            Assert.Equal("identity", request.Headers["Accept-Encoding"]);
+        });
+        Assert.False(response.Headers.ContainsKey("X-Emby-Token"));
+        Assert.False(response.Headers.ContainsKey("Authorization"));
+    }
+
+    [Theory]
+    [InlineData("bytes 0-63/64")]
+    [InlineData("garbage")]
+    public async Task An_ignored_range_200_with_content_range_cannot_be_accepted_as_a_complete_segment(string contentRange)
+    {
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(200, new byte[64], new Dictionary<string, string>
+                {
+                    ["Content-Type"] = "video/mp2t", ["Content-Range"] = contentRange
+                })));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment, extraHeaders: "Range: bytes=0-3\r\n"));
+
+        Assert.Equal(502, response.StatusCode);
+        Assert.Empty(response.Body);
+        Assert.False(response.Headers.ContainsKey("Content-Range"));
+        Assert.Equal("UnsupportedFormat", Assert.Single(failures));
+    }
+
+    [Theory]
+    [InlineData("transfer-encoding-with-content-length")]
+    [InlineData("unsupported-transfer-encoding")]
+    public async Task Invalid_framing_on_an_ignored_range_200_cannot_create_a_successful_partial_segment(string framing)
+    {
+        var failures = new ConcurrentQueue<string>();
+        var data = Enumerable.Range(0, 64).Select(index => (byte)index).ToArray();
+        var headers = new Dictionary<string, string>
+        {
+            ["Content-Type"] = "video/mp2t",
+            ["Transfer-Encoding"] = framing == "transfer-encoding-with-content-length" ? "chunked" : "gzip, chunked"
+        };
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(200, ChunkedBody(data), headers,
+                    DeclaredContentLength: framing == "transfer-encoding-with-content-length" ? null : -1)));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment, extraHeaders: "Range: bytes=0-3\r\n"));
+
+        Assert.Equal(502, response.StatusCode);
+        Assert.Empty(response.Body);
+        Assert.Equal("UnsupportedFormat", Assert.Single(failures));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_truncated_ignored_range_200_does_not_succeed_even_when_the_requested_prefix_has_arrived(bool chunked)
+    {
+        var failures = new ConcurrentQueue<string>();
+        var headers = new Dictionary<string, string> { ["Content-Type"] = "video/mp2t" };
+        if (chunked) headers["Transfer-Encoding"] = "chunked";
+        var body = chunked ? "8\r\nabcdefgh\r\n"u8.ToArray() : "abcdefgh"u8.ToArray();
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(200, body, headers, DeclaredContentLength: chunked ? -1 : 64)));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment, extraHeaders: "Range: bytes=0-3\r\n"));
+
+        Assert.Equal(502, response.StatusCode);
+        Assert.Empty(response.Body);
+        Assert.False(response.Headers.ContainsKey("Content-Range"));
+        Assert.Equal("NetworkFailure", Assert.Single(failures));
+    }
+
+    [Fact]
+    public async Task An_ignored_range_200_over_the_segment_limit_is_rejected_before_reading_its_body()
+    {
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(200, [], new Dictionary<string, string> { ["Content-Type"] = "video/mp2t" },
+                    DeclaredContentLength: MaximumSegmentBytes + 1, HoldBodyOpen: true)));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment, extraHeaders: "Range: bytes=4-4\r\n"));
+
+        Assert.Equal(502, response.StatusCode);
+        Assert.Empty(response.Body);
+        Assert.Equal("UnsupportedFormat", Assert.Single(failures));
+        Assert.Equal("bytes=4-4", upstream.Requests.Last().Headers["Range"]);
+    }
+
+    [Theory]
+    [InlineData("bytes=64-")]
+    public async Task An_ignored_range_200_beyond_the_complete_segment_returns_416_without_a_playback_failure(string range)
+    {
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(200, new byte[64], new Dictionary<string, string> { ["Content-Type"] = "video/mp2t" })));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment, extraHeaders: $"Range: {range}\r\n"));
+
+        Assert.Equal(416, response.StatusCode);
+        Assert.Equal("bytes */64", response.Headers["Content-Range"]);
+        Assert.Equal("0", response.Headers["Content-Length"]);
+        Assert.Empty(response.Body);
+        Assert.Empty(failures);
+    }
+
+    [Fact]
+    public async Task A_segment_206_without_a_requested_range_remains_invalid()
+    {
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new LoopbackServer((request, _) => Task.FromResult(
+            request.Target == "/playlist.m3u8" ? Manifest("#EXTM3U\nsegment.ts\n")
+                : new LoopbackResponse(206, new byte[64], new Dictionary<string, string>
+                {
+                    ["Content-Type"] = "video/mp2t", ["Content-Range"] = "bytes 0-63/64"
+                })));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), TestCancellation, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+
+        var response = await SendAsync(segment, BuildRequest(segment));
+
+        Assert.Equal(502, response.StatusCode);
+        Assert.Empty(response.Body);
+        Assert.Equal("UnsupportedFormat", Assert.Single(failures));
+        Assert.False(upstream.Requests.Last().Headers.ContainsKey("Range"));
+    }
+
+    [Fact]
+    public async Task Lifetime_cancellation_during_an_ignored_range_200_closes_the_client_without_a_failure()
+    {
+        var failures = new ConcurrentQueue<string>();
+        var segmentArrived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        await using var upstream = new LoopbackServer((request, _) =>
+        {
+            if (request.Target == "/playlist.m3u8") return Task.FromResult(Manifest("#EXTM3U\nsegment.ts\n"));
+            if (request.Target == "/health") return Task.FromResult(new LoopbackResponse(200, [7]));
+            segmentArrived.TrySetResult();
+            return Task.FromResult(new LoopbackResponse(200, "abcdefgh"u8.ToArray(),
+                new Dictionary<string, string> { ["Content-Type"] = "video/mp2t" },
+                DeclaredContentLength: 64, HoldBodyOpen: true));
+        });
+        await using var transport = CreateTransport(upstream.BaseUri);
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestCancellation);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport,
+            new Uri(upstream.BaseUri, "playlist.m3u8"), lifetime.Token, failures.Enqueue);
+        var playlist = await SendAsync(relay.LocalUri, BuildRequest(relay.LocalUri));
+        var segment = Assert.Single(ReferencedUris(playlist.Text));
+        using var client = await ConnectAndWriteAsync(segment, BuildRequest(segment, extraHeaders: "Range: bytes=0-3\r\n"));
+        var connectionEnd = ReadToEndWithDeadlineAsync(client.GetStream());
+        await segmentArrived.Task.WaitAsync(Deadline, TestCancellation);
+
+        lifetime.Cancel();
+        await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation);
+        var responseBytes = await connectionEnd.WaitAsync(Deadline, TestCancellation);
+
+        Assert.Empty(responseBytes);
+        Assert.Empty(failures);
+        var segmentRequest = Assert.Single(upstream.Requests.Where(request => request.Target == "/segment.ts"));
+        Assert.Equal("bytes=0-3", segmentRequest.Headers["Range"]);
+        var health = await transport.DownloadAsync(new Uri(upstream.BaseUri, "health"), ct: TestCancellation);
+        Assert.Equal(new byte[] { 7 }, health.Data);
+    }
+
+    [Theory]
     [InlineData("bytes=10-9")]
     [InlineData("bytes=-0")]
     [InlineData("bytes=0-1,4-5")]
@@ -619,6 +852,24 @@ public sealed class HlsHttpRelayTests
     }
 
     [Fact]
+    public async Task Disposal_closes_incomplete_headers_without_an_upstream_request_or_failure()
+    {
+        var failures = new ConcurrentQueue<string>();
+        await using var upstream = new LoopbackServer((_, _) => Task.FromResult(Manifest("#EXTM3U\n")));
+        await using var transport = CreateTransport(upstream.BaseUri);
+        await using var relay = await HlsHttpRelay.OpenAsync(transport, upstream.BaseUri, TestCancellation, failures.Enqueue);
+        using var client = await ConnectAndWriteAsync(relay.LocalUri,
+            $"GET {relay.LocalUri.AbsolutePath} HTTP/1.1\r\nHost: {relay.LocalUri.Authority}\r\nX-Pending: ");
+        var connectionEnd = ReadToEndWithDeadlineAsync(client.GetStream());
+
+        await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation);
+
+        Assert.Empty(await connectionEnd.WaitAsync(Deadline, TestCancellation));
+        Assert.Empty(upstream.Requests);
+        Assert.Empty(failures);
+    }
+
+    [Fact]
     public async Task Sliding_live_windows_reclaim_expired_resources_and_keep_playing_beyond_the_lifetime_cap()
     {
         const int maximumResources = 128;
@@ -837,6 +1088,19 @@ public sealed class HlsHttpRelayTests
         {
             ["Content-Type"] = "application/vnd.apple.mpegurl"
         });
+
+    private static byte[] ChunkedBody(byte[] data)
+    {
+        using var wire = new MemoryStream();
+        foreach (var chunk in data.Chunk(16))
+        {
+            wire.Write(Encoding.ASCII.GetBytes(chunk.Length.ToString("X", CultureInfo.InvariantCulture) + "\r\n"));
+            wire.Write(chunk);
+            wire.Write("\r\n"u8);
+        }
+        wire.Write("0\r\n\r\n"u8);
+        return wire.ToArray();
+    }
 
     private static LoopbackResponse RangeResponse(LoopbackRequest request, byte[] data)
     {

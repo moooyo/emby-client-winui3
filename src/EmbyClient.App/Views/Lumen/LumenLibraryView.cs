@@ -108,12 +108,14 @@ public sealed partial class LumenLibraryView : UserControl
         {
             _renderLoaded = true;
             ActivateRenderLifecycle();
+            SubscribeHomeAnimationSettings();
             QueueRender();
-            UpdateHeroTimer();
+            UpdateHomeAnimationPreference();
         };
         Unloaded += (_, _) =>
         {
             _renderLoaded = false;
+            UnsubscribeHomeAnimationSettings();
             InvalidateRenderLifecycle();
             _heroTimer.Stop();
             _homeBackgroundFallbackTimer.Stop();

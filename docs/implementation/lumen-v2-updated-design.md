@@ -1,12 +1,41 @@
 # Updated Lumen V2 design alignment
 
-Alignment checkpoint: 2026-10-13. Current Windows status: 2026-10-14.
+Alignment checkpoint: 2026-10-13.
+
+Current authority: the [2026-10-17 code closeout](current-code-closeout-20261017.md).
+Final16 is **BuildPassed**: Release/Debug, fresh Native AOT, package/runtime and
+offline schema checks have actual exit 0. Its 30,613,504-byte EXE is
+D72B6237...4651; inventories are 675/260/24/595. All 2,430 product cases and the
+114-input NativeProbe compilation use matching complete prior compiled-closure
+evidence, with no reruns for this UI-only delta.
+
+**BoundedNavigationObserved** covers three short 005000/000001 End/Home rounds,
+the next Right action and normal exit 0 after the Home anchor/scroller repair.
+Formal06 is **OriginalFiniteUiWorkloadCovered_WithObservationLimit**: its finite
+UI sequence, fixed idle windows and in-cap sign-out/normal exit are covered;
+tail warm returned to the real first viewport without repeating its numeric
+tooltip. The resource result is **InvestigateHighRetention / PerformanceNotAccepted**:
+two increments exceed the 32 MiB investigation threshold and library-cycle
+handles keep rising, with attribution unresolved. Final owned cleanup and
+system restoration are complete.
+
+The user renewed unattended continuation. The earlier physical-Escape stop and
+goal-service blocked receipt are historical; no new goal-service status is
+claimed. **LANDeferred** still covers discovery, public Save and account
+restoration. Earlier candidates and all failed/aborted attempts retain their
+own scope. CI, release, licensing/signing and installation/distribution remain
+outside this acceptance scope. The user separately authorized committing and
+pushing the current source snapshot to `main`; source publication does not change
+the recorded acceptance results.
+
 This record supersedes the earlier supported-gap source
 description where the external V2 design has changed. Existing unrelated
 working-tree changes are preserved. No commit, push, PR, release, installation
 or application launch was authorized by the original alignment task.
 
-## Current Windows continuation
+<a id="current-windows-continuation"></a>
+
+## Historical Windows continuation
 
 The authorized [Windows continuation](lumen-windows-continuation.md) is complete
 within its recorded local scope. Its current final candidate is

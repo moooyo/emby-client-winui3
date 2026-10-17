@@ -15,7 +15,16 @@ public sealed partial class LumenLibraryView
 {
     private readonly ConditionalWeakTable<BrowseViewportState, SearchPresentationState> _searchViewports = new();
     private bool _responsiveLayoutQueued;
+    private bool _wallViewportRefreshQueued;
+    private bool _wallViewportIsIntermediate;
+    private WallViewportRefresh? _wallViewportPendingRefresh;
+    private WallViewportRefresh? _wallViewportLastRefresh;
+    private WallViewportRefresh? _wallViewportObservation;
+    private readonly bool _wallViewportTraceEnabled = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppDataPaths.RootEnvironmentVariable));
+    private int _wallViewportTraceRemaining = 128;
     private sealed record SearchPresentationState(string Tab);
+    private sealed record WallViewportRefresh(ConnectedSession Session, int SessionGeneration, long RenderEpoch,
+        int NavigationRevision, double Offset, double Width, double Height, int ItemCount);
     private void ViewModelChanged(object? sender, PropertyChangedEventArgs args)
     {
         if (args.PropertyName == nameof(LibraryViewModel.CollectionRevision))
@@ -55,6 +64,11 @@ public sealed partial class LumenLibraryView
         _renderQueued = false;
         _responsiveLayoutQueued = false;
         _restorePending = false;
+        _wallViewportRefreshQueued = false;
+        _wallViewportIsIntermediate = false;
+        _wallViewportPendingRefresh = _wallViewportLastRefresh = null;
+        if (_wallViewportObservation is not null) _wallRepeater.LayoutUpdated -= ObserveWallViewportRefresh;
+        _wallViewportObservation = null;
     }
 
     private void QueueRender()
@@ -301,11 +315,13 @@ public sealed partial class LumenLibraryView
 
     private async void ScrollChanged(object? sender, ScrollViewerViewChangedEventArgs args)
     {
+        _wallViewportIsIntermediate = args.IsIntermediate;
         if (_lastHeaderScrolled != IsHeaderScrolled)
         {
             _lastHeaderScrolled = IsHeaderScrolled;
             NavigationStateChanged?.Invoke(this, EventArgs.Empty);
         }
+        if (!args.IsIntermediate) QueueWallViewportRefresh();
         if (!_renderEnabled || !_renderLoaded || args.IsIntermediate || _restorePending || _autoPageBlocked
             || _scroll.ScrollableHeight - _scroll.VerticalOffset > 700) return;
         if (ViewModel.IsPerson && ViewModel.ActivePerson is { CanLoadMore: true } person)
@@ -316,6 +332,90 @@ public sealed partial class LumenLibraryView
         if (_renderedPage is not ("wall" or "search") || !ViewModel.CanLoadMore || _renderedPage == "search" && _searchTab == "people") return;
         var outcome = await ViewModel.LoadMoreAsync();
         _autoPageBlocked = outcome is PageLoadMoreOutcome.Failed or PageLoadMoreOutcome.Repeated;
+    }
+
+    private void QueueWallViewportRefresh()
+    {
+        if (!_renderEnabled || !_renderLoaded || _restorePending || _renderedPage != "wall" || _session is not { } session) return;
+        var request = new WallViewportRefresh(session, _sessionGeneration, _renderEpoch, ViewModel.NavigationRevision,
+            _scroll.VerticalOffset, _scroll.ViewportWidth, _scroll.ViewportHeight, ViewModel.Items.Count);
+        if (!CanApplyWallViewportRefresh(request) || !double.IsFinite(request.Offset)
+            || !double.IsFinite(request.Width) || !double.IsFinite(request.Height) || request.Width <= 0 || request.Height <= 0) return;
+        if (_wallViewportRefreshQueued) { _wallViewportPendingRefresh = request; return; }
+        // A measure pass can report the same final position again; do not create a layout loop.
+        if (_wallViewportLastRefresh == request) return;
+        _wallViewportPendingRefresh = request;
+        _wallViewportRefreshQueued = true;
+        TraceWallViewportRefresh("queued", request, true);
+        if (!DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+        {
+            // An expired callback must not consume a replacement epoch's pending request.
+            if (request.RenderEpoch != _renderEpoch) { TraceWallViewportRefresh("skipped-epoch", request, false); return; }
+            _wallViewportRefreshQueued = false;
+            var latest = _wallViewportPendingRefresh;
+            _wallViewportPendingRefresh = null;
+            if (latest is null) return;
+            if (!CanApplyWallViewportRefresh(latest)) { TraceWallViewportRefresh("skipped-current", latest, false); return; }
+            if (_wallViewportLastRefresh == latest) { TraceWallViewportRefresh("skipped-duplicate", latest, false); return; }
+            _wallViewportLastRefresh = latest;
+            if (_wallViewportTraceEnabled && _wallViewportTraceRemaining > 0)
+            {
+                if (_wallViewportObservation is null) _wallRepeater.LayoutUpdated += ObserveWallViewportRefresh;
+                _wallViewportObservation = latest;
+            }
+            // Let the next normal layout pass realize the settled viewport; never force nested layout.
+            _wallRepeater.InvalidateMeasure();
+            TraceWallViewportRefresh("applied", latest, true);
+        }))
+        {
+            _wallViewportRefreshQueued = false;
+            _wallViewportPendingRefresh = null;
+            TraceWallViewportRefresh("skipped-dispatch", request, false);
+        }
+    }
+
+    private bool CanApplyWallViewportRefresh(WallViewportRefresh request) => _renderEnabled && _renderLoaded && !_restorePending
+        && !_wallViewportIsIntermediate && ReferenceEquals(request.Session, _session) && request.SessionGeneration == _sessionGeneration
+        && request.RenderEpoch == _renderEpoch && request.NavigationRevision == ViewModel.NavigationRevision
+        && _renderedPage == "wall" && Visibility == Visibility.Visible && _wallRepeater.IsLoaded && _wallRepeater.Visibility == Visibility.Visible
+        && request.Offset == _scroll.VerticalOffset && request.Width == _scroll.ViewportWidth && request.Height == _scroll.ViewportHeight
+        && request.ItemCount == ViewModel.Items.Count;
+
+    private void ObserveWallViewportRefresh(object? sender, object args)
+    {
+        var request = _wallViewportObservation;
+        if (request is null) return;
+        _wallViewportObservation = null;
+        _wallRepeater.LayoutUpdated -= ObserveWallViewportRefresh;
+        TraceWallViewportRefresh(CanApplyWallViewportRefresh(request) ? "arranged" : "skipped-arrange", request, true);
+    }
+
+    private void TraceWallViewportRefresh(string phase, WallViewportRefresh request, bool sampleRealized)
+    {
+        if (!_wallViewportTraceEnabled || _wallViewportTraceRemaining <= 0) return;
+        _wallViewportTraceRemaining--;
+        try
+        {
+            var sampled = sampleRealized && CanApplyWallViewportRefresh(request);
+            var firstIndex = -1;
+            FrameworkElement? first = null;
+            if (sampled)
+            {
+                for (var childIndex = 0; childIndex < VisualTreeHelper.GetChildrenCount(_wallRepeater); childIndex++)
+                {
+                    if (VisualTreeHelper.GetChild(_wallRepeater, childIndex) is not FrameworkElement element) continue;
+                    var index = _wallRepeater.GetElementIndex(element);
+                    if (index < 0 || firstIndex >= 0 && index >= firstIndex) continue;
+                    firstIndex = index;
+                    first = element;
+                }
+            }
+            var boundsElement = LumenMediaCard.UnwrapNavigationElement(first);
+            var bounds = boundsElement is null ? default : boundsElement.TransformToVisual(_scroll)
+                .TransformBounds(new Windows.Foundation.Rect(0, 0, boundsElement.ActualWidth, boundsElement.ActualHeight));
+            AcceptanceDiagnostics.Trace(FormattableString.Invariant($"wall-viewport phase={phase} epoch={request.RenderEpoch} generation={request.SessionGeneration} revision={request.NavigationRevision} offset={request.Offset:0.###} viewport={request.Width:0.###}x{request.Height:0.###} items={request.ItemCount} sampled={sampled} firstIndex={firstIndex} firstBounds={bounds.X:0.###},{bounds.Y:0.###},{bounds.Width:0.###},{bounds.Height:0.###}"));
+        }
+        catch (Exception exception) { AcceptanceDiagnostics.Record(exception, "LibraryWall/ViewportTrace"); }
     }
 
     private void UpdateResponsiveLayout()

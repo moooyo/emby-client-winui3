@@ -7,9 +7,10 @@ using System.Text.Json;
 
 var bifOnly = args.Length == 3 && args[1] == "--bif-only" && Path.IsPathFullyQualified(args[2]) && File.Exists(args[2]);
 var embeddedPgsOnly = args.Length == 3 && args[1] == "--embedded-pgs-only" && Path.IsPathFullyQualified(args[2]) && Directory.Exists(args[2]);
-if (args.Length is < 1 or > 3 || !File.Exists(args[0]) || args.Length == 3 && !bifOnly && !embeddedPgsOnly
+var longEmbeddedPgsOnly = args.Length == 3 && args[1] == "--long-embedded-pgs-only" && Path.IsPathFullyQualified(args[2]) && Directory.Exists(args[2]);
+if (args.Length is < 1 or > 3 || !File.Exists(args[0]) || args.Length == 3 && !bifOnly && !embeddedPgsOnly && !longEmbeddedPgsOnly
     || args.Length == 2 && args[1] is not ("--lumen-only" or "--lumen-design-only" or "--subtitle-only"))
-    throw new ArgumentException("Pass the absolute path of a separately built EmbyClient.FixtureServer.dll, optionally followed by --lumen-only, --lumen-design-only, --subtitle-only, --bif-only <absolute-real-bif-path>, or --embedded-pgs-only <absolute-measured-media-dir>.");
+    throw new ArgumentException("Pass the absolute path of a separately built EmbyClient.FixtureServer.dll, optionally followed by --lumen-only, --lumen-design-only, --subtitle-only, --bif-only <absolute-real-bif-path>, --embedded-pgs-only <absolute-measured-media-dir>, or --long-embedded-pgs-only <absolute-measured-long-media-dir>.");
 
 var serverPath = Path.GetFullPath(args[0]);
 var temporaryRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(Path.GetTempPath()));
@@ -29,9 +30,10 @@ await File.WriteAllTextAsync(Path.Combine(testRoot, "fixture-h264-aac.json"), ""
 var passed = 0;
 try
 {
-    if (embeddedPgsOnly)
+    if (embeddedPgsOnly || longEmbeddedPgsOnly)
     {
-        await EmbeddedPgsContractChecks.RunAsync(serverPath, testRoot, args[2], Check);
+        if (longEmbeddedPgsOnly) MatroskaInfoContractChecks.Run(Check);
+        await EmbeddedPgsContractChecks.RunAsync(serverPath, testRoot, args[2], Check, longEmbeddedPgsOnly);
     }
     else if (bifOnly)
     {

@@ -75,7 +75,13 @@ public sealed partial class PlayerView : UserControl
         _clock.Tick += (_, _) =>
         {
             ObservationClockTick();
+            RecordAcceptanceNativeClockSample();
             UpdateDisplayRequest(_coordinator?.ActiveContext?.PlaybackId);
+            if (_coordinator is null)
+            {
+                UpdatePresentationClock();
+                return;
+            }
             UpdateRecoveryControls();
             UpdatePosition();
             UpdatePresentationClock();
@@ -121,16 +127,17 @@ public sealed partial class PlayerView : UserControl
     private void UpdatePresentationClock()
     {
         var coordinator = _coordinator;
+        var needsPlaybackPolling = coordinator is not null && NeedsPlaybackPolling(coordinator.Status);
         // Keep active playback polling, including pause and system-media updates. A failed
-        // display release also needs retries after playback has already reached a terminal state.
-        if (coordinator is not null && !NeedsPlaybackPolling(coordinator.Status))
+        // display release also needs retries after playback ends or its coordinator is detached.
+        if (coordinator is not null && !needsPlaybackPolling)
         {
             // A queued terminal notification may carry a retired ID and be ignored by the
             // display owner. Reconcile live ownership before removing its final polling path.
             UpdateDisplayRequest(null, useCurrentPlayback: true);
         }
-        var shouldRun = coordinator is not null
-            && (_displayRequest.NeedsReleaseRetry || NeedsPlaybackPolling(coordinator.Status));
+        var shouldRun = PlaybackPresentationClockPolicy.ShouldRun(
+            coordinator is not null, needsPlaybackPolling, _displayRequest.NeedsReleaseRetry);
         if (shouldRun == _clock.IsEnabled) return;
         if (shouldRun) _clock.Start();
         else _clock.Stop();
@@ -303,6 +310,7 @@ public sealed partial class PlayerView : UserControl
                 if (failed) PlaybackNotice.Severity = InfoBarSeverity.Error;
                 if (outcome.CleanupFailed || coordinator.Status == PlaybackStatus.Failed)
                     ShowPlaybackError("EngineStopFailed");
+                UpdateStageStatus(coordinator.Status);
                 UpdateRecoveryControls();
                 UpdatePresentationClock();
             }, cancellationToken));
@@ -606,6 +614,7 @@ public sealed partial class PlayerView : UserControl
                 DurationText.Text = FormatTime(0);
             }
             Timeline.IsEnabled = RewindButton.IsEnabled = ForwardButton.IsEnabled = false;
+            UpdateCompactClock();
             RefreshChapterControls();
             UpdateTaskbarState();
             return;
@@ -638,10 +647,12 @@ public sealed partial class PlayerView : UserControl
         RestoreLocalSubtitleForContext(context);
         UpdatePlaybackInformation();
         UpdateTaskbarState();
+        UpdateCompactClock();
     }
 
     private void EnginePlaybackStateChanged(object? sender, PlaybackEngineEventArgs args)
     {
+        RecordAcceptanceNativeClockTerminal(sender, args);
         if (args.Kind == PlaybackEngineEventKind.PositionChanged) return;
         // Native pause/buffering can precede a coordinator report waiting on the server.
         DispatcherQueue.TryEnqueue(() =>
@@ -1090,8 +1101,6 @@ public sealed partial class PlayerView : UserControl
         _displayRequest.Suspend();
         _queueDialog?.Hide();
         _diagnosticsDialog?.Hide();
-        _clock.Stop();
-        ObservationClockState(false);
         _notificationOwner.Invalidate(++_playIntent);
         _retryRecoveryId = null;
         UpdateRecoveryControls();
@@ -1111,6 +1120,7 @@ public sealed partial class PlayerView : UserControl
         }
         _coordinator = null;
         _session = null;
+        UpdatePresentationClock();
         _hdrDisplayConversionId = null;
         _nextHdrDisplayEligibilityRefresh = 0;
         ReadCurrentNativeCapabilities();
@@ -1128,6 +1138,7 @@ public sealed partial class PlayerView : UserControl
                 if (engine is not null) engine.Diagnostic -= EngineDiagnosticReceived;
                 RecordDiagnosticRetirement(retired);
                 _displayRequest.Suspend();
+                UpdatePresentationClock();
             }
         }
         _item = null;

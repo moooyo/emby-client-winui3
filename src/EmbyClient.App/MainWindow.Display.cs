@@ -7,6 +7,7 @@ namespace EmbyClient.App;
 public sealed partial class MainWindow
 {
     private readonly ContentRefreshRateService _contentRefreshRate = new();
+    private readonly bool _acceptanceWindowInputTraceEnabled = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(AppDataPaths.RootEnvironmentVariable));
     private WindowMessageMonitor? _displayMessageMonitor;
 
     private void InitializeContentRefreshRate()
@@ -31,9 +32,35 @@ public sealed partial class MainWindow
 
     private void DisplayMessageReceived(object? sender, WindowMessageEventArgs args)
     {
+        TraceWindowInputMessage(args);
+        // WM_SETFOCUS can reach the host after its Activated callback has already run.
+        if (args.Message.MessageId == 0x0007) QueueContentKeyboardFocus();
         // WM_DISPLAYCHANGE and WM_DEVICECHANGE also cover an external display-mode or topology change.
         if (!_closing && args.Message.MessageId is 0x007E or 0x0219)
             _chromeDispatcher.TryEnqueue(QueueContentRefreshRateUpdate);
+    }
+
+    private void TraceWindowInputMessage(WindowMessageEventArgs args)
+    {
+        if (!_acceptanceWindowInputTraceEnabled) return;
+        try
+        {
+            // The existing monitor observes this window only; record no pointer positions or text.
+            var message = args.Message.MessageId;
+            if (message == 0x0007)
+            {
+                AcceptanceDiagnostics.Trace($"window-input message=0x{message:X4}");
+                return;
+            }
+            var parameter = unchecked((nuint)args.Message.WParam);
+            if (message is 0x00A1 or 0x00A2 or 0x00A3)
+                AcceptanceDiagnostics.Trace($"window-input message=0x{message:X4} hitTest={unchecked((int)parameter)}");
+            else if (message == 0x0112)
+                AcceptanceDiagnostics.Trace($"window-input message=0x{message:X4} systemCommand=0x{(parameter & 0xFFF0):X4}");
+            else if (message == 0x0005)
+                AcceptanceDiagnostics.Trace($"window-input message=0x{message:X4} sizeState={parameter}");
+        }
+        catch (Exception) { }
     }
 
     private void QueueContentRefreshRateUpdate()

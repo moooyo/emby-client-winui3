@@ -1,14 +1,37 @@
 # Lumen Windows continuation
 
-Updated: 2026-10-14. **Local continuation and owned cleanup completed within
-the recorded scope; hardware, renderer and untested combination limits retained.**
+Current authority: the [2026-10-17 code closeout](current-code-closeout-20261017.md).
+Final16 is **BuildPassed**: Release/Debug, fresh Native AOT, package/runtime and
+offline schema checks have actual exit 0. Its 30,613,504-byte EXE is
+D72B6237...4651; inventories are 675/260/24/595. All 2,430 product cases and the
+114-input NativeProbe compilation use matching complete prior compiled-closure
+evidence, with no reruns for this UI-only delta.
 
-This is the completed publish-05 checkpoint. The later
-[bitmap subtitle fixes](lumen-subtitle-fixes.md) describe the current
-native-06/publish-06 source and successful build/1,509-case component verification.
-Their UI/runtime acceptance is deferred while computer use is paused; resource
-cleanup and actual App exit 0 do not establish those new fix pixels. The results
-below retain their publish-05 and earlier candidate identities.
+**BoundedNavigationObserved** covers three short 005000/000001 End/Home rounds,
+the next Right action and normal exit 0 after the Home anchor/scroller repair.
+Formal06 is **OriginalFiniteUiWorkloadCovered_WithObservationLimit**: its finite
+UI sequence, fixed idle windows and in-cap sign-out/normal exit are covered;
+tail warm returned to the real first viewport without repeating its numeric
+tooltip. The resource result is **InvestigateHighRetention / PerformanceNotAccepted**:
+two increments exceed the 32 MiB investigation threshold and library-cycle
+handles keep rising, with attribution unresolved. Final owned cleanup and
+system restoration are complete.
+
+The user renewed unattended continuation. The earlier physical-Escape stop and
+goal-service blocked receipt are historical; no new goal-service status is
+claimed. **LANDeferred** still covers discovery, public Save and account
+restoration. Earlier candidates and all failed/aborted attempts retain their
+own scope. CI, release, licensing/signing and installation/distribution remain
+outside this acceptance scope. The user separately authorized committing and
+pushing the current source snapshot to `main`; source publication does not change
+the recorded acceptance results.
+
+The remainder is the completed **2026-10-14 publish-05 checkpoint**, with owned
+cleanup completed within its recorded scope and hardware/renderer limits
+retained. The separate [bitmap subtitle fixes](lumen-subtitle-fixes.md) preserve
+their native-06/publish-06 source and historical 1,509-case component result.
+Their earlier computer-use pause is historical. Results below retain their
+publish-05 and earlier candidate identities rather than certifying final05.
 
 This record continues the Emby API support and native playback work after the
 user explicitly authorized local Windows compilation, tests, UI/UX acceptance

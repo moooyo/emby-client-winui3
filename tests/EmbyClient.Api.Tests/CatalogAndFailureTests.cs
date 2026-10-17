@@ -48,6 +48,108 @@ public sealed class CatalogAndFailureTests
         Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
     }
 
+    [Fact]
+    public async Task Series_episode_counts_use_a_bounded_user_scoped_query_without_a_season()
+    {
+        using var context = new ApiTestContext();
+        context.ReturnJson("""{"Items":[{"Id":"episode-1"}],"TotalRecordCount":36}""");
+        var client = context.Client.WithAuthentication("token-b", "user/a?scope=1");
+
+        var count = await client.GetSeriesEpisodeCountAsync("series/a?other=1#%", TestContext.Current.CancellationToken);
+
+        Assert.Equal(36, count);
+        var request = Assert.Single(context.Handler.Requests);
+        Assert.Equal(HttpMethod.Get, request.Method);
+        Assert.Equal("/proxy/emby/Shows/series%2Fa%3Fother%3D1%23%25/Episodes", request.Uri.AbsolutePath);
+        var query = request.Query();
+        Assert.Equal("user/a?scope=1", query["UserId"]);
+        Assert.Equal("1", query["Limit"]);
+        Assert.Equal("false", query["EnableImages"]);
+        Assert.Equal("false", query["EnableUserData"]);
+        Assert.False(query.ContainsKey("SeasonId"));
+        Assert.False(query.ContainsKey("other"));
+        Assert.Equal(string.Empty, request.Uri.Fragment);
+        Assert.Equal("token-b", request.Header("X-Emby-Token"));
+        Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+    }
+
+    [Theory]
+    [InlineData("""{"Items":[],"TotalRecordCount":0}""", 0)]
+    [InlineData("""{"Items":[],"TotalRecordCount":36}""", 36)]
+    [InlineData("""{"Items":[{"Id":"episode-1"}]}""", null)]
+    [InlineData("""{"Items":[{"Id":"episode-1"}],"TotalRecordCount":null}""", null)]
+    [InlineData("""{"Items":[{"Id":"episode-1"}],"TotalRecordCount":-1}""", null)]
+    public async Task Series_episode_counts_preserve_zero_and_leave_unknown_totals_null(string json, int? expected)
+    {
+        using var context = new ApiTestContext();
+        context.ReturnJson(json);
+
+        var count = await context.Client.GetSeriesEpisodeCountAsync("series-a", TestContext.Current.CancellationToken);
+
+        Assert.Equal(expected, count);
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("{\"Items\":null}")]
+    [InlineData("{\"Items\":[],\"TotalRecordCount\":\"bad\"}")]
+    public async Task Series_episode_count_queries_preserve_protocol_failures(string json)
+    {
+        using var context = new ApiTestContext();
+        context.ReturnJson(json);
+
+        await Assert.ThrowsAsync<EmbyProtocolException>(() =>
+            context.Client.GetSeriesEpisodeCountAsync("series-a", TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task Series_episode_count_queries_require_authentication_before_transport()
+    {
+        using var context = new ApiTestContext();
+        var client = new EmbyApiClient(context.Http, context.Client.ApiRoot, ApiTestContext.Identity);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.GetSeriesEpisodeCountAsync("series-a", TestContext.Current.CancellationToken));
+
+        Assert.Empty(context.Handler.Requests);
+    }
+
+    [Theory]
+    [InlineData(401)]
+    [InlineData(403)]
+    public async Task Series_episode_count_queries_preserve_http_failures(int status)
+    {
+        using var context = new ApiTestContext();
+        context.Handler.RespondAsync = (_, _) => Task.FromResult(
+            RecordingHandler.Json("{\"Items\":[],\"TotalRecordCount\":0}", (HttpStatusCode)status));
+
+        var error = await Assert.ThrowsAsync<EmbyApiException>(() =>
+            context.Client.GetSeriesEpisodeCountAsync("series-a", TestContext.Current.CancellationToken));
+
+        Assert.Equal((HttpStatusCode)status, error.StatusCode);
+    }
+
+    [Fact]
+    public async Task Series_episode_count_queries_preserve_caller_cancellation()
+    {
+        using var context = new ApiTestContext();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var arrived = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Handler.RespondAsync = async (_, token) =>
+        {
+            arrived.SetResult(token);
+            await Task.Delay(Timeout.InfiniteTimeSpan, token);
+            return RecordingHandler.Json("{\"Items\":[],\"TotalRecordCount\":0}");
+        };
+
+        var pending = context.Client.GetSeriesEpisodeCountAsync("series-a", cancellation.Token);
+        var receivedToken = await arrived.Task.WaitAsync(TestContext.Current.CancellationToken);
+        cancellation.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+        Assert.True(receivedToken.IsCancellationRequested);
+    }
+
     [Theory]
     [InlineData("[]")]
     [InlineData("{\"Unexpected\":\"server changed its response\"}")]

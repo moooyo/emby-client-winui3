@@ -78,6 +78,23 @@ public sealed partial class NativePlaybackEngine
             // FFmpeg sees capability URLs only. Managed relays retain credentials and validate all upstream requests.
             config.FFmpegOptions.Add("protocol_whitelist", "http,tcp,crypto");
             config.FFmpegOptions.Add("rw_timeout", "15000000");
+            if (session.Request.DeliveryMethod == PlaybackDeliveryMethod.Transcode
+                && session.Request.TimelineKind == PlaybackTimelineKind.FullSource
+                && MediaDeliveryClassifier.IsHls(session.Request)
+                && session.Request.Source.RunTimeTicks is > 0
+                && session.Request.Source.IsInfiniteStream != true)
+            {
+                // The wrapper consumes this private marker; libavformat never receives it.
+                config.FFmpegOptions.Add("emby_finite_hls_accurate_seek", "1");
+            }
+            if (IsNativeEmbeddedSubtitleRequest(session.Request)
+                && session.Request.Source.RunTimeTicks is > 0
+                && session.Request.Source.IsInfiniteStream != true
+                && session.Request.Source.MediaStreams.Any(stream => stream.Index == session.Request.SubtitleStreamIndex
+                    && NativeBitmapSubtitleCodec(stream.Codec) == "pgssub"))
+            {
+                config.FFmpegOptions.Add("emby_indexed_pgs_accurate_seek", "1");
+            }
             return FFmpegMediaSource.CreateFromUriAsync(localUri.AbsoluteUri, config, hdrWindowId).AsTask(session.Lifetime.Token);
         }).ConfigureAwait(false);
         var decoder = await creation.ConfigureAwait(false);

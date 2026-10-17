@@ -18,7 +18,11 @@ public sealed partial class App
         using var http = new HttpClient(observation) { Timeout = Timeout.InfiniteTimeSpan };
         EmbyApiClient? authenticated = null;
         PlaybackCoordinator? coordinator = null;
+        NativePlaybackEngine? ownedEngine = null;
         ColdRangeProxy? proxy = null;
+        Func<Task<int>>? retiredReplay = null;
+        var originalPlaybackId = Guid.Empty;
+        object? failedSource = null;
         MediaPlayer? failedPlayer = null;
         MediaPlaybackSession? failedNativeSession = null;
         TypedEventHandler<MediaPlayer, MediaPlayerFailedEventArgs>? rawFailure = null;
@@ -59,13 +63,31 @@ public sealed partial class App
             var item = await authenticated.GetItemAsync("1001", deadline.Token);
             Require(item.RunTimeTicks == metadata.DurationTicks, "LongFixtureServerMediaMismatch");
             var engine = new NativePlaybackEngine(_window!.DispatcherQueue, _element!, initialMuted: true);
+            ownedEngine = engine;
             var nativeFailure = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             engine.EventReceived += (_, args) =>
             {
+                report.EngineEvents.Add(new IsolationEngineEvent
+                {
+                    PlaybackHash = IsolationHash(args.Snapshot.PlaybackId.ToString("N")), Kind = args.Kind.ToString(),
+                    State = args.Snapshot.State.ToString(), PositionTicks = args.Snapshot.PositionTicks, ErrorCode = args.ErrorCode
+                });
                 if (args.Kind != PlaybackEngineEventKind.Failed || report.NativeFailureCode is not null) return;
                 report.NativeFailureCode = args.ErrorCode;
-                report.ConfirmedRelayFailureCode = engine.ConfirmedRelayFailureForProbe;
                 report.NativeFailureSnapshotTicks = args.Snapshot.PositionTicks;
+                try
+                {
+                    // Product Fail publishes this event before retiring its native source.
+                    report.ConfirmedRelayFailureCode = engine.ConfirmedRelayFailureForProbe;
+                    report.FailedEventMatchedOriginalPlayback = originalPlaybackId != Guid.Empty
+                        && args.Snapshot.PlaybackId == originalPlaybackId && engine.Snapshot?.PlaybackId == originalPlaybackId;
+                    report.OriginalSourceBoundAtFailedEvent = failedSource is not null
+                        && engine.HasBoundNativeSourceForProbe && ReferenceEquals(_element!.MediaPlayer, failedPlayer)
+                        && ReferenceEquals(failedPlayer?.Source, failedSource);
+                    report.NativeFailureObservationStage = report.OriginalSourceBoundAtFailedEvent
+                        ? "AfterNativeSourceBinding" : "BeforeBindingOrAfterDetachment";
+                }
+                catch (Exception error) { report.NativeFailureObservationErrorCode = ErrorCode(error); }
                 nativeFailure.TrySetResult();
             };
             engine.Diagnostic += (_, value) => report.Diagnostics.Add("Native:" + value.Operation + ":" + value.ErrorCode);
@@ -83,10 +105,14 @@ public sealed partial class App
                 && player.PlaybackSession.Position.Ticks > 2_000_000
                 && player.PlaybackSession.NaturalVideoWidth > 0, "NetworkRetryInitialClockFailed", deadline.Token);
             var original = coordinator.ActiveContext ?? throw new PlaybackException("NetworkRetryInitialContextMissing");
+            originalPlaybackId = original.PlaybackId;
+            report.OriginalPlaybackHash = IsolationHash(original.PlaybackId.ToString("N"));
+            report.OriginalSessionHash = IsolationHash(original.PlaySessionId);
             report.OriginalRequestedAudioIndex = original.Selection.AudioStreamIndex;
             report.OriginalDefaultAudioIndex = original.Source.DefaultAudioStreamIndex;
             report.OriginalRequestedSubtitleIndex = original.Selection.SubtitleStreamIndex;
-            failedPlayer = _element!.MediaPlayer;
+            failedPlayer = _element!.MediaPlayer ?? throw new PlaybackException("NetworkRetryInitialPlayerMissing");
+            failedSource = failedPlayer.Source ?? throw new PlaybackException("NetworkRetryInitialSourceMissing");
             failedNativeSession = failedPlayer.PlaybackSession;
             report.PlayingNativeTicksBeforeFault = failedNativeSession.Position.Ticks;
             rawFailure = (_, args) =>
@@ -113,6 +139,15 @@ public sealed partial class App
                 && value.Offset <= report.ColdByteProbe && value.Offset + value.BytesForwarded > report.ColdByteProbe);
             Require(report.PlayingNativeTicksBeforeFault > 0 && report.ColdSeekTargetOutsideBuffer
                 && report.ColdByteUndeliveredBeforeFault, "ColdRangeInstrumentationPreconditionFailed");
+            report.OriginalSourceBoundBeforeFault = engine.HasBoundNativeSourceForProbe
+                && engine.Snapshot?.PlaybackId == original.PlaybackId
+                && ReferenceEquals(_element.MediaPlayer, failedPlayer) && ReferenceEquals(failedPlayer.Source, failedSource);
+            Require(report.OriginalSourceBoundBeforeFault && report.NativeFailureCode is null
+                && failedNativeSession.PlaybackState == MediaPlaybackState.Paused, "PostBindFailurePreconditionMissing");
+            retiredReplay = engine.CaptureCurrentCallbackReplayForProbe();
+            report.CallbacksCapturedBeforeFault = true;
+            report.CallbackCaptureStage = "BoundPausedSourceBeforeColdHttp503";
+            report.PostBindLateFailureGateStatus = "AwaitingRealHttp503";
             report.Stage = "InjectColdHttp503";
             observeColdSeek = true;
             SaveNetworkRetry(report);
@@ -128,6 +163,11 @@ public sealed partial class App
                 && value.BytesForwarded == 0 && value.Completed);
             Require(report.ActualColdHttp503Observed && report.NativeFailureCode == "NetworkFailure"
                 && report.ConfirmedRelayFailureCode == "NetworkFailure", "ExpectedNativeNetworkFailureNotObserved");
+            Require(report.OriginalSourceBoundBeforeFault && report.CallbacksCapturedBeforeFault
+                && report.OriginalSourceBoundAtFailedEvent && report.FailedEventMatchedOriginalPlayback
+                && report.NativeFailureObservationErrorCode is null
+                && report.NativeFailureObservationStage == "AfterNativeSourceBinding", "ExpectedPostBindNetworkFailureMissing");
+            report.PostBindLateFailureGateStatus = "ObservedBoundNetworkFailure";
             await WaitAsync(() => coordinator.Recovery is not null, "NetworkFailureDidNotOfferRetry", deadline.Token);
             var recovery = coordinator.Recovery!;
             report.RecoveryOffered = true;
@@ -147,7 +187,7 @@ public sealed partial class App
                 "NetworkRetryChangedTrackSelectionIntent");
             failedPlayer.MediaFailed -= rawFailure; rawFailure = null;
             failedNativeSession.SeekCompleted -= seekCompleted; seekCompleted = null;
-            failedPlayer = null; failedNativeSession = null;
+            failedPlayer = null; failedNativeSession = null; failedSource = null;
             report.Stage = "RestoreAndExplicitRetry";
             var requestsBeforeRetry = proxy.Records().Length;
             proxy.Restore();
@@ -167,6 +207,12 @@ public sealed partial class App
                 && report.RetryNativePaused && retryPlayer.IsMuted && report.RecoveryConsumed
                 && Math.Abs(report.RetryNativePositionTicks.Value - recovery.Selection.StartPositionTicks) <= 7_500_000,
                 "NetworkRetryActualReplacementInvalid");
+            report.Stage = "RetiredCallbacksAndOldIdCommandsAfterRetry";
+            SaveNetworkRetry(report);
+            await CheckNetworkRetryIsolationAsync(report, coordinator, engine, observation, original, replacement,
+                retiredReplay ?? throw new PlaybackException("NetworkRetryCallbacksWereNotCaptured"), deadline.Token);
+            retiredReplay = null;
+            report.Stage = "ResumeAfterRetryIsolation";
             var paused = retryPlayer.PlaybackSession.Position.Ticks;
             await Task.Delay(650, deadline.Token);
             report.RetryPausedDriftTicks = Math.Abs(retryPlayer.PlaybackSession.Position.Ticks - paused);
@@ -186,8 +232,12 @@ public sealed partial class App
                     && events.Count(value => value.Operation == "Start") == 1 && events.Count(value => value.Operation == "Stop") == 1
                     && events.All(value => value.StatusCode is >= 200 and < 300);
             });
-            await coordinator.DisposeAsync(); coordinator = null;
-            await authenticated.LogoutAsync(deadline.Token); authenticated = null;
+            await coordinator.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(20), deadline.Token);
+            report.CoordinatorDisposed = true; coordinator = null;
+            report.NativeDisposed = engine.ProductDisposalCompletedForProbe;
+            report.NativeOwnerCleared = engine.ProductPlayerOwnerClearedForProbe;
+            Require(report.NativeDisposed && report.NativeOwnerCleared, "NetworkRetryNativeCleanupIncomplete");
+            await authenticated.LogoutAsync(deadline.Token); report.LogoutCompleted = true; authenticated = null;
             var stoppedRequests = proxy.Records().Length;
             var stoppedStats = await GetStatsAsync(http, deadline.Token);
             await Task.Delay(1300, deadline.Token);
@@ -196,24 +246,104 @@ public sealed partial class App
                 && stoppedStats.MediaRequests == settledStats.MediaRequests && stoppedStats.Events.Length == settledStats.Events.Length;
             Require(report.FinalDetached && report.NoOldBindingRequestsAfterRetry && report.ValidSessionReports
                 && report.FinalMediaRequestsQuiet && proxy.BindingCount == 2 && proxy.CredentialRejections == 0
+                && report.RetiredIsolation.Status == "Passed" && report.CoordinatorDisposed && report.NativeDisposed
+                && report.NativeOwnerCleared && report.LogoutCompleted
                 && report.Diagnostics.Count == 0, "NetworkRetryFinalValidationFailed");
             report.Stage = "Complete";
             report.Status = "NetworkRetryPassed";
         }
-        catch (Exception error) { report.Status = "Failed"; report.ErrorCode = ErrorCode(error); report.ErrorHResult = error.HResult; }
+        catch (Exception error)
+        {
+            report.Status = "Failed"; report.ErrorCode = ErrorCode(error); report.ErrorHResult = error.HResult;
+            report.PostBindLateFailureGateStatus = "Failed";
+        }
         finally
         {
             observeColdSeek = false;
+            retiredReplay = null;
+            void RecordCleanupFailure(string operation, Exception error)
+            {
+                report.CleanupErrors.Add(operation + ":" + ErrorCode(error));
+                report.Status = "Failed";
+                report.PostBindLateFailureGateStatus = "Failed";
+                report.ErrorCode ??= "FinalCleanup_" + operation + "_" + ErrorCode(error);
+                report.ErrorHResult ??= error.HResult;
+            }
             try
             {
                 if (failedPlayer is not null && rawFailure is not null) failedPlayer.MediaFailed -= rawFailure;
-                if (failedNativeSession is not null && seekCompleted is not null) failedNativeSession.SeekCompleted -= seekCompleted;
-                if (coordinator is not null) await coordinator.DisposeAsync();
-                if (coldSeek is not null) { try { await coldSeek; } catch { } }
-                if (authenticated is not null) await authenticated.LogoutAsync();
-                if (proxy is not null) await proxy.DisposeAsync();
             }
-            catch (Exception error) { report.Status = "Failed"; report.ErrorCode ??= "FinalCleanup_" + ErrorCode(error); }
+            catch (Exception error) { RecordCleanupFailure("DetachNativeFailureObserver", error); }
+            try
+            {
+                if (failedNativeSession is not null && seekCompleted is not null) failedNativeSession.SeekCompleted -= seekCompleted;
+            }
+            catch (Exception error) { RecordCleanupFailure("DetachSeekObserver", error); }
+            failedPlayer = null; failedNativeSession = null; failedSource = null;
+            if (coordinator is not null)
+            {
+                try
+                {
+                    await coordinator.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(20));
+                    report.CoordinatorDisposed = true;
+                }
+                catch (Exception error) { RecordCleanupFailure("DisposeCoordinator", error); }
+            }
+            if (ownedEngine is not null)
+            {
+                try
+                {
+                    if (!report.NativeDisposed)
+                        await ownedEngine.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(20));
+                    report.NativeDisposed = ownedEngine.ProductDisposalCompletedForProbe;
+                    report.NativeOwnerCleared = ownedEngine.ProductPlayerOwnerClearedForProbe;
+                    if (!report.NativeDisposed || !report.NativeOwnerCleared)
+                        throw new PlaybackException("NetworkRetryNativeCleanupIncomplete");
+                }
+                catch (Exception error) { RecordCleanupFailure("DisposeNativeEngine", error); }
+            }
+            if (coldSeek is not null)
+            {
+                var coldSeekWinner = await Task.WhenAny(coldSeek, Task.Delay(TimeSpan.FromSeconds(15)));
+                if (!ReferenceEquals(coldSeekWinner, coldSeek))
+                    RecordCleanupFailure("DrainColdSeek", new PlaybackException("NetworkRetryColdSeekDrainTimeout"));
+                else
+                {
+                    // The scenario already recorded the original seek outcome and strict failure classification.
+                    try { await coldSeek; } catch (Exception) { }
+                }
+            }
+            if (authenticated is not null)
+            {
+                try
+                {
+                    using var logoutTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+                    await authenticated.LogoutAsync(logoutTimeout.Token);
+                    report.LogoutCompleted = true;
+                }
+                catch (Exception error) { RecordCleanupFailure("Logout", error); }
+            }
+            if (proxy is not null)
+            {
+                try
+                {
+                    await proxy.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(15));
+                    report.ProxyDisposed = true;
+                }
+                catch (Exception error) { RecordCleanupFailure("DisposeProxy", error); }
+            }
+            if (report.Status == "NetworkRetryPassed")
+            {
+                if (report.CoordinatorDisposed && report.NativeDisposed && report.NativeOwnerCleared
+                    && report.LogoutCompleted && report.ProxyDisposed && report.CleanupErrors.Count == 0)
+                    report.PostBindLateFailureGateStatus = "Passed";
+                else
+                {
+                    report.Status = "Failed";
+                    report.PostBindLateFailureGateStatus = "Failed";
+                    report.ErrorCode ??= "NetworkRetryCleanupNotEstablished";
+                }
+            }
             report.ProxyBindings = proxy?.BindingCount ?? 0;
             report.CredentialRejections = proxy?.CredentialRejections ?? 0;
             report.Ranges = proxy?.Records().ToList() ?? [];
@@ -222,6 +352,98 @@ public sealed partial class App
             SaveNetworkRetry(report);
             Environment.ExitCode = report.Status == "NetworkRetryPassed" ? 0 : 1;
             _window!.Close(); Exit();
+        }
+    }
+
+    private async Task CheckNetworkRetryIsolationAsync(NetworkRetryReport report, PlaybackCoordinator coordinator,
+        NativePlaybackEngine engine, HlsApiObservationHandler observation, PlaybackContext original,
+        PlaybackContext replacement, Func<Task<int>> replay, CancellationToken ct)
+    {
+        var result = report.RetiredIsolation;
+        result.Status = "Running";
+        result.Stage = "SettlePausedReplacement";
+        try
+        {
+            await WaitForIsolationApiSettlementAsync(observation, ct);
+            var player = _element!.MediaPlayer ?? throw new PlaybackException("NetworkRetryIsolationPlayerMissing");
+            var source = player.Source ?? throw new PlaybackException("NetworkRetryIsolationSourceMissing");
+            var snapshot = engine.Snapshot ?? throw new PlaybackException("NetworkRetryIsolationSnapshotMissing");
+            Require(player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused && player.IsMuted
+                && snapshot.PlaybackId == replacement.PlaybackId && snapshot.State == PlaybackEngineState.Paused
+                && snapshot.IsMuted && original.PlaybackId != replacement.PlaybackId,
+                "NetworkRetryIsolationRequiresPausedReplacement");
+            var volume = player.Volume;
+            var muted = player.IsMuted;
+            result.ReplacementPlaybackHash = IsolationHash(replacement.PlaybackId.ToString("N"));
+            result.ReplacementSessionHash = IsolationHash(replacement.PlaySessionId);
+            result.NativeBeforeTicks = player.PlaybackSession.Position.Ticks;
+            result.SnapshotBeforeTicks = snapshot.PositionTicks;
+            result.ApiSettledBeforeReplay = true;
+            result.ApiReplayStartCount = observation.Events.Length;
+            result.EngineReplayStartCount = report.EngineEvents.Count;
+            result.CompletedRequestsBeforeReplay = observation.CompletedRequests;
+            result.NegotiationsBeforeReplay = observation.Negotiations.Length;
+            result.Stage = "ReplayRetiredBoundHandlers";
+            SaveNetworkRetry(report);
+            result.ReplayedCallbacks = await replay();
+            Require(result.ReplayedCallbacks == result.ExpectedReplayedCallbacks, "NetworkRetryCallbackReplayCountMismatch");
+            result.Stage = "RetiredIdCommands";
+            await RunRetiredIsolationCommandsAsync(original.PlaybackId, coordinator, engine,
+                () => result.StaleIdCommands++, ct);
+            Require(result.StaleIdCommands == 9, "NetworkRetryStaleCommandCountMismatch");
+            result.Stage = "ObservePausedReplacement";
+            await Task.Delay(650, ct);
+            await WaitForIsolationApiSettlementAsync(observation, ct);
+            var current = coordinator.ActiveContext;
+            var currentSnapshot = engine.Snapshot;
+            result.NativeAfterTicks = player.PlaybackSession.Position.Ticks;
+            result.SnapshotAfterTicks = currentSnapshot?.PositionTicks;
+            result.PausedDriftTicks = Math.Abs(result.NativeAfterTicks.Value - result.NativeBeforeTicks.Value);
+            result.LogicalSessionPreserved = current is not null && current.PlaybackId == replacement.PlaybackId
+                && current.PlaySessionId == replacement.PlaySessionId && current.Source.Id == replacement.Source.Id
+                && currentSnapshot?.PlaybackId == replacement.PlaybackId;
+            result.PlayerIdentityPreserved = ReferenceEquals(_element.MediaPlayer, player);
+            result.SourceIdentityPreserved = player.Source is not null && ReferenceEquals(player.Source, source);
+            result.PausedStatePreserved = player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused
+                && coordinator.Status == PlaybackStatus.Paused && currentSnapshot?.State == PlaybackEngineState.Paused;
+            result.SnapshotPositionPreserved = currentSnapshot is not null && currentSnapshot.PositionTicks == snapshot.PositionTicks;
+            result.VolumeAndMutePreserved = player.IsMuted == muted && player.Volume == volume
+                && currentSnapshot is not null && currentSnapshot.IsMuted == snapshot.IsMuted
+                && currentSnapshot.VolumeLevel == snapshot.VolumeLevel;
+            result.RecoveryStillConsumed = !coordinator.CanRetry && coordinator.Recovery is null;
+            var engineEvents = report.EngineEvents.Skip(result.EngineReplayStartCount).ToArray();
+            result.NoRetiredEngineEvents = engineEvents.All(value => value.PlaybackHash != report.OriginalPlaybackHash);
+            result.NoEngineEventsDuringReplay = engineEvents.Length == 0;
+            result.TotalEngineEventsDuringReplay = engineEvents.Length;
+            result.AllowedEngineNotifications = engineEvents.Count(value =>
+                value.PlaybackHash == result.ReplacementPlaybackHash && value.State == "Paused"
+                && value.PositionTicks == snapshot.PositionTicks && value.Kind is "StateChanged" or "PositionChanged");
+            result.UnexpectedEngineNotifications = result.TotalEngineEventsDuringReplay - result.AllowedEngineNotifications;
+            result.NoFailedOrEndedEngineEvents = engineEvents.All(value => value.Kind is not "Failed" and not "Ended");
+            result.NoUnexpectedEngineEvents = result.UnexpectedEngineNotifications == 0 && result.NoFailedOrEndedEngineEvents;
+            var apiEvents = observation.Events.Skip(result.ApiReplayStartCount).ToArray();
+            result.ApiEventsDuringReplay = apiEvents.ToList();
+            result.NoUnexpectedApiControls = apiEvents.All(value => value.SessionHash == result.ReplacementSessionHash
+                && value.Operation == "Progress" && value.EventName == "TimeUpdate" && value.StatusCode is >= 200 and < 300);
+            result.CompletedRequestsAfterReplay = observation.CompletedRequests;
+            result.NegotiationsAfterReplay = observation.Negotiations.Length;
+            result.NoPlaybackNegotiationDuringReplay = result.NegotiationsAfterReplay == result.NegotiationsBeforeReplay;
+            // CompletedRequests and Events have independent read boundaries and include different operation sets.
+            // Keep this comparison diagnostic; the passing gate uses actual report events and negotiations.
+            result.ApiCompletionDeltaMatchesObservedProgress =
+                result.CompletedRequestsAfterReplay - result.CompletedRequestsBeforeReplay == apiEvents.Length;
+            Require(result.LogicalSessionPreserved && result.PlayerIdentityPreserved && result.SourceIdentityPreserved
+                && result.PausedStatePreserved && result.PausedDriftTicks == 0 && result.SnapshotPositionPreserved
+                && result.VolumeAndMutePreserved && result.RecoveryStillConsumed && result.NoRetiredEngineEvents
+                && result.NoUnexpectedEngineEvents && result.NoFailedOrEndedEngineEvents && result.NoUnexpectedApiControls
+                && result.NoPlaybackNegotiationDuringReplay,
+                "RetiredNetworkSessionAffectedRetry");
+            result.Stage = "Complete";
+            result.Status = "Passed";
+        }
+        catch (Exception error)
+        {
+            result.Status = "Failed"; result.ErrorCode = ErrorCode(error); throw;
         }
     }
 

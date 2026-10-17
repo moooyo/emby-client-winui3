@@ -9,15 +9,24 @@ public sealed partial class App
     private string? _complexSubtitleCaseId;
     private bool _complexSubtitleHttpProfileControl;
     private string? _complexSubtitleExpectedServerId;
+    private int _complexSubtitleVisualWaitSeconds = 180;
+
+    private static int ParseComplexSubtitleVisualWait(string text) => int.TryParse(text,
+        System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var seconds)
+        && seconds is >= 1 and <= 600 ? seconds
+        : throw new ArgumentException("Visual inspection wait must be an integer from 1 through 600 seconds.");
 
     private void ConfigureComplexSubtitleMode(string credentialsPath, string manifestPath, string caseId,
-        string mode, string? expectedServerId = null)
+        string mode, string? expectedServerId = null, int visualWaitSeconds = 180)
     {
+        if (visualWaitSeconds is < 1 or > 600)
+            throw new ArgumentOutOfRangeException(nameof(visualWaitSeconds));
         _complexSubtitleCredentialsPath = Path.GetFullPath(credentialsPath);
         _complexSubtitleManifestPath = Path.GetFullPath(manifestPath);
         _complexSubtitleCaseId = caseId;
         _complexSubtitleHttpProfileControl = mode == "--complex-subtitle-http-profile-control";
         _complexSubtitleExpectedServerId = expectedServerId;
+        _complexSubtitleVisualWaitSeconds = visualWaitSeconds;
     }
 
     private async Task RunComplexSubtitleModeAsync()
@@ -28,7 +37,7 @@ public sealed partial class App
             var report = await ComplexSubtitleProbe.RunAsync(_window!.DispatcherQueue, _element!,
                 _complexSubtitleCredentialsPath!, _complexSubtitleManifestPath!, _complexSubtitleCaseId!, output,
                 progressiveHttpProfileControl: _complexSubtitleHttpProfileControl,
-                expectedServerId: _complexSubtitleExpectedServerId);
+                expectedServerId: _complexSubtitleExpectedServerId, visualWaitSeconds: _complexSubtitleVisualWaitSeconds);
             Environment.ExitCode = report.Status is "Passed" or "ControlPassed" ? 0 : 1;
         }
         catch (Exception error)

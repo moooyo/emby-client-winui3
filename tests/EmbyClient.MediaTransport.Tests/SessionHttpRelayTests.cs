@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
@@ -15,6 +16,7 @@ public sealed class SessionHttpRelayTests
     private const int MaximumResponseBytes = 2 * 1024 * 1024;
     private static readonly TimeSpan Deadline = TimeSpan.FromSeconds(5);
     private static CancellationToken TestCancellation => TestContext.Current.CancellationToken;
+    public static bool IsWindows => OperatingSystem.IsWindows();
 
     [Fact]
     public async Task Local_endpoint_uses_loopback_an_ephemeral_port_and_a_private_nonce_without_prefetching_the_file()
@@ -337,6 +339,53 @@ public sealed class SessionHttpRelayTests
         }
     }
 
+    [Theory(Skip = "The controlled AcceptEx completion gate requires Windows.", SkipUnless = nameof(IsWindows))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Closing_the_listener_before_accept_completion_closes_the_unreturned_client(bool cancelLifetime)
+    {
+        using var completion = new AcceptCompletionEndPoint();
+        using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        listener.Bind(completion);
+        listener.Listen(1);
+        var port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(TestCancellation);
+        var acceptance = SessionHttpRelay.AcceptClientAsync(listener, lifetime.Token).AsTask();
+        using var client = new TcpClient(AddressFamily.InterNetwork);
+        try
+        {
+            completion.Arm();
+            client.Connect(IPAddress.Loopback, port);
+            var connectionEnd = ReadToEndWithDeadlineAsync(client.GetStream());
+            await completion.Entered.WaitAsync(Deadline, TestCancellation);
+            Assert.False(acceptance.IsCompleted);
+
+            if (cancelLifetime) lifetime.Cancel();
+            listener.Dispose();
+            completion.Release();
+            var failure = await Record.ExceptionAsync(async () =>
+            {
+                using var accepted = await acceptance.WaitAsync(Deadline, TestCancellation);
+            });
+
+            Assert.True(failure is SocketException or OperationCanceledException or ObjectDisposedException,
+                "Closing the listener must reject the native accept result before it reaches the caller.");
+            Assert.Empty(await connectionEnd.WaitAsync(Deadline, TestCancellation));
+        }
+        finally
+        {
+            listener.Dispose();
+            completion.Release();
+            try
+            {
+                using var accepted = await acceptance.WaitAsync(Deadline, TestCancellation);
+            }
+            catch (SocketException) { }
+            catch (OperationCanceledException) { }
+            catch (ObjectDisposedException) { }
+        }
+    }
+
     [Theory]
     [InlineData(503, "NetworkFailure")]
     [InlineData(401, "AuthenticationRequired")]
@@ -450,6 +499,137 @@ public sealed class SessionHttpRelayTests
         finally { foreach (var client in clients) client.Dispose(); }
     }
 
+    [Fact(Timeout = 150000)]
+    public async Task A_paused_body_consumer_can_resume_after_sixty_seconds_without_losing_the_tail()
+    {
+        var cancellation = TestContext.Current.CancellationToken;
+        var data = CreateData(16 * 1024 * 1024 + 17);
+        var failures = new ConcurrentQueue<string>();
+        await using var server = new LoopbackServer((request, _) => Task.FromResult(RangeResponse(request, data)));
+        await using var transport = CreateTransport(server.BaseUri);
+        var relay = await SessionHttpRelay.OpenAsync(transport, server.BaseUri, "mp4", cancellation, failures.Enqueue);
+        using var client = new TcpClient(AddressFamily.InterNetwork) { ReceiveBufferSize = 1024 };
+        try
+        {
+            await client.ConnectAsync(IPAddress.Loopback, relay.LocalUri.Port, TestCancellation).AsTask().WaitAsync(Deadline, TestCancellation);
+            var stream = client.GetStream();
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(BuildRequest(relay.LocalUri)), TestCancellation);
+            var headers = await ReadHeadersBeforeBodyAsync(stream);
+            Assert.StartsWith("HTTP/1.1 200 ", headers, StringComparison.Ordinal);
+            Assert.Contains($"\r\nContent-Length: {data.Length}\r\n", headers, StringComparison.Ordinal);
+            var requestsBeforePause = await WaitForSourceBackpressureAsync(server, data.Length);
+
+            // Leave the real TCP body unread beyond the former downstream write deadline.
+            var pauseStarted = Stopwatch.GetTimestamp();
+            await Task.Delay(TimeSpan.FromSeconds(65), cancellation);
+            var paused = Stopwatch.GetElapsedTime(pauseStarted);
+            client.ReceiveBufferSize = 1024 * 1024;
+            var received = await ReadLargeBodyAsync(stream, data, TimeSpan.FromSeconds(30));
+            TestContext.Current.TestOutputHelper?.WriteLine(
+                $"pausedSeconds={paused.TotalSeconds:F3} declaredBytes={data.Length} deliveredBytes={received} upstreamRequestsBeforePause={requestsBeforePause} upstreamRequestsAfterResume={server.Requests.Count}");
+
+            Assert.Equal(data.Length, received);
+            Assert.Empty(failures);
+        }
+        finally { await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation); }
+    }
+
+    [Theory(Timeout = 30000)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Stopping_a_backpressured_response_is_bounded_and_not_an_upstream_failure(bool cancelLifetime)
+    {
+        var cancellation = TestContext.Current.CancellationToken;
+        var data = CreateData(16 * 1024 * 1024 + 17);
+        var failures = new ConcurrentQueue<string>();
+        await using var server = new LoopbackServer((request, _) => Task.FromResult(RangeResponse(request, data)));
+        await using var transport = CreateTransport(server.BaseUri);
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        var relay = await SessionHttpRelay.OpenAsync(transport, server.BaseUri, "mp4", lifetime.Token, failures.Enqueue);
+        using var client = new TcpClient(AddressFamily.InterNetwork) { ReceiveBufferSize = 1024 };
+        try
+        {
+            await client.ConnectAsync(IPAddress.Loopback, relay.LocalUri.Port, TestCancellation).AsTask().WaitAsync(Deadline, TestCancellation);
+            var stream = client.GetStream();
+            await stream.WriteAsync(Encoding.ASCII.GetBytes(BuildRequest(relay.LocalUri)), TestCancellation);
+            await ReadHeadersBeforeBodyAsync(stream);
+            await WaitForSourceBackpressureAsync(server, data.Length);
+
+            var stopped = Stopwatch.GetTimestamp();
+            if (cancelLifetime) lifetime.Cancel();
+            await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation);
+            var cleanup = Stopwatch.GetElapsedTime(stopped);
+            client.ReceiveBufferSize = 1024 * 1024;
+            var received = await ReadLargeBodyAsync(stream, data, Deadline);
+            TestContext.Current.TestOutputHelper?.WriteLine(
+                $"cancelLifetime={cancelLifetime} cleanupMilliseconds={cleanup.TotalMilliseconds:F3} declaredBytes={data.Length} deliveredBytes={received}");
+
+            Assert.True(received < data.Length, "Stopping the blocked transfer must close its incomplete response.");
+            Assert.Empty(failures);
+        }
+        finally { await relay.DisposeAsync().AsTask().WaitAsync(Deadline, TestCancellation); }
+    }
+
+    private static async Task<string> ReadHeadersBeforeBodyAsync(NetworkStream stream)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestCancellation);
+        timeout.CancelAfter(Deadline);
+        var bytes = new byte[16 * 1024];
+        var length = 0;
+        while (length < bytes.Length)
+        {
+            Assert.Equal(1, await stream.ReadAsync(bytes.AsMemory(length, 1), timeout.Token));
+            length++;
+            if (length >= 4 && bytes.AsSpan(length - 4, 4).SequenceEqual("\r\n\r\n"u8))
+                return Encoding.ASCII.GetString(bytes, 0, length);
+        }
+        throw new InvalidOperationException("The relay response header exceeded the test limit.");
+    }
+
+    private static async Task<int> WaitForSourceBackpressureAsync(LoopbackServer server, int sourceLength)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestCancellation);
+        timeout.CancelAfter(Deadline);
+        var previous = server.Requests.Count;
+        var stableSamples = 0;
+        while (stableSamples < 5)
+        {
+            await Task.Delay(100, timeout.Token);
+            var current = server.Requests.Count;
+            stableSamples = current == previous ? stableSamples + 1 : 0;
+            previous = current;
+        }
+        var completeRequestCount = 1 + (sourceLength + BlockSize - 1) / BlockSize;
+        Assert.True(previous < completeRequestCount,
+            "The unread client must backpressure the relay before the complete source has been fetched.");
+        return previous;
+    }
+
+    private static async Task<int> ReadLargeBodyAsync(NetworkStream stream, byte[] expected, TimeSpan readDeadline)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestCancellation);
+        timeout.CancelAfter(readDeadline);
+        var buffer = new byte[64 * 1024];
+        var received = 0;
+        try
+        {
+            while (true)
+            {
+                var read = await stream.ReadAsync(buffer, timeout.Token);
+                if (read == 0) break;
+                Assert.True(read <= expected.Length - received, "The response exceeded its declared body length.");
+                Assert.True(buffer.AsSpan(0, read).SequenceEqual(expected.AsSpan(received, read)),
+                    "The response body differed from the deterministic source bytes.");
+                received += read;
+            }
+        }
+        catch (IOException exception) when (exception.InnerException is SocketException)
+        {
+            TestContext.Current.TestOutputHelper?.WriteLine($"bodySocketFailure={exception.InnerException.HResult} deliveredBytes={received}");
+        }
+        return received;
+    }
+
     private static string BuildRequest(Uri uri, string method = "GET", string? target = null,
         string? extraHeaders = null, string? host = null)
         => $"{method} {target ?? uri.AbsolutePath} HTTP/1.1\r\nHost: {host ?? uri.Authority}\r\n"
@@ -539,4 +719,33 @@ public sealed class SessionHttpRelayTests
     }
 
     private sealed record RawResponse(int StatusCode, IReadOnlyDictionary<string, string> Headers, byte[] Body);
+
+    private sealed class AcceptCompletionEndPoint() : IPEndPoint(IPAddress.Loopback, 0), IDisposable
+    {
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly ManualResetEventSlim _release = new();
+        private int _armed;
+
+        internal Task Entered => _entered.Task;
+        internal void Arm() => Volatile.Write(ref _armed, 1);
+        internal void Release() => _release.Set();
+
+        public override SocketAddress Serialize()
+        {
+            if (Interlocked.Exchange(ref _armed, 0) != 0)
+            {
+                // Windows serializes the bound endpoint after AcceptEx succeeds and before
+                // updating the accepted socket's listener context. Hold that native handoff.
+                _entered.TrySetResult();
+                if (!_release.Wait(Deadline)) throw new TimeoutException("The native accept completion gate timed out.");
+            }
+            return base.Serialize();
+        }
+
+        public void Dispose()
+        {
+            _release.Set();
+            _release.Dispose();
+        }
+    }
 }

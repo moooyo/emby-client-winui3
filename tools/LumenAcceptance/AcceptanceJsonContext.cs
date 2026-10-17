@@ -15,6 +15,7 @@ internal sealed class BootstrapReceipt
     public bool ProductionRestoreVerified { get; init; }
     public bool OfficialServer { get; init; }
     public bool DesignCatalog { get; init; }
+    public int LargeLibraryItems { get; init; }
     public bool IsAdministrator { get; init; }
 }
 

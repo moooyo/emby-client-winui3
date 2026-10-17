@@ -235,7 +235,7 @@ public sealed partial class LumenSettingsView : UserControl
     }
 
     public event EventHandler<LumenPreferences>? PreferencesChanged;
-    public event EventHandler? SignOutRequested;
+    public Func<Task>? SignOutRequestedAsync { get; set; }
     public event EventHandler? SwitchAccountRequested;
     public event EventHandler? DiagnosticsRequested;
     public event EventHandler? KeyboardShortcutsRequested;
@@ -1404,15 +1404,22 @@ public sealed partial class LumenSettingsView : UserControl
         LumenDialogTheme.Apply(dialog);
         dialog.Resources["ContentDialogMaxWidth"] = 440d;
         dialog.Resources["ContentDialogMinWidth"] = Math.Min(440d, Math.Max(280d, ActualWidth - 64));
+        Task? signOutTask = null;
+        dialog.PrimaryButtonClick += (_, _) =>
+        {
+            // Register session cleanup before dialog dismissal can race window shutdown.
+            if (ReferenceEquals(_signOutDialog, dialog)) _signOutDialog = null;
+            signOutTask ??= SignOutRequestedAsync?.Invoke() ?? Task.CompletedTask;
+        };
         _signOutDialog = dialog;
         try
         {
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                SignOutRequested?.Invoke(this, EventArgs.Empty);
+            await dialog.ShowAsync();
         }
         finally
         {
             if (ReferenceEquals(_signOutDialog, dialog)) _signOutDialog = null;
+            if (signOutTask is not null) await signOutTask;
         }
     }
 

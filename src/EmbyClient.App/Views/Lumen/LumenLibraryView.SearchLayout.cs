@@ -96,7 +96,7 @@ public sealed partial class LumenLibraryView
             layout.MinItemHeight = _searchCardWidth * 1.5 + 48;
         }
         for (var index = 0; index < _searchMedia.Count; index++)
-            if (_searchRepeater.TryGetElement(index) is LumenMediaCard card) card.SetCardWidth(_searchCardWidth);
+            if (LumenMediaCard.UnwrapNavigationElement(_searchRepeater.TryGetElement(index)) is LumenMediaCard card) card.SetCardWidth(_searchCardWidth);
         for (var index = 0; index < 16; index++)
             if (_searchSkeletons.TryGetElement(index) is CatalogSkeletonCard skeleton) skeleton.SetWidth(_searchCardWidth);
         var peopleColumns = Math.Max(1, (int)Math.Floor((usable + 10) / 290));

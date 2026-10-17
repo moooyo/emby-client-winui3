@@ -10,7 +10,14 @@ public sealed partial class LibraryViewModel
 {
     private PageLoadOutcome _loadOutcome;
     private MediaCardViewModel? _nextEpisode;
+    private int? _seriesEpisodeCount;
+    private int _seriesEpisodeCountReadVersion;
     public PageLoadOutcome LoadOutcome => _loadOutcome;
+    public int? SeriesEpisodeCount
+    {
+        get => _seriesEpisodeCount;
+        private set => SetProperty(ref _seriesEpisodeCount, value);
+    }
     public Visibility InitialFailureVisibility => _loadOutcome == PageLoadOutcome.Failed && !HasError
         && !IsBusy && !HasItems && !IsPerson ? Visibility.Visible : Visibility.Collapsed;
     public MediaCardViewModel? NextEpisode
@@ -58,6 +65,41 @@ public sealed partial class LibraryViewModel
         OnPropertyChanged(nameof(PlaybackUnavailableMessage));
         OnPropertyChanged(nameof(PlaybackUnavailableVisibility));
         OnPropertyChanged(nameof(SeasonSelectorVisibility));
+    }
+
+    private void ResetSeriesEpisodeCount(int? count = null)
+    {
+        _seriesEpisodeCountReadVersion++;
+        SeriesEpisodeCount = count;
+    }
+
+    public async Task RefreshSeriesEpisodeCountAsync(CancellationToken cancellationToken = default)
+    {
+        if (_api is not { } api || _pageCancellation is null || !HasDetails
+            || Detail.Item.Type != "Series" || HasPendingSearch || cancellationToken.IsCancellationRequested) return;
+        var seriesId = Detail.Id;
+        var sessionVersion = _sessionVersion;
+        var pageVersion = _pageVersion;
+        var readVersion = ++_seriesEpisodeCountReadVersion;
+        using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token, cancellationToken);
+        var token = lifetime.Token;
+        bool CanCommitCount() => readVersion == _seriesEpisodeCountReadVersion
+            && IsCurrentSession(sessionVersion) && ReferenceEquals(api, _api) && CanCommitPage(pageVersion, token)
+            && HasDetails && Detail.Item.Type == "Series" && Detail.Id == seriesId && !HasPendingSearch;
+        // A fresh aggregate has its own scope; neither season children nor an old total can substitute for it.
+        SeriesEpisodeCount = null;
+        if (!CanCommitCount()) return;
+        try
+        {
+            var count = await api.GetSeriesEpisodeCountAsync(seriesId, token);
+            if (CanCommitCount()) SeriesEpisodeCount = count;
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
+        catch (Exception exception) when (IsExpectedFailure(exception))
+        {
+            if (CanCommitCount() && exception is EmbyApiException apiException
+                && (apiException.IsAuthenticationFailure || apiException.IsPermissionDenied)) ShowError(exception);
+        }
     }
 
     public void CancelSeasonSwitch()

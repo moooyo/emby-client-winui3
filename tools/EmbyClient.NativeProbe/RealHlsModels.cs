@@ -11,10 +11,17 @@ internal sealed class RealHlsCredentials
 
 internal sealed class RealHlsReport
 {
+    public const string DefaultServerId = "cf4feb10df224135877fc61204a28212";
+    public const string DefaultItemId = "5";
+
     public string Scope { get; init; } = "Owned official Emby 4.9.5.0 loopback validation server, fixed item 5, forced HLS, Windows native engine and real PlaybackCoordinator. Separate from synthetic direct-stream evidence.";
-    public string ServerId { get; init; } = "cf4feb10df224135877fc61204a28212";
+    public bool ExplicitBinding { get; init; }
+    public string ServerId { get; init; } = DefaultServerId;
+    public string? PublicServerId { get; set; }
+    public string? AuthenticatedServerId { get; set; }
     public string ServerVersion { get; set; } = "";
-    public string ItemId { get; init; } = "5";
+    public string ItemId { get; init; } = DefaultItemId;
+    public RealHlsItemSummary? VerifiedItem { get; set; }
     public string Status { get; set; } = "Running";
     public string? ErrorCode { get; set; }
     public int? ErrorHResult { get; set; }
@@ -34,9 +41,44 @@ internal sealed class RealHlsReport
     public List<RealHlsLoop> Loops { get; init; } = [];
     public List<ResourceSample> FinalIdleSamples { get; init; } = [];
     public List<string> Diagnostics { get; init; } = [];
+    public List<RealHlsFailureObservation> NativeFailures { get; init; } = [];
     public List<HlsNegotiationDiagnostic> Negotiations { get; set; } = [];
     public NativeHlsHttpControlSample? NativeHttpControl { get; set; }
     public SharedNativePlayerControlSample? SharedPlayerControl { get; set; }
+}
+
+internal sealed class RealHlsFailureObservation
+{
+    public DateTimeOffset CapturedUtc { get; init; } = DateTimeOffset.UtcNow;
+    public string? ErrorCode { get; init; }
+    public long SnapshotPositionTicks { get; init; }
+    public long? SnapshotDurationTicks { get; init; }
+    public long? RequestedStartTicks { get; set; }
+    public long? ActualNativePositionTicks { get; set; }
+    public long? ActualNativeDurationTicks { get; set; }
+    public string? ActualNativeState { get; set; }
+    public bool SourceWasBound { get; set; }
+    public string? ObservationErrorCode { get; set; }
+}
+
+internal sealed class RealHlsItemSummary
+{
+    public string ItemId { get; init; } = "";
+    public string? Type { get; init; }
+    public string? MediaType { get; init; }
+    public long? RunTimeTicks { get; init; }
+    public int MediaSourceCount { get; init; }
+    public List<RealHlsMediaSourceSummary> MediaSources { get; init; } = [];
+}
+
+internal sealed class RealHlsMediaSourceSummary
+{
+    public string? SourceId { get; init; }
+    public string? Container { get; init; }
+    public long? RunTimeTicks { get; init; }
+    public string[] VideoCodecs { get; init; } = [];
+    public string[] AudioCodecs { get; init; } = [];
+    public string[] SubtitleCodecs { get; init; } = [];
 }
 
 internal sealed class RealHlsLoop
@@ -59,6 +101,8 @@ internal sealed class RealHlsLoop
     public bool? SharedPlayerSourceBoundAfterSeek { get; set; }
     public bool? SharedPlayerSourceClearedAfterStop { get; set; }
     public long SourceDurationTicks { get; set; }
+    public RealHlsMediaSourceSummary? OpenedMediaSource { get; set; }
+    public RealHlsMediaSourceSummary? SeekMediaSource { get; set; }
     public uint VideoWidth { get; set; }
     public uint VideoHeight { get; set; }
     public long PausedDriftTicks { get; set; }

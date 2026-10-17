@@ -63,8 +63,8 @@ public sealed partial class App
                 var cycle = new IsolationCycle { Number = number };
                 report.Cycles.Add(cycle);
                 SaveIsolation(report);
-                Func<Task>? cancelledReplay = null;
-                Func<Task>? failedReplay = null;
+                Func<Task<int>>? cancelledReplay = null;
+                Func<Task<int>>? failedReplay = null;
                 try
                 {
                     using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(deadline.Token);
@@ -106,31 +106,47 @@ public sealed partial class App
                     Require(!observation.Events.Any(value => value.SessionHash == cycle.CancelledSessionHash && value.Operation == "Start"),
                         "CancelledOpeningReportedStart");
                     await CheckIsolationRecoveryAsync(cycle, "AfterOpeningCancellation", cancelledId,
-                        cancelledReplay!, coordinator, engine, observation, report, deadline.Token);
+                        cancelledReplay!, 7, "BoundNativeOpening", coordinator, engine, observation, report, deadline.Token);
                     cancelledReplay = null;
 
-                    cycle.Stage = "NativeDecoderFailure";
+                    cycle.Stage = "PreBindInvalidContainerRejection";
+                    cycle.InvalidMediaRequestsBefore = invalid.Requests;
                     var failedId = Guid.Empty;
                     failureObserver = args =>
                     {
                         if (args.Kind != PlaybackEngineEventKind.Failed || cycle.NativeDecoderFailureCode is not null) return;
                         cycle.NativeDecoderFailureCode = args.ErrorCode;
-                        cycle.DecoderFailureSourceWasBound = engine.HasBoundNativeSourceForProbe;
                         failedId = args.Snapshot.PlaybackId;
-                        cycle.FailedSessionHash = coordinator.ActiveContext is { } context ? IsolationHash(context.PlaySessionId) : null;
-                        failedReplay = engine.CaptureCurrentCallbackReplayForProbe();
+                        try
+                        {
+                            cycle.DecoderFailureSourceWasBound = engine.HasBoundNativeSourceForProbe;
+                            cycle.DecoderFailureStage = cycle.DecoderFailureSourceWasBound
+                                ? "AfterNativeSourceBinding" : "BeforeNativeSourceBinding";
+                            cycle.FailedSessionHash = coordinator.ActiveContext is { } context
+                                ? IsolationHash(context.PlaySessionId) : null;
+                            failedReplay = engine.CaptureCurrentFailureReplayForProbe(failedId);
+                        }
+                        catch (Exception error) { cycle.DecoderFailureCaptureErrorCode = ErrorCode(error); }
                     };
                     injectingEngine.NextInvalidMedia = invalid.MediaUri;
                     try { await coordinator.PlayAsync(IsolationSelection(0), deadline.Token); }
                     catch (PlaybackException error) { cycle.DecoderFailureTerminalCode = error.ErrorCode; }
                     finally { failureObserver = null; }
                     await coordinator.StopAsync(deadline.Token);
+                    cycle.InvalidMediaRequestsAfter = invalid.Requests;
                     cycle.FailureDetached = _element!.MediaPlayer is null && coordinator.ActiveContext is null;
+                    cycle.PreBindRejectedSessionReportedNoStart = cycle.FailedSessionHash is not null
+                        && !observation.Events.Any(value => value.SessionHash == cycle.FailedSessionHash && value.Operation == "Start");
                     Require(cycle.NativeDecoderFailureCode is "UnsupportedFormat" or "NativePlaybackFailure"
-                        && cycle.DecoderFailureTerminalCode is not null && cycle.DecoderFailureSourceWasBound
-                        && cycle.FailureDetached && failedId != Guid.Empty && failedReplay is not null, "ExpectedNativeDecoderFailureMissing");
-                    await CheckIsolationRecoveryAsync(cycle, "AfterNativeDecoderFailure", failedId,
-                        failedReplay!, coordinator, engine, observation, report, deadline.Token);
+                        && cycle.DecoderFailureTerminalCode is not null && !cycle.DecoderFailureSourceWasBound
+                        && cycle.DecoderFailureStage == "BeforeNativeSourceBinding"
+                        && cycle.DecoderFailureCaptureErrorCode is null && cycle.PreBindRejectedSessionReportedNoStart
+                        && cycle.InvalidMediaRequestsAfter > cycle.InvalidMediaRequestsBefore
+                        && cycle.FailureDetached && failedId != Guid.Empty && failedReplay is not null,
+                        "ExpectedPreBindInvalidContainerRejectionMissing");
+                    cycle.PreBindRejectionGatePassed = true;
+                    await CheckIsolationRecoveryAsync(cycle, "AfterPreBindInvalidContainerRejection", failedId,
+                        failedReplay!, 1, "PreBindSessionFailureEntry", coordinator, engine, observation, report, deadline.Token);
                     failedReplay = null;
                     cycle.Stage = "Complete";
                     cycle.Status = "Passed";
@@ -250,11 +266,14 @@ public sealed partial class App
     }
 
     private async Task CheckIsolationRecoveryAsync(IsolationCycle cycle, string kind, Guid retiredId,
-        Func<Task> replay, PlaybackCoordinator coordinator, NativePlaybackEngine engine,
-        HlsApiObservationHandler observation, IsolationReport report, CancellationToken ct)
+        Func<Task<int>> replay, int expectedCallbacks, string captureStage, PlaybackCoordinator coordinator,
+        NativePlaybackEngine engine, HlsApiObservationHandler observation, IsolationReport report, CancellationToken ct)
     {
         cycle.Stage = kind;
-        var recovery = new IsolationRecovery { Kind = kind };
+        var recovery = new IsolationRecovery
+        {
+            Kind = kind, ReplayCaptureStage = captureStage, ExpectedReplayedCallbacks = expectedCallbacks
+        };
         cycle.Recoveries.Add(recovery);
         var context = await OpenIsolationHealthyAsync(coordinator, 50_000_000, ct);
         recovery.SessionHash = IsolationHash(context.PlaySessionId);
@@ -269,18 +288,11 @@ public sealed partial class App
         var firstApiEvent = observation.Events.Length;
         recovery.ApiReplayStartCount = firstApiEvent;
         recovery.EngineReplayStartCount = firstEngineEvent;
-        await replay();
-        recovery.ReplayedCallbacks = 7;
-        await engine.PauseAsync(retiredId, ct);
-        await engine.ResumeAsync(retiredId, ct);
-        await engine.SeekAsync(retiredId, 450_000_000, ct);
-        await engine.SetVolumeAsync(retiredId, 31, true, ct);
-        await engine.StopAsync(retiredId, ct);
-        await coordinator.PauseAsync(retiredId, ct);
-        await coordinator.ResumeAsync(retiredId, ct);
-        await coordinator.SeekAsync(retiredId, 450_000_000, ct);
-        await coordinator.StopAsync(retiredId, ct);
-        recovery.StaleIdCommands = 9;
+        recovery.ReplayedCallbacks = await replay();
+        Require(recovery.ReplayedCallbacks == expectedCallbacks && expectedCallbacks is 1 or 7,
+            "IsolationReplayEntryPointCountMismatch");
+        await RunRetiredIsolationCommandsAsync(retiredId, coordinator, engine, () => recovery.StaleIdCommands++, ct);
+        Require(recovery.StaleIdCommands == 9, "IsolationStaleCommandCountMismatch");
         await Task.Delay(650, ct);
         recovery.CurrentSourceSurvived = coordinator.ActiveContext?.PlaybackId == context.PlaybackId
             && engine.Snapshot?.PlaybackId == context.PlaybackId && _element.MediaPlayer?.Source is not null;
@@ -290,8 +302,9 @@ public sealed partial class App
         recovery.MutedVolumePreserved = player.IsMuted && Math.Abs(player.Volume - 1) < 0.0001;
         recovery.NoRetiredEngineEvents = !report.EngineEvents.Skip(firstEngineEvent).Any(value =>
             value.PlaybackHash == IsolationHash(retiredId.ToString("N")) || value.Kind is "Failed" or "Ended");
-        recovery.NoUnexpectedApiControls = observation.Events.Skip(firstApiEvent).All(value => value.Operation == "Progress"
-            && value.EventName is "TimeUpdate" or null);
+        recovery.NoUnexpectedApiControls = observation.Events.Skip(firstApiEvent).All(value =>
+            value.SessionHash == recovery.SessionHash && value.Operation == "Progress"
+            && value.EventName == "TimeUpdate" && value.StatusCode is >= 200 and < 300);
         Require(player.PlaybackSession.PlaybackState == MediaPlaybackState.Paused && recovery.PausedDriftTicks <= 500_000
             && recovery.MutedVolumePreserved && recovery.NoRetiredEngineEvents && recovery.NoUnexpectedApiControls,
             "RetiredCallbackOrCommandAffectedRecovery");
@@ -326,6 +339,20 @@ public sealed partial class App
     {
         ItemId = "1001", MediaSourceId = "synthetic-mp4", SubtitleStreamIndex = -1, StartPositionTicks = position
     };
+    private static async Task RunRetiredIsolationCommandsAsync(Guid retiredId, PlaybackCoordinator coordinator,
+        NativePlaybackEngine engine, Action completedCommand, CancellationToken ct)
+    {
+        await engine.PauseAsync(retiredId, ct); completedCommand();
+        await engine.ResumeAsync(retiredId, ct); completedCommand();
+        await engine.SeekAsync(retiredId, 450_000_000, ct); completedCommand();
+        await engine.SetVolumeAsync(retiredId, 31, true, ct); completedCommand();
+        await engine.StopAsync(retiredId, ct); completedCommand();
+        await coordinator.PauseAsync(retiredId, ct); completedCommand();
+        await coordinator.ResumeAsync(retiredId, ct); completedCommand();
+        await coordinator.SeekAsync(retiredId, 450_000_000, ct); completedCommand();
+        await coordinator.StopAsync(retiredId, ct); completedCommand();
+    }
+
     private static async Task WaitForIsolationApiSettlementAsync(HlsApiObservationHandler observation, CancellationToken ct)
     {
         var total = System.Diagnostics.Stopwatch.StartNew();

@@ -1,15 +1,42 @@
 # Lumen native UI handoff
 
-Updated: 2026-10-14. Repository: `emby-client-winui3`.
+Updated: 2026-10-17. Repository: `emby-client-winui3`.
 Original v4 base revision: `1a178f6bac39e933cd1d4a0d12da3c836c741f3d`. Current branch: `main`.
-Status: `SubtitleFixesBuildVerified_UiAcceptanceDeferredByUser`.
+Status: `BuildPassed_FiniteUiCovered_PerformanceNotAccepted_LANDeferred`.
 
-The current [bitmap subtitle fixes](docs/implementation/lumen-subtitle-fixes.md)
-have a separate native-06/publish-06 freeze, successful build/readback and 1,509
-selected Platform/Playback cases. Actual subtitle/UI runtime acceptance is
-deferred while computer use is paused. The App has a matched actual exit 0 with
-unknown cause; canonical fixture cleanup completed. The publish-05 record below
-remains the earlier completed checkpoint, not acceptance of the new source.
+The [current code closeout](docs/implementation/current-code-closeout-20261017.md)
+records final16 as **BuildPassed**: Release/Debug, fresh Native AOT,
+package/runtime and offline schema checks have actual exit 0. The EXE is
+30,613,504 bytes, SHA256
+`D72B62373A3E45A972C3F900AB8D9E92540B51823121F24EA58663AC9CFC4651`;
+inventories are 675/260/24/595. All 2,430 product cases and the 114-input
+NativeProbe compilation reuse matching complete prior compiled closures,
+without reruns for this UI-only delta.
+
+Final16 repairs Home's temporary focus anchor and wall-scroller navigation
+while retaining DataTemplate host pooling and virtualization.
+**BoundedNavigationObserved** covers the short regression;
+**OriginalFiniteUiWorkloadCovered_WithObservationLimit** covers formal06's
+finite UI sequence, fixed idle windows and in-cap sign-out/normal exit 0.
+Tail warm returned to the real first viewport without repeating its numeric
+tooltip. **InvestigateHighRetention / PerformanceNotAccepted** remains the
+resource result: two increments exceed the 32 MiB investigation threshold,
+and library-cycle handles keep rising with attribution unresolved. Final owned
+cleanup and system restoration are complete.
+
+The user renewed unattended continuation; the earlier physical-Escape stop
+and goal-service blocked receipt are historical, with no new goal-service
+status claimed. **LANDeferred** still covers discovery, public Save and account
+restoration. Earlier candidate results and failed/aborted attempts retain their
+own identities. CI, release, licensing/signing and installation/distribution
+remain outside this acceptance scope. The user separately authorized committing
+and pushing the current source snapshot to `main`; source publication does not
+change the recorded acceptance results.
+
+The [bitmap subtitle fixes](docs/implementation/lumen-subtitle-fixes.md) preserve
+their native-06/publish-06 freeze and historical 1,509-case selected result.
+The publish-05 record below is an earlier completed checkpoint; its results
+are not relabeled as final05 acceptance.
 
 The [native playback follow-up](docs/implementation/lumen-native-playback-follow-up.md)
 adds the separately pinned libass renderer, genuine WASAPI passthrough with PCM

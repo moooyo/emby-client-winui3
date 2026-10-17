@@ -8,14 +8,22 @@ internal static class FixtureEmbeddedPgs
 {
     public const int MaximumProbeBytes = 64 * 1024;
     public const int MaximumMediaBytes = 64 * 1024 * 1024;
+    public const long MinimumLongDurationTicks = 990_000_000;
+    public const long MaximumLongDurationTicks = 1_010_000_000;
 
-    public static void Validate(string mediaDirectory, MediaFixtureMetadata metadata, Stream media)
+    public static void Validate(string mediaDirectory, MediaFixtureMetadata metadata, Stream media, bool allowLongEmbeddedPgs = false)
     {
-        if (metadata.Container != "mkv" || metadata.DurationTicks is < 590_000_000 or > 610_000_000
+        var durationMatches = allowLongEmbeddedPgs
+            ? metadata.DurationTicks is >= MinimumLongDurationTicks and <= MaximumLongDurationTicks
+            : metadata.DurationTicks is >= 590_000_000 and <= 610_000_000;
+        if (metadata.Container != "mkv" || !durationMatches
             || media.Length > MaximumMediaBytes || !IsSha256(metadata.FileSha256) || !IsSha256(metadata.ProbeSha256))
             throw InvalidInput();
         media.Position = 0;
         if (!Convert.ToHexString(SHA256.HashData(media)).Equals(metadata.FileSha256, StringComparison.OrdinalIgnoreCase))
+            throw InvalidInput();
+        if (allowLongEmbeddedPgs && (metadata.Width > 1920 || metadata.Height > 1080
+            || FixtureMatroskaInfo.ReadDurationTicks(media) != metadata.DurationTicks))
             throw InvalidInput();
         using var probe = File.OpenRead(Path.Combine(mediaDirectory, "fixture-h264-aac.ffprobe.json"));
         if (probe.Length is <= 0 or > MaximumProbeBytes) throw InvalidInput();

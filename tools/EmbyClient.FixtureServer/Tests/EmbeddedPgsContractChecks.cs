@@ -7,7 +7,8 @@ using System.Text.Json.Nodes;
 
 internal static class EmbeddedPgsContractChecks
 {
-    public static async Task RunAsync(string serverPath, string testRoot, string inputDirectory, Action<bool, string> check)
+    public static async Task RunAsync(string serverPath, string testRoot, string inputDirectory, Action<bool, string> check,
+        bool allowLongEmbeddedPgs = false)
     {
         var pgsRoot = Path.Combine(testRoot, "embedded-pgs");
         Directory.CreateDirectory(pgsRoot);
@@ -30,6 +31,8 @@ internal static class EmbeddedPgsContractChecks
         var durationTicks = metadata.GetProperty("DurationTicks").GetInt64();
         var mediaHash = Convert.ToHexString(SHA256.HashData(bytes));
         var probeHash = Convert.ToHexString(SHA256.HashData(probeBytes));
+        var pgsArguments = allowLongEmbeddedPgs
+            ? new[] { "--embedded-pgs", "--allow-long-embedded-pgs" } : ["--embedded-pgs"];
 
         await using (var disabled = await TestServer.StartAsync(serverPath, testRoot))
         {
@@ -38,10 +41,11 @@ internal static class EmbeddedPgsContractChecks
             var stats = await disabled.StatsAsync();
             check(source.GetProperty("Container").GetString() == "mp4" && source.GetProperty("MediaStreams").GetArrayLength() == 2
                 && source.GetProperty("DefaultSubtitleStreamIndex").GetInt32() == -1
-                && !stats.GetProperty("EmbeddedPgsConfigured").GetBoolean(),
+                && !stats.GetProperty("EmbeddedPgsConfigured").GetBoolean()
+                && !stats.GetProperty("LongEmbeddedPgsConfigured").GetBoolean(),
                 "Embedded PGS is disabled by default and preserves the original MP4 source and two streams.");
         }
-        await using (var server = await TestServer.StartAsync(serverPath, pgsRoot, "--lumen-design-catalog", "--embedded-pgs"))
+        await using (var server = await TestServer.StartAsync(serverPath, pgsRoot, ["--lumen-design-catalog", .. pgsArguments]))
         {
             var item = await JsonAsync(server, "/emby/Users/synthetic-user-demo/Items/1001");
             var sources = item.GetProperty("MediaSources").EnumerateArray().ToArray();
@@ -49,6 +53,12 @@ internal static class EmbeddedPgsContractChecks
                 && source.GetProperty("Size").GetInt64() == bytes.Length && source.GetProperty("RunTimeTicks").GetInt64() == durationTicks
                 && source.GetProperty("MediaStreams").GetArrayLength() == 3),
                 "Both existing opaque aliases advertise the actual measured MKV size, duration, and three streams.");
+            check(item.GetProperty("RunTimeTicks").GetInt64() == durationTicks,
+                "The catalog item runtime preserves the measured media timeline without a sixty-second clamp.");
+            var catalog = await JsonAsync(server, "/emby/Users/synthetic-user-demo/Items?Recursive=true&IncludeItemTypes=Movie,Episode&Limit=200");
+            var playable = catalog.GetProperty("Items").EnumerateArray().ToArray();
+            check(playable.Length > 1 && playable.All(entry => entry.GetProperty("RunTimeTicks").GetInt64() == durationTicks),
+                "All returned playable movie and episode catalog entries expose the same actual runtime.");
             var source = sources[0];
             var streams = source.GetProperty("MediaStreams").EnumerateArray().ToArray();
             check(streams[0].GetProperty("Index").GetInt32() == video.GetProperty("index").GetInt32()
@@ -88,6 +98,9 @@ internal static class EmbeddedPgsContractChecks
                 && url.Contains("PlaySessionId=" + session, StringComparison.Ordinal)
                 && negotiated.GetProperty("MediaStreams")[2].GetProperty("Index").GetInt32() == subtitleIndex,
                 "PGS PlaybackInfo supplies the original static complete-source route without claiming remux or transcoding.");
+            check(responseDocument.RootElement.GetProperty("MediaSources").EnumerateArray()
+                .All(entry => entry.GetProperty("RunTimeTicks").GetInt64() == durationTicks),
+                "Every PlaybackInfo alias retains the actual measured duration, including the long-PGS timeline.");
             using var full = await server.GetAsync(url);
             check(full.StatusCode == HttpStatusCode.OK && full.Content.Headers.ContentType?.MediaType == "video/x-matroska"
                 && full.Content.Headers.ContentLength == bytes.Length
@@ -127,6 +140,8 @@ internal static class EmbeddedPgsContractChecks
                 && stats.GetProperty("EmbeddedPgsMediaSha256").GetString()!.Equals(mediaHash, StringComparison.OrdinalIgnoreCase)
                 && stats.GetProperty("EmbeddedPgsProbeSha256").GetString()!.Equals(probeHash, StringComparison.OrdinalIgnoreCase)
                 && stats.GetProperty("EmbeddedPgsNativeSubtitleIndex").GetInt32() == subtitleIndex
+                && stats.GetProperty("LongEmbeddedPgsConfigured").GetBoolean() == allowLongEmbeddedPgs
+                && stats.GetProperty("MediaDurationTicks").GetInt64() == durationTicks
                 && stats.GetProperty("MediaLength").GetInt64() == bytes.Length,
                 "Credential-free fixture observations identify the actual MKV/probe hashes, size, and native subtitle index.");
             check(!stats.GetRawText().Contains(server.Token, StringComparison.Ordinal)
@@ -134,11 +149,13 @@ internal static class EmbeddedPgsContractChecks
                 && !stats.GetRawText().Contains(inputDirectory, StringComparison.Ordinal),
                 "PGS observations contain no access token or private source path.");
         }
-        await InvalidConfiguration(serverPath, testRoot, pgsRoot, metadataPath, probePath, metadataText, probeBytes, check);
+        if (allowLongEmbeddedPgs)
+            await LongEmbeddedPgsContractChecks.RunAsync(serverPath, testRoot, pgsRoot, check);
+        await InvalidConfiguration(serverPath, testRoot, pgsRoot, metadataPath, probePath, metadataText, probeBytes, pgsArguments, check);
     }
 
     private static async Task InvalidConfiguration(string serverPath, string testRoot, string pgsRoot, string metadataPath,
-        string probePath, string metadataText, byte[] probeBytes, Action<bool, string> check)
+        string probePath, string metadataText, byte[] probeBytes, string[] pgsArguments, Action<bool, string> check)
     {
         async Task Reject(string directory, string description, params string[] controls)
         {
@@ -153,6 +170,12 @@ internal static class EmbeddedPgsContractChecks
         }
         await Reject(testRoot, "PGS opt-in rejects the ordinary MP4-only directory before binding.", "--embedded-pgs");
         await Reject(pgsRoot, "Duplicate PGS flags are rejected before binding.", "--embedded-pgs", "--embedded-pgs");
+        await Reject(pgsRoot, "The long-PGS flag alone cannot enable embedded media or widen the MP4 mode.", "--allow-long-embedded-pgs");
+        await Reject(pgsRoot, "Duplicate long-PGS flags are rejected before binding.",
+            "--embedded-pgs", "--allow-long-embedded-pgs", "--allow-long-embedded-pgs");
+        if (pgsArguments.Length == 1)
+            await Reject(pgsRoot, "The explicit long-PGS window rejects the ordinary measured sixty-second MKV.",
+                "--embedded-pgs", "--allow-long-embedded-pgs");
         var vttPath = Path.Combine(testRoot, "mutually-exclusive.vtt");
         await File.WriteAllTextAsync(vttPath, "WEBVTT\n\n00:00:02.000 --> 00:00:08.000\nTest only.\n");
         await Reject(pgsRoot, "PGS and fixed-index external WebVTT inputs are rejected together.", "--embedded-pgs", "--subtitle-file", vttPath);
@@ -175,13 +198,13 @@ internal static class EmbeddedPgsContractChecks
             var altered = JsonNode.Parse(metadataText)!;
             change(altered);
             await File.WriteAllTextAsync(metadataPath, altered.ToJsonString());
-            await Reject(pgsRoot, "PGS input rejects " + description + " before binding.", "--embedded-pgs");
+            await Reject(pgsRoot, "PGS input rejects " + description + " before binding.", pgsArguments);
         }
         await File.WriteAllTextAsync(metadataPath, metadataText);
         await File.WriteAllBytesAsync(probePath, [.. probeBytes, (byte)' ']);
-        await Reject(pgsRoot, "Changed FFprobe bytes are rejected by their recorded SHA-256 before binding.", "--embedded-pgs");
+        await Reject(pgsRoot, "Changed FFprobe bytes are rejected by their recorded SHA-256 before binding.", pgsArguments);
         await using (var oversized = File.Create(probePath)) oversized.SetLength(64 * 1024 + 1);
-        await Reject(pgsRoot, "Oversized FFprobe evidence is rejected before binding.", "--embedded-pgs");
+        await Reject(pgsRoot, "Oversized FFprobe evidence is rejected before binding.", pgsArguments);
         await File.WriteAllBytesAsync(probePath, probeBytes);
         var mediaPath = Path.Combine(pgsRoot, "fixture-h264-aac-pgs.mkv");
         await using (var media = new FileStream(mediaPath, FileMode.Open, FileAccess.ReadWrite))
@@ -191,7 +214,7 @@ internal static class EmbeddedPgsContractChecks
             media.Position = 128;
             media.WriteByte((byte)(original ^ 1));
         }
-        await Reject(pgsRoot, "Changed MKV bytes are rejected by their recorded SHA-256 before binding.", "--embedded-pgs");
+        await Reject(pgsRoot, "Changed MKV bytes are rejected by their recorded SHA-256 before binding.", pgsArguments);
     }
 
     private static async Task<JsonElement> JsonAsync(TestServer server, string path)

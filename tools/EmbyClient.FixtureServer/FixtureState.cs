@@ -318,12 +318,13 @@ internal sealed partial class FixtureState
                 PlaybackInfoCount = Volatile.Read(ref _playbackInfoCount), MediaRequests = Volatile.Read(ref _mediaRequests),
                 RangeRequests = Volatile.Read(ref _rangeRequests), PartialResponses = Volatile.Read(ref _partialResponses),
                 CapabilityUpdates = Volatile.Read(ref _capabilityUpdates), EncodingCleanups = Volatile.Read(ref _encodingCleanups),
-                MediaLength = _mediaLength, StartCount = _events.Count(item => item.Kind == "Start"),
+                MediaLength = _mediaLength, MediaDurationTicks = DurationTicks, StartCount = _events.Count(item => item.Kind == "Start"),
                 ProgressCount = _events.Count(item => item.Kind == "Progress"), StopCount = _events.Count(item => item.Kind == "Stop"),
                 Events = _events.ToArray(), LargeLibraryItems = Options.LargeLibraryItems, CatalogItems = _items.Count,
                 ServerId = ServerId, LumenCatalog = Options.LumenCatalog, LumenDesignCatalog = Options.LumenDesignCatalog, ExternalArtwork = _artwork is not null,
                 ExternalSubtitleConfigured = Options.Subtitle is not null, ExternalSubtitleSha256 = Options.Subtitle?.Sha256,
-                EmbeddedPgsConfigured = Options.EmbeddedPgs, MediaContainer = Options.EmbeddedPgs ? "mkv" : "mp4",
+                EmbeddedPgsConfigured = Options.EmbeddedPgs, LongEmbeddedPgsConfigured = Options.AllowLongEmbeddedPgs,
+                MediaContainer = Options.EmbeddedPgs ? "mkv" : "mp4",
                 EmbeddedPgsMediaSha256 = Options.EmbeddedPgs ? Options.Media.FileSha256 : null,
                 EmbeddedPgsProbeSha256 = Options.EmbeddedPgs ? Options.Media.ProbeSha256 : null,
                 EmbeddedPgsNativeSubtitleIndex = Options.EmbeddedPgs ? Options.Media.EmbeddedSubtitle?.Index : null,
@@ -474,6 +475,7 @@ internal sealed class FixtureStats
     public int ProgressCount { get; init; }
     public int StopCount { get; init; }
     public long MediaLength { get; init; }
+    public long MediaDurationTicks { get; init; }
     public FixturePlaybackEvent[] Events { get; init; } = [];
     public int LargeLibraryItems { get; init; }
     public int CatalogItems { get; init; }
@@ -483,6 +485,7 @@ internal sealed class FixtureStats
     public bool ExternalSubtitleConfigured { get; init; }
     public string? ExternalSubtitleSha256 { get; init; }
     public bool EmbeddedPgsConfigured { get; init; }
+    public bool LongEmbeddedPgsConfigured { get; init; }
     public string MediaContainer { get; init; } = "mp4";
     public string? EmbeddedPgsMediaSha256 { get; init; }
     public string? EmbeddedPgsProbeSha256 { get; init; }

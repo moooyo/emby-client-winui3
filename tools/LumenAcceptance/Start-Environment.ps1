@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory)][string]$FixtureExecutable,
     [Parameter(Mandatory)][string]$BootstrapExecutable,
     [Parameter(Mandatory)][string]$MediaDirectory,
-    [Parameter(Mandatory)][string]$ArtworkDirectory,
+    [string]$ArtworkDirectory,
     [ValidateRange(1024, 65535)][int]$Port = 18984,
     [ValidateSet('Dark', 'Light')][string]$Theme = 'Dark',
     [string]$RunDirectory,
@@ -10,7 +10,15 @@ param(
     [switch]$DesignCatalog,
     [string]$SubtitleFile,
     [string]$BifFile,
-    [switch]$EmbeddedPgs
+    [switch]$EmbeddedPgs,
+    [switch]$AllowLongEmbeddedPgs,
+    [ValidateRange(0, 10000)][int]$LargeLibraryItems = 0,
+    [ValidateRange(0, 1000)][int]$ImageDelayMilliseconds = 0,
+    [ValidatePattern('^[A-Za-z0-9_-]+:[1-9][0-9]{0,4}$')][string[]]$ItemDetailFailure = @(),
+    [ValidatePattern('^[A-Za-z0-9_-]+:[1-9][0-9]{0,4}:[1-9][0-9]{0,4}$')][string[]]$ItemDetailDelay = @(),
+    [ValidateRange(0, 30000)][int]$FirstMediaDelayMilliseconds = 0,
+    [ValidateRange(0, 30000)][int]$StopDelayMilliseconds = 0,
+    [ValidateRange(0, 30000)][int]$LogoutDelayMilliseconds = 0
 )
 
 Set-StrictMode -Version Latest
@@ -28,17 +36,37 @@ $bootstrapSource = Get-LumenAbsolutePath $BootstrapExecutable
 Assert-LumenExecutable -Executable $fixtureSource -WorkspaceRoot $workspaceRoot -ExpectedName 'EmbyClient.FixtureServer.exe'
 Assert-LumenExecutable -Executable $bootstrapSource -WorkspaceRoot $workspaceRoot -ExpectedName 'EmbyClient.LumenAcceptance.exe'
 $mediaPath = Get-LumenAbsolutePath $MediaDirectory
-$artworkPath = Get-LumenAbsolutePath $ArtworkDirectory
-if (-not (Test-Path -LiteralPath $artworkPath -PathType Container)) { throw 'The external artwork directory is unavailable.' }
+$largeLibraryMode = $LargeLibraryItems -gt 0
+if ($largeLibraryMode -and ($DesignCatalog -or $ArtworkDirectory -or $SubtitleFile -or $BifFile -or $EmbeddedPgs -or $AllowLongEmbeddedPgs)) {
+    throw 'Large-library acceptance requires its own catalog without design, artwork, or subtitle options.'
+}
+if ($AllowLongEmbeddedPgs -and -not $EmbeddedPgs) {
+    throw 'Long-PGS acceptance requires the separate -EmbeddedPgs opt-in.'
+}
+$artworkPath = $null
+if (-not $largeLibraryMode) {
+    if (-not $ArtworkDirectory) { throw 'Rich catalog acceptance requires an explicit artwork directory.' }
+    $artworkPath = Get-LumenAbsolutePath $ArtworkDirectory
+    if (-not (Test-Path -LiteralPath $artworkPath -PathType Container)) { throw 'The external artwork directory is unavailable.' }
+}
+$expectedFixtureServerId = if ($largeLibraryMode) { "synthetic-large-server-$LargeLibraryItems" }
+    elseif ($DesignCatalog) { 'synthetic-lumen-design-server-0001' } else { 'synthetic-lumen-server-0001' }
 $metadataPath = Join-Path $mediaPath 'fixture-h264-aac.json'
 $videoPath = Join-Path $mediaPath $(if ($EmbeddedPgs) { 'fixture-h264-aac-pgs.mkv' } else { 'fixture-h264-aac.mp4' })
 $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
+$metadataHash = (Get-FileHash -LiteralPath $metadataPath -Algorithm SHA256).Hash
 if ($metadata.Synthetic -ne $true -or $metadata.FileLength -ne (Get-Item -LiteralPath $videoPath).Length -or
     $metadata.DurationTicks -le 0) { throw 'The media must be an existing measured synthetic fixture.' }
 $pgsMediaHash = $null
 $pgsProbeHash = $null
 if ($EmbeddedPgs) {
     if ($SubtitleFile) { throw 'The embedded PGS and external WebVTT cases require separate fixture instances.' }
+    $durationMatches = if ($AllowLongEmbeddedPgs) {
+        $metadata.DurationTicks -ge 990000000 -and $metadata.DurationTicks -le 1010000000 -and
+            $metadata.Width -le 1920 -and $metadata.Height -le 1080
+    }
+    else { $metadata.DurationTicks -ge 590000000 -and $metadata.DurationTicks -le 610000000 }
+    if (-not $durationMatches) { throw 'The measured PGS duration or dimensions are outside the explicitly selected bounded case.' }
     $pgsProbePath = Join-Path $mediaPath 'fixture-h264-aac.ffprobe.json'
     if ($metadata.FileName -cne 'fixture-h264-aac-pgs.mkv' -or $metadata.Container -cne 'mkv' -or
         -not (Test-Path -LiteralPath $pgsProbePath -PathType Leaf) -or
@@ -116,13 +144,23 @@ $runtimeExecutable = Join-Path $runtimeDirectory 'EmbyClient.FixtureServer.exe'
 $ownershipPath = Join-Path $runPath 'ownership.json'
 $fixtureProcess = $null
 try {
-    $fixtureArguments = @('--port', [string]$Port, '--media-dir', ('"' + $mediaPath + '"'),
-        $(if ($DesignCatalog) { '--lumen-design-catalog' } else { '--lumen-catalog' }),
-        '--artwork-directory', ('"' + $artworkPath + '"'))
+    $fixtureArguments = @('--port', [string]$Port, '--media-dir', ('"' + $mediaPath + '"'))
+    if ($largeLibraryMode) { $fixtureArguments += @('--large-library-items', [string]$LargeLibraryItems) }
+    else {
+        $fixtureArguments += @($(if ($DesignCatalog) { '--lumen-design-catalog' } else { '--lumen-catalog' }),
+            '--artwork-directory', ('"' + $artworkPath + '"'))
+    }
     if ($FailFirstPlaybackInfo) { $fixtureArguments += '--fail-first-playback-info' }
+    if ($ImageDelayMilliseconds -gt 0) { $fixtureArguments += @('--image-delay-ms', [string]$ImageDelayMilliseconds) }
+    foreach ($control in $ItemDetailFailure) { $fixtureArguments += @('--item-detail-failure', $control) }
+    foreach ($control in $ItemDetailDelay) { $fixtureArguments += @('--item-detail-delay', $control) }
+    if ($FirstMediaDelayMilliseconds -gt 0) { $fixtureArguments += @('--first-media-delay-ms', [string]$FirstMediaDelayMilliseconds) }
+    if ($StopDelayMilliseconds -gt 0) { $fixtureArguments += @('--stop-delay-ms', [string]$StopDelayMilliseconds) }
+    if ($LogoutDelayMilliseconds -gt 0) { $fixtureArguments += @('--logout-delay-ms', [string]$LogoutDelayMilliseconds) }
     if ($subtitlePath) { $fixtureArguments += @('--subtitle-file', ('"' + $subtitlePath + '"')) }
     if ($bifPath) { $fixtureArguments += @('--bif-file', ('"' + $bifPath + '"')) }
     if ($EmbeddedPgs) { $fixtureArguments += '--embedded-pgs' }
+    if ($AllowLongEmbeddedPgs) { $fixtureArguments += '--allow-long-embedded-pgs' }
     $fixtureProcess = Start-Process -FilePath $runtimeExecutable -WorkingDirectory $runtimeDirectory `
         -ArgumentList $fixtureArguments -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $runPath 'server.stdout.log') -RedirectStandardError (Join-Path $runPath 'server.stderr.log')
@@ -130,6 +168,13 @@ try {
         Scope = 'OwnedSyntheticLumenAcceptance'
         Synthetic = $true
         DesignCatalog = [bool]$DesignCatalog
+        LargeLibraryItems = $LargeLibraryItems
+        ImageDelayMilliseconds = $ImageDelayMilliseconds
+        ItemDetailFailure = $ItemDetailFailure
+        ItemDetailDelay = $ItemDetailDelay
+        FirstMediaDelayMilliseconds = $FirstMediaDelayMilliseconds
+        StopDelayMilliseconds = $StopDelayMilliseconds
+        LogoutDelayMilliseconds = $LogoutDelayMilliseconds
         RunId = $runId
         WorkspaceRoot = $workspaceRoot
         RunDirectory = $runPath
@@ -141,8 +186,10 @@ try {
         SourceFixtureSha256 = (Get-FileHash -LiteralPath $fixtureSource -Algorithm SHA256).Hash
         BootstrapExecutableSha256 = (Get-FileHash -LiteralPath $bootstrapSource -Algorithm SHA256).Hash
         MediaSha256 = (Get-FileHash -LiteralPath $videoPath -Algorithm SHA256).Hash
-        MetadataSha256 = (Get-FileHash -LiteralPath $metadataPath -Algorithm SHA256).Hash
+        MetadataSha256 = $metadataHash
+        MediaDurationTicks = [long]$metadata.DurationTicks
         EmbeddedPgsEnabled = [bool]$EmbeddedPgs
+        LongEmbeddedPgsEnabled = [bool]$AllowLongEmbeddedPgs
         EmbeddedPgsMediaSha256 = $pgsMediaHash
         EmbeddedPgsProbeSha256 = $pgsProbeHash
         EmbeddedPgsNativeSubtitleIndex = $(if ($EmbeddedPgs) { $metadata.EmbeddedSubtitle.Index } else { $null })
@@ -174,6 +221,7 @@ try {
             $observedSubtitle = $null -ne $stats.PSObject.Properties['ExternalSubtitleConfigured'] -and $stats.ExternalSubtitleConfigured -eq $true
             $observedBif = $null -ne $stats.PSObject.Properties['ExternalBifConfigured'] -and $stats.ExternalBifConfigured -eq $true
             $observedEmbeddedPgs = $null -ne $stats.PSObject.Properties['EmbeddedPgsConfigured'] -and $stats.EmbeddedPgsConfigured -eq $true
+            $observedLongEmbeddedPgs = $null -ne $stats.PSObject.Properties['LongEmbeddedPgsConfigured'] -and $stats.LongEmbeddedPgsConfigured -eq $true
             $subtitleSnapshotMatches = -not $subtitlePath -or
                 ($null -ne $stats.PSObject.Properties['ExternalSubtitleSha256'] -and $stats.ExternalSubtitleSha256 -ceq $subtitleHash)
             $bifSnapshotMatches = -not $bifPath -or
@@ -188,16 +236,27 @@ try {
                     $null -ne $stats.PSObject.Properties['EmbeddedPgsMediaSha256'] -and $stats.EmbeddedPgsMediaSha256 -ieq $pgsMediaHash -and
                     $null -ne $stats.PSObject.Properties['EmbeddedPgsProbeSha256'] -and $stats.EmbeddedPgsProbeSha256 -ieq $pgsProbeHash -and
                     $null -ne $stats.PSObject.Properties['EmbeddedPgsNativeSubtitleIndex'] -and
-                    $stats.EmbeddedPgsNativeSubtitleIndex -eq $metadata.EmbeddedSubtitle.Index)
-            if ($stats.Synthetic -eq $true -and $stats.LumenCatalog -eq $true -and
+                    $stats.EmbeddedPgsNativeSubtitleIndex -eq $metadata.EmbeddedSubtitle.Index -and
+                    (-not $AllowLongEmbeddedPgs -or ($null -ne $stats.PSObject.Properties['MediaDurationTicks'] -and
+                        $stats.MediaDurationTicks -eq $metadata.DurationTicks)))
+            $catalogMatches = $stats.LumenCatalog -eq (-not $largeLibraryMode) -and
+                $null -ne $stats.PSObject.Properties['LargeLibraryItems'] -and $stats.LargeLibraryItems -eq $LargeLibraryItems -and
+                $stats.ServerId -ceq $expectedFixtureServerId
+            $boundaryConfiguration = $stats.BoundaryControls.Configuration
+            $delaySettingsMatch = $stats.ImageDelayMilliseconds -eq $ImageDelayMilliseconds -and
+                $boundaryConfiguration.FirstMediaDelayMilliseconds -eq $FirstMediaDelayMilliseconds -and
+                $boundaryConfiguration.StopDelayMilliseconds -eq $StopDelayMilliseconds -and
+                $boundaryConfiguration.LogoutDelayMilliseconds -eq $LogoutDelayMilliseconds
+            if ($stats.Synthetic -eq $true -and $catalogMatches -and $delaySettingsMatch -and
                 $observedDesign -eq [bool]$DesignCatalog -and $observedSubtitle -eq [bool]$subtitlePath -and
                 $observedBif -eq [bool]$bifPath -and $observedEmbeddedPgs -eq [bool]$EmbeddedPgs -and
+                $observedLongEmbeddedPgs -eq [bool]$AllowLongEmbeddedPgs -and
                 $subtitleSnapshotMatches -and $bifSnapshotMatches -and $pgsSnapshotMatches) { $ready = $true; break }
         }
         catch { }
         Start-Sleep -Milliseconds 150
     }
-    if (-not $ready) { throw 'The owned rich fixture did not become ready. Inspect this run logs.' }
+    if (-not $ready) { throw 'The owned synthetic fixture did not become ready. Inspect this run logs.' }
     if ($bifPath) {
         $ownership.BifTotalImageCount = $stats.ExternalBifTotalImageCount
         $ownership.BifAvailableImageCount = $stats.ExternalBifAvailableImageCount
@@ -211,6 +270,7 @@ try {
     $bootstrapArguments = @('--workspace-root', ('"' + $workspaceRoot + '"'), '--run-directory', ('"' + $runPath + '"'),
         '--server-url', ("http://127.0.0.1:$Port"), '--theme', $Theme)
     if ($DesignCatalog) { $bootstrapArguments += @('--design-catalog', 'true') }
+    if ($largeLibraryMode) { $bootstrapArguments += @('--large-library-items', [string]$LargeLibraryItems) }
     $bootstrapProcess = Start-Process -FilePath $bootstrapSource -WorkingDirectory (Split-Path -Parent $bootstrapSource) `
         -ArgumentList $bootstrapArguments -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $runPath 'bootstrap.stdout.log') -RedirectStandardError (Join-Path $runPath 'bootstrap.stderr.log')
@@ -234,13 +294,15 @@ try {
     else { $ownership.BifSourceUnchanged = $null }
     if ($EmbeddedPgs) {
         $ownership.EmbeddedPgsSourceUnchanged = (Get-FileHash -LiteralPath $videoPath -Algorithm SHA256).Hash -ieq $pgsMediaHash -and
-            (Get-FileHash -LiteralPath $pgsProbePath -Algorithm SHA256).Hash -ieq $pgsProbeHash
+            (Get-FileHash -LiteralPath $pgsProbePath -Algorithm SHA256).Hash -ieq $pgsProbeHash -and
+            (Get-FileHash -LiteralPath $metadataPath -Algorithm SHA256).Hash -ieq $metadataHash
         if (-not $ownership.EmbeddedPgsSourceUnchanged) { throw 'The explicit PGS inputs changed during environment startup.' }
     }
     $ownership | ConvertTo-Json | Set-Content -LiteralPath $ownershipPath -Encoding utf8
     [pscustomobject]@{
         Ready = $true
         Synthetic = $true
+        LargeLibraryItems = $LargeLibraryItems
         ServerUrl = "http://127.0.0.1:$Port"
         RunDirectory = $runPath
         ProfileDirectory = $profile.ProfileDirectory
@@ -254,6 +316,8 @@ try {
         BifAvailableImageCount = $ownership.BifAvailableImageCount
         BifSelectedImageCount = $ownership.BifSelectedImageCount
         EmbeddedPgsEnabled = [bool]$EmbeddedPgs
+        LongEmbeddedPgsEnabled = [bool]$AllowLongEmbeddedPgs
+        MediaDurationTicks = [long]$metadata.DurationTicks
         EmbeddedPgsNativeSubtitleIndex = $ownership.EmbeddedPgsNativeSubtitleIndex
     }
 }

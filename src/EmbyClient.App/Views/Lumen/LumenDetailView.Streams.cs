@@ -139,6 +139,7 @@ public sealed partial class LumenDetailView
     private Button CreateStreamSelector(string label, string value, Func<StreamOption[]> options, bool enabled)
     {
         var button = LumenUi.Button(string.Empty, onImage: true, height: 60);
+        button.Height = double.NaN;
         button.Padding = new Thickness(14, 8, 14, 8);
         button.CornerRadius = new CornerRadius(14);
         button.BorderThickness = new Thickness(0);

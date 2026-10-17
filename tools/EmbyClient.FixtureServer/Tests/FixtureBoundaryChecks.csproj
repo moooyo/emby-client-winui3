@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../../src/EmbyClient.Api/EmbyClient.Api.csproj" />
+    <Compile Include="../FixtureMatroskaInfo.cs" Link="FixtureMatroskaInfo.cs" />
   </ItemGroup>
 </Project>

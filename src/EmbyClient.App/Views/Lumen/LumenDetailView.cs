@@ -60,6 +60,7 @@ public sealed partial class LumenDetailView : UserControl
     private int _renderedSupplementaryRevision = -1;
     private BaseItemDto? _renderedItem;
     private BaseItemDto? _renderedPlayable;
+    private int? _renderedSeriesEpisodeCount;
     private BaseItemDto[] _renderedChildren = [];
     private BaseItemDto[] _renderedSeasons = [];
     private string? _renderedSeasonId;
@@ -353,6 +354,8 @@ public sealed partial class LumenDetailView : UserControl
         _backdropReference = null;
         _backdropIsBlurred = false;
         _renderedPlayable = null;
+        _renderedSeriesEpisodeCount = null;
+        _heroSeriesCounts = null;
         _renderedChildren = [];
         _renderedSeasons = [];
         _renderedSeasonId = null;
@@ -429,11 +432,13 @@ public sealed partial class LumenDetailView : UserControl
             RenderCast(detail);
             RenderMediaInformation(detail);
         }
+        else if (childrenChanged || _renderedSeriesEpisodeCount != _library.SeriesEpisodeCount) RenderHeroSeriesCounts(detail);
         if (childrenChanged) RenderChildren(detail);
         if (_forceRender || metadataChanged || _renderedSupplementaryRevision != _supplementaryRevision) RenderSimilarItems(detail);
         ConfigureDetailPages(detail);
         _renderedItem = detail.Item;
         _renderedPlayable = _library.PlayableDetail.Item;
+        _renderedSeriesEpisodeCount = _library.SeriesEpisodeCount;
         _renderedChildren = _library.Items.Select(card => card.Item).ToArray();
         _renderedSeasons = _library.Seasons.Select(card => card.Item).ToArray();
         _renderedSeasonId = _library.SelectedSeason?.Id;

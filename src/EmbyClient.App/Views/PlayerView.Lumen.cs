@@ -9,6 +9,7 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage;
@@ -36,10 +37,16 @@ public sealed partial class PlayerView
     private NativePreparedSubtitle? _selectedLocalSubtitle;
     private Guid? _localSubtitleRestorePlaybackId;
     private readonly Dictionary<StackPanel, TrackRowsSnapshot> _trackRowsSnapshots = [];
+    private TrackRowFocusRestore? _trackRowFocusRestore;
+    private bool _trackRowFocusInitialized;
+    private bool _transferringTrackRowFocus;
 
     private sealed record TrackRowSnapshot(ComboBoxItem Option, object? Content, object? Tag, string Label);
-    private sealed record TrackRowsSnapshot(ComboBox Selector, object? SelectedItem, bool IsEnabled,
+    private sealed record TrackRowsSnapshot(ComboBox Selector, WeakReference<PlaybackCoordinator>? Coordinator, long Intent, object? SelectedItem, bool IsEnabled,
         bool CanClearLocalSubtitle, string? LocalSubtitleName, string Empty, TrackRowSnapshot[] Rows);
+    private sealed record TrackRowFocusKey(WeakReference<PlaybackCoordinator>? Coordinator, long Intent, object? Value);
+    private sealed record TrackRowFocusRestore(StackPanel Host, object Key, FocusState State,
+        PlaybackCoordinator Coordinator, long Intent, XamlRoot Root, object OriginalScrollTabStop);
 
     public event EventHandler<LumenPreferences>? PreferencesChanged;
 
@@ -163,14 +170,20 @@ public sealed partial class PlayerView
 
     private void BuildTrackRows(ComboBox selector, StackPanel host, string empty)
     {
+        InitializeTrackRowFocus();
+        _trackRowsSnapshots.TryGetValue(host, out var previous);
+        var coordinator = previous?.Coordinator;
+        if (_coordinator is not { } currentCoordinator) coordinator = null;
+        else if (!IsTrackRowCoordinator(coordinator, currentCoordinator)) coordinator = new(currentCoordinator);
         var isSubtitle = ReferenceEquals(selector, SubtitleSelector);
         var canClearLocalSubtitle = isSubtitle && CanClearCurrentLocalSubtitle();
         var rows = selector.Items.OfType<ComboBoxItem>().Select(option => new TrackRowSnapshot(
             option, option.Content, option.Tag, option.Content?.ToString() ?? LumenText.Get("Off"))).ToArray();
-        var snapshot = new TrackRowsSnapshot(selector, selector.SelectedItem, selector.IsEnabled,
+        var snapshot = new TrackRowsSnapshot(selector, coordinator, _playIntent, selector.SelectedItem, selector.IsEnabled,
             canClearLocalSubtitle, isSubtitle ? _localSubtitleName : null, empty, rows);
-        if (_trackRowsSnapshots.TryGetValue(host, out var previous)
+        if (previous is not null
             && ReferenceEquals(previous.Selector, snapshot.Selector)
+            && ReferenceEquals(previous.Coordinator, snapshot.Coordinator) && previous.Intent == snapshot.Intent
             && ReferenceEquals(previous.SelectedItem, snapshot.SelectedItem)
             && previous.IsEnabled == snapshot.IsEnabled
             && previous.CanClearLocalSubtitle == snapshot.CanClearLocalSubtitle
@@ -179,8 +192,13 @@ public sealed partial class PlayerView
             && previous.Rows.Length == rows.Length
             && previous.Rows.Zip(rows).All(pair => ReferenceEquals(pair.First.Option, pair.Second.Option)
                 && Equals(pair.First.Content, pair.Second.Content) && Equals(pair.First.Tag, pair.Second.Tag)
-                && string.Equals(pair.First.Label, pair.Second.Label, StringComparison.Ordinal))) return;
-        // Retain focus during periodic reports, but replace handlers when selector options are replaced.
+                && string.Equals(pair.First.Label, pair.Second.Label, StringComparison.Ordinal)))
+        {
+            QueueTrackRowFocusRestore(host, previous);
+            return;
+        }
+        // Keep a live focus target in the pane before removing a focused row, including during Opening.
+        if (!PreserveTrackRowFocus(host)) return;
         host.Children.Clear();
         foreach (var row in rows)
         {
@@ -201,6 +219,7 @@ public sealed partial class PlayerView
             var button = new Button
             {
                 Style = (Style)Resources["PlayerTrackRowStyle"], Content = content,
+                Tag = new TrackRowFocusKey(snapshot.Coordinator, _playIntent, row.Tag),
                 Background = new SolidColorBrush(selected ? Windows.UI.Color.FromArgb(20, 255, 255, 255) : Colors.Transparent),
                 IsEnabled = selector.IsEnabled || canClearLocalSubtitle && row.Tag is -1
             };
@@ -240,18 +259,135 @@ public sealed partial class PlayerView
                 Grid.SetColumn(label, 1);
                 content.Children.Add(label);
                 var local = new Button { Style = (Style)Resources["PlayerTrackRowStyle"], Content = content,
+                    Tag = new TrackRowFocusKey(snapshot.Coordinator, _playIntent,
+                        (object?)LocalSubtitleChoicePath(prepared)?.ToUpperInvariant() ?? prepared),
                     IsEnabled = CanLoadLocalSubtitle(),
                     Background = new SolidColorBrush(Windows.UI.Color.FromArgb(selected ? (byte)20 : (byte)0, 255, 255, 255)) };
                 SetControlLabel(local, LumenText.Get("Local subtitles: {0}", label.Text));
                 ToolTipService.SetToolTip(local, LocalSubtitleDisplayName(LocalSubtitleChoicePath(prepared) ?? prepared.FileName));
                 local.Click += async (_, _) =>
                 {
-                    if (CanLoadLocalSubtitle()) await ActivateLocalSubtitleChoiceAsync(prepared);
+                    if (CanLoadLocalSubtitle())
+                    {
+                        // Local preparation marks the picker busy before its row updates can run.
+                        PreserveTrackRowFocus(host);
+                        await ActivateLocalSubtitleChoiceAsync(prepared);
+                    }
                 };
                 host.Children.Add(local);
             }
         }
         _trackRowsSnapshots[host] = snapshot;
+        QueueTrackRowFocusRestore(host, snapshot);
+    }
+
+    private void InitializeTrackRowFocus()
+    {
+        if (_trackRowFocusInitialized) return;
+        _trackRowFocusInitialized = true;
+        TrackListScroll.LosingFocus += (_, _) =>
+        {
+            if (!_transferringTrackRowFocus) CancelTrackRowFocusRestore();
+        };
+        TrackPanel.RegisterPropertyChangedCallback(VisibilityProperty, (_, _) =>
+        {
+            if (TrackPanel.Visibility != Visibility.Visible) CancelTrackRowFocusRestore();
+        });
+        Unloaded += (_, _) => CancelTrackRowFocusRestore();
+    }
+
+    // A track change can reopen the same logical playback with a new native playback ID.
+    private bool OwnsTrackRowFocus(TrackRowFocusRestore restore) => IsLoaded && Visibility == Visibility.Visible
+        && _sidePanelMode == PlayerSidePanel.Tracks && SidePanel.Visibility == Visibility.Visible
+        && TrackPanel.Visibility == Visibility.Visible && restore.Host.IsLoaded
+        && ReferenceEquals(XamlRoot, restore.Root) && ReferenceEquals(restore.Host.XamlRoot, restore.Root)
+        && ReferenceEquals(_coordinator, restore.Coordinator) && _playIntent == restore.Intent;
+
+    private static bool IsTrackRowCoordinator(WeakReference<PlaybackCoordinator>? owner, PlaybackCoordinator coordinator) =>
+        owner is not null && owner.TryGetTarget(out var current) && ReferenceEquals(current, coordinator);
+
+    private bool PreserveTrackRowFocus(StackPanel host)
+    {
+        if (_trackRowFocusRestore is { } pending && !OwnsTrackRowFocus(pending)) CancelTrackRowFocusRestore();
+        if (IsModalOpen || _coordinator is not { } coordinator
+            || XamlRoot is not { } root || FocusManager.GetFocusedElement(root) is not Control focused
+            || !IsWithin(focused, host)) return true;
+        var row = host.Children.OfType<Button>().FirstOrDefault(button => IsWithin(focused, button));
+        if (row?.Tag is not TrackRowFocusKey { Value: { } key } rowKey
+            || rowKey.Intent != _playIntent || !IsTrackRowCoordinator(rowKey.Coordinator, coordinator)) return true;
+        CancelTrackRowFocusRestore();
+        var state = focused.FocusState == FocusState.Unfocused ? FocusState.Programmatic : focused.FocusState;
+        var restore = new TrackRowFocusRestore(host, key, state, coordinator, _playIntent, root,
+            TrackListScroll.ReadLocalValue(Control.IsTabStopProperty));
+        if (!OwnsTrackRowFocus(restore)) return true;
+        _trackRowFocusRestore = restore;
+        var wasTransferring = _transferringTrackRowFocus;
+        _transferringTrackRowFocus = true;
+        try
+        {
+            // ScrollViewer is not a tab stop by default; restore its original value after this handoff.
+            TrackListScroll.IsTabStop = true;
+            if (TrackListScroll.Focus(state)
+                && ReferenceEquals(FocusManager.GetFocusedElement(root), TrackListScroll)) return true;
+            CancelTrackRowFocusRestore();
+            // Leave the current row attached when focus cannot be handed off safely.
+            return false;
+        }
+        finally { _transferringTrackRowFocus = wasTransferring; }
+    }
+
+    private void QueueTrackRowFocusRestore(StackPanel host, TrackRowsSnapshot snapshot)
+    {
+        if (_trackRowFocusRestore is not { } restore) return;
+        if (!OwnsTrackRowFocus(restore)) { CancelTrackRowFocusRestore(); return; }
+        if (!ReferenceEquals(restore.Host, host) || IsModalOpen) return;
+        var target = host.Children.OfType<Button>().FirstOrDefault(button =>
+            button.Tag is TrackRowFocusKey key && key.Intent == restore.Intent
+                && IsTrackRowCoordinator(key.Coordinator, restore.Coordinator) && Equals(key.Value, restore.Key));
+        if (target is not { IsEnabled: true }) return;
+        void Restore()
+        {
+            if (!ReferenceEquals(_trackRowFocusRestore, restore)) return;
+            if (!OwnsTrackRowFocus(restore)) { CancelTrackRowFocusRestore(); return; }
+            if (!_trackRowsSnapshots.TryGetValue(host, out var latest) || !ReferenceEquals(latest, snapshot)) return;
+            if (!ReferenceEquals(FocusManager.GetFocusedElement(restore.Root), TrackListScroll))
+            { CancelTrackRowFocusRestore(); return; }
+            if (IsModalOpen || !target.IsLoaded || !target.IsEnabled || !IsWithin(target, host)) return;
+            var wasTransferring = _transferringTrackRowFocus;
+            _transferringTrackRowFocus = true;
+            try
+            {
+                if (!target.Focus(restore.State)) return;
+                _panelFocus[PlayerSidePanel.Tracks] = target;
+                CancelTrackRowFocusRestore();
+            }
+            finally { _transferringTrackRowFocus = wasTransferring; }
+        }
+        void QueueRestore()
+        {
+            if (!DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, Restore)
+                && ReferenceEquals(_trackRowFocusRestore, restore)) CancelTrackRowFocusRestore();
+        }
+        if (target.IsLoaded) QueueRestore();
+        else
+        {
+            void Loaded(object sender, RoutedEventArgs args)
+            {
+                target.Loaded -= Loaded;
+                QueueRestore();
+            }
+            target.Loaded += Loaded;
+        }
+    }
+
+    private void CancelTrackRowFocusRestore()
+    {
+        var restore = _trackRowFocusRestore;
+        _trackRowFocusRestore = null;
+        if (restore is null) return;
+        if (ReferenceEquals(restore.OriginalScrollTabStop, DependencyProperty.UnsetValue))
+            TrackListScroll.ClearValue(Control.IsTabStopProperty);
+        else TrackListScroll.SetValue(Control.IsTabStopProperty, restore.OriginalScrollTabStop);
     }
 
     private void UpdateStreamPresentation(PlaybackContext context)
@@ -400,7 +536,7 @@ public sealed partial class PlayerView
         var band = _compactOverlay ? _preferences.SubtitleSize == "Large" ? 112 : 96 : _preferences.SubtitleSize == "Large" ? 240 : 208;
         var videoMargin = new Thickness(0, 0, 0, blackBars ? band : 0);
         if (!VideoSurface.Margin.Equals(videoMargin)) VideoSurface.Margin = videoMargin;
-        double bottom = _compactOverlay ? AreControlsVisible ? 64 : 16 : blackBars ? AreControlsVisible ? 114 : 26 : AreControlsVisible ? 150 : 64;
+        double bottom = _compactOverlay ? AreControlsVisible ? CompactSubtitleBottom : 16 : blackBars ? AreControlsVisible ? 114 : 26 : AreControlsVisible ? 150 : 64;
         var gutter = _compactOverlay ? 16d : PlayerRoot.ActualWidth < 640 ? 24d : 40d;
         var alignment = HorizontalAlignment.Center;
         var maxWidth = Math.Max(0, Math.Min(1100, PlayerRoot.ActualWidth - 2 * gutter));

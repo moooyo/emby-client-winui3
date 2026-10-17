@@ -76,6 +76,7 @@ try
         ProductionRestoreVerified = true,
         OfficialServer = officialCredentials is not null,
         DesignCatalog = options.DesignCatalog,
+        LargeLibraryItems = options.LargeLibraryItems,
         IsAdministrator = restored.User.Policy?.IsAdministrator == true
     };
     Directory.CreateDirectory(options.RunDirectory);
@@ -133,13 +134,7 @@ static async Task VerifySyntheticEnvironmentAsync(HttpClient http, BootstrapOpti
         buffer.Write(chunk, 0, count);
     }
     using var statistics = JsonDocument.Parse(buffer.ToArray());
-    if (!statistics.RootElement.TryGetProperty("Synthetic", out var synthetic) || synthetic.ValueKind != JsonValueKind.True
-        || !statistics.RootElement.TryGetProperty("LumenCatalog", out var lumen) || lumen.ValueKind != JsonValueKind.True)
-        throw new InvalidOperationException("The selected endpoint does not expose the rich synthetic acceptance catalog.");
-    var isDesignCatalog = statistics.RootElement.TryGetProperty("LumenDesignCatalog", out var design)
-        && design.ValueKind == JsonValueKind.True;
-    if (isDesignCatalog != options.DesignCatalog)
-        throw new InvalidOperationException("The selected synthetic catalog does not match the explicit bootstrap mode.");
+    options.VerifySyntheticCatalogStatistics(statistics.RootElement);
     var api = new EmbyApiClient(http, options.ServerUrl, new("LumenAcceptance", "Synthetic Windows check", Guid.NewGuid().ToString("N"), "1.0"));
     var server = await api.GetPublicSystemInfoAsync(cancellationToken);
     if (server.Id != options.ExpectedFixtureServerId || server.Version != BootstrapOptions.FixtureVersion

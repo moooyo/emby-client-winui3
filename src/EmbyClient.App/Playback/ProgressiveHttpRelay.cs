@@ -16,7 +16,6 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
     private const int MaximumHeaderBytes = 16 * 1024;
     private const int CopyBufferSize = 64 * 1024;
     private static readonly TimeSpan HeaderTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan WriteIdleTimeout = TimeSpan.FromSeconds(60);
     private static readonly byte[] ChunkTerminator = "\r\n"u8.ToArray();
     private static readonly byte[] CompleteChunkedBody = "0\r\n\r\n"u8.ToArray();
     private readonly ScopedMediaTransport _transport;
@@ -84,13 +83,14 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
 
     private async Task AcceptLoopAsync()
     {
+        var listener = _listener.Server;
         try
         {
             while (true)
             {
                 await _slots.WaitAsync(_shutdownToken).ConfigureAwait(false);
                 TcpClient client;
-                try { client = await _listener.AcceptTcpClientAsync(_shutdownToken).ConfigureAwait(false); }
+                try { client = await SessionHttpRelay.AcceptClientAsync(listener, _shutdownToken).ConfigureAwait(false); }
                 catch { _slots.Release(); throw; }
                 if (_shutdownToken.IsCancellationRequested || client.Client.RemoteEndPoint is not IPEndPoint remote
                     || !IPAddress.IsLoopback(remote.Address))
@@ -146,7 +146,6 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
                     throw new PlaybackException("UnsupportedFormat");
                 }
                 var chunked = upstream.IsSuccess && !request.IsHead && !upstream.ContentLength.HasValue && !request.IsHttp10;
-                operation.CancelAfter(WriteIdleTimeout);
                 responseStarted = true;
                 await WriteHeadersAsync(network, (int)upstream.StatusCode,
                     upstream.IsSuccess ? upstream.ContentLength : 0, upstream.ContentRange,
@@ -159,9 +158,8 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
                 {
                     while (true)
                     {
-                        // Read and write have separate deadlines: a slow downstream must not be
-                        // reported as an upstream network failure. The lease bounds upstream idle time.
-                        operation.CancelAfter(Timeout.InfiniteTimeSpan);
+                        // A paused player may stop consuming this body. Owner cancellation and peer
+                        // disconnect retire the response; the lease bounds each upstream read.
                         int read;
                         try { read = await upstream.ReadAsync(buffer.AsMemory(0, CopyBufferSize), operation.Token).ConfigureAwait(false); }
                         catch (PlaybackException error)
@@ -169,7 +167,6 @@ internal sealed partial class ProgressiveHttpRelay : IAsyncDisposable
                             ReportUpstreamFailure(error.ErrorCode, operation.Token);
                             throw;
                         }
-                        operation.CancelAfter(WriteIdleTimeout);
                         if (read == 0)
                         {
                             // Only a real, successful EOF emits the terminal chunk. Errors abort the

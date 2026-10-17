@@ -13,7 +13,8 @@ public sealed partial class LibraryViewModel
     private const int MaximumHistoryEntries = 24;
     private readonly Stack<BrowseSnapshot> _forwardHistory = new();
     private string? _navigationLibraryId;
-    private readonly HashSet<PersonDetailsViewModel> _people = [];
+    private readonly HashSet<PersonDetailsViewModel> _people = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<PersonDetailsViewModel> _pendingPeople = new(ReferenceEqualityComparer.Instance);
     public BrowseViewportState ViewportState { get; set; } = new();
     public event EventHandler? BrowseStateCapturing;
     public event EventHandler? BrowseStateRestored;
@@ -46,8 +47,23 @@ public sealed partial class LibraryViewModel
 
     private void UpdateNavigationAvailability()
     {
+        RetireUnreachablePeople();
         CanGoBack = _history.Count > 0;
         OnPropertyChanged(nameof(CanGoForward));
+    }
+
+    private void RetireUnreachablePeople()
+    {
+        if (_people.Count == 0) return;
+        var retained = new HashSet<PersonDetailsViewModel>(_pendingPeople, ReferenceEqualityComparer.Instance);
+        if (ActivePerson is { } active) retained.Add(active);
+        foreach (var snapshot in _history.Concat(_forwardHistory))
+            if (snapshot.Person is { } person) retained.Add(person);
+        foreach (var person in _people.Where(person => !retained.Contains(person)).ToArray())
+        {
+            _people.Remove(person);
+            person.Dispose();
+        }
     }
 
     private void SetNavigationLibraryId(string? libraryId) =>
@@ -68,7 +84,8 @@ public sealed partial class LibraryViewModel
             HasMore, HasDetails, DetailItemsAreEpisodes, _nextIndex, _browseWindowStartIndex, _loadOutcome, ViewportState, ActivePerson,
             TotalItemsCount, CaptureLumenSearchPeopleState(), NavigationLibraryId)
         {
-            HomeRowsStale = _location.IsHome && _homeRowsStale
+            HomeRowsStale = _location.IsHome && _homeRowsStale,
+            SeriesEpisodeCount = SeriesEpisodeCount
         };
     }
 
@@ -97,6 +114,7 @@ public sealed partial class LibraryViewModel
         IsHome = state.Location.IsHome;
         HasDetails = state.HasDetails;
         Detail = state.Detail;
+        ResetSeriesEpisodeCount(state.SeriesEpisodeCount);
         PlayableDetail = state.Playable;
         NextEpisode = state.NextEpisode;
         DetailItemsAreEpisodes = state.Episodes;
@@ -130,6 +148,7 @@ public sealed partial class LibraryViewModel
         if (state.Location.IsHome && state.HomeRowsStale
             || state.Outcome == PageLoadOutcome.Loading && state.Location.Kind is not (LocationKind.Search or LocationKind.Person))
             return ResumeRestoredPageAsync(state.Viewport);
+        if (SeriesEpisodeCount is null && HasDetails && Detail.Item.Type == "Series") _ = RefreshSeriesEpisodeCountAsync();
         return ResumeLumenRestoredSearchAsync(state.Outcome);
     }
 
@@ -146,11 +165,22 @@ public sealed partial class LibraryViewModel
 
     public Task ShowPersonAsync(PersonCardViewModel person, CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested) return Task.FromCanceled(cancellationToken);
         var viewModel = CreatePersonDetails(person);
         if (viewModel is null) return Task.CompletedTask;
         _people.Add(viewModel);
-        CancelSearch();
-        return NavigateAsync(new(LocationKind.Person, person.Id, person.Name), true, cancellationToken, viewModel);
+        _pendingPeople.Add(viewModel);
+        try
+        {
+            CancelSearch();
+            return NavigateAsync(new(LocationKind.Person, person.Id, person.Name), true, cancellationToken, viewModel);
+        }
+        finally
+        {
+            // Navigation transfers ownership before its first await, including during capture callbacks.
+            _pendingPeople.Remove(viewModel);
+            RetireUnreachablePeople();
+        }
     }
 
     private void NotifyPersonState()
@@ -186,5 +216,6 @@ public sealed partial class LibraryViewModel
         int? TotalCount, LumenSearchPeopleSnapshot SearchPeople, string? NavigationLibraryId)
     {
         public bool HomeRowsStale { get; init; }
+        public int? SeriesEpisodeCount { get; init; }
     }
 }

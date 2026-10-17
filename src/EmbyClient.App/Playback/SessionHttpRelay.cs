@@ -16,7 +16,6 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
     private const int MaximumHeaderBytes = 16 * 1024;
     private const int CopyBufferSize = 64 * 1024;
     private static readonly TimeSpan HeaderTimeout = TimeSpan.FromSeconds(10);
-    private static readonly TimeSpan TransferIdleTimeout = TimeSpan.FromSeconds(60);
     private readonly HttpRangeStream _source;
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _shutdown = new();
@@ -94,6 +93,7 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
 
     private async Task AcceptLoopAsync()
     {
+        var listener = _listener.Server;
         try
         {
             while (true)
@@ -103,7 +103,7 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
                 TcpClient client;
                 try
                 {
-                    client = await _listener.AcceptTcpClientAsync(_shutdownToken).ConfigureAwait(false);
+                    client = await AcceptClientAsync(listener, _shutdownToken).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -135,6 +135,23 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
         }
     }
 
+    internal static async ValueTask<TcpClient> AcceptClientAsync(Socket listener, CancellationToken cancellationToken)
+    {
+        // Own the accept socket before Windows can complete AcceptEx. Cancellation or
+        // listener closure must not strand an implicitly allocated socket until finalization.
+        var client = new TcpClient(AddressFamily.InterNetwork);
+        try
+        {
+            await listener.AcceptAsync(client.Client, cancellationToken).ConfigureAwait(false);
+            return client;
+        }
+        catch
+        {
+            client.Dispose();
+            throw;
+        }
+    }
+
     private async Task ServeConnectionAsync(RelayConnection connection)
     {
         NetworkStream? network = null;
@@ -147,7 +164,9 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
             operation.CancelAfter(HeaderTimeout);
             if (await ReadRequestAsync(network, operation.Token).ConfigureAwait(false) is not { } request) return;
             var range = SelectRange(request);
-            operation.CancelAfter(TransferIdleTimeout);
+            // A paused player may leave a valid response backpressured indefinitely.
+            // The transport bounds upstream reads; the owner controls the transfer lifetime.
+            operation.CancelAfter(Timeout.InfiniteTimeSpan);
             if (request.IsHead)
             {
                 responseStarted = true;
@@ -163,7 +182,6 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
                 var remaining = range.Length;
                 while (remaining > 0)
                 {
-                    operation.CancelAfter(TransferIdleTimeout);
                     int read;
                     try
                     {
@@ -185,7 +203,6 @@ internal sealed partial class SessionHttpRelay : IAsyncDisposable
                             .ConfigureAwait(false);
                     }
 
-                    operation.CancelAfter(TransferIdleTimeout);
                     await network.WriteAsync(buffer.AsMemory(0, read), operation.Token).ConfigureAwait(false);
                     remaining -= read;
                 }

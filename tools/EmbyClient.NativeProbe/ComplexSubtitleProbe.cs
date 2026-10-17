@@ -17,8 +17,10 @@ internal static partial class ComplexSubtitleProbe
 
     internal static async Task<ComplexSubtitleReport> RunAsync(DispatcherQueue dispatcher, MediaPlayerElement element,
         string credentialsPath, string manifestPath, string caseId, string outputDirectory,
-        CancellationToken cancellationToken = default, bool progressiveHttpProfileControl = false, string? expectedServerId = null)
+        CancellationToken cancellationToken = default, bool progressiveHttpProfileControl = false, string? expectedServerId = null,
+        int visualWaitSeconds = 180)
     {
+        Require(visualWaitSeconds is >= 1 and <= 600, "VisualInspectionWaitInvalid");
         // Approval is independent of the fixture document. Never learn the expected identity from it.
         var expectedIdentity = expectedServerId ?? LegacyOwnedServerId;
         var output = Path.GetFullPath(outputDirectory);
@@ -28,13 +30,14 @@ internal static partial class ComplexSubtitleProbe
             && !Directory.EnumerateFiles(output, "complex-subtitle-*-finish.json").Any(), "FreshOutputDirectoryRequired");
         var report = progressiveHttpProfileControl ? new ComplexSubtitleReport
         {
+            VisualWaitSeconds = visualWaitSeconds,
             ExecutionMode = "ProgressiveHttpProfileControl", ProfileControl = true, DefaultEncodingProfileUsed = false,
             Scope = "Independent profile control using the original complex-subtitle fixture and actual product engine/coordinator. Only TranscodingProfiles container/protocol changes from ts/hls to mp4/http; ForceTranscoding stays false. Enabled, disabled, and progressive source-tail screenshots are separate prerequisites. This is not a default-profile or HLS compatibility result."
-        } : new ComplexSubtitleReport();
+        } : new ComplexSubtitleReport { VisualWaitSeconds = visualWaitSeconds };
         var diagnostics = new List<string>();
         var playbackEvents = new List<ComplexSubtitlePlaybackEvent>();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(TimeSpan.FromMinutes(10));
+        deadline.CancelAfter(TimeSpan.FromSeconds(Math.Max(600, visualWaitSeconds * 3 + 60)));
         using var observer = new HlsApiObservationHandler();
         using var http = new HttpClient(observer) { Timeout = Timeout.InfiniteTimeSpan };
         EmbyApiClient? authenticated = null;
@@ -323,9 +326,10 @@ internal static partial class ComplexSubtitleProbe
         var phaseName = phase.Phase.ToLowerInvariant();
         var finishFile = "complex-subtitle-" + phaseName + "-finish.json";
         var finishPath = Path.Combine(output, finishFile);
-        var visualDeadline = DateTimeOffset.UtcNow.AddMinutes(3);
+        var visualDeadline = DateTimeOffset.UtcNow.AddSeconds(report.VisualWaitSeconds);
         var ready = new ComplexSubtitleReady
         {
+            VisualWaitSeconds = report.VisualWaitSeconds,
             RunId = report.RunId, CaseId = fixture.CaseId!, Phase = phase.Phase, EvidenceKind = evidenceKind,
             ProcessId = report.ProcessId, ProfileControl = report.ProfileControl,
             PausedPositionTicks = phase.Native!.SourcePositionTicks!.Value, NativePositionTicks = phase.Native.PositionTicks,

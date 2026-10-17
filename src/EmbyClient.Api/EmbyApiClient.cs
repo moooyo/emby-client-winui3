@@ -156,6 +156,16 @@ public sealed partial class EmbyApiClient
                 .Add("EnableImages", true).AddList("EnableImageTypes", ["Primary", "Thumb", "Backdrop"]),
             cancellationToken);
 
+    public async Task<int?> GetSeriesEpisodeCountAsync(string seriesId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await GetItemsResultAsync($"Shows/{Segment(seriesId)}/Episodes",
+            new Query().Add("UserId", RequireUserId()).Add("Limit", 1)
+                .Add("EnableImages", false).Add("EnableUserData", false),
+            cancellationToken).ConfigureAwait(false);
+        return result.TotalRecordCount is >= 0 ? result.TotalRecordCount : null;
+    }
+
     public Task<UserItemDataDto> SetFavoriteAsync(string itemId, bool isFavorite,
         CancellationToken cancellationToken = default) =>
         SendJsonAsync(isFavorite ? HttpMethod.Post : HttpMethod.Delete,

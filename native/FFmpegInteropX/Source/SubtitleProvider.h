@@ -43,6 +43,7 @@ public:
 
         SubtitleTrack = TimedMetadataTrack(Name, Language, timedMetadataKind);
         SubtitleTrack.Label(!Name.empty() ? Name : Language);
+        actualSubtitleDelay = streamDelay;
 
         if (!IsExternal())
         {
@@ -79,7 +80,9 @@ public:
     {
         try
         {
-            TimeSpan position = ConvertPosition(packet->pts);
+            // The common conversion includes streamDelay. Subtitle cues retain a
+            // source timestamp here and apply that delay exactly once below.
+            TimeSpan position = ConvertPosition(packet->pts) - streamDelay;
             TimeSpan duration = ConvertDuration(packet->duration);
             IMediaCue changedCue{ nullptr };
 
@@ -421,6 +424,7 @@ public:
             infiniteDurationCue = nullptr;
             lastExtendedDurationCue = nullptr;
             negativePositionCues.clear();
+            actualSubtitleDelay = streamDelay;
 
             if (referenceTrack != nullptr)
             {

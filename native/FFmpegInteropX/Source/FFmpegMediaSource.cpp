@@ -2472,6 +2472,12 @@ namespace winrt::FFmpegInteropX::implementation
             {
                 auto key = StringUtils::PlatformStringToUtf8String(options.Current().Key());
                 hstring value = StringUtils::ToString(options.Current().Value());
+                if (key == "emby_finite_hls_accurate_seek" || key == "emby_indexed_pgs_accurate_seek")
+                {
+                    if (value != L"0" && value != L"1") return E_INVALIDARG;
+                    options.MoveNext();
+                    continue;
+                }
                 if (!value.empty())
                 {
                     // Add key and value pair entry
@@ -2502,9 +2508,14 @@ namespace winrt::FFmpegInteropX::implementation
             return;
         }
         MediaStreamSourceStartingRequest request = args.Request();
+        bool guardedAccurateSeek = false;
 
         try
         {
+            const auto accurateMarker = config->FFmpegOptions().TryLookup(L"emby_finite_hls_accurate_seek");
+            const auto pgsMarker = config->FFmpegOptions().TryLookup(L"emby_indexed_pgs_accurate_seek");
+            guardedAccurateSeek = (accurateMarker && StringUtils::ToString(accurateMarker) == L"1")
+                || (pgsMarker && StringUtils::ToString(pgsMarker) == L"1");
             if (isFirstSeek && avHardwareContext)
             {
                 HRESULT hr = DirectXInteropHelper::GetDeviceManagerFromStreamSource(sender, deviceManager);
@@ -2557,11 +2568,26 @@ namespace winrt::FFmpegInteropX::implementation
                 {
                     request.SetActualStartPosition(actualPosition);
                 }
+                else
+                {
+                    if (guardedAccurateSeek)
+                    {
+                        // A bounded accurate-seek failure must not continue from a later keyframe.
+                        sender.NotifyError(MediaStreamSourceErrorStatus::DecodeError);
+                        return;
+                    }
+                }
             }
         }
         catch (...)
         {
             DebugMessage(L"Exception in OnStarting()!");
+            if (guardedAccurateSeek)
+            {
+                try { sender.NotifyError(MediaStreamSourceErrorStatus::DecodeError); }
+                catch (...) { }
+                return;
+            }
         }
 
         isFirstSeek = false;

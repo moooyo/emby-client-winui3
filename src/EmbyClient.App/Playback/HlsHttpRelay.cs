@@ -110,13 +110,14 @@ internal sealed partial class HlsHttpRelay : IAsyncDisposable
 
     private async Task AcceptLoopAsync()
     {
+        var listener = _listener.Server;
         try
         {
             while (true)
             {
                 await _slots.WaitAsync(_shutdownToken).ConfigureAwait(false);
                 TcpClient client;
-                try { client = await _listener.AcceptTcpClientAsync(_shutdownToken).ConfigureAwait(false); }
+                try { client = await SessionHttpRelay.AcceptClientAsync(listener, _shutdownToken).ConfigureAwait(false); }
                 catch { _slots.Release(); throw; }
                 if (_shutdownToken.IsCancellationRequested || client.Client.RemoteEndPoint is not IPEndPoint remote
                     || !IPAddress.IsLoopback(remote.Address))
@@ -180,7 +181,7 @@ internal sealed partial class HlsHttpRelay : IAsyncDisposable
         {
             if (network is not null && !responseStarted)
             {
-                await TryWriteErrorAsync(network, rejected.StatusCode).ConfigureAwait(false);
+                await TryWriteErrorAsync(network, rejected.StatusCode, rejected.RepresentationLength).ConfigureAwait(false);
                 await FinishRejectedRequestAsync(connection.Client, network).ConfigureAwait(false);
             }
         }
@@ -235,6 +236,9 @@ internal sealed partial class HlsHttpRelay : IAsyncDisposable
         var data = request.Resource.IsManifest ? RewriteManifest(resource, request.Target) : resource.Data;
         var contentType = request.Resource.IsManifest ? "application/vnd.apple.mpegurl" : SelectContentType(resource.ContentType);
         if (request.IsHead) return new RelayResponse(data, 0, data.Length, 200, null, contentType);
+        // A dynamic segment may ignore the forwarded Range and send its complete 200 response.
+        // DownloadHlsAsync has bounded and fully drained that representation before slicing it.
+        isLocalRange |= resource.StatusCode == HttpStatusCode.OK && request.Range is not null;
         if (isLocalRange && request.Range is { } localRange)
         {
             var (offset, length) = SelectLocalRange(localRange, data.Length);
@@ -529,13 +533,13 @@ internal sealed partial class HlsHttpRelay : IAsyncDisposable
 
     private static (int Offset, int Length) SelectLocalRange(RelayRange range, int total)
     {
-        if (total == 0) throw new RejectedRequestException(416);
+        if (total == 0) throw new RejectedRequestException(416, total);
         if (range.Suffix is { } suffix)
         {
             var length = (int)Math.Min(suffix, total);
             return (total - length, length);
         }
-        if (range.Offset is not { } offset || offset >= total) throw new RejectedRequestException(416);
+        if (range.Offset is not { } offset || offset >= total) throw new RejectedRequestException(416, total);
         return ((int)offset, (int)Math.Min(range.Length ?? total, total - offset));
     }
 
@@ -558,12 +562,14 @@ internal sealed partial class HlsHttpRelay : IAsyncDisposable
         await stream.WriteAsync(Encoding.ASCII.GetBytes(builder.ToString()), ct).ConfigureAwait(false);
     }
 
-    private async Task TryWriteErrorAsync(NetworkStream stream, int status)
+    private async Task TryWriteErrorAsync(NetworkStream stream, int status, long? representationLength = null)
     {
         if (_shutdownToken.IsCancellationRequested) return;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_shutdownToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(2));
-        try { await WriteHeadersAsync(stream, status, 0, null, null, timeout.Token).ConfigureAwait(false); }
+        var contentRange = status == 416 && representationLength.HasValue
+            ? FormattableString.Invariant($"bytes */{representationLength.Value}") : null;
+        try { await WriteHeadersAsync(stream, status, 0, contentRange, null, timeout.Token).ConfigureAwait(false); }
         catch (OperationCanceledException) { }
         catch (IOException) { }
         catch (SocketException) { }
@@ -640,9 +646,10 @@ internal sealed partial class HlsHttpRelay : IAsyncDisposable
     private sealed record RelayRange(long? Offset, long? Length, long? Suffix);
     private sealed record RelayRequest(bool IsHead, string Target, RelayResource Resource, RelayRange? Range);
     private sealed record RelayResponse(byte[] Data, int Offset, int Length, int Status, string? ContentRange, string ContentType);
-    private sealed partial class RejectedRequestException(int statusCode) : Exception("The local HLS request was rejected.")
+    private sealed partial class RejectedRequestException(int statusCode, long? representationLength = null) : Exception("The local HLS request was rejected.")
     {
         internal int StatusCode { get; } = statusCode;
+        internal long? RepresentationLength { get; } = representationLength;
     }
     private sealed partial class RelayConnection(TcpClient client)
     {

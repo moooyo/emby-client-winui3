@@ -217,6 +217,7 @@ public sealed partial class LibraryViewModel : ObservableObject
     {
         _sessionVersion++;
         _pageVersion++;
+        ResetSeriesEpisodeCount();
         _libraryRequestVersion++;
         _seasonRequestVersion++;
         ResetHomeRefreshState();
@@ -339,6 +340,8 @@ public sealed partial class LibraryViewModel : ObservableObject
             OnPropertyChanged(nameof(HomeLibrariesVisibility));
             NotifyBrowseOptions();
             NotifyPresentation();
+            if (HasDetails && Detail.Item.Type == "Series") _ = RefreshSeriesEpisodeCountAsync(token);
+            else ResetSeriesEpisodeCount();
         }
         catch (OperationCanceledException) when (source.IsCancellationRequested) { }
         catch (Exception exception) when (IsExpectedFailure(exception))
@@ -558,6 +561,7 @@ public sealed partial class LibraryViewModel : ObservableObject
         _location = location;
         SetNavigationLibraryId(navigationLibraryId);
         TotalItemsCount = null;
+        ResetSeriesEpisodeCount();
         ResetLumenSearchPeople();
         SetLumenGenreContext(location);
         ActivePerson = person;
@@ -752,6 +756,7 @@ public sealed partial class LibraryViewModel : ObservableObject
             SetSeriesInitializing(false);
             IsBusy = false;
             StartSeriesRecommendation(resumeTask, nextTask, pageVersion, seasonRequestVersion, userDataRevision, cancellationToken);
+            _ = RefreshSeriesEpisodeCountAsync(cancellationToken);
         }
         finally
         {

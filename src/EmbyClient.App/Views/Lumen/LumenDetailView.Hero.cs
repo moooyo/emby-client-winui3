@@ -16,6 +16,7 @@ namespace EmbyClient.App.Views.Lumen;
 
 public sealed partial class LumenDetailView
 {
+    private TextBlock? _heroSeriesCounts;
     private MediaCardViewModel ActivePlaybackTarget => _deck.SelectedIndex == _episodePageIndex && _focusedEpisode is not null
         ? _focusedEpisode : _library.PlayableDetail;
 
@@ -26,6 +27,7 @@ public sealed partial class LumenDetailView
             : _trailerButton is not null && HasFocusWithin(_trailerButton) ? "trailer"
             : _moreButton is not null && HasFocusWithin(_moreButton) ? "more" : null;
         _hero.Children.Clear();
+        _heroSeriesCounts = null;
         var kind = detail.Item.Type switch
         {
             "Movie" => "Movie", "Series" => "Series", "Season" => "Season", "Episode" => "Episode",
@@ -63,12 +65,9 @@ public sealed partial class LumenDetailView
         if (detail.Item.ProductionYear is { } year) metadata.Children.Add(ImageText(year.ToString(CultureInfo.InvariantCulture), 15));
         if (series)
         {
-            var count = detail.Item.SeasonCount ?? _library.Seasons.Count;
-            var episodeCount = detail.Item.RecursiveItemCount ?? detail.Item.ChildCount;
-            var seriesParts = new List<string>();
-            if (count > 0) seriesParts.Add(Format("{0} seasons", count));
-            if (episodeCount is > 0) seriesParts.Add(Format("{0} episodes", episodeCount.Value));
-            if (seriesParts.Count > 0) metadata.Children.Add(ImageText(string.Join(" \u00b7 ", seriesParts), 15));
+            _heroSeriesCounts = ImageText(string.Empty, 15);
+            metadata.Children.Add(_heroSeriesCounts);
+            RenderHeroSeriesCounts(detail);
         }
         else if (detail.Item.RunTimeTicks is > 0) metadata.Children.Add(ImageText(Runtime(detail.Item.RunTimeTicks.Value), 15));
         else if (detail.IsFolder && (detail.Item.RecursiveItemCount ?? detail.Item.ChildCount) is { } childCount)
@@ -132,6 +131,19 @@ public sealed partial class LumenDetailView
                 "trailer" => _trailerButton, _ => _moreButton };
             button?.Focus(FocusState.Programmatic);
         });
+    }
+
+    private void RenderHeroSeriesCounts(MediaCardViewModel detail)
+    {
+        if (_heroSeriesCounts is null) return;
+        var count = detail.Item.SeasonCount ?? _library.Seasons.Count;
+        var episodeCount = detail.Item.Type == "Series" ? _library.SeriesEpisodeCount
+            : detail.Item.RecursiveItemCount ?? detail.Item.ChildCount;
+        var parts = new List<string>();
+        if (count > 0) parts.Add(Format("{0} seasons", count));
+        if (episodeCount is >= 0) parts.Add(Format("{0} episodes", episodeCount.Value));
+        _heroSeriesCounts.Text = string.Join(" \u00b7 ", parts);
+        _heroSeriesCounts.Visibility = parts.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void AddPeopleSummary(MediaCardViewModel detail)
@@ -211,7 +223,7 @@ public sealed partial class LumenDetailView
 
     private static void StyleDetailAction(Button button, string label, string icon, bool selected = false)
     {
-        button.Height = 60;
+        button.Height = double.NaN;
         button.MinHeight = 60;
         button.Width = double.NaN;
         button.MinWidth = 58;

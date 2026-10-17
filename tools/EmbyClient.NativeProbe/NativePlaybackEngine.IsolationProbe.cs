@@ -53,26 +53,50 @@ public sealed partial class NativePlaybackEngine
         native.PlaybackStateChanged += handler;
     }
 
-    internal Func<Task> CaptureCurrentCallbackReplayForProbe()
+    internal Func<Task<int>> CaptureCurrentFailureReplayForProbe(Guid playbackId)
+    {
+        var session = _current ?? throw new PlaybackException("NoSessionForFailureReplay");
+        if (session.Request.PlaybackId != playbackId)
+            throw new PlaybackException("FailureReplaySessionMismatch");
+        return () => OnDispatcherAsync(() =>
+        {
+            if (!session.Retired || IsActive(session))
+                throw new PlaybackException("FailureReplayRequiresRetiredSession");
+            // A pre-bind rejection has no native event handlers to capture.
+            Fail(session, "UnsupportedFormat");
+            return 1;
+        });
+    }
+
+    internal Func<Task<int>> CaptureCurrentCallbackReplayForProbe()
     {
         var session = _current ?? throw new PlaybackException("NoSessionForCallbackReplay");
+        if (!IsActive(session) || session.Player?.Source is null)
+            throw new PlaybackException("CallbackReplayRequiresBoundSource");
         var opened = session.Opened;
         var ended = session.Ended;
+        var failed = session.Failed;
         var state = session.StateChanged;
         var position = session.PositionChanged;
         var seek = session.SeekCompleted;
         var duration = session.DurationChanged;
-        if (opened is null || ended is null || state is null || position is null || seek is null || duration is null)
+        if (opened is null || ended is null || failed is null || state is null || position is null
+            || seek is null || duration is null)
             throw new PlaybackException("CallbackReplayCaptureIncomplete");
         return () => OnDispatcherAsync(() =>
         {
-            opened(null!, null!);
-            ended(null!, null!);
-            state(null!, null!);
-            position(null!, null!);
-            seek(null!, null!);
-            duration(null!, null!);
-            Fail(session, "UnsupportedFormat");
+            if (!session.Retired || IsActive(session))
+                throw new PlaybackException("CallbackReplayRequiresRetiredSession");
+            var invoked = 0;
+            opened(null!, null!); invoked++;
+            ended(null!, null!); invoked++;
+            state(null!, null!); invoked++;
+            position(null!, null!); invoked++;
+            seek(null!, null!); invoked++;
+            duration(null!, null!); invoked++;
+            // The captured Failed delegate must reject the retired session before reading its arguments.
+            failed(null!, null!); invoked++;
+            return invoked;
         });
     }
 }

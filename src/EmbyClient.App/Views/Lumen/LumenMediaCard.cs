@@ -743,6 +743,17 @@ public sealed partial class LumenMediaCard : UserControl
         (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) != 0;
 
     private static readonly ConditionalWeakTable<FrameworkElement, CardNavigationGroup> NavigationGroups = new();
+    private const string NavigationHostMarker = "Lumen.LibraryItemHost";
+
+    internal static void MarkNavigationHost(Border host) => host.Tag = NavigationHostMarker;
+
+    internal static FrameworkElement? UnwrapNavigationElement(DependencyObject? element)
+    {
+        if (element is Border { Tag: string marker, Child: FrameworkElement child }
+            && string.Equals(marker, NavigationHostMarker, StringComparison.Ordinal))
+            return child;
+        return element as FrameworkElement;
+    }
 
     public static void ConfigureNavigationGroup(FrameworkElement group, bool horizontalOnly = false, bool initialNavigation = true)
     {
@@ -767,14 +778,14 @@ public sealed partial class LumenMediaCard : UserControl
         }
     }
 
-    public static bool FocusNavigationItem(FrameworkElement group, int index)
+    public static bool FocusNavigationItem(FrameworkElement group, int index, bool bringIntoView = true, Func<bool>? canFocus = null)
     {
         if (!NavigationGroups.TryGetValue(group, out var navigation))
         {
             ConfigureNavigationGroup(group);
             NavigationGroups.TryGetValue(group, out navigation);
         }
-        return navigation?.FocusItem(index) == true;
+        return navigation?.FocusItem(index, bringIntoView, canFocus) == true;
     }
 
     private sealed partial class CardNavigationGroup(FrameworkElement group, bool horizontalOnly, bool initialNavigation)
@@ -836,28 +847,43 @@ public sealed partial class LumenMediaCard : UserControl
             FocusItem(Math.Clamp(target, 0, count - 1));
         }
 
-        public bool FocusItem(int index)
+        public bool FocusItem(int index, bool bringIntoView = true, Func<bool>? canFocus = null)
         {
-            if (index < 0 || index >= ItemCount()) return false;
+            if (index < 0 || index >= ItemCount() || canFocus?.Invoke() == false) return false;
+            var item = ItemAt(index);
             FrameworkElement? element;
             if (group is ItemsRepeater repeater)
             {
-                element = repeater.GetOrCreateElement(index) as FrameworkElement;
-                repeater.UpdateLayout();
+                element = repeater.TryGetElement(index) as FrameworkElement;
+                if (element is null && bringIntoView)
+                {
+                    element = repeater.GetOrCreateElement(index) as FrameworkElement;
+                    repeater.UpdateLayout();
+                }
             }
             else element = RealizedMembers().FirstOrDefault(member => member.Index == index).Element;
+            if (element is null) return false;
+            if (bringIntoView)
+            {
+                var bring = new BringIntoViewOptions
+                {
+                    AnimationDesired = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled,
+                    HorizontalAlignmentRatio = .5
+                };
+                if (!HorizontalOnly) { bring.VerticalAlignmentRatio = .15; bring.VerticalOffset = -100; }
+                // Complete GetOrCreateElement's anchor lifecycle even when the later focus attempt cannot succeed.
+                element.StartBringIntoView(bring);
+            }
+            if (group is ItemsRepeater currentRepeater && currentRepeater.GetElementIndex(element) != index) return false;
+            element = UnwrapNavigationElement(element);
             if (element is null || NavigationButton(element) is not { } button) return false;
+            if (item is not null && !ReferenceEquals(item, element is LumenMediaCard card ? card.Item : button.Tag)) return false;
+            if (canFocus?.Invoke() == false) return false;
             _focusedIndex = index;
             UpdateTabStops();
-            var focused = button.Focus(FocusState.Keyboard);
-            var bring = new BringIntoViewOptions
-            {
-                AnimationDesired = new Windows.UI.ViewManagement.UISettings().AnimationsEnabled,
-                HorizontalAlignmentRatio = .5
-            };
-            if (!HorizontalOnly) { bring.VerticalAlignmentRatio = .15; bring.VerticalOffset = -100; }
-            element.StartBringIntoView(bring);
-            return focused;
+            if (canFocus?.Invoke() == false) return false;
+            // Programmatic focus does not enqueue keyboard focus's extra bring-into-view request.
+            return button.Focus(bringIntoView ? FocusState.Keyboard : FocusState.Programmatic);
         }
 
         private int ItemCount() => group is ItemsRepeater repeater ? repeater.ItemsSourceView?.Count ?? 0 : RealizedMembers().Count;
@@ -865,7 +891,7 @@ public sealed partial class LumenMediaCard : UserControl
         private MediaCardViewModel? ItemAt(int index)
         {
             if (group is ItemsRepeater repeater) return repeater.ItemsSourceView?.GetAt(index) as MediaCardViewModel;
-            var element = RealizedMembers().FirstOrDefault(member => member.Index == index).Element;
+            var element = UnwrapNavigationElement(RealizedMembers().FirstOrDefault(member => member.Index == index).Element);
             return element is LumenMediaCard card ? card.Item : NavigationButton(element)?.Tag as MediaCardViewModel;
         }
 
@@ -914,6 +940,7 @@ public sealed partial class LumenMediaCard : UserControl
         private static Button? NavigationButton(DependencyObject? element)
         {
             if (element is null) return null;
+            element = UnwrapNavigationElement(element) ?? element;
             if (element is LumenMediaCard card) return card._open;
             if (element is Button { Tag: MediaCardViewModel } button) return button;
             for (var index = 0; index < VisualTreeHelper.GetChildrenCount(element); index++)

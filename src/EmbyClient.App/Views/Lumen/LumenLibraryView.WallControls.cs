@@ -18,7 +18,11 @@ public sealed partial class LumenLibraryView
     private static readonly ConditionalWeakTable<Button, SolidColorBrush> SegmentHoverBrushes = new();
     private bool _wallSliderResourcesInstalled;
     private int _wallNavigationVersion;
+    private WallNavigationFocus? _wallNavigationFocus;
+    private Action? _cancelWallNavigationLayout;
     private readonly TextBlock _wallNavigationStatus = LumenUi.Text(string.Empty, 12);
+    private sealed record WallNavigationFocus(int Version, int Generation, long Epoch, XamlRoot Root,
+        WeakReference<Control>? Origin, FocusState OriginState);
     private void BuildSortFlyout()
     {
         var options = new StackPanel { Spacing = 2, Width = 192 };
@@ -226,8 +230,10 @@ public sealed partial class LumenLibraryView
 
     private void ConfigureWallNavigation()
     {
-        _wall.PreviewKeyDown += OnWallNavigationKeyDown;
+        _scroll.PreviewKeyDown += OnWallNavigationKeyDown;
         _alphabet.PreviewKeyDown += OnWallNavigationKeyDown;
+        _scroll.LosingFocus += (_, _) => CancelWallNavigationFocus();
+        Unloaded += (_, _) => CancelWallNavigationFocus();
         _wallNavigationStatus.Margin = new Thickness(0, 12, 0, 0);
         _wallNavigationStatus.Visibility = Visibility.Collapsed;
         _wallNavigationStatus.TextWrapping = TextWrapping.Wrap;
@@ -258,36 +264,136 @@ public sealed partial class LumenLibraryView
     private bool IsWallNavigationSource(DependencyObject? source)
     {
         for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
             if (ReferenceEquals(current, _wallRepeater) || ReferenceEquals(current, _alphabet)) return true;
+            if (ReferenceEquals(current, _scroll))
+                return _renderedPage == "wall" && XamlRoot is { } root
+                    && ReferenceEquals(FocusManager.GetFocusedElement(root), _scroll);
+        }
         return false;
     }
 
     private Task JumpToWallInitialAsync(string initial) => NavigateWallWindowAsync(initial, false);
 
+    private WallNavigationFocus? BeginWallNavigationFocus(int version)
+    {
+        CancelWallNavigationFocus();
+        if (!_renderEnabled || !_renderLoaded || _renderedPage != "wall" || !_scroll.IsLoaded || XamlRoot is not { } root) return null;
+        var origin = FocusManager.GetFocusedElement(root) as Control;
+        var state = origin is null || origin.FocusState == FocusState.Unfocused ? FocusState.Programmatic : origin.FocusState;
+        var focus = new WallNavigationFocus(version, _sessionGeneration, _renderEpoch, root,
+            origin is null ? null : new WeakReference<Control>(origin), state);
+        // Keep keyboard ownership on a control that survives replacement of the data window.
+        if (!ReferenceEquals(origin, _scroll) && !_scroll.Focus(FocusState.Programmatic)) return null;
+        if (!ReferenceEquals(FocusManager.GetFocusedElement(root), _scroll)) return null;
+        return _wallNavigationFocus = focus;
+    }
+
+    private void CancelWallNavigationFocus()
+    {
+        _cancelWallNavigationLayout?.Invoke();
+        _wallNavigationFocus = null;
+    }
+
+    private bool OwnsWallNavigationFocus(WallNavigationFocus focus) => ReferenceEquals(_wallNavigationFocus, focus)
+        && focus.Version == _wallNavigationVersion && focus.Generation == _sessionGeneration && focus.Epoch == _renderEpoch
+        && _renderEnabled && _renderLoaded && _renderedPage == "wall" && Visibility == Visibility.Visible
+        && ReferenceEquals(XamlRoot, focus.Root) && _scroll.IsLoaded
+        && ReferenceEquals(FocusManager.GetFocusedElement(focus.Root), _scroll);
+
     private async Task NavigateWallWindowAsync(string? initial, bool end)
     {
         var inputVersion = ++_wallNavigationVersion;
-        var generation = _sessionGeneration;
-        var epoch = _renderEpoch;
-        var origin = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot);
-        var navigation = initial is not null ? ViewModel.JumpToBrowseInitialAsync(initial) : ViewModel.JumpToBrowseBoundaryAsync(end);
+        var focus = BeginWallNavigationFocus(inputVersion);
+        if (focus is null) return;
         var revision = ViewModel.NavigationRevision;
-        var target = await navigation;
-        if (!CanApply()) return;
-        _autoPageBlocked = false;
-        RenderPage();
-        if (target is null) return;
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+        var queued = false;
+        try
         {
+            var navigation = initial is not null ? ViewModel.JumpToBrowseInitialAsync(initial) : ViewModel.JumpToBrowseBoundaryAsync(end);
+            revision = ViewModel.NavigationRevision;
+            var target = await navigation;
             if (!CanApply()) return;
-            var focused = XamlRoot is null ? null : FocusManager.GetFocusedElement(XamlRoot);
-            if (focused is not null && !ReferenceEquals(focused, origin) && !IsWallNavigationSource(focused as DependencyObject)) return;
-            var index = ViewModel.Items.IndexOf(target);
-            if (index >= 0) LumenMediaCard.FocusNavigationItem(_wallRepeater, index);
-        });
+            _autoPageBlocked = false;
+            RenderPage();
+            if (target is null)
+            {
+                if (OwnsWallNavigationFocus(focus) && focus.Origin is { } originReference
+                    && originReference.TryGetTarget(out var origin) && origin.IsLoaded && IsWallNavigationSource(origin))
+                    origin.Focus(focus.OriginState);
+                return;
+            }
+            queued = QueueFocus(false);
 
-        bool CanApply() => inputVersion == _wallNavigationVersion && generation == _sessionGeneration && epoch == _renderEpoch
-            && revision == ViewModel.NavigationRevision && _renderEnabled && _renderLoaded && _renderedPage == "wall";
+            bool QueueFocus(bool retry) => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
+            {
+                if (!CanApply() || !OwnsWallNavigationFocus(focus)) { ReleaseFocus(); return; }
+                var index = ViewModel.Items.IndexOf(target);
+                if (index < 0) { ReleaseFocus(); return; }
+                var home = initial is null && !end;
+                // Home lets the final viewport realize its first card without creating a temporary repeater anchor.
+                if (home) _scroll.ChangeView(null, 0, null, true);
+                if ((!home || IsHomeTargetVisible(index)) && LumenMediaCard.FocusNavigationItem(_wallRepeater, index, bringIntoView: !home,
+                    canFocus: () => CanApply() && OwnsWallNavigationFocus(focus)))
+                { ReleaseFocus(); return; }
+                // Dispatcher priority alone does not mean layout has applied the new viewport.
+                if (!retry && CanApply() && OwnsWallNavigationFocus(focus) && WaitForLayout()) return;
+                ReleaseFocus();
+            });
+
+            bool IsHomeTargetVisible(int index)
+            {
+                if (_wallViewportIsIntermediate || _scroll.VerticalOffset != 0
+                    || _wallRepeater.TryGetElement(index) is not FrameworkElement host
+                    || _wallRepeater.GetElementIndex(host) != index
+                    || LumenMediaCard.UnwrapNavigationElement(host) is not FrameworkElement element
+                    || element.ActualWidth <= 0 || element.ActualHeight <= 0) return false;
+                var bounds = element.TransformToVisual(_scroll).TransformBounds(new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+                return bounds.Right > 0 && bounds.Left < _scroll.ViewportWidth
+                    && bounds.Bottom > 0 && bounds.Top < _scroll.ViewportHeight;
+            }
+
+            bool WaitForLayout()
+            {
+                var timer = DispatcherQueue.CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(500);
+                timer.IsRepeating = false;
+                var finished = false;
+                Action? cancel = null;
+                cancel = () => Finish(false);
+                _cancelWallNavigationLayout = cancel;
+                _wallRepeater.LayoutUpdated += OnLayout;
+                timer.Tick += OnTimeout;
+                timer.Start();
+                // Request one normal layout even when Home was already at zero and ChangeView raises no event.
+                _wallRepeater.InvalidateMeasure();
+                return true;
+
+                void OnLayout(object? sender, object args) => Finish(true);
+                void OnTimeout(Microsoft.UI.Dispatching.DispatcherQueueTimer sender, object args) => Finish(false);
+                void Finish(bool retry)
+                {
+                    if (finished) return;
+                    finished = true;
+                    _wallRepeater.LayoutUpdated -= OnLayout;
+                    timer.Tick -= OnTimeout;
+                    timer.Stop();
+                    if (ReferenceEquals(_cancelWallNavigationLayout, cancel)) _cancelWallNavigationLayout = null;
+                    if (retry && CanApply() && OwnsWallNavigationFocus(focus) && QueueFocus(true)) return;
+                    ReleaseFocus();
+                }
+            }
+        }
+        finally { if (!queued) ReleaseFocus(); }
+
+        bool CanApply() => inputVersion == _wallNavigationVersion && focus.Generation == _sessionGeneration && focus.Epoch == _renderEpoch
+            && revision == ViewModel.NavigationRevision && _renderEnabled && _renderLoaded && _renderedPage == "wall"
+            && Visibility == Visibility.Visible && ReferenceEquals(XamlRoot, focus.Root) && _scroll.IsLoaded;
+
+        void ReleaseFocus()
+        {
+            if (ReferenceEquals(_wallNavigationFocus, focus)) _wallNavigationFocus = null;
+        }
     }
 
     private void UpdateWallNavigationStatus()
@@ -413,9 +519,21 @@ public sealed partial class LumenLibraryView
 
     private sealed partial class LibraryCardFactory(LumenLibraryView owner, Func<double> width, bool list = false, Func<string?>? query = null) : IElementFactory
     {
+        private readonly DataTemplate _hostTemplate = Application.Current.Resources["LumenLibraryItemHostTemplate"] as DataTemplate
+            ?? throw new InvalidOperationException("The library item host template is missing.");
+
         public UIElement GetElement(ElementFactoryGetArgs args)
         {
-            if (args.Data is not MediaCardViewModel item) return new Border();
+            if (_hostTemplate.GetElement(args) is not Border host)
+                throw new InvalidOperationException("The library item host template must create a Border.");
+            LumenMediaCard.MarkNavigationHost(host);
+            host.Child = CreateContent(args.Data);
+            return host;
+        }
+
+        private UIElement? CreateContent(object? data)
+        {
+            if (data is not MediaCardViewModel item) return null;
             if (list) return owner.MakeListRow(item);
             var search = query?.Invoke();
             var card = owner.MakeCard(item, width: width(), query: search);
@@ -431,7 +549,13 @@ public sealed partial class LumenLibraryView
 
         public void RecycleElement(ElementFactoryRecycleArgs args)
         {
-            // Artwork cancels when the element unloads; detached controls are not pooled.
+            if (args.Element is not Border host)
+                throw new InvalidOperationException("The library item host must be a Border.");
+            // Only the empty host is pooled; removing its content runs the existing item cleanup.
+            host.Child = null;
+            host.ClearValue(FrameworkElement.TagProperty);
+            host.ClearValue(FrameworkElement.DataContextProperty);
+            _hostTemplate.RecycleElement(args);
         }
     }
 

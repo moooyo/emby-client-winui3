@@ -9,10 +9,60 @@ namespace EmbyClient.NativeProbe;
 
 public sealed partial class App
 {
+    private void ConfigureExplicitRealHlsBinding(string credentialsPath, string expectedServerId, string itemId)
+    {
+        if (expectedServerId.Length != 32
+            || !expectedServerId.All(character => character is >= '0' and <= '9' or >= 'a' and <= 'f'))
+            throw new ArgumentException("The expected server ID must contain exactly 32 lowercase hexadecimal characters.");
+        if (!IsRealHlsIdentifier(itemId))
+            throw new ArgumentException("The item ID must contain 1-128 ASCII letters, digits, hyphens, or underscores.");
+        _realHlsCredentialsPath = Path.GetFullPath(credentialsPath);
+        _realHlsExpectedServerId = expectedServerId;
+        _realHlsItemId = itemId;
+    }
+
+    private static bool IsRealHlsIdentifier(string? value) => value is { Length: > 0 and <= 128 }
+        && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_');
+
+    private static string? SafeRealHlsMetadataToken(string? value) => value is null ? null
+        : value is { Length: > 0 and <= 64 }
+            && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_' or '.')
+            ? value : "Other";
+
+    private static bool HasRealHlsVideoSource(MediaSourceInfo source) => source.MediaStreams is { Length: > 0 } streams
+        && streams.Any(stream => stream.Type?.Equals("Video", StringComparison.OrdinalIgnoreCase) == true
+            && !string.IsNullOrWhiteSpace(stream.Codec) && stream.Width > 0 && stream.Height > 0);
+
+    private static string[] CaptureRealHlsCodecs(MediaSourceInfo source, string streamType) => (source.MediaStreams ?? [])
+        .Where(stream => stream.Type?.Equals(streamType, StringComparison.OrdinalIgnoreCase) == true)
+        .Select(stream => SafeRealHlsMetadataToken(stream.Codec) ?? "Missing")
+        .Distinct(StringComparer.Ordinal).Take(16).ToArray();
+
+    private static RealHlsMediaSourceSummary CaptureRealHlsMediaSource(MediaSourceInfo source) => new()
+    {
+        SourceId = IsRealHlsIdentifier(source.Id) ? source.Id : null,
+        Container = SafeRealHlsMetadataToken(source.Container),
+        RunTimeTicks = source.RunTimeTicks,
+        VideoCodecs = CaptureRealHlsCodecs(source, "Video"),
+        AudioCodecs = CaptureRealHlsCodecs(source, "Audio"),
+        SubtitleCodecs = CaptureRealHlsCodecs(source, "Subtitle")
+    };
+
+    private static void RequireRealHlsSourceBinding(PlaybackContext context, string validatedItemId,
+        IReadOnlySet<string> validatedVideoSourceIds)
+    {
+        Require(context.Selection.ItemId == validatedItemId && context.Source.Id is not null
+            && validatedVideoSourceIds.Contains(context.Source.Id) && HasRealHlsVideoSource(context.Source),
+            "ExplicitHlsSourceBindingMismatch");
+    }
+
     private async Task RunRealHlsAsync()
     {
         var report = new RealHlsReport
         {
+            ExplicitBinding = _realHlsExpectedServerId is not null,
+            ServerId = _realHlsExpectedServerId ?? RealHlsReport.DefaultServerId,
+            ItemId = _realHlsItemId ?? RealHlsReport.DefaultItemId,
             RequiredLoops = _realHlsDiagnostic ? 2 : 20,
             ExecutionMode = _realHlsDiagnostic ? "TwoLoopDiagnosticNotResourceAcceptance"
                 : _sharedNativeHlsPlayerControl && _nativeHlsHttpControl ? "SharedPlayerNativeHttpHlsControlNotProductAcceptance"
@@ -24,6 +74,8 @@ public sealed partial class App
                 ? "Isolated shared-player native HTTP HLS control on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Same twenty complete cycles and forty source/session graphs; one MediaPlayer is reused, with per-session source/event/SMTC/HTTP retirement. Not product acceptance or concurrent cancellation/fallback isolation proof."
                 : _nativeHlsHttpControl
                 ? "Isolated native HTTP HLS control on the owned identity-checked official Emby 4.9.5.0 loopback server, fixed item 5. Same coordinator, forty native graphs, SMTC, and twenty complete cycles; only adaptive HTTP construction differs. Not product acceptance."
+                : _realHlsExpectedServerId is not null
+                ? "Owned official Emby 4.9.5.0 loopback validation server explicitly bound to an independently supplied server ID and verified media item, forced HLS, Windows native engine and real PlaybackCoordinator. Separate from synthetic direct-stream evidence."
                 : "Owned official Emby 4.9.5.0 loopback validation server, fixed item 5, forced HLS, Windows native engine and real PlaybackCoordinator. Separate from synthetic direct-stream evidence."
         };
         var nativeHttpControl = _nativeHlsHttpControl ? new NativeHlsHttpControlObservation() : null;
@@ -47,19 +99,40 @@ public sealed partial class App
             Require(server.IsLoopback && server.Port == 19096 && server.Scheme == "http"
                 && server.UserInfo.Length == 0 && server.Query.Length == 0 && server.Fragment.Length == 0,
                 "OwnedValidationEndpointRequired");
+            if (report.ExplicitBinding)
+                Require(credentials.ServerUrl is "http://127.0.0.1:19096" or "http://127.0.0.1:19096/"
+                    or "http://127.0.0.1:19096/emby" or "http://127.0.0.1:19096/emby/",
+                    "ExplicitOwnedValidationEndpointRequired");
             var api = new EmbyApiClient(http, server, new ClientIdentity("Native HLS Validation", "Windows native probe",
                 "native-hls-probe-" + Guid.NewGuid().ToString("N"), "0.1.0"));
             var publicInfo = await api.GetPublicSystemInfoAsync(deadline.Token);
             Require(publicInfo.Id == report.ServerId && publicInfo.Version == "4.9.5.0", "OwnedValidationIdentityMismatch");
+            report.PublicServerId = publicInfo.Id;
             report.ServerVersion = publicInfo.Version!;
             var authentication = await api.AuthenticateByNameAsync(credentials.Username!, credentials.Password!, deadline.Token);
             credentials = null;
             Require(authentication.User?.Id is not null && authentication.AccessToken is not null
                 && authentication.ServerId == report.ServerId, "OwnedValidationAuthenticationFailed");
+            report.AuthenticatedServerId = authentication.ServerId;
             authenticated = api.WithAuthentication(authentication.AccessToken!, authentication.User!.Id!);
             var item = await authenticated.GetItemAsync(report.ItemId, deadline.Token);
             Require(item.Id == report.ItemId && item.RunTimeTicks is >= 590_000_000 and <= 610_000_000,
                 "OwnedValidationMediaMismatch");
+            var videoSources = item.MediaSources?.Where(HasRealHlsVideoSource).ToArray() ?? [];
+            if (report.ExplicitBinding)
+                Require(item.Type is "Movie" or "Episode" && item.IsFolder != true && videoSources.Length > 0
+                    && videoSources.All(source => IsRealHlsIdentifier(source.Id)), "ExplicitOwnedValidationVideoRequired");
+            var validatedVideoSourceIds = report.ExplicitBinding
+                ? videoSources.Select(source => source.Id!).ToHashSet(StringComparer.Ordinal) : null;
+            report.VerifiedItem = new RealHlsItemSummary
+            {
+                ItemId = item.Id!,
+                Type = SafeRealHlsMetadataToken(item.Type),
+                MediaType = SafeRealHlsMetadataToken(item.MediaType),
+                RunTimeTicks = item.RunTimeTicks,
+                MediaSourceCount = item.MediaSources?.Length ?? 0,
+                MediaSources = (item.MediaSources ?? []).Take(8).Select(CaptureRealHlsMediaSource).ToList()
+            };
             report.ItemDurationTicks = item.RunTimeTicks;
             engine = new NativePlaybackEngine(_window!.DispatcherQueue, _element!, initialMuted: true)
             {
@@ -67,6 +140,29 @@ public sealed partial class App
                 ReuseNativeHttpControlPlayer = _sharedNativeHlsPlayerControl
             };
             engine.Diagnostic += (_, value) => { lock (report.Diagnostics) report.Diagnostics.Add("Native:" + value.Operation + ":" + value.ErrorCode); };
+            engine.EventReceived += (_, value) =>
+            {
+                if (value.Kind != PlaybackEngineEventKind.Failed) return;
+                var failure = new RealHlsFailureObservation
+                {
+                    ErrorCode = value.ErrorCode, SnapshotPositionTicks = value.Snapshot.PositionTicks,
+                    SnapshotDurationTicks = value.Snapshot.DurationTicks
+                };
+                try
+                {
+                    failure.RequestedStartTicks = coordinator?.ActiveContext?.Selection.StartPositionTicks;
+                    failure.SourceWasBound = engine.HasBoundNativeSourceForProbe;
+                    if (_element?.MediaPlayer is { } failedPlayer)
+                    {
+                        var native = failedPlayer.PlaybackSession;
+                        failure.ActualNativePositionTicks = native.Position.Ticks;
+                        failure.ActualNativeDurationTicks = native.NaturalDuration.Ticks;
+                        failure.ActualNativeState = native.PlaybackState.ToString();
+                    }
+                }
+                catch (Exception error) { failure.ObservationErrorCode = ErrorCode(error); }
+                report.NativeFailures.Add(failure);
+            };
             coordinator = new PlaybackCoordinator(authenticated, engine, new PlaybackCoordinatorOptions
             {
                 ProgressInterval = TimeSpan.FromSeconds(1), CleanupTimeout = TimeSpan.FromSeconds(10), ReportTimeout = TimeSpan.FromSeconds(5)
@@ -81,7 +177,8 @@ public sealed partial class App
                 var firstApiEvent = observation.Events.Length;
                 try
                 {
-                    await RunRealHlsLoopAsync(loop, coordinator, engine, observation, authenticated, http, nativeHttpControl, deadline.Token);
+                    await RunRealHlsLoopAsync(loop, item.Id!, validatedVideoSourceIds, coordinator, engine,
+                        observation, authenticated, http, nativeHttpControl, deadline.Token);
                     loop.Resources = await CaptureResourcesAsync(deadline.Token);
                     loop.Status = "Passed";
                     report.CompletedLoops++;
@@ -160,19 +257,23 @@ public sealed partial class App
         }
     }
 
-    private async Task RunRealHlsLoopAsync(RealHlsLoop loop, PlaybackCoordinator coordinator,
+    private async Task RunRealHlsLoopAsync(RealHlsLoop loop, string validatedItemId,
+        IReadOnlySet<string>? validatedVideoSourceIds, PlaybackCoordinator coordinator,
         NativePlaybackEngine engine, HlsApiObservationHandler observation, EmbyApiClient api, HttpClient http,
         NativeHlsHttpControlObservation? nativeHttpControl, CancellationToken ct)
     {
         var firstEvent = observation.Events.Length;
         await coordinator.PlayAsync(new PlaybackSelection
         {
-            ItemId = "5", ForceTranscoding = true, StartPositionTicks = loop.InitialPositionTicks,
+            ItemId = validatedItemId, ForceTranscoding = true, StartPositionTicks = loop.InitialPositionTicks,
             SubtitleStreamIndex = -1, MaxStreamingBitrate = 2_000_000
         }, ct);
         var context = coordinator.ActiveContext;
         Require(context is { DeliveryMethod: PlaybackDeliveryMethod.Transcode, TimelineOffsetTicks: 0 }
             && context.Source.TranscodingSubProtocol?.Equals("hls", StringComparison.OrdinalIgnoreCase) == true, "FullSourceHlsRequired");
+        if (validatedVideoSourceIds is not null)
+            RequireRealHlsSourceBinding(context!, validatedItemId, validatedVideoSourceIds);
+        loop.OpenedMediaSource = CaptureRealHlsMediaSource(context!.Source);
         var player = _element!.MediaPlayer;
         Require(player is not null && player.IsMuted, "MutedNativePlayerRequired");
         loop.TimelineOffsetTicks = context!.TimelineOffsetTicks;
@@ -235,6 +336,9 @@ public sealed partial class App
         await seeking;
         player = _element.MediaPlayer;
         Require(player is not null && player.IsMuted && coordinator.ActiveContext?.TimelineOffsetTicks == 0, "HlsSeekContextLost");
+        if (validatedVideoSourceIds is not null)
+            RequireRealHlsSourceBinding(coordinator.ActiveContext!, validatedItemId, validatedVideoSourceIds);
+        loop.SeekMediaSource = CaptureRealHlsMediaSource(coordinator.ActiveContext!.Source);
         loop.PlaybackReplacedBySeek = coordinator.ActiveContext!.PlaybackId != beforeSeekPlaybackId;
         loop.AdaptiveCreationResponsePresentAfterSeek = engine.HasAdaptiveCreationResponseForProbe;
         loop.ProductAdaptiveFilterPresentAfterSeek = engine.HasProductAdaptiveFilterForProbe;

@@ -8,12 +8,38 @@ tools. The current UI follows the Lumen Windows Client V2 handoff in
 `design_handoff_lumen_windows_client`, implemented with native WinUI 3 controls.
 The HTML prototype is a design reference.
 
-The current [bitmap subtitle fixes](docs/implementation/lumen-subtitle-fixes.md)
-retain mapped decoder state for Off/reselection and avoid bitmap/HUD overlap.
-Native-06/publish-06 builds and 1,509 selected Platform/Playback cases passed
-their new scope. UI/runtime acceptance is deferred while computer use is paused;
-the owned App exited 0 with unknown cause and both fresh fixtures are cleaned.
-The completed publish-05 checkpoint below retains its earlier source/results.
+The [current code closeout](docs/implementation/current-code-closeout-20261017.md)
+records final16 as **BuildPassed**: Release/Debug, fresh Native AOT,
+package/runtime and offline schema checks have actual exit 0. The EXE is
+30,613,504 bytes, SHA256
+`D72B62373A3E45A972C3F900AB8D9E92540B51823121F24EA58663AC9CFC4651`;
+inventories are 675/260/24/595. All 2,430 product cases and the 114-input
+NativeProbe compilation reuse matching complete prior compiled closures,
+without reruns for this UI-only delta.
+
+Final16 repairs Home's temporary focus anchor and wall-scroller navigation
+while retaining DataTemplate host pooling and virtualization.
+**BoundedNavigationObserved** covers the short regression;
+**OriginalFiniteUiWorkloadCovered_WithObservationLimit** covers formal06's
+finite UI sequence, fixed idle windows and in-cap sign-out/normal exit 0.
+Tail warm returned to the real first viewport without repeating its numeric
+tooltip. **InvestigateHighRetention / PerformanceNotAccepted** remains the
+resource result: two increments exceed the 32 MiB investigation threshold,
+and library-cycle handles keep rising with attribution unresolved. Final owned
+cleanup and system restoration are complete.
+
+The user renewed unattended continuation; the earlier physical-Escape stop
+and goal-service blocked receipt are historical, with no new goal-service
+status claimed. **LANDeferred** still covers discovery, public Save and account
+restoration. Earlier candidate results and failed/aborted attempts retain their
+own identities. CI, release, licensing/signing and installation/distribution
+remain outside this acceptance scope. The user separately authorized committing
+and pushing the current source snapshot to `main`; source publication does not
+change the recorded acceptance results.
+
+The [bitmap subtitle fixes](docs/implementation/lumen-subtitle-fixes.md) and
+completed publish-05 checkpoint below preserve their earlier source/results;
+their historical 1,509-case component result is not the current project total.
 
 The earlier [Windows continuation](docs/implementation/lumen-windows-continuation.md)
 completed its local acceptance and owned cleanup within the recorded scope on
@@ -167,7 +193,7 @@ this link repair does not regenerate or independently reverify the old reports.
 | [Dependency inventory](docs/implementation/dependency-inventory.md) | Exact dependencies, upstream license metadata, and preserved notices |
 | [CycloneDX SBOM](docs/implementation/sbom.md) | Reproducible package inventory and schema validation |
 
-Initial research date: **2026-09-09**. Current V2 documentation update: **2026-10-14**. Documentation is written in English according to the project instructions.
+Initial research date: **2026-09-09**. Current V2 documentation update: **2026-10-17**. Documentation is written in English according to the project instructions.
 
 ## Implemented development workflow
 

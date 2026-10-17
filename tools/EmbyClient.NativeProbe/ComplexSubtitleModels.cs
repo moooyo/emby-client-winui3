@@ -35,6 +35,7 @@ internal sealed class ComplexSubtitleCase
 
 internal sealed class ComplexSubtitleReport
 {
+    public int VisualWaitSeconds { get; init; } = 180;
     public string ExecutionMode { get; init; } = "DefaultSubtitleProfile";
     public bool ProfileControl { get; init; }
     public string Scope { get; init; } = "One manifest-bound complex subtitle on the owned official Emby server, using the unchanged default server-encoding profile, actual NativePlaybackEngine and PlaybackCoordinator. Separate enabled and disabled screenshot confirmations are required. No external WebVTT capability, custom profile, engine injection, OCR, or resource-loop acceptance is used.";
@@ -159,6 +160,7 @@ internal sealed class ComplexSubtitlePlaybackEvent
 
 internal sealed class ComplexSubtitleReady
 {
+    public int VisualWaitSeconds { get; init; } = 180;
     public required string RunId { get; init; }
     public required string CaseId { get; init; }
     public required string Phase { get; init; }

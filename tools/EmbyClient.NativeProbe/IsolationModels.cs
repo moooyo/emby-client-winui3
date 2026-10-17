@@ -4,7 +4,9 @@ namespace EmbyClient.NativeProbe;
 
 internal sealed class IsolationReport
 {
-    public string Scope { get; init; } = "SYNTHETIC loopback item 1001, default product player owner. Actual native Opening cancellation and invalid-media decoder failure are followed by recovery. Retired handler replay and old-ID commands are explicit fault injection, not naturally observed late callbacks. Separate from resource acceptance.";
+    public string Scope { get; init; } = "SYNTHETIC loopback item 1001, default product player owner. Bound native Opening cancellation and pre-bind invalid-container rejection are separate gates followed by recovery. Retired entry-point replay and old-ID commands are explicit fault injection. A post-bind late-failure gate requires a separate network-retry run; this report does not establish it.";
+    public string InvalidMediaGate { get; init; } = "PreBindInvalidContainerRejection";
+    public string PostBindLateFailureGateStatus { get; init; } = "NotEvaluated";
     public string Status { get; set; } = "Running";
     public string? ErrorCode { get; set; }
     public int? ErrorHResult { get; set; }
@@ -19,7 +21,7 @@ internal sealed class IsolationReport
     public bool FinalPlayerDetached { get; set; }
     public bool FinalNetworkQuiet { get; set; }
     public IsolationConcurrentDispose ConcurrentDispose { get; init; } = new();
-    public string[] Limitations { get; init; } = ["No resource gate is evaluated in this fault-injection process", "Synthetic development API is not a real Emby server", "No presented-pixel, audio-device, physical-key, or exhaustive concurrency claim"];
+    public string[] Limitations { get; init; } = ["Pre-bind invalid-container rejection does not establish failure after native source binding", "The post-bind HTTP 503 failure and retry-isolation gate must pass in its own network-retry process", "No resource gate is evaluated in this fault-injection process", "Synthetic development API is not a real Emby server", "No presented-pixel, audio-device, physical-key, or exhaustive concurrency claim"];
     public List<IsolationCycle> Cycles { get; init; } = [];
     public List<IsolationEngineEvent> EngineEvents { get; init; } = [];
     public List<HlsApiEvent> ApiEvents { get; set; } = [];
@@ -56,6 +58,12 @@ internal sealed class IsolationCycle
     public string? NativeDecoderFailureCode { get; set; }
     public string? DecoderFailureTerminalCode { get; set; }
     public bool DecoderFailureSourceWasBound { get; set; }
+    public string? DecoderFailureStage { get; set; }
+    public string? DecoderFailureCaptureErrorCode { get; set; }
+    public int InvalidMediaRequestsBefore { get; set; }
+    public int InvalidMediaRequestsAfter { get; set; }
+    public bool PreBindRejectionGatePassed { get; set; }
+    public bool PreBindRejectedSessionReportedNoStart { get; set; }
     public bool FailureDetached { get; set; }
     public string? FailedSessionHash { get; set; }
     public List<IsolationRecovery> Recoveries { get; init; } = [];
@@ -68,6 +76,8 @@ internal sealed class IsolationRecovery
     public long NativeInitialTicks { get; set; }
     public long PausedDriftTicks { get; set; }
     public long ResumedNativeTicks { get; set; }
+    public string ReplayCaptureStage { get; init; } = "";
+    public int ExpectedReplayedCallbacks { get; init; }
     public int ReplayedCallbacks { get; set; }
     public int StaleIdCommands { get; set; }
     public bool CurrentSourceSurvived { get; set; }
